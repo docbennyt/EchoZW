@@ -9,6 +9,12 @@ import {
   disallowedGoogleCalendarScopes,
   googleCalendarScope,
 } from "../src/domain/googleScopes";
+import {
+  buildGoogleAuthorizationUrl,
+  buildGoogleTokenExchangeBody,
+  resolveGoogleOAuthConfig,
+  validateGoogleOAuthProductionConfig,
+} from "../src/domain/googleOAuthConfig";
 
 describe("legal and Google OAuth configuration", () => {
   it("allows only the calendar.app.created Google Calendar scope", () => {
@@ -21,6 +27,77 @@ describe("legal and Google OAuth configuration", () => {
     expect(allowedGoogleCalendarScopes).not.toEqual(
       expect.arrayContaining([...disallowedGoogleCalendarScopes]),
     );
+  });
+
+  it("uses the configured Google redirect URI in the authorization URL", () => {
+    const redirectUri =
+      "https://calender.aido.co.zw/api/calendar/google/callback";
+    const authUrl = buildGoogleAuthorizationUrl({
+      clientId: "demo-client.apps.googleusercontent.com",
+      redirectUri,
+      state: "state-123",
+    });
+
+    expect(authUrl.searchParams.get("redirect_uri")).toBe(redirectUri);
+    expect(authUrl.searchParams.get("scope")).toBe(googleCalendarScope);
+    expect(authUrl.toString()).not.toContain("localhost");
+  });
+
+  it("uses the same configured Google redirect URI in the token exchange", () => {
+    const redirectUri =
+      "https://calender.aido.co.zw/api/calendar/google/callback";
+    const tokenBody = buildGoogleTokenExchangeBody({
+      code: "code-123",
+      clientId: "demo-client.apps.googleusercontent.com",
+      clientSecret: "secret-not-asserted",
+      redirectUri,
+    });
+
+    expect(tokenBody.get("redirect_uri")).toBe(redirectUri);
+    expect(tokenBody.get("grant_type")).toBe("authorization_code");
+  });
+
+  it("rejects HTTP, localhost, and trailing slash Google redirect URIs in production", () => {
+    const baseEnv = {
+      GOOGLE_CLIENT_ID: "demo-client.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "secret-not-asserted",
+    };
+
+    expect(() =>
+      validateGoogleOAuthProductionConfig({
+        ...baseEnv,
+        GOOGLE_REDIRECT_URI:
+          "http://calender.aido.co.zw/api/calendar/google/callback",
+      }),
+    ).toThrow(/HTTPS/);
+    expect(() =>
+      validateGoogleOAuthProductionConfig({
+        ...baseEnv,
+        GOOGLE_REDIRECT_URI: "https://localhost/api/calendar/google/callback",
+      }),
+    ).toThrow(/localhost/);
+    expect(() =>
+      validateGoogleOAuthProductionConfig({
+        ...baseEnv,
+        GOOGLE_REDIRECT_URI:
+          "https://calender.aido.co.zw/api/calendar/google/callback/",
+      }),
+    ).toThrow(/trailing slash/);
+  });
+
+  it("does not derive Google redirect URI from PUBLIC_APP_URL", () => {
+    const config = resolveGoogleOAuthConfig({
+      GOOGLE_CLIENT_ID: "demo-client.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "secret-not-asserted",
+      GOOGLE_REDIRECT_URI:
+        "https://calender.aido.co.zw/api/calendar/google/callback",
+      PUBLIC_APP_URL: "https://calendar.aido.co.zw",
+    });
+
+    expect(config.redirectUri).toBe(
+      "https://calender.aido.co.zw/api/calendar/google/callback",
+    );
+    expect(config.redirectUri).not.toContain("calendar.aido.co.zw");
   });
 
   it("rejects production legal placeholder values", () => {

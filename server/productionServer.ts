@@ -7,6 +7,10 @@ import {
 } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  getGoogleOAuthStartupStatus,
+  validateGoogleOAuthProductionConfig,
+} from "../src/domain/googleOAuthConfig.js";
 import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
 import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 
@@ -16,6 +20,16 @@ const distDir = resolve(serverDir, "../../dist");
 
 if (process.env.NODE_ENV === "production") {
   validateLegalProductionConfig(process.env);
+  const googleStatus = validateGoogleOAuthProductionConfig(process.env);
+  if (googleStatus.enabled) {
+    const { redirectUri, clientIdSuffix } = getGoogleOAuthStartupStatus(
+      process.env,
+    );
+    console.info("Google OAuth configuration", {
+      redirectUri,
+      clientIdSuffix,
+    });
+  }
 }
 
 const contentTypes: Record<string, string> = {

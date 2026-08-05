@@ -19,7 +19,12 @@ import {
   getPublicAppUrlFromHeaders,
   isExternallyFetchableUrl,
 } from "../src/domain/publicUrl.js";
-import { googleCalendarScope } from "../src/domain/googleScopes.js";
+import {
+  buildGoogleAuthorizationUrl,
+  buildGoogleTokenExchangeBody,
+  resolveGoogleOAuthConfig,
+  validateGoogleOAuthProductionConfig,
+} from "../src/domain/googleOAuthConfig.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 
 const subscriptionsById = new Map<string, CalendarSubscription>();
@@ -113,6 +118,15 @@ function getOrCreateAnonymousSession(req: IncomingMessage) {
   return getCookie(req, "echo_anon_session") ?? crypto.randomUUID();
 }
 
+function isAdminDiagnosticRequest(
+  req: IncomingMessage,
+  mode: "development" | "production",
+) {
+  if (mode === "development") return true;
+  const adminKey = process.env.GOOGLE_CONFIG_STATUS_ADMIN_KEY;
+  return Boolean(adminKey && req.headers["x-admin-key"] === adminKey);
+}
+
 function confirmationReference(prefix: string) {
   return `${prefix}-${Date.now().toString(36).toUpperCase()}-${crypto
     .randomUUID()
@@ -177,6 +191,10 @@ export async function handleCalendarRequest(
   res: ServerResponse,
   mode: "development" | "production",
 ) {
+  if (mode === "production") {
+    validateGoogleOAuthProductionConfig(process.env);
+  }
+
   await loadStore();
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
 
@@ -413,14 +431,37 @@ export async function handleCalendarRequest(
 
   if (
     req.method === "GET" &&
+    requestUrl.pathname === "/api/calendar/google/config-status"
+  ) {
+    if (!isAdminDiagnosticRequest(req, mode)) {
+      sendJson(res, 404, {
+        error: {
+          code: "NOT_FOUND",
+          message: "Not found.",
+        },
+      });
+      return true;
+    }
+
+    const config = resolveGoogleOAuthConfig(process.env);
+    sendJson(res, 200, {
+      enabled: config.enabled,
+      redirectUri: config.redirectUri ?? null,
+      clientIdSuffix: config.clientIdSuffix,
+      scope: config.scope,
+    });
+    return true;
+  }
+
+  if (
+    req.method === "GET" &&
     requestUrl.pathname === "/api/calendar/google/connect"
   ) {
     const subscriptionId = requestUrl.searchParams.get("subscriptionId");
     const subscription = subscriptionId
       ? subscriptionsById.get(subscriptionId)
       : undefined;
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    const googleConfig = resolveGoogleOAuthConfig(process.env);
 
     if (!subscription) {
       sendJson(res, 404, {
@@ -432,7 +473,11 @@ export async function handleCalendarRequest(
       return true;
     }
 
-    if (!clientId || !redirectUri) {
+    if (
+      !googleConfig.enabled ||
+      !googleConfig.clientId ||
+      !googleConfig.redirectUri
+    ) {
       const publicOrigin = getRequestPublicOrigin(req, mode);
       res.writeHead(302, {
         Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-setup-needed`,
@@ -443,14 +488,11 @@ export async function handleCalendarRequest(
 
     const state = crypto.randomUUID();
     googleStates.set(state, subscription.id);
-    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    authUrl.searchParams.set("client_id", clientId);
-    authUrl.searchParams.set("redirect_uri", redirectUri);
-    authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("scope", googleCalendarScope);
-    authUrl.searchParams.set("access_type", "offline");
-    authUrl.searchParams.set("prompt", "consent");
-    authUrl.searchParams.set("state", state);
+    const authUrl = buildGoogleAuthorizationUrl({
+      clientId: googleConfig.clientId,
+      redirectUri: googleConfig.redirectUri,
+      state,
+    });
     res.writeHead(302, { Location: authUrl.toString() });
     res.end();
     return true;
@@ -466,18 +508,17 @@ export async function handleCalendarRequest(
     const subscription = subscriptionId
       ? subscriptionsById.get(subscriptionId)
       : undefined;
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    const googleConfig = resolveGoogleOAuthConfig(process.env);
     const publicOrigin = getRequestPublicOrigin(req, mode);
 
     if (
       !code ||
       !state ||
       !subscription ||
-      !clientId ||
-      !clientSecret ||
-      !redirectUri
+      !googleConfig.enabled ||
+      !googleConfig.clientId ||
+      !googleConfig.clientSecret ||
+      !googleConfig.redirectUri
     ) {
       res.writeHead(302, {
         Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-setup-needed`,
@@ -490,12 +531,11 @@ export async function handleCalendarRequest(
       const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
+        body: buildGoogleTokenExchangeBody({
           code,
-          client_id: clientId,
-          client_secret: clientSecret,
-          redirect_uri: redirectUri,
-          grant_type: "authorization_code",
+          clientId: googleConfig.clientId,
+          clientSecret: googleConfig.clientSecret,
+          redirectUri: googleConfig.redirectUri,
         }),
       });
       if (!tokenResponse.ok) throw new Error("Token exchange failed.");
