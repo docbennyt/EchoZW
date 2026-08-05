@@ -1,5 +1,5 @@
-import type { CalendarSubscription } from "./subscriptions";
-import type { Timetable } from "./types";
+import type { CalendarSubscription } from "./subscriptions.js";
+import type { Timetable } from "./types.js";
 
 export type GoogleCalendarEventPayload = {
   id: string;

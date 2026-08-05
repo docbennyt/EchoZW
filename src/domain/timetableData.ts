@@ -1,4 +1,4 @@
-import type { Timetable } from "./types";
+import type { Timetable } from "./types.js";
 
 const timetableId = "tt-aido-bscse-21-2026-s2";
 const versionId = "ttv-aido-bscse-21-2026-s2-v3";

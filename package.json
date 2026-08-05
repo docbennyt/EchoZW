@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0",
+    "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
+    "preview": "node dist-server/server/productionServer.js",
     "test": "vitest run",
     "lint": "eslint .",
     "format:check": "prettier --check ."

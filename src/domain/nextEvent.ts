@@ -1,4 +1,4 @@
-import type { AcademicCalendarEvent, Timetable } from "./types";
+import type { AcademicCalendarEvent, Timetable } from "./types.js";
 
 const weekdayByIcs = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 

@@ -1,12 +1,6 @@
 node_modules/
 dist/
 dist-server/
-.env
-.env.local
-.DS_Store
 coverage/
 playwright-report/
 test-results/
-tsconfig.tsbuildinfo
-.data/
-*smoke*.log

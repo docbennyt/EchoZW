@@ -2,24 +2,24 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Plugin } from "vite";
-import { mapToGoogleEvents } from "../src/domain/googleCalendar";
-import { demoTimetable } from "../src/domain/timetableData";
+import { mapToGoogleEvents } from "../src/domain/googleCalendar.js";
+import { demoTimetable } from "../src/domain/timetableData.js";
 import {
   createPersonalizedCalendar,
   generateIcsFromPersonalizedCalendar,
-} from "../src/domain/calendar";
+} from "../src/domain/calendar.js";
 import {
   buildSubscriptionResponse,
   createSubscriptionRecord,
   getReminderOffsets,
   subscriptionRequestSchema,
   type CalendarSubscription,
-} from "../src/domain/subscriptions";
+} from "../src/domain/subscriptions.js";
 import {
-  getPublicAppUrl,
+  getPublicAppUrlFromHeaders,
   isExternallyFetchableUrl,
-} from "../src/domain/publicUrl";
-import { generateFeedToken, sha256Base64Url } from "../src/domain/token";
+} from "../src/domain/publicUrl.js";
+import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 
 const subscriptionsById = new Map<string, CalendarSubscription>();
 const subscriptionIdByTokenHash = new Map<string, string>();
@@ -31,44 +31,11 @@ const storePath =
     : ".data/calendar-store.json");
 let storeLoaded = false;
 
-function firstHeaderValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function firstForwardedValue(value: string | undefined) {
-  return value?.split(",")[0]?.trim();
-}
-
-function hasConfiguredPublicOrigin() {
-  return Boolean(
-    process.env.PUBLIC_APP_URL ??
-    process.env.VITE_PUBLIC_APP_URL ??
-    process.env.VITE_APP_BASE_URL,
-  );
-}
-
 function getRequestPublicOrigin(
   req: IncomingMessage,
   mode: "development" | "production",
 ) {
-  if (hasConfiguredPublicOrigin()) {
-    return getPublicAppUrl(process.env, mode);
-  }
-
-  const forwardedProto = firstForwardedValue(
-    firstHeaderValue(req.headers["x-forwarded-proto"]),
-  );
-  const forwardedHost = firstForwardedValue(
-    firstHeaderValue(req.headers["x-forwarded-host"]),
-  );
-  const host = forwardedHost ?? firstHeaderValue(req.headers.host);
-  const protocol = mode === "production" ? (forwardedProto ?? "https") : "http";
-
-  if (host) {
-    return getPublicAppUrl({ PUBLIC_APP_URL: `${protocol}://${host}` }, mode);
-  }
-
-  return getPublicAppUrl(process.env, mode);
+  return getPublicAppUrlFromHeaders(process.env, req.headers, mode);
 }
 
 async function loadStore() {
@@ -197,7 +164,7 @@ function writeIcsResponse(
   res.end(ics);
 }
 
-async function handleCalendarRequest(
+export async function handleCalendarRequest(
   req: IncomingMessage,
   res: ServerResponse,
   mode: "development" | "production",

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { buildFeedUrl } from "./calendar";
-import type { CalendarProvider } from "./device";
-import { validateReminderMinutes } from "./reminders";
-import type { ReminderPresetId, Timetable } from "./types";
+import { buildFeedUrl } from "./calendar.js";
+import type { CalendarProvider } from "./device.js";
+import { validateReminderMinutes } from "./reminders.js";
+import type { ReminderPresetId, Timetable } from "./types.js";
 
 export type SubscriptionStatus =
   "pending" | "active" | "disconnected" | "revoked" | "failed";

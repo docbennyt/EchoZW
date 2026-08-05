@@ -1,4 +1,4 @@
-import type { AcademicCalendarEvent, Timetable } from "./types";
+import type { AcademicCalendarEvent, Timetable } from "./types.js";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 

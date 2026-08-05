@@ -1,4 +1,19 @@
 export type PublicUrlMode = "development" | "production" | "test";
+type HeaderValue = string | string[] | undefined;
+
+function firstHeaderValue(value: HeaderValue) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function firstForwardedValue(value: string | undefined) {
+  return value?.split(",")[0]?.trim();
+}
+
+function hasConfiguredPublicOrigin(env: Record<string, string | undefined>) {
+  return Boolean(
+    env.PUBLIC_APP_URL ?? env.VITE_PUBLIC_APP_URL ?? env.VITE_APP_BASE_URL,
+  );
+}
 
 export function getPublicAppUrl(
   env: Record<string, string | undefined>,
@@ -54,4 +69,29 @@ export function isExternallyFetchableUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+export function getPublicAppUrlFromHeaders(
+  env: Record<string, string | undefined>,
+  headers: Record<string, HeaderValue>,
+  mode: PublicUrlMode = "development",
+) {
+  if (hasConfiguredPublicOrigin(env)) {
+    return getPublicAppUrl(env, mode);
+  }
+
+  const forwardedProto = firstForwardedValue(
+    firstHeaderValue(headers["x-forwarded-proto"]),
+  );
+  const forwardedHost = firstForwardedValue(
+    firstHeaderValue(headers["x-forwarded-host"]),
+  );
+  const host = forwardedHost ?? firstHeaderValue(headers.host);
+  const protocol = mode === "production" ? (forwardedProto ?? "https") : "http";
+
+  if (host) {
+    return getPublicAppUrl({ PUBLIC_APP_URL: `${protocol}://${host}` }, mode);
+  }
+
+  return getPublicAppUrl(env, mode);
 }

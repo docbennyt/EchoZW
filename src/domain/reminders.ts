@@ -1,4 +1,4 @@
-import type { ReminderPreset } from "./types";
+import type { ReminderPreset } from "./types.js";
 
 export const supportedReminderMinutes = [5, 10, 15, 30, 45, 60, 120, 720, 1440];
 

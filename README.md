@@ -66,6 +66,6 @@ npm run format:check
 
 1. Set `PUBLIC_APP_URL` and `VITE_PUBLIC_APP_URL` to the live HTTPS origin.
 2. Run `npm run build`.
-3. Run `npm run preview -- --port 80` in Docker/EasyPanel so the calendar API and `.ics` feed middleware stay active.
+3. Run `npm run preview` or `node dist-server/server/productionServer.js` so the calendar API and `.ics` feed routes stay active.
 4. Mount persistent storage at `/data` or set `CALENDAR_STORE_PATH` to a writable persistent file.
 5. Set Google OAuth credentials when direct Google Calendar sync is enabled.
