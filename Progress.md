@@ -1,4 +1,4 @@
-# Echo Calender Progress
+# EchoZW Calendar Progress
 
 ## Completed
 
@@ -16,6 +16,8 @@
 - Added persistent calendar subscription store configuration and `/healthz`.
 - Added Google OAuth connect/callback flow that creates a dedicated secondary calendar when credentials are configured.
 - Added personalized subscription creation, secure feed tokens, dev/preview `text/calendar` feed responses, Apple webcal gating, Google sync mapping mocks, and a simple MVP admin surface.
+- Fixed the EasyPanel Docker build by installing build-time dev dependencies before setting `NODE_ENV=production`.
+- Added EchoZW Calendar favicons, PWA icons, manifest metadata, and header branding from the local `branding/` folder.
 
 ## Verified
 
@@ -27,7 +29,7 @@
 ## Still External
 
 - Live Supabase values.
-- Production subscribed-feed server route.
+- Live `PUBLIC_APP_URL` / `VITE_PUBLIC_APP_URL` values and persistent `/data` storage for stable subscription feeds.
 - Google OAuth credentials.
 - PesePay credentials and official live API details.
 - Sentry and PostHog keys.

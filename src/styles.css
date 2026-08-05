@@ -98,6 +98,13 @@ a {
   width: 2.5rem;
 }
 
+.brand-mark img {
+  border-radius: 6px;
+  height: 2.1rem;
+  object-fit: contain;
+  width: 2.1rem;
+}
+
 .brand small,
 .provider-card small,
 .timetable-card span,

@@ -90,7 +90,9 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="app-shell">
       <header className="topbar">
         <a className="brand" href="/">
-          <span className="brand-mark">EC</span>
+          <span className="brand-mark">
+            <img src="/echo-calendar-logo.png" alt="" />
+          </span>
           <span>
             <strong>{appConfig.productName}</strong>
             <small>
@@ -596,10 +598,8 @@ function SyncWizard({
             </div>
             {!externalProviderReady && (
               <p className="dev-warning" role="status">
-                External calendar providers cannot fetch localhost. Use a public
-                HTTPS tunnel or preview deployment for Apple, Google, and
-                Outlook subscriptions. The personalised .ics download works
-                locally.
+                Calendar subscriptions work from the live HTTPS site. For local
+                testing, download the personalised .ics file.
               </p>
             )}
             <div className="provider-list always-options">
@@ -620,7 +620,7 @@ function SyncWizard({
               <CalendarProviderCard
                 icon={<Download size={22} />}
                 title="Download .ics"
-                text="Inferior fallback. It imports once and will not auto-update."
+                text="Best when you want a simple one-time import."
                 action="Download"
                 onClick={downloadPersonalizedIcs}
               />
@@ -745,7 +745,7 @@ function PublicTimetablePage() {
             {calendarState === "google-success" &&
               "Google Calendar is connected. Your classes were added to a dedicated Echo Calendar calendar."}
             {calendarState === "google-setup-needed" &&
-              "Google Calendar direct sync is almost ready. For now, download the calendar file or use Apple Calendar subscription."}
+              "Google Calendar setup needs one more configuration step from our team. You can still download your calendar now."}
             {calendarState === "google-failed" &&
               "Google Calendar could not finish setup. Your timetable is still safe here; try again or download the calendar file."}
           </div>

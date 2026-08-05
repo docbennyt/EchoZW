@@ -31,6 +31,46 @@ const storePath =
     : ".data/calendar-store.json");
 let storeLoaded = false;
 
+function firstHeaderValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function firstForwardedValue(value: string | undefined) {
+  return value?.split(",")[0]?.trim();
+}
+
+function hasConfiguredPublicOrigin() {
+  return Boolean(
+    process.env.PUBLIC_APP_URL ??
+    process.env.VITE_PUBLIC_APP_URL ??
+    process.env.VITE_APP_BASE_URL,
+  );
+}
+
+function getRequestPublicOrigin(
+  req: IncomingMessage,
+  mode: "development" | "production",
+) {
+  if (hasConfiguredPublicOrigin()) {
+    return getPublicAppUrl(process.env, mode);
+  }
+
+  const forwardedProto = firstForwardedValue(
+    firstHeaderValue(req.headers["x-forwarded-proto"]),
+  );
+  const forwardedHost = firstForwardedValue(
+    firstHeaderValue(req.headers["x-forwarded-host"]),
+  );
+  const host = forwardedHost ?? firstHeaderValue(req.headers.host);
+  const protocol = mode === "production" ? (forwardedProto ?? "https") : "http";
+
+  if (host) {
+    return getPublicAppUrl({ PUBLIC_APP_URL: `${protocol}://${host}` }, mode);
+  }
+
+  return getPublicAppUrl(process.env, mode);
+}
+
 async function loadStore() {
   if (storeLoaded) return;
   storeLoaded = true;
@@ -220,7 +260,7 @@ async function handleCalendarRequest(
       if (tokenHash) subscriptionIdByTokenHash.set(tokenHash, subscription.id);
       await persistStore();
 
-      const publicOrigin = getPublicAppUrl(process.env, mode);
+      const publicOrigin = getRequestPublicOrigin(req, mode);
       const response = buildSubscriptionResponse({
         subscription,
         publicOrigin,
@@ -309,7 +349,7 @@ async function handleCalendarRequest(
     }
 
     if (!clientId || !redirectUri) {
-      const publicOrigin = getPublicAppUrl(process.env, mode);
+      const publicOrigin = getRequestPublicOrigin(req, mode);
       res.writeHead(302, {
         Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-setup-needed`,
       });
@@ -348,7 +388,7 @@ async function handleCalendarRequest(
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-    const publicOrigin = getPublicAppUrl(process.env, mode);
+    const publicOrigin = getRequestPublicOrigin(req, mode);
 
     if (
       !code ||

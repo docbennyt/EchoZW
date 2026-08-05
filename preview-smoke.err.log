@@ -1,0 +1,18 @@
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - import "./server/viteCalendarPlugin" without a file extension (vite.config.ts:3:35). Add the file extension
+  - import "../src/domain/googleCalendar" without a file extension (server/viteCalendarPlugin.ts:5:35). Add the file extension
+  - import "../src/domain/timetableData" without a file extension (server/viteCalendarPlugin.ts:6:31). Add the file extension
+  - import "../src/domain/calendar" without a file extension (server/viteCalendarPlugin.ts:10:8). Add the file extension
+  - import "../src/domain/subscriptions" without a file extension (server/viteCalendarPlugin.ts:17:8). Add the file extension
+  - import "../src/domain/publicUrl" without a file extension (server/viteCalendarPlugin.ts:21:8). Add the file extension
+  - import "../src/domain/token" without a file extension (server/viteCalendarPlugin.ts:22:52). Add the file extension
+  - import "./subscriptions" without a file extension (src/domain/googleCalendar.ts:1:43). Add the file extension
+  - import "./types" without a file extension (src/domain/timetableData.ts:1:32). Add the file extension
+  - import "./calendar" without a file extension (src/domain/subscriptions.ts:2:30). Add the file extension
+  - import "./types" without a file extension (src/domain/calendar.ts:1:55). Add the file extension
+  - import "./types" without a file extension (src/domain/googleCalendar.ts:2:32). Add the file extension
+  - import "./device" without a file extension (src/domain/subscriptions.ts:3:39). Add the file extension
+  - import "./reminders" without a file extension (src/domain/subscriptions.ts:4:41). Add the file extension
+  - import "./types" without a file extension (src/domain/subscriptions.ts:5:50). Add the file extension
+  - import "./types" without a file extension (src/domain/reminders.ts:1:37). Add the file extension
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m

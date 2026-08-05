@@ -14,7 +14,7 @@ const publicOrigin = getPublicAppUrl(
 );
 
 export const appConfig = {
-  productName: "Echo Calender",
+  productName: "EchoZW Calendar",
   companyName: "aiDo",
   familyName: "EchoZW",
   companyUrl: "https://aido.co.zw",
