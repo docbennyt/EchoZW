@@ -19,6 +19,8 @@ describe("Google Calendar mapping", () => {
     const events = mapToGoogleEvents(demoTimetable, subscription);
 
     expect(events[0].reminders.useDefault).toBe(false);
+    expect(events[0].start.timeZone).toBe("Africa/Harare");
+    expect(events[0].end.dateTime).toContain("2026-08-10T10:00:00");
     expect(events[0].reminders.overrides).toEqual([
       { method: "popup", minutes: 60 },
       { method: "popup", minutes: 15 },

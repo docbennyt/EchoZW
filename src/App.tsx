@@ -21,7 +21,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { appConfig, featureFlags } from "./config/app";
+import { appConfig } from "./config/app";
 import { downloadIcs } from "./domain/calendar";
 import { demoTimetable, popularTimetables } from "./domain/timetableData";
 import { getNextEvent, formatLectureTime } from "./domain/nextEvent";
@@ -468,13 +468,6 @@ function SyncWizard({
   async function connectGoogle() {
     const response = await prepareSubscription("google_api");
     if (!response?.googleConnectUrl) return;
-    if (!featureFlags.googleCalendarSync) {
-      setStatus("error");
-      setError(
-        "Google Calendar sync is ready in code but disabled until OAuth credentials are configured. Download the .ics file for now.",
-      );
-      return;
-    }
     window.location.href = response.googleConnectUrl;
   }
 
@@ -613,11 +606,7 @@ function SyncWizard({
               <CalendarProviderCard
                 icon={<GoogleGlyph />}
                 title="Add to Google Calendar"
-                text={
-                  featureFlags.googleCalendarSync
-                    ? "Creates a dedicated Echo Calendar calendar."
-                    : "OAuth is disabled until Google credentials are configured."
-                }
+                text="Best for Gmail and Android. Creates a dedicated Echo Calendar calendar."
                 action="Apply"
                 onClick={connectGoogle}
               />
@@ -741,6 +730,9 @@ function PublicTimetablePage() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(reminderPresets[0]);
   const [reportOpen, setReportOpen] = useState(false);
+  const calendarState = new URLSearchParams(window.location.search).get(
+    "calendar",
+  );
   return (
     <Shell>
       <main>
@@ -748,6 +740,16 @@ function PublicTimetablePage() {
           timetable={demoTimetable}
           onSync={() => setWizardOpen(true)}
         />
+        {calendarState && (
+          <div className="content-notice" role="status">
+            {calendarState === "google-success" &&
+              "Google Calendar is connected. Your classes were added to a dedicated Echo Calendar calendar."}
+            {calendarState === "google-setup-needed" &&
+              "Google Calendar direct sync is almost ready. For now, download the calendar file or use Apple Calendar subscription."}
+            {calendarState === "google-failed" &&
+              "Google Calendar could not finish setup. Your timetable is still safe here; try again or download the calendar file."}
+          </div>
+        )}
         <div className="content-grid">
           <div>
             <NextLectureCard

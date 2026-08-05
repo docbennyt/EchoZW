@@ -16,3 +16,5 @@ Deploy `dist/` to Vercel, Cloudflare Pages, Netlify, or equivalent.
 - Sentry and PostHog keys.
 - Verified domain and HTTPS.
 - Set `PUBLIC_APP_URL` and `VITE_PUBLIC_APP_URL` to the same public HTTPS origin.
+- For Docker/EasyPanel, mount persistent storage at `/data` or set `CALENDAR_STORE_PATH` to a writable persistent file.
+- Health check: `/healthz`.

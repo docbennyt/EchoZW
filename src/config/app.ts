@@ -1,8 +1,13 @@
 import { getPublicAppUrl } from "../domain/publicUrl";
 
+const browserOrigin =
+  typeof window !== "undefined" && import.meta.env.PROD
+    ? window.location.origin
+    : undefined;
+
 const publicOrigin = getPublicAppUrl(
   {
-    VITE_PUBLIC_APP_URL: import.meta.env.VITE_PUBLIC_APP_URL,
+    VITE_PUBLIC_APP_URL: import.meta.env.VITE_PUBLIC_APP_URL ?? browserOrigin,
     VITE_APP_BASE_URL: import.meta.env.VITE_APP_BASE_URL,
   },
   import.meta.env.PROD ? "production" : "development",

@@ -11,6 +11,10 @@
 - Added visible Google, Apple, Download, and copy-link calendar actions on the provider step.
 - Added request/upload forms and admin-visible submission records.
 - Added admin lecture CRUD controls for class entries.
+- Fixed EasyPanel Docker deployment by moving the container build/runtime to Node 24.
+- Switched production serving from static nginx to Vite preview with the calendar API/feed middleware active.
+- Added persistent calendar subscription store configuration and `/healthz`.
+- Added Google OAuth connect/callback flow that creates a dedicated secondary calendar when credentials are configured.
 - Added personalized subscription creation, secure feed tokens, dev/preview `text/calendar` feed responses, Apple webcal gating, Google sync mapping mocks, and a simple MVP admin surface.
 
 ## Verified

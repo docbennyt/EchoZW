@@ -1,5 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname } from "node:path";
 import type { Plugin } from "vite";
+import { mapToGoogleEvents } from "../src/domain/googleCalendar";
 import { demoTimetable } from "../src/domain/timetableData";
 import {
   createPersonalizedCalendar,
@@ -20,6 +23,46 @@ import { generateFeedToken, sha256Base64Url } from "../src/domain/token";
 
 const subscriptionsById = new Map<string, CalendarSubscription>();
 const subscriptionIdByTokenHash = new Map<string, string>();
+const googleStates = new Map<string, string>();
+const storePath =
+  process.env.CALENDAR_STORE_PATH ??
+  (process.env.NODE_ENV === "production" && process.platform !== "win32"
+    ? "/data/echo-calendar-store.json"
+    : ".data/calendar-store.json");
+let storeLoaded = false;
+
+async function loadStore() {
+  if (storeLoaded) return;
+  storeLoaded = true;
+  try {
+    const raw = await readFile(storePath, "utf8");
+    const parsed = JSON.parse(raw) as { subscriptions: CalendarSubscription[] };
+    for (const subscription of parsed.subscriptions ?? []) {
+      subscriptionsById.set(subscription.id, subscription);
+      if (subscription.tokenHash) {
+        subscriptionIdByTokenHash.set(subscription.tokenHash, subscription.id);
+      }
+    }
+  } catch {
+    // Fresh deployments start with an empty store.
+  }
+}
+
+async function persistStore() {
+  await mkdir(dirname(storePath), { recursive: true });
+  await writeFile(
+    storePath,
+    JSON.stringify(
+      {
+        subscriptions: [...subscriptionsById.values()].map(
+          ({ rawToken: _rawToken, ...subscription }) => subscription,
+        ),
+      },
+      null,
+      2,
+    ),
+  );
+}
 
 function sendJson(
   res: ServerResponse,
@@ -119,7 +162,13 @@ async function handleCalendarRequest(
   res: ServerResponse,
   mode: "development" | "production",
 ) {
+  await loadStore();
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
+
+  if (req.method === "GET" && requestUrl.pathname === "/healthz") {
+    sendJson(res, 200, { ok: true, service: "echo-calendar" });
+    return true;
+  }
 
   if (
     req.method === "POST" &&
@@ -169,6 +218,7 @@ async function handleCalendarRequest(
 
       subscriptionsById.set(subscription.id, subscription);
       if (tokenHash) subscriptionIdByTokenHash.set(tokenHash, subscription.id);
+      await persistStore();
 
       const publicOrigin = getPublicAppUrl(process.env, mode);
       const response = buildSubscriptionResponse({
@@ -216,6 +266,7 @@ async function handleCalendarRequest(
     }
 
     subscription.lastFeedFetchAt = new Date().toISOString();
+    await persistStore();
     writeIcsResponse(req, res, subscription);
     return true;
   }
@@ -240,13 +291,156 @@ async function handleCalendarRequest(
     req.method === "GET" &&
     requestUrl.pathname === "/api/calendar/google/connect"
   ) {
-    sendJson(res, 501, {
-      error: {
-        code: "GOOGLE_CALENDAR_DISABLED",
-        message:
-          "Google Calendar sync is implemented behind a feature flag and needs OAuth credentials before it can connect.",
-      },
-    });
+    const subscriptionId = requestUrl.searchParams.get("subscriptionId");
+    const subscription = subscriptionId
+      ? subscriptionsById.get(subscriptionId)
+      : undefined;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+
+    if (!subscription) {
+      sendJson(res, 404, {
+        error: {
+          code: "SUBSCRIPTION_NOT_FOUND",
+          message: "We could not find this calendar setup. Please try again.",
+        },
+      });
+      return true;
+    }
+
+    if (!clientId || !redirectUri) {
+      const publicOrigin = getPublicAppUrl(process.env, mode);
+      res.writeHead(302, {
+        Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-setup-needed`,
+      });
+      res.end();
+      return true;
+    }
+
+    const state = crypto.randomUUID();
+    googleStates.set(state, subscription.id);
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set(
+      "scope",
+      "https://www.googleapis.com/auth/calendar.app.created",
+    );
+    authUrl.searchParams.set("access_type", "offline");
+    authUrl.searchParams.set("prompt", "consent");
+    authUrl.searchParams.set("state", state);
+    res.writeHead(302, { Location: authUrl.toString() });
+    res.end();
+    return true;
+  }
+
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/calendar/google/callback"
+  ) {
+    const code = requestUrl.searchParams.get("code");
+    const state = requestUrl.searchParams.get("state");
+    const subscriptionId = state ? googleStates.get(state) : undefined;
+    const subscription = subscriptionId
+      ? subscriptionsById.get(subscriptionId)
+      : undefined;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+    const publicOrigin = getPublicAppUrl(process.env, mode);
+
+    if (
+      !code ||
+      !state ||
+      !subscription ||
+      !clientId ||
+      !clientSecret ||
+      !redirectUri
+    ) {
+      res.writeHead(302, {
+        Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-setup-needed`,
+      });
+      res.end();
+      return true;
+    }
+
+    try {
+      const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: "authorization_code",
+        }),
+      });
+      if (!tokenResponse.ok) throw new Error("Token exchange failed.");
+      const tokenBody = (await tokenResponse.json()) as {
+        access_token: string;
+      };
+
+      const calendarResponse = await fetch(
+        "https://www.googleapis.com/calendar/v3/calendars",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${tokenBody.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            summary: subscription.calendarName,
+            timeZone: subscription.timezone,
+          }),
+        },
+      );
+      if (!calendarResponse.ok) throw new Error("Calendar creation failed.");
+      const calendar = (await calendarResponse.json()) as { id: string };
+
+      for (const event of mapToGoogleEvents(demoTimetable, subscription)) {
+        await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+            calendar.id,
+          )}/events`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${tokenBody.access_token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              summary: event.summary,
+              location: event.location,
+              start: event.start,
+              end: event.end,
+              recurrence: event.recurrence,
+              reminders: event.reminders,
+              extendedProperties: event.extendedProperties,
+            }),
+          },
+        );
+      }
+
+      subscription.status = "active";
+      subscription.externalCalendarId = calendar.id;
+      subscription.lastSyncedAt = new Date().toISOString();
+      await persistStore();
+      googleStates.delete(state);
+      res.writeHead(302, {
+        Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-success`,
+      });
+      res.end();
+    } catch {
+      subscription.status = "failed";
+      subscription.lastErrorCode = "GOOGLE_SYNC_FAILED";
+      await persistStore();
+      res.writeHead(302, {
+        Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-failed`,
+      });
+      res.end();
+    }
     return true;
   }
 

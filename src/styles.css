@@ -303,6 +303,18 @@ dd {
   padding: 0 clamp(1rem, 4vw, 2rem);
 }
 
+.content-notice {
+  background: #e5f5ec;
+  border: 1px solid #b9dfca;
+  border-radius: var(--radius);
+  color: var(--success);
+  font-weight: 800;
+  margin: 0 auto 1rem;
+  max-width: 1180px;
+  padding: 0.85rem 1rem;
+  width: calc(100% - clamp(2rem, 8vw, 4rem));
+}
+
 .next-lecture {
   align-items: center;
   display: flex;

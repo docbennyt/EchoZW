@@ -5,6 +5,15 @@ export type GoogleCalendarEventPayload = {
   id: string;
   summary: string;
   location?: string;
+  start: {
+    dateTime: string;
+    timeZone: string;
+  };
+  end: {
+    dateTime: string;
+    timeZone: string;
+  };
+  recurrence?: string[];
   reminders: {
     useDefault: false;
     overrides: Array<{ method: "popup"; minutes: number }>;
@@ -34,6 +43,19 @@ export function mapToGoogleEvents(
         id: event.id.replace(/[^a-z0-9_-]/gi, "").toLowerCase(),
         summary: `${event.courseCode} · ${event.title}`,
         location: event.location,
+        start: {
+          dateTime: event.startsAtLocal,
+          timeZone: event.timezone,
+        },
+        end: {
+          dateTime: event.endsAtLocal,
+          timeZone: event.timezone,
+        },
+        recurrence: event.recurrence
+          ? [
+              `RRULE:FREQ=WEEKLY;INTERVAL=${event.recurrence.interval};BYDAY=${event.recurrence.weekdays.join(",")};UNTIL=${event.recurrence.until.replace(/-/g, "")}T215959Z`,
+            ]
+          : undefined,
         reminders: {
           useDefault: false,
           overrides: reminders,
