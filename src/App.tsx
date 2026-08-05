@@ -22,6 +22,7 @@ import {
   Upload,
 } from "lucide-react";
 import { appConfig } from "./config/app";
+import { legalConfig } from "./config/legal";
 import { downloadIcs } from "./domain/calendar";
 import { demoTimetable, popularTimetables } from "./domain/timetableData";
 import { getNextEvent, formatLectureTime } from "./domain/nextEvent";
@@ -91,7 +92,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <header className="topbar">
         <a className="brand" href="/">
           <span className="brand-mark">
-            <img src="/echo-calendar-logo.png" alt="" />
+            <img src="/favicon-96x96.png" alt="" />
           </span>
           <span>
             <strong>{appConfig.productName}</strong>
@@ -107,6 +108,61 @@ function Shell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
       {children}
+      <LegalFooter />
+    </div>
+  );
+}
+
+function LegalFooter() {
+  return (
+    <footer className="site-footer">
+      <div>
+        <strong>{legalConfig.tradingName}</strong>
+        <span>
+          {legalConfig.operatorName} · {legalConfig.country}
+        </span>
+      </div>
+      <nav aria-label="Legal and support links">
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/data-deletion">Data deletion</a>
+        <a href={`mailto:${legalConfig.supportEmail}`}>Support</a>
+      </nav>
+    </footer>
+  );
+}
+
+function MessageDialog({
+  title,
+  text,
+  tone = "success",
+  onContinue,
+  children,
+}: {
+  title: string;
+  text: string;
+  tone?: "success" | "warning" | "danger";
+  onContinue: () => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="sheet-backdrop" role="presentation">
+      <section
+        className={`message-dialog ${tone}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="message-dialog-title"
+      >
+        <div className="message-icon">
+          {tone === "success" ? <Check /> : <AlertTriangle />}
+        </div>
+        <h2 id="message-dialog-title">{title}</h2>
+        <p>{text}</p>
+        {children}
+        <button className="primary dominant" onClick={onContinue}>
+          Continue
+        </button>
+      </section>
     </div>
   );
 }
@@ -376,6 +432,7 @@ function SyncWizard({
   const [status, setStatus] = useState<
     "idle" | "preparing" | "google" | "adding" | "success" | "error"
   >("idle");
+  const [googleDisclosureOpen, setGoogleDisclosureOpen] = useState(false);
   const [providerUsed, setProviderUsed] = useState("");
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -468,6 +525,11 @@ function SyncWizard({
   }
 
   async function connectGoogle() {
+    setGoogleDisclosureOpen(true);
+  }
+
+  async function continueGoogle() {
+    setGoogleDisclosureOpen(false);
     const response = await prepareSubscription("google_api");
     if (!response?.googleConnectUrl) return;
     window.location.href = response.googleConnectUrl;
@@ -606,7 +668,7 @@ function SyncWizard({
               <CalendarProviderCard
                 icon={<GoogleGlyph />}
                 title="Add to Google Calendar"
-                text="Best for Gmail and Android. Creates a dedicated Echo Calendar calendar."
+                text="Creates a separate timetable calendar in your Google account."
                 action="Apply"
                 onClick={connectGoogle}
               />
@@ -644,39 +706,7 @@ function SyncWizard({
           {status === "google" && "Connecting Google Calendar..."}
           {status === "adding" &&
             `Adding ${timetable.events.length} classes...`}
-          {status === "error" && error}
         </div>
-
-        {status === "success" && (
-          <div className="success-state tall">
-            <Check size={24} aria-hidden="true" />
-            <strong>Your semester is organised.</strong>
-            <span>
-              {providerUsed} · {timetable.events.length} events ·{" "}
-              {selectedPreset.label} reminders
-            </span>
-            {next && nextReminder && (
-              <span>
-                Next: {next.event.title}. Reminder at{" "}
-                {nextReminder.toLocaleTimeString("en-ZW", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            )}
-            {providerUsed === "Apple Calendar" && (
-              <span>
-                Apple Calendar opened. Confirm the subscription to finish.
-              </span>
-            )}
-            {providerUsed === "calendar file" && (
-              <span>
-                Calendar file downloaded. Open it and confirm the import.
-              </span>
-            )}
-          </div>
-        )}
-
         <div className="sheet-actions quick-actions">
           {step > 1 && (
             <button
@@ -710,9 +740,10 @@ function SyncWizard({
             type="button"
             onClick={() => {
               track("calendar_setup_help_opened");
-              window.alert(
+              setError(
                 "Google uses OAuth for reliable updates. Apple uses webcal on public HTTPS. Download .ics works offline but will not receive future updates automatically.",
               );
+              setStatus("error");
             }}
           >
             View setup help
@@ -720,8 +751,56 @@ function SyncWizard({
           {subscription?.warnings.map((warning) => (
             <span key={warning}>{warning}</span>
           ))}
+          <div className="drawer-legal-links">
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
+            <a href="/data-deletion">Data deletion</a>
+          </div>
         </div>
       </section>
+      {googleDisclosureOpen && (
+        <MessageDialog
+          title="Continue with Google Calendar"
+          text={`${legalConfig.tradingName} will ask Google for permission to create and manage a separate calendar created by ${legalConfig.tradingName}. We use this permission to add the timetable you selected, apply your reminder preferences, and keep those events updated. We do not use this permission to read or change events in your existing personal calendars.`}
+          tone="warning"
+          onContinue={continueGoogle}
+        >
+          <div className="dialog-links">
+            <a href="/privacy#google-calendar-data">
+              Learn how Google Calendar data is used
+            </a>
+            <a href="/terms">Terms of Service</a>
+          </div>
+        </MessageDialog>
+      )}
+      {status === "error" && error && (
+        <MessageDialog
+          title="Calendar action needs attention"
+          text={error}
+          tone="warning"
+          onContinue={() => {
+            setStatus("idle");
+            setError("");
+          }}
+        />
+      )}
+      {status === "success" && (
+        <MessageDialog
+          title="Your semester is organised"
+          text={`${providerUsed} · ${timetable.events.length} events · ${selectedPreset.label} reminders${
+            next && nextReminder
+              ? `. Next: ${next.event.title}; reminder at ${nextReminder.toLocaleTimeString(
+                  "en-ZW",
+                  {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  },
+                )}.`
+              : "."
+          }`}
+          onContinue={() => setStatus("idle")}
+        />
+      )}
     </div>
   );
 }
@@ -730,9 +809,34 @@ function PublicTimetablePage() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(reminderPresets[0]);
   const [reportOpen, setReportOpen] = useState(false);
+  const [dismissedCalendarState, setDismissedCalendarState] = useState<
+    string | null
+  >(null);
   const calendarState = new URLSearchParams(window.location.search).get(
     "calendar",
   );
+  const calendarMessage =
+    calendarState === "google-success"
+      ? {
+          title: "Google Calendar connected",
+          text: "Your classes were added to a dedicated timetable calendar.",
+          tone: "success" as const,
+        }
+      : calendarState === "google-setup-needed"
+        ? {
+            title: "Google Calendar setup needs one more step",
+            text: "Our team needs to finish the Google configuration. You can still download your calendar now.",
+            tone: "warning" as const,
+          }
+        : calendarState === "google-failed"
+          ? {
+              title: "Google Calendar could not finish",
+              text: "Your timetable is still safe here. Try again or download the calendar file.",
+              tone: "warning" as const,
+            }
+          : null;
+  const activeCalendarMessage =
+    calendarState !== dismissedCalendarState ? calendarMessage : null;
   return (
     <Shell>
       <main>
@@ -740,16 +844,6 @@ function PublicTimetablePage() {
           timetable={demoTimetable}
           onSync={() => setWizardOpen(true)}
         />
-        {calendarState && (
-          <div className="content-notice" role="status">
-            {calendarState === "google-success" &&
-              "Google Calendar is connected. Your classes were added to a dedicated Echo Calendar calendar."}
-            {calendarState === "google-setup-needed" &&
-              "Google Calendar setup needs one more configuration step from our team. You can still download your calendar now."}
-            {calendarState === "google-failed" &&
-              "Google Calendar could not finish setup. Your timetable is still safe here; try again or download the calendar file."}
-          </div>
-        )}
         <div className="content-grid">
           <div>
             <NextLectureCard
@@ -805,6 +899,14 @@ function PublicTimetablePage() {
         />
       )}
       {reportOpen && <ReportDialog onClose={() => setReportOpen(false)} />}
+      {activeCalendarMessage && (
+        <MessageDialog
+          title={activeCalendarMessage.title}
+          text={activeCalendarMessage.text}
+          tone={activeCalendarMessage.tone}
+          onContinue={() => setDismissedCalendarState(calendarState)}
+        />
+      )}
     </Shell>
   );
 }
@@ -1232,6 +1334,310 @@ function HistoryPage() {
   );
 }
 
+const privacySections = [
+  "Scope",
+  "Information we collect",
+  "Google Calendar data",
+  "Calendar subscriptions",
+  "Use and sharing",
+  "Retention and security",
+  "Your choices",
+  "Contact",
+];
+
+function LegalDocumentPage({ type }: { type: "privacy" | "terms" | "data" }) {
+  const isPrivacy = type === "privacy";
+  const isTerms = type === "terms";
+  const title = isPrivacy
+    ? "Privacy Policy"
+    : isTerms
+      ? "Terms of Service"
+      : "Data deletion";
+  useEffect(() => {
+    document.title = `${title} | ${legalConfig.tradingName}`;
+  }, [title]);
+
+  return (
+    <Shell>
+      <main className="legal-page">
+        <aside className="legal-toc" aria-label={`${title} sections`}>
+          {(isPrivacy
+            ? privacySections
+            : [
+                "Overview",
+                "Google Calendar",
+                "Private feeds",
+                "Requests",
+                "Contact",
+              ]
+          ).map((item) => (
+            <a key={item} href={`#${item.toLowerCase().replaceAll(" ", "-")}`}>
+              {item}
+            </a>
+          ))}
+        </aside>
+        <article className="legal-document">
+          <p className="eyebrow">{legalConfig.tradingName} legal</p>
+          <h1>{title}</h1>
+          <p>
+            Effective date: {legalConfig.effectiveDate}
+            <br />
+            Last updated: {legalConfig.lastUpdatedDate}
+          </p>
+          {isPrivacy && <PrivacyContent />}
+          {isTerms && <TermsContent />}
+          {type === "data" && <DataDeletionContent />}
+        </article>
+      </main>
+    </Shell>
+  );
+}
+
+function PrivacyContent() {
+  return (
+    <>
+      <p className="summary-card">
+        CalenderZW uses the minimum access needed to create and maintain a
+        separate Google Calendar containing the timetable you choose. We do not
+        read or modify your existing personal calendars.
+      </p>
+      <section id="scope">
+        <h2>1. Scope</h2>
+        <p>
+          This policy applies to timetable pages, administrator tools, calendar
+          feeds, Google Calendar connection, downloads, and support services
+          operated from {legalConfig.publicAppUrl}.
+        </p>
+      </section>
+      <section id="information-we-collect">
+        <h2>2. Information we collect</h2>
+        <h3>Information you provide</h3>
+        <p>
+          We may collect account email, institution and class selections,
+          timetable submissions, reminder preferences, reports, support
+          messages, and payment references when paid services are enabled.
+          Students can view public timetables and download public calendar files
+          without an account.
+        </p>
+        <h3>Information collected automatically</h3>
+        <p>
+          We may collect device/browser type, operating system, approximate
+          region, server IP logs, page interactions, diagnostics, timestamps,
+          anonymous session identifiers, subscription identifiers, and feed
+          retrieval timestamps for security and reliability.
+        </p>
+      </section>
+      <section id="google-calendar-data">
+        <h2>3. Google Calendar data</h2>
+        <p>
+          When you choose direct Google Calendar synchronisation, CalenderZW
+          requests permission to create and manage a separate secondary calendar
+          created by CalenderZW. We use it only to add selected timetable
+          events, reminders, updates, cancellations, failure recovery, and
+          disconnect actions for that app-created calendar.
+        </p>
+        <p>
+          CalenderZW does not use this permission to read, analyse, modify, or
+          delete events from your pre-existing personal calendars. CalenderZW's
+          use and transfer of information received from Google APIs adheres to
+          the Google API Services User Data Policy, including the Limited Use
+          requirements.
+        </p>
+        <p>
+          CalenderZW does not use information obtained through Google Workspace
+          APIs to develop, improve, or train generalised or non-personalised
+          artificial intelligence or machine-learning models.
+        </p>
+      </section>
+      <section id="calendar-subscriptions">
+        <h2>4. Calendar subscriptions</h2>
+        <p>
+          Private feed URLs are unguessable capability links. Anyone possessing
+          one may be able to view the timetable feed. CalenderZW stores hashed
+          feed tokens and lets feed records be revoked.
+        </p>
+      </section>
+      <section id="use-and-sharing">
+        <h2>5. Use and sharing</h2>
+        <p>
+          We use data to show timetables, create calendar files/subscriptions,
+          apply reminders, process reports, provide support, protect the
+          service, diagnose failures, comply with law, and improve user-facing
+          features. We do not sell personal information or Google user data, and
+          we do not use Google user data for targeted advertising.
+        </p>
+        <p>
+          Current repository configuration shows Supabase as planned
+          database/auth/storage, PesePay as mocked until live credentials are
+          provided, and Sentry/PostHog as planned observability.
+        </p>
+      </section>
+      <section id="retention-and-security">
+        <h2>6. Retention and security</h2>
+        <p>
+          Public timetable audit history may be retained for accuracy. Google
+          tokens are retained only while direct sync remains connected. Current
+          safeguards include HTTPS requirements, server-side credentials, secure
+          SameSite cookies, hashed private-feed tokens, API validation, and
+          dependency checks. Encrypted refresh-token persistence requires the
+          production token store to be configured.
+        </p>
+      </section>
+      <section id="your-choices">
+        <h2>7. Your choices</h2>
+        <p>
+          You can avoid Google Calendar, use .ics instead, disconnect Google,
+          revoke Google access in your Google Account, request feed revocation,
+          change reminders by creating a new subscription, and request deletion
+          at <a href="/data-deletion">/data-deletion</a>.
+        </p>
+      </section>
+      <section id="contact">
+        <h2>8. Contact</h2>
+        <p>
+          {legalConfig.operatorName}
+          <br />
+          Operator address: required before production Google OAuth submission
+          <br />
+          {legalConfig.country}
+          <br />
+          Privacy:{" "}
+          <a href={`mailto:${legalConfig.privacyEmail}`}>
+            {legalConfig.privacyEmail}
+          </a>
+          <br />
+          Support:{" "}
+          <a href={`mailto:${legalConfig.supportEmail}`}>
+            {legalConfig.supportEmail}
+          </a>
+        </p>
+      </section>
+    </>
+  );
+}
+
+function TermsContent() {
+  return (
+    <>
+      <section id="overview">
+        <h2>1. Agreement and service</h2>
+        <p>
+          These Terms govern access to {legalConfig.tradingName}, a timetable
+          discovery, calendar synchronisation, reminder, and academic scheduling
+          service operated by {legalConfig.operatorName}. Availability may vary
+          by institution, provider, device, and location.
+        </p>
+      </section>
+      <section id="google-calendar">
+        <h2>2. Google Calendar connection</h2>
+        <p>
+          Google connection is voluntary and narrowly scoped. CalenderZW creates
+          and manages a separate secondary calendar, and you can disconnect
+          access. Google services are governed by Google's terms, and no Google
+          endorsement is implied.
+        </p>
+      </section>
+      <section id="private-feeds">
+        <h2>3. Accuracy, reminders, and private feeds</h2>
+        <p>
+          Academic schedules can change without immediate notice. Check critical
+          dates against official institution sources. Calendar providers and
+          devices control final alert delivery and feed refresh frequency.
+        </p>
+      </section>
+      <section id="requests">
+        <h2>4. Submissions and acceptable use</h2>
+        <p>
+          Submitted timetable data must be authorised or reasonably based,
+          non-malicious, and respectful of institutional rules. You grant
+          CalenderZW the limited licence needed to host and display submitted
+          timetable content to operate the service.
+        </p>
+      </section>
+      <section id="contact">
+        <h2>5. Contact and legal review</h2>
+        <p>
+          Governing law, dispute venue, physical address, and any paid-services
+          refund terms must be confirmed by the operator or legal adviser before
+          production submission. Contact{" "}
+          <a href={`mailto:${legalConfig.supportEmail}`}>
+            {legalConfig.supportEmail}
+          </a>
+          .
+        </p>
+      </section>
+    </>
+  );
+}
+
+function DataDeletionContent() {
+  return (
+    <>
+      <section id="overview">
+        <h2>Delete an account or records</h2>
+        <p>
+          Email{" "}
+          <a href={`mailto:${legalConfig.privacyEmail}`}>
+            {legalConfig.privacyEmail}
+          </a>{" "}
+          from the address associated with the account or connection. We will
+          display or send a confirmation reference.
+        </p>
+      </section>
+      <section id="google-calendar">
+        <h2>Disconnect Google Calendar</h2>
+        <p>
+          Use account settings to disconnect Google Calendar, or revoke
+          CalenderZW access from your Google Account third-party connections.
+          You may keep or delete the app-created calendar before revocation.
+        </p>
+      </section>
+      <section id="private-feeds">
+        <h2>Revoke private feeds</h2>
+        <p>
+          Submit a feed revocation request from the same browser session or
+          contact support with the subscription reference.
+        </p>
+      </section>
+    </>
+  );
+}
+
+function AccountSettingsPage() {
+  const [message, setMessage] = useState("");
+  return (
+    <Shell>
+      <main className="page">
+        <PageHeader
+          icon={<Lock />}
+          title="Account settings"
+          text="Calendar privacy controls and legal links."
+        />
+        <section className="action-panel settings-panel">
+          <h2>Calendar connections</h2>
+          <p>
+            Disconnect Google Calendar or request feed revocation when you no
+            longer want external calendar updates.
+          </p>
+          <button
+            onClick={() =>
+              setMessage(
+                "Google disconnect request recorded locally. Production uses /api/calendar/google/disconnect to revoke provider access when stored credentials exist.",
+              )
+            }
+          >
+            Disconnect Google Calendar
+          </button>
+          <a href="/data-deletion">Account and data deletion</a>
+          <a href="/privacy#google-calendar-data">Google data use</a>
+          <a href="/terms">Terms of Service</a>
+          {message && <p className="content-notice">{message}</p>}
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
 function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -1638,6 +2044,10 @@ function EmptyState({ title, text }: { title: string; text: string }) {
 
 export function App() {
   const path = currentPath();
+  if (path === "/privacy") return <LegalDocumentPage type="privacy" />;
+  if (path === "/terms") return <LegalDocumentPage type="terms" />;
+  if (path === "/data-deletion") return <LegalDocumentPage type="data" />;
+  if (path === "/account/settings") return <AccountSettingsPage />;
   if (path === "/find" || path === "/institutions") return <FinderPage />;
   if (path === "/admin/login") return <AdminLoginPage />;
   if (path === "/admin" || path.startsWith("/admin/")) return <AdminPage />;

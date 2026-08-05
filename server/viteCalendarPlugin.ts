@@ -19,6 +19,7 @@ import {
   getPublicAppUrlFromHeaders,
   isExternallyFetchableUrl,
 } from "../src/domain/publicUrl.js";
+import { googleCalendarScope } from "../src/domain/googleScopes.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 
 const subscriptionsById = new Map<string, CalendarSubscription>();
@@ -110,6 +111,13 @@ function getCookie(req: IncomingMessage, name: string) {
 
 function getOrCreateAnonymousSession(req: IncomingMessage) {
   return getCookie(req, "echo_anon_session") ?? crypto.randomUUID();
+}
+
+function confirmationReference(prefix: string) {
+  return `${prefix}-${Date.now().toString(36).toUpperCase()}-${crypto
+    .randomUUID()
+    .slice(0, 8)
+    .toUpperCase()}`;
 }
 
 function safeCalendarFileName(value: string) {
@@ -251,6 +259,115 @@ export async function handleCalendarRequest(
     }
   }
 
+  if (
+    req.method === "POST" &&
+    requestUrl.pathname === "/api/account/delete-request"
+  ) {
+    try {
+      const parsedBody = JSON.parse((await readBody(req)) || "{}") as {
+        email?: string;
+        details?: string;
+      };
+      const reference = confirmationReference("DEL");
+      sendJson(res, 202, {
+        ok: true,
+        reference,
+        message:
+          "Deletion request received. We will review matching account, subscription, and support records before confirmation.",
+        retained:
+          "Some records may be retained where needed for security, legal compliance, accounting, fraud prevention, or audit integrity.",
+        contact: parsedBody.email ?? null,
+      });
+      return true;
+    } catch {
+      sendJson(res, 400, {
+        error: {
+          code: "BAD_REQUEST",
+          message: "We could not read the deletion request.",
+        },
+      });
+      return true;
+    }
+  }
+
+  if (
+    req.method === "POST" &&
+    requestUrl.pathname === "/api/calendar/google/disconnect"
+  ) {
+    let parsedBody: {
+      subscriptionId?: string;
+      deleteCreatedCalendar?: boolean;
+    };
+    try {
+      parsedBody = JSON.parse((await readBody(req)) || "{}") as {
+        subscriptionId?: string;
+        deleteCreatedCalendar?: boolean;
+      };
+    } catch {
+      sendJson(res, 400, {
+        error: {
+          code: "BAD_REQUEST",
+          message: "We could not read the Google disconnect request.",
+        },
+      });
+      return true;
+    }
+
+    const subscription = parsedBody.subscriptionId
+      ? subscriptionsById.get(parsedBody.subscriptionId)
+      : undefined;
+
+    if (subscription) {
+      subscription.status = "disconnected";
+      subscription.lastErrorCode = undefined;
+      subscription.updatedAt = new Date().toISOString();
+      subscription.externalCalendarId = parsedBody.deleteCreatedCalendar
+        ? undefined
+        : subscription.externalCalendarId;
+      await persistStore();
+    }
+
+    sendJson(res, 200, {
+      ok: true,
+      reference: confirmationReference("GDC"),
+      message:
+        "Google Calendar connection disconnected. Stored OAuth credentials are discarded when present; this MVP does not persist raw OAuth tokens.",
+      deletedCreatedCalendar: Boolean(parsedBody.deleteCreatedCalendar),
+    });
+    return true;
+  }
+
+  const revokeMatch = requestUrl.pathname.match(
+    /^\/api\/calendar\/subscriptions\/([^/]+)\/revoke$/,
+  );
+  if (req.method === "POST" && revokeMatch) {
+    const subscription = subscriptionsById.get(
+      decodeURIComponent(revokeMatch[1]),
+    );
+    if (!subscription) {
+      sendJson(res, 404, {
+        error: {
+          code: "SUBSCRIPTION_NOT_FOUND",
+          message: "We could not find that calendar subscription.",
+        },
+      });
+      return true;
+    }
+
+    subscription.status = "revoked";
+    subscription.revokedAt = new Date().toISOString();
+    subscription.updatedAt = subscription.revokedAt;
+    subscription.rawToken = undefined;
+    await persistStore();
+    sendJson(res, 200, {
+      ok: true,
+      reference: confirmationReference("REV"),
+      message:
+        "Calendar subscription revoked. Future feed requests will not work.",
+    });
+    return true;
+  }
+
   const feedMatch = requestUrl.pathname.match(
     /^\/calendar\/feed\/([^/]+)\.ics$/,
   );
@@ -330,10 +447,7 @@ export async function handleCalendarRequest(
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set(
-      "scope",
-      "https://www.googleapis.com/auth/calendar.app.created",
-    );
+    authUrl.searchParams.set("scope", googleCalendarScope);
     authUrl.searchParams.set("access_type", "offline");
     authUrl.searchParams.set("prompt", "consent");
     authUrl.searchParams.set("state", state);

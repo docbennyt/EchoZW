@@ -88,7 +88,6 @@ a {
 
 .brand-mark {
   align-items: center;
-  background: var(--brand);
   border-radius: var(--radius);
   color: #fff;
   display: grid;
@@ -99,10 +98,11 @@ a {
 }
 
 .brand-mark img {
-  border-radius: 6px;
-  height: 2.1rem;
-  object-fit: contain;
-  width: 2.1rem;
+  border-radius: var(--radius);
+  display: block;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .brand small,
@@ -129,6 +129,32 @@ a {
 .topbar nav a:hover {
   background: #eaf2ee;
   color: var(--ink);
+}
+
+.site-footer {
+  align-items: center;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-top: 2rem;
+  padding: 1.25rem clamp(1rem, 4vw, 3rem);
+}
+
+.site-footer div,
+.site-footer nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.site-footer strong,
+.site-footer a {
+  color: var(--brand);
+  font-weight: 800;
 }
 
 main {
@@ -499,6 +525,57 @@ dd {
   z-index: 40;
 }
 
+.message-dialog {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 0.85rem;
+  max-width: 28rem;
+  padding: 1.25rem;
+  width: 100%;
+}
+
+.message-dialog h2,
+.message-dialog p {
+  margin: 0;
+}
+
+.message-dialog p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.message-icon {
+  align-items: center;
+  background: #e5f5ec;
+  border-radius: var(--radius);
+  color: var(--success);
+  display: grid;
+  height: 3rem;
+  place-items: center;
+  width: 3rem;
+}
+
+.message-dialog.warning .message-icon {
+  background: #fff4d9;
+  color: var(--warning);
+}
+
+.dialog-links,
+.drawer-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.dialog-links a,
+.drawer-legal-links a {
+  color: var(--brand);
+  font-weight: 800;
+}
+
 .sync-sheet {
   background: #fff;
   border-radius: 8px;
@@ -795,6 +872,62 @@ dd {
   padding: clamp(1rem, 4vw, 2rem);
 }
 
+.legal-page {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.legal-toc {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+}
+
+.legal-toc a {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.legal-document {
+  max-width: 76ch;
+}
+
+.legal-document h1 {
+  font-size: clamp(2rem, 7vw, 4rem);
+  line-height: 1;
+  margin: 0 0 0.5rem;
+}
+
+.legal-document h2 {
+  margin-top: 2rem;
+}
+
+.legal-document p {
+  line-height: 1.65;
+}
+
+.legal-document a {
+  color: var(--brand);
+  font-weight: 800;
+  text-decoration: underline;
+}
+
+.summary-card {
+  background: #e5f5ec;
+  border: 1px solid #b9dfca;
+  border-radius: var(--radius);
+  color: var(--success);
+  font-weight: 800;
+  padding: 1rem;
+}
+
 .page-header {
   align-items: center;
   display: flex;
@@ -1074,6 +1207,10 @@ dd {
     position: static;
   }
 
+  .legal-page {
+    grid-template-columns: 1fr;
+  }
+
   .next-lecture {
     align-items: stretch;
     flex-direction: column;
@@ -1093,6 +1230,36 @@ dd {
 
   .sticky-action {
     display: block;
+  }
+}
+
+@media (min-width: 900px) {
+  .legal-page {
+    grid-template-columns: 16rem minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .legal-toc {
+    position: sticky;
+    top: 5.25rem;
+  }
+}
+
+@media print {
+  .topbar,
+  .site-footer,
+  .legal-toc,
+  .sticky-action {
+    display: none;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .legal-page {
+    display: block;
+    max-width: none;
   }
 }
 

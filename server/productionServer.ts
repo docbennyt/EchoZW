@@ -7,11 +7,16 @@ import {
 } from "node:http";
 import { extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
 import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 
 const port = Number(process.env.PORT ?? 80);
 const serverDir = fileURLToPath(new URL(".", import.meta.url));
 const distDir = resolve(serverDir, "../../dist");
+
+if (process.env.NODE_ENV === "production") {
+  validateLegalProductionConfig(process.env);
+}
 
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
@@ -91,6 +96,7 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse) {
   if (filePath) {
     try {
       if (await serveFile(req, res, filePath)) return;
+      if (await serveFile(req, res, join(filePath, "index.html"))) return;
     } catch {
       // Fall through to the SPA shell for client-side routes.
     }
