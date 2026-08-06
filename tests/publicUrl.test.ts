@@ -9,10 +9,10 @@ describe("public URL validation", () => {
   it("trims trailing slashes", () => {
     expect(
       getPublicAppUrl(
-        { PUBLIC_APP_URL: "https://calendar.example.com/" },
+        { PUBLIC_APP_URL: "https://calender.aido.co.zw/" },
         "production",
       ),
-    ).toBe("https://calendar.example.com");
+    ).toBe("https://calender.aido.co.zw");
   });
 
   it("rejects localhost production origins", () => {
@@ -36,24 +36,24 @@ describe("public URL validation", () => {
         {},
         {
           "x-forwarded-proto": "https",
-          "x-forwarded-host": "calendar.aido.co.zw",
+          "x-forwarded-host": "calender.aido.co.zw",
           host: "internal:4173",
         },
         "production",
       ),
-    ).toBe("https://calendar.aido.co.zw");
+    ).toBe("https://calender.aido.co.zw");
   });
 
   it("prefers configured production origins over forwarded headers", () => {
     expect(
       getPublicAppUrlFromHeaders(
-        { PUBLIC_APP_URL: "https://echozw.example" },
+        { PUBLIC_APP_URL: "https://calender.aido.co.zw" },
         {
           "x-forwarded-proto": "https",
           "x-forwarded-host": "calendar.aido.co.zw",
         },
         "production",
       ),
-    ).toBe("https://echozw.example");
+    ).toBe("https://calender.aido.co.zw");
   });
 });

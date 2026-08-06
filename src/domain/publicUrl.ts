@@ -24,7 +24,7 @@ export function getPublicAppUrl(
     env.VITE_PUBLIC_APP_URL ??
     env.VITE_APP_BASE_URL ??
     (mode === "production"
-      ? "https://calendar.example.com"
+      ? "https://calender.aido.co.zw"
       : "http://localhost:5173");
   let url: URL;
 

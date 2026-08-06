@@ -1,5 +1,5 @@
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import {
   createServer,
   type IncomingMessage,
@@ -99,6 +99,32 @@ async function serveFile(
   return true;
 }
 
+async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
+  const requestUrl = new URL(req.url ?? "/", "http://localhost");
+  const canonicalPath =
+    requestUrl.pathname.startsWith("/t/") || requestUrl.pathname === "/find"
+      ? requestUrl.pathname
+      : "/";
+  const html = await readFile(join(distDir, "index.html"), "utf8");
+  const responseBody = html.replace(
+    '<link rel="canonical" href="https://calender.aido.co.zw/" />',
+    `<link rel="canonical" href="https://calender.aido.co.zw${canonicalPath}" />`,
+  );
+
+  res.writeHead(200, {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Length": Buffer.byteLength(responseBody),
+    "Cache-Control": "public, max-age=300",
+  });
+
+  if (req.method === "HEAD") {
+    res.end();
+    return;
+  }
+
+  res.end(responseBody);
+}
+
 async function serveStatic(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
@@ -116,7 +142,7 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse) {
     }
   }
 
-  await serveFile(req, res, join(distDir, "index.html"));
+  await serveSpaShell(req, res);
 }
 
 const server = createServer(async (req, res) => {
@@ -138,5 +164,5 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`EchoZW Calendar server listening on ${port}`);
+  console.log(`CalenderZW server listening on ${port}`);
 });

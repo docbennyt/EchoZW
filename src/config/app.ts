@@ -1,4 +1,5 @@
 import { getPublicAppUrl } from "../domain/publicUrl";
+import { BRAND } from "./brand";
 
 const browserOrigin =
   typeof window !== "undefined" && import.meta.env.PROD
@@ -14,11 +15,15 @@ const publicOrigin = getPublicAppUrl(
 );
 
 export const appConfig = {
-  productName: "EchoZW Calendar",
-  companyName: "aiDo",
-  familyName: "EchoZW",
-  companyUrl: "https://aido.co.zw",
-  supportEmail: import.meta.env.VITE_SUPPORT_EMAIL ?? "support@aido.co.zw",
+  productName: BRAND.productName,
+  companyName: BRAND.operatorName,
+  familyName: BRAND.productName,
+  attribution: BRAND.attribution,
+  descriptor: BRAND.descriptor,
+  domain: BRAND.domain,
+  origin: BRAND.origin,
+  companyUrl: BRAND.companyUrl,
+  supportEmail: import.meta.env.VITE_SUPPORT_EMAIL ?? BRAND.supportEmail,
   defaultCountry: "Zimbabwe",
   defaultTimezone: "Africa/Harare",
   defaultCurrency: "USD",
@@ -28,6 +33,8 @@ export const appConfig = {
   legalUrls: {
     privacy: "/privacy",
     terms: "/terms",
+    deletion: "/data-deletion",
+    support: "/support",
   },
 };
 

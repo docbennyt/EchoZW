@@ -43,6 +43,17 @@ export function validateLegalProductionConfig(
     errors.push("PUBLIC_APP_URL must use HTTPS in production.");
   }
 
+  if (env.PUBLIC_APP_URL) {
+    try {
+      const url = new URL(env.PUBLIC_APP_URL);
+      if (url.hostname !== "calender.aido.co.zw") {
+        errors.push("PUBLIC_APP_URL host must be calender.aido.co.zw.");
+      }
+    } catch {
+      errors.push("PUBLIC_APP_URL must be a valid absolute URL.");
+    }
+  }
+
   if (errors.length) {
     throw new Error(errors.join(" "));
   }

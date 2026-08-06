@@ -33,7 +33,7 @@ const googleStates = new Map<string, string>();
 const storePath =
   process.env.CALENDAR_STORE_PATH ??
   (process.env.NODE_ENV === "production" && process.platform !== "win32"
-    ? "/data/echo-calendar-store.json"
+    ? "/data/calenderzw-calendar-store.json"
     : ".data/calendar-store.json");
 let storeLoaded = false;
 
@@ -115,7 +115,7 @@ function getCookie(req: IncomingMessage, name: string) {
 }
 
 function getOrCreateAnonymousSession(req: IncomingMessage) {
-  return getCookie(req, "echo_anon_session") ?? crypto.randomUUID();
+  return getCookie(req, "calenderzw_anon_session") ?? crypto.randomUUID();
 }
 
 function isAdminDiagnosticRequest(
@@ -199,7 +199,7 @@ export async function handleCalendarRequest(
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
 
   if (req.method === "GET" && requestUrl.pathname === "/healthz") {
-    sendJson(res, 200, { ok: true, service: "echo-calendar" });
+    sendJson(res, 200, { ok: true, service: "calenderzw" });
     return true;
   }
 
@@ -262,7 +262,7 @@ export async function handleCalendarRequest(
       });
 
       sendJson(res, 201, response, {
-        "Set-Cookie": `echo_anon_session=${anonymousSessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000`,
+        "Set-Cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000`,
       });
       return true;
     } catch (error) {
@@ -610,7 +610,7 @@ export async function handleCalendarRequest(
 
 export function calendarMvpPlugin(): Plugin {
   return {
-    name: "echo-calendar-mvp-api",
+    name: "calenderzw-mvp-api",
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         if (await handleCalendarRequest(req, res, "development")) return;

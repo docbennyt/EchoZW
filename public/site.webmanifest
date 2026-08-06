@@ -1,7 +1,7 @@
 {
-  "name": "EchoZW Calendar",
-  "short_name": "EchoZW",
-  "description": "Verified university timetables that sync to your calendar.",
+  "name": "CalenderZW",
+  "short_name": "CalenderZW",
+  "description": "Student timetable and calendar synchronisation.",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

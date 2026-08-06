@@ -13,12 +13,65 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta
       name="description"
-      content="EchoZW Calendar helps university students preview verified timetables and sync lectures to their calendar."
+      content="Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar app."
     />
-    <title>EchoZW Calendar</title>
+    <link rel="canonical" href="https://calender.aido.co.zw/" />
+    <meta property="og:title" content="CalenderZW" />
+    <meta
+      property="og:description"
+      content="Add your university timetable to your calendar."
+    />
+    <meta property="og:url" content="https://calender.aido.co.zw/" />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://calender.aido.co.zw/web-app-manifest-512x512.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "CalenderZW",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Web",
+        "url": "https://calender.aido.co.zw/",
+        "description": "Student timetable and calendar synchronisation",
+        "publisher": {
+          "@type": "Organization",
+          "name": "aiDo"
+        },
+        "privacyPolicy": "https://calender.aido.co.zw/privacy"
+      }
+    </script>
+    <title>CalenderZW | Add your university timetable to your calendar</title>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Add your university timetable to your calendar</h1>
+        <p>
+          CalenderZW helps students find a verified class timetable, choose
+          useful reminders, and add lectures to Google Calendar, Apple Calendar,
+          Outlook, or another calendar app. CalenderZW is operated by aiDo.
+        </p>
+        <p>
+          Google Calendar connection is optional. If you choose direct Google
+          Calendar synchronisation, CalenderZW asks for permission to create and
+          manage a separate calendar created by CalenderZW. We do not use this
+          permission to read, analyse, change, or delete events in your existing
+          personal calendars.
+        </p>
+        <p>
+          <a href="/find">Find my timetable</a> |
+          <a href="/privacy">Privacy Policy</a> |
+          <a href="/terms">Terms</a> |
+          <a href="/data-deletion">Data deletion</a> |
+          <a href="/support">Support</a>
+        </p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

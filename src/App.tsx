@@ -22,6 +22,7 @@ import {
   Upload,
 } from "lucide-react";
 import { appConfig } from "./config/app";
+import { BRAND } from "./config/brand";
 import { legalConfig } from "./config/legal";
 import { downloadIcs } from "./domain/calendar";
 import { demoTimetable, popularTimetables } from "./domain/timetableData";
@@ -44,7 +45,8 @@ import type {
 } from "./domain/types";
 
 const currentPath = () => window.location.pathname;
-const submissionStorageKey = "echo_calendar_submissions";
+const submissionStorageKey = "calenderzw_submissions";
+const currentYear = new Date().getFullYear();
 
 type TimetableSubmission = {
   id: string;
@@ -58,6 +60,70 @@ type TimetableSubmission = {
   status: "open" | "reviewing" | "closed";
   createdAt: string;
 };
+
+function setPageMetadata(input: {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  robots?: string;
+}) {
+  document.title = input.title;
+  const tags: Array<[string, string, string]> = [
+    ["name", "description", input.description],
+    ["property", "og:title", input.ogTitle ?? input.title],
+    ["property", "og:description", input.ogDescription ?? input.description],
+    ["property", "og:url", `${BRAND.origin}${input.canonicalPath}`],
+    ["property", "og:type", "website"],
+    ["property", "og:image", `${BRAND.origin}${BRAND.squareIconPath}`],
+    ["name", "twitter:card", "summary_large_image"],
+  ];
+  if (input.robots) tags.push(["name", "robots", input.robots]);
+
+  for (const [attribute, key, value] of tags) {
+    let meta = document.head.querySelector<HTMLMetaElement>(
+      `meta[${attribute}="${key}"]`,
+    );
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute(attribute, key);
+      document.head.append(meta);
+    }
+    meta.setAttribute("content", value);
+  }
+
+  let canonical = document.head.querySelector<HTMLLinkElement>(
+    'link[rel="canonical"]',
+  );
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.append(canonical);
+  }
+  canonical.href = `${BRAND.origin}${input.canonicalPath}`;
+}
+
+function usePageMetadata(input: Parameters<typeof setPageMetadata>[0]) {
+  const {
+    title,
+    description,
+    canonicalPath,
+    ogTitle,
+    ogDescription,
+    robots,
+  } = input;
+  useEffect(() => {
+    setPageMetadata({
+      title,
+      description,
+      canonicalPath,
+      ogTitle,
+      ogDescription,
+      robots,
+    });
+  }, [title, description, canonicalPath, ogTitle, ogDescription, robots]);
+}
 
 function readSubmissions() {
   try {
@@ -96,15 +162,15 @@ function Shell({ children }: { children: React.ReactNode }) {
           </span>
           <span>
             <strong>{appConfig.productName}</strong>
-            <small>
-              {appConfig.familyName} by {appConfig.companyName}
-            </small>
+            <small>by {appConfig.companyName}</small>
           </span>
         </a>
         <nav aria-label="Main navigation">
-          <a href="/find">Find</a>
+          <a href="/find">Find timetable</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#calendar-options">Calendar options</a>
+          <a href="/privacy">Privacy</a>
           <a href="/dashboard">Dashboard</a>
-          <a href={appConfig.companyUrl}>aiDo</a>
         </nav>
       </header>
       {children}
@@ -117,16 +183,22 @@ function LegalFooter() {
   return (
     <footer className="site-footer">
       <div>
-        <strong>{legalConfig.tradingName}</strong>
+        <strong>{appConfig.attribution}</strong>
+        <span>
+          &copy; {currentYear} {legalConfig.operatorName}.{" "}
+          {legalConfig.tradingName} is operated by {legalConfig.operatorName}.
+        </span>
         <span>
           {legalConfig.operatorName} · {legalConfig.country}
         </span>
       </div>
       <nav aria-label="Legal and support links">
+        <a href="/find">Find timetable</a>
+        <a href="/#how-it-works">How it works</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <a href="/data-deletion">Data deletion</a>
-        <a href={`mailto:${legalConfig.supportEmail}`}>Support</a>
+        <a href="/support">Support</a>
       </nav>
     </footer>
   );
@@ -136,12 +208,14 @@ function MessageDialog({
   title,
   text,
   tone = "success",
+  continueLabel = "Continue",
   onContinue,
   children,
 }: {
   title: string;
   text: string;
   tone?: "success" | "warning" | "danger";
+  continueLabel?: string;
   onContinue: () => void;
   children?: React.ReactNode;
 }) {
@@ -160,7 +234,7 @@ function MessageDialog({
         <p>{text}</p>
         {children}
         <button className="primary dominant" onClick={onContinue}>
-          Continue
+          {continueLabel}
         </button>
       </section>
     </div>
@@ -760,16 +834,21 @@ function SyncWizard({
       </section>
       {googleDisclosureOpen && (
         <MessageDialog
-          title="Continue with Google Calendar"
-          text={`${legalConfig.tradingName} will ask Google for permission to create and manage a separate calendar created by ${legalConfig.tradingName}. We use this permission to add the timetable you selected, apply your reminder preferences, and keep those events updated. We do not use this permission to read or change events in your existing personal calendars.`}
+          title="Connect Google Calendar"
+          text={`${legalConfig.tradingName} will ask Google for permission to create and manage a separate timetable calendar created by ${legalConfig.tradingName}. We use this permission to add the timetable you selected, apply your reminder preferences, and update those ${legalConfig.tradingName}-created events when the timetable changes. ${legalConfig.tradingName} does not use this permission to read or change events in your existing personal calendars.`}
           tone="warning"
+          continueLabel="Continue to Google"
           onContinue={continueGoogle}
         >
           <div className="dialog-links">
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/data-deletion">Data deletion</a>
             <a href="/privacy#google-calendar-data">
               Learn how Google Calendar data is used
             </a>
-            <a href="/terms">Terms of Service</a>
+            <button type="button" onClick={() => setGoogleDisclosureOpen(false)}>
+              Use another calendar method
+            </button>
           </div>
         </MessageDialog>
       )}
@@ -806,6 +885,12 @@ function SyncWizard({
 }
 
 function PublicTimetablePage() {
+  usePageMetadata({
+    title: `${demoTimetable.title} | CalenderZW`,
+    description:
+      "Review this student timetable, choose reminders, and add it to a supported calendar.",
+    canonicalPath: `/t/${demoTimetable.slug}`,
+  });
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedPreset, setSelectedPreset] = useState(reminderPresets[0]);
   const [reportOpen, setReportOpen] = useState(false);
@@ -996,6 +1081,12 @@ function ReportDialog({ onClose }: { onClose: () => void }) {
 }
 
 function FinderPage() {
+  usePageMetadata({
+    title: "Find your timetable | CalenderZW",
+    description:
+      "Search for a student timetable by institution, programme, year, group, or semester.",
+    canonicalPath: "/find",
+  });
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<"request" | "upload" | null>(null);
   const [submitted, setSubmitted] = useState<TimetableSubmission | null>(null);
@@ -1198,6 +1289,203 @@ function TimetableCard({ timetable }: { timetable: Timetable }) {
   );
 }
 
+function HomePage() {
+  usePageMetadata({
+    title: "CalenderZW | Add your university timetable to your calendar",
+    description:
+      "Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar app.",
+    canonicalPath: "/",
+    ogTitle: "CalenderZW",
+    ogDescription: "Add your university timetable to your calendar.",
+  });
+
+  return (
+    <Shell>
+      <main className="home-page">
+        <section className="home-hero">
+          <div className="home-hero-copy">
+            <p className="eyebrow">Your timetable, already organised</p>
+            <h1>Add your university timetable to your calendar</h1>
+            <p>
+              CalenderZW helps students find a verified class timetable, choose
+              useful reminders, and add lectures to Google Calendar, Apple
+              Calendar, Outlook, or another calendar app.
+            </p>
+            <p className="trust-copy">
+              Google Calendar connection is optional. When you choose it,
+              CalenderZW creates and manages a separate timetable calendar. It
+              does not read or modify events in your existing personal
+              calendars. CalenderZW is operated by aiDo.
+            </p>
+            <div className="hero-actions">
+              <a className="primary" href="/find">
+                <Search size={20} aria-hidden="true" />
+                Find my timetable
+              </a>
+              <a className="secondary dark" href="#how-it-works">
+                See how it works
+              </a>
+              <a className="text-link" href={`/t/${demoTimetable.slug}`}>
+                View a sample timetable
+              </a>
+            </div>
+          </div>
+          <div className="product-preview" aria-label="CalenderZW product preview">
+            <div className="preview-top">
+              <img src={BRAND.iconPath} alt="" />
+              <strong>CalenderZW</strong>
+              <VerificationBadge status="community_verified" />
+            </div>
+            <ol>
+              <li>Open a shared timetable or scan a QR code.</li>
+              <li>Check the timetable and verification status.</li>
+              <li>Choose reminder timing.</li>
+              <li>Add it to a supported calendar.</li>
+            </ol>
+          </div>
+        </section>
+
+        <section id="how-it-works" className="home-section">
+          <h2>How it works</h2>
+          <div className="section-grid three">
+            <article>
+              <h3>Find your class</h3>
+              <p>
+                Search by institution, programme, year, semester, or shared
+                class link.
+              </p>
+            </article>
+            <article>
+              <h3>Choose your reminders</h3>
+              <p>
+                Select a prepared, on-time, commuter, or custom reminder setup
+                after you have seen the timetable.
+              </p>
+            </article>
+            <article>
+              <h3>Add your timetable</h3>
+              <p>
+                Connect Google Calendar, subscribe with Apple Calendar, or
+                download a standard calendar file.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section id="calendar-options" className="home-section">
+          <h2>Calendar options</h2>
+          <div className="section-grid four">
+            <article>
+              <h3>Google Calendar</h3>
+              <p>
+                CalenderZW creates a dedicated secondary calendar, adds and
+                maintains only timetable events selected by you, requires Google
+                consent, and does not inspect existing personal calendars.
+              </p>
+            </article>
+            <article>
+              <h3>Apple Calendar</h3>
+              <p>
+                Use one-tap webcal subscription where supported. Apple Calendar
+                asks you to confirm and controls refresh timing.
+              </p>
+            </article>
+            <article>
+              <h3>Universal .ics</h3>
+              <p>
+                Download a standard calendar file for many calendar apps. Future
+                updates may require a new download unless you subscribe.
+              </p>
+            </article>
+            <article>
+              <h3>Outlook</h3>
+              <p>
+                Use supported subscription or .ics import paths. CalenderZW does
+                not currently present a direct Outlook API connection.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section id="google-calendar-access" className="home-section disclosure-band">
+          <h2>Why CalenderZW asks for Google Calendar access</h2>
+          <p>
+            If you choose direct Google Calendar synchronisation, CalenderZW asks
+            for permission to create and manage a separate calendar created by
+            CalenderZW. We use that permission to add the timetable you selected,
+            apply your reminder choices, and update those CalenderZW-created
+            events when the published timetable changes.
+          </p>
+          <p>
+            We do not use this permission to read, analyse, change, or delete
+            events in your existing personal calendars.
+          </p>
+          <div className="inline-links">
+            <a href="/privacy">Read our Privacy Policy</a>
+            <a href="/data-deletion">Learn about data deletion</a>
+            <a href="/find">Use .ics instead</a>
+          </div>
+        </section>
+
+        <section className="home-section">
+          <h2>Timetable trust</h2>
+          <div className="section-grid three">
+            <article>
+              <h3>Official</h3>
+              <p>Published or confirmed by an institution or authorised team.</p>
+            </article>
+            <article>
+              <h3>Community verified</h3>
+              <p>Checked by class representatives or verified contributors.</p>
+            </article>
+            <article>
+              <h3>Draft or unverified</h3>
+              <p>
+                Useful for coordination, but students should verify
+                high-consequence information such as exam dates with official
+                institution sources.
+              </p>
+            </article>
+          </div>
+          <p className="helper">
+            Timetable information may be supplied by institutions, authorised
+            programme administrators, class representatives, or verified
+            contributors.
+          </p>
+        </section>
+
+        <section className="home-section">
+          <h2>Built for student routines</h2>
+          <ul className="benefit-list">
+            <li>Stop searching through screenshots and chat history.</li>
+            <li>See times and venues in one place.</li>
+            <li>Use calendar-native reminders.</li>
+            <li>Receive timetable updates where supported.</li>
+            <li>Share one class link or QR code.</li>
+            <li>Report incorrect timetable details.</li>
+          </ul>
+        </section>
+
+        <section className="home-section privacy-summary">
+          <h2>Privacy summary</h2>
+          <p>
+            CalenderZW collects only the information needed to provide timetable
+            and calendar features. Google Calendar access is optional and
+            limited to a separate calendar created by CalenderZW. We do not sell
+            Google user data or use it for advertising.
+          </p>
+          <div className="inline-links">
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/data-deletion">Data deletion</a>
+            <a href="/support">Support</a>
+          </div>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
 function PageHeader({
   icon,
   title,
@@ -1353,9 +1641,11 @@ function LegalDocumentPage({ type }: { type: "privacy" | "terms" | "data" }) {
     : isTerms
       ? "Terms of Service"
       : "Data deletion";
-  useEffect(() => {
-    document.title = `${title} | ${legalConfig.tradingName}`;
-  }, [title]);
+  usePageMetadata({
+    title: `${title} | ${legalConfig.tradingName}`,
+    description: `${title} for ${legalConfig.tradingName}, the student timetable and calendar synchronisation service operated by ${legalConfig.operatorName}.`,
+    canonicalPath: type === "data" ? "/data-deletion" : `/${type}`,
+  });
 
   return (
     <Shell>
@@ -1406,7 +1696,8 @@ function PrivacyContent() {
         <p>
           This policy applies to timetable pages, administrator tools, calendar
           feeds, Google Calendar connection, downloads, and support services
-          operated from {legalConfig.publicAppUrl}.
+          for {legalConfig.tradingName}, operated by{" "}
+          {legalConfig.operatorName} from {legalConfig.publicAppUrl}.
         </p>
       </section>
       <section id="information-we-collect">
@@ -1467,9 +1758,9 @@ function PrivacyContent() {
           we do not use Google user data for targeted advertising.
         </p>
         <p>
-          Current repository configuration shows Supabase as planned
-          database/auth/storage, PesePay as mocked until live credentials are
-          provided, and Sentry/PostHog as planned observability.
+          Current production processors should be confirmed by the operator
+          before submission. CalenderZW does not share Google user data with
+          advertising services.
         </p>
       </section>
       <section id="retention-and-security">
@@ -1497,7 +1788,7 @@ function PrivacyContent() {
         <p>
           {legalConfig.operatorName}
           <br />
-          Operator address: required before production Google OAuth submission
+          Operator address: {legalConfig.operatorAddress}
           <br />
           {legalConfig.country}
           <br />
@@ -1555,11 +1846,20 @@ function TermsContent() {
         </p>
       </section>
       <section id="contact">
-        <h2>5. Contact and legal review</h2>
+        <h2>5. Governing law, paid features, and contact</h2>
         <p>
-          Governing law, dispute venue, physical address, and any paid-services
-          refund terms must be confirmed by the operator or legal adviser before
-          production submission. Contact{" "}
+          These Terms are governed by the laws of {legalConfig.governingLaw},
+          without prejudice to mandatory consumer protections that may apply in
+          your country. {legalConfig.disputeVenue} will have jurisdiction,
+          subject to applicable law.
+        </p>
+        <p>
+          Paid features may be introduced in the future. Before a paid
+          transaction is offered, CalenderZW will display the applicable price,
+          currency, payment terms, and refund conditions.
+        </p>
+        <p>
+          Contact{" "}
           <a href={`mailto:${legalConfig.supportEmail}`}>
             {legalConfig.supportEmail}
           </a>
@@ -1603,6 +1903,140 @@ function DataDeletionContent() {
   );
 }
 
+function SupportPage() {
+  usePageMetadata({
+    title: "Support | CalenderZW",
+    description:
+      "CalenderZW support for timetable setup, Google disconnect, Apple Calendar subscriptions, .ics imports, and timetable problem reports.",
+    canonicalPath: "/support",
+  });
+
+  return (
+    <Shell>
+      <main className="page support-page">
+        <PageHeader
+          icon={<ShieldCheck />}
+          title="CalenderZW support"
+          text={`Get help with timetable and calendar setup. Email ${legalConfig.supportEmail}.`}
+        />
+        <section className="section-grid two">
+          <article className="action-panel">
+            <h2>Calendar setup issues</h2>
+            <p>
+              If a calendar does not appear immediately, check that the selected
+              reminder preset was saved, your device calendar sync is enabled,
+              and your calendar app has network access.
+            </p>
+          </article>
+          <article className="action-panel">
+            <h2>Disconnect Google Calendar</h2>
+            <p>
+              Open account settings, choose Disconnect Google Calendar, and
+              decide whether to keep or delete the CalenderZW-created calendar.
+              You can also revoke access in your Google Account.
+            </p>
+          </article>
+          <article className="action-panel">
+            <h2>Apple subscription guidance</h2>
+            <p>
+              Use the Apple Calendar subscription option from the live HTTPS
+              site. Apple Calendar controls refresh timing and may not update
+              immediately after timetable changes.
+            </p>
+          </article>
+          <article className="action-panel">
+            <h2>.ics import guidance</h2>
+            <p>
+              Downloaded .ics files are useful for one-time imports into many
+              calendar apps. Future timetable updates may require another
+              download unless you use a subscription option.
+            </p>
+          </article>
+          <article className="action-panel">
+            <h2>Notification delivery</h2>
+            <p>
+              CalenderZW creates calendar reminders, but final notification
+              delivery depends on the calendar provider, phone settings,
+              battery mode, connectivity, and notification permissions.
+            </p>
+          </article>
+          <article className="action-panel">
+            <h2>Report a timetable problem</h2>
+            <p>
+              Open the timetable page and choose Report a problem, or email{" "}
+              <a href={`mailto:${legalConfig.supportEmail}`}>
+                {legalConfig.supportEmail}
+              </a>{" "}
+              with the class link and the correction needed.
+            </p>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/data-deletion">Data deletion</a>
+          </article>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
+function GoogleVerificationReadinessPage() {
+  usePageMetadata({
+    title: "Google verification readiness | CalenderZW",
+    description:
+      "Development-only Google OAuth verification readiness checklist for CalenderZW.",
+    canonicalPath: "/admin/google-verification-readiness",
+    robots: "noindex, nofollow",
+  });
+
+  const rows = [
+    ["Canonical app name", BRAND.productName],
+    ["Homepage URL", `${BRAND.origin}/`],
+    ["Privacy URL", `${BRAND.origin}/privacy`],
+    ["Terms URL", `${BRAND.origin}/terms`],
+    ["Deletion URL", `${BRAND.origin}/data-deletion`],
+    ["Support URL", `${BRAND.origin}/support`],
+    ["OAuth scope", "https://www.googleapis.com/auth/calendar.app.created"],
+    [
+      "Redirect URI",
+      `${BRAND.origin}/api/calendar/google/callback`,
+    ],
+    ["Google Calendar API enabled status", "Locally unknowable"],
+    ["Legacy-name scan result", "Checked by automated tests"],
+    ["Homepage direct-200 test", "Run production smoke test"],
+    ["Legal-placeholder scan result", "Checked by automated tests"],
+    ["Google disclosure present", "Homepage and pre-consent flow"],
+    ["Production logo asset", BRAND.squareIconPath],
+    ["Domain-verification status", "Requires external confirmation"],
+  ];
+
+  return (
+    <Shell>
+      <main className="page">
+        <PageHeader
+          icon={<ShieldCheck />}
+          title="Google verification readiness"
+          text="Reviewer checklist without secrets, tokens, OAuth codes, or private feed tokens."
+        />
+        <section className="readiness-table" aria-label="Verification values">
+          {rows.map(([label, value]) => (
+            <div key={label}>
+              <strong>{label}</strong>
+              <span>{value}</span>
+            </div>
+          ))}
+        </section>
+        <a
+          className="primary download-checklist"
+          href="/google-oauth-reviewer-checklist.md"
+          download
+        >
+          <Download size={18} aria-hidden="true" />
+          Download reviewer checklist
+        </a>
+      </main>
+    </Shell>
+  );
+}
+
 function AccountSettingsPage() {
   const [message, setMessage] = useState("");
   return (
@@ -1639,55 +2073,32 @@ function AccountSettingsPage() {
 }
 
 function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-
   return (
     <Shell>
       <main className="page admin-page">
         <PageHeader
           icon={<Lock />}
           title="Admin login"
-          text="MVP admin access is restricted to the configured bootstrap list."
+          text="Administrative access is disabled until Supabase Auth, server-side roles, and RLS are wired into this deployment."
         />
-        <form
-          className="admin-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const allowed = (import.meta.env.VITE_MVP_ADMIN_EMAILS ?? "")
-              .split(",")
-              .map((item: string) => item.trim().toLowerCase())
-              .filter(Boolean);
-            if (!allowed.includes(email.toLowerCase())) {
-              setError(
-                "This email is not configured as an MVP administrator. Add it to MVP_ADMIN_EMAILS and create the server-side admin profile before production.",
-              );
-              return;
-            }
-            track("admin_logged_in");
-            window.location.href = "/admin";
-          }}
-        >
-          <label>
-            Admin email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="admin@example.com"
-              required
-            />
-          </label>
-          {error && <p className="field-error">{error}</p>}
-          <button className="primary" type="submit">
-            Log in
-          </button>
-        </form>
+        <section className="action-panel">
+          <h2>Admin sign-in unavailable</h2>
+          <p>
+            The previous MVP login checked a client-visible email allowlist and
+            was not a security boundary. It has been retired so production
+            traffic cannot enter mock administration flows.
+          </p>
+          <p className="content-notice">
+            Configure Supabase Auth, server-side role provisioning, and database
+            policies before re-enabling admin access.
+          </p>
+        </section>
       </main>
     </Shell>
   );
 }
 
+// TODO: Delete this retired mock workbench when the Supabase-backed AdminShell lands.
 function AdminPage() {
   const [events, setEvents] = useState<AcademicCalendarEvent[]>(
     demoTimetable.events,
@@ -2032,6 +2443,8 @@ function AdminPage() {
   );
 }
 
+void AdminPage;
+
 function EmptyState({ title, text }: { title: string; text: string }) {
   return (
     <div className="empty-state">
@@ -2044,13 +2457,18 @@ function EmptyState({ title, text }: { title: string; text: string }) {
 
 export function App() {
   const path = currentPath();
+  if (path === "/") return <HomePage />;
   if (path === "/privacy") return <LegalDocumentPage type="privacy" />;
   if (path === "/terms") return <LegalDocumentPage type="terms" />;
   if (path === "/data-deletion") return <LegalDocumentPage type="data" />;
+  if (path === "/support") return <SupportPage />;
   if (path === "/account/settings") return <AccountSettingsPage />;
   if (path === "/find" || path === "/institutions") return <FinderPage />;
+  if (path === "/admin/google-verification-readiness")
+    return <GoogleVerificationReadinessPage />;
   if (path === "/admin/login") return <AdminLoginPage />;
-  if (path === "/admin" || path.startsWith("/admin/")) return <AdminPage />;
+  if (path === "/admin") return <AdminPage />;
+  if (path.startsWith("/admin/")) return <AdminLoginPage />;
   if (path === "/dashboard" || path.startsWith("/dashboard/"))
     return <DashboardPage />;
   if (path.endsWith("/history")) return <HistoryPage />;

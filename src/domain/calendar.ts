@@ -105,7 +105,7 @@ export function generateIcsFromPersonalizedCalendar(
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//aiDo//Echo Calendar//EN",
+    "PRODID:-//aiDo//CalenderZW//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${escapeIcsText(calendar.calendarName)}`,

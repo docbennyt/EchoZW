@@ -138,6 +138,25 @@ describe("legal and Google OAuth configuration", () => {
     ).not.toThrow();
   });
 
+  it("rejects a production legal config with the wrong canonical host", () => {
+    expect(() =>
+      validateLegalProductionConfig({
+        LEGAL_OPERATOR_NAME: "aiDo",
+        LEGAL_TRADING_NAME: "CalenderZW",
+        LEGAL_OPERATOR_ADDRESS: "Reviewed operator address",
+        LEGAL_COUNTRY: "Zimbabwe",
+        LEGAL_SUPPORT_EMAIL: "support@aido.co.zw",
+        LEGAL_PRIVACY_EMAIL: "privacy@aido.co.zw",
+        LEGAL_EFFECTIVE_DATE: "2026-08-05",
+        LEGAL_LAST_UPDATED_DATE: "2026-08-05",
+        PUBLIC_APP_URL: "https://calendar.aido.co.zw",
+        LEGAL_MINIMUM_AGE: "13",
+        LEGAL_GOVERNING_LAW: "Zimbabwe",
+        LEGAL_DISPUTE_VENUE: "Courts of competent jurisdiction in Zimbabwe",
+      }),
+    ).toThrow(/calender\.aido\.co\.zw/);
+  });
+
   it("ships public legal pages as readable HTML without client JavaScript", () => {
     const files = [
       "public/privacy/index.html",
