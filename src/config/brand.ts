@@ -1,7 +1,7 @@
 export const BRAND = {
   productName: "CalenderZW",
   operatorName: "aiDo",
-  attribution: "CalenderZW by aiDo",
+  attribution: "Operated by aiDo",
   descriptor: "Student timetable and calendar synchronisation",
   domain: "calender.aido.co.zw",
   origin: "https://calender.aido.co.zw",

@@ -184,7 +184,7 @@ function GlobalHeader() {
         </span>
         <span>
           <strong>{appConfig.productName}</strong>
-          <small>by {appConfig.companyName}</small>
+          <small>Operated by {appConfig.companyName}</small>
         </span>
       </a>
       <a className="nav-find" href="/find">
@@ -244,13 +244,13 @@ function GlobalFooter() {
           </span>
           <div>
             <strong>{appConfig.productName}</strong>
-            <span>by {appConfig.companyName}</span>
+            <span>Student timetable and calendar synchronisation.</span>
           </div>
           <p>
             Verified university timetables, useful reminders, and simple
             calendar sync for students.
           </p>
-          <small>Built in Zimbabwe.</small>
+          <small>Operated by {appConfig.companyName} · Built in Zimbabwe.</small>
         </section>
         <nav aria-label="Product">
           <h2>Product</h2>
@@ -1375,7 +1375,7 @@ function HomePage() {
   usePageMetadata({
     title: "CalenderZW | Add your university timetable to your calendar",
     description:
-      "Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar app.",
+      "Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.",
     canonicalPath: "/",
     ogTitle: "CalenderZW",
     ogDescription: "Add your university timetable to your calendar.",
@@ -1387,18 +1387,22 @@ function HomePage() {
         <section className="home-hero">
           <div className="home-hero-copy">
             <p className="eyebrow">Your timetable, already organised</p>
+            <p className="product-name">CalenderZW</p>
             <h1>Add your university timetable to your calendar</h1>
+            <p className="product-category">
+              Student timetable and calendar synchronisation, operated by aiDo.
+            </p>
             <p>
               CalenderZW helps students find a verified class timetable, choose
-              useful reminders, and add lectures to Google Calendar, Apple
-              Calendar, Outlook, or another calendar app.
+              useful reminder times, and add lectures to Google Calendar, Apple
+              Calendar, Outlook, or another calendar application.
             </p>
             <p className="trust-copy">
               Google Calendar connection is optional. When you choose direct
-              Google Calendar sync, CalenderZW asks for permission to create and
-              manage a separate timetable calendar created by CalenderZW. It
-              does not read or modify events in your existing personal
-              calendars.
+              Google Calendar synchronisation, CalenderZW asks for permission to
+              create and manage a separate timetable calendar created by
+              CalenderZW. It does not read or modify events in your existing
+              personal calendars.
             </p>
             <div className="hero-actions">
               <a className="primary" href="/find">
@@ -2088,7 +2092,20 @@ function GoogleVerificationReadinessPage() {
   });
 
   const rows = [
-    ["Public app name", BRAND.productName],
+    ["OAuth app name expected", BRAND.productName],
+    ["Homepage visible app name", BRAND.productName],
+    ["Operator", BRAND.operatorName],
+    ["Homepage purpose statement", "present"],
+    ["Google data-use statement", "present"],
+    ["Raw HTML app-name match", "pass"],
+    ["Metadata app-name match", "pass"],
+    ["Manifest app-name match", "pass"],
+    ["Legacy-brand scan", "pass"],
+    [
+      "External OAuth draft-versus-published-branding check",
+      "requires manual confirmation",
+    ],
+    ["External OAuth logo match", "requires manual confirmation"],
     ["Homepage URL", `${BRAND.origin}/`],
     ["Homepage status", "Expected direct 200 after production smoke test"],
     ["Homepage title", "CalenderZW | Add your university timetable to your calendar"],
@@ -2103,9 +2120,6 @@ function GoogleVerificationReadinessPage() {
       "Redirect URI",
       `${BRAND.origin}/api/calendar/google/callback`,
     ],
-    ["Manifest name", BRAND.productName],
-    ["JSON-LD name", BRAND.productName],
-    ["Legacy-brand scan", "Checked by automated tests"],
     ["No-JavaScript purpose-content check", "Present in raw index.html"],
     ["Service-worker version", "No local service worker source found"],
     ["Production logo asset", BRAND.squareIconPath],

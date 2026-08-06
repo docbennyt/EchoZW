@@ -66,6 +66,31 @@ describe("public student flow", () => {
     expect(screen.queryByText(/BSc Software Engineering/i)).toBeNull();
   });
 
+  it("renders an unambiguous first-viewport app identity", () => {
+    window.history.pushState({}, "", "/");
+    render(<App />);
+
+    const hero = document.querySelector(".home-hero");
+    expect(hero).not.toBeNull();
+    expect(hero?.querySelector(".product-name")?.textContent).toBe(
+      "CalenderZW",
+    );
+    expect(hero?.querySelector(".product-category")?.textContent).toBe(
+      "Student timetable and calendar synchronisation, operated by aiDo.",
+    );
+    expect(hero?.textContent).toContain(
+      "CalenderZW helps students find a verified class timetable, choose useful reminder times, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.",
+    );
+    expect(hero?.textContent).toContain(
+      "Google Calendar connection is optional. When you choose direct Google Calendar synchronisation",
+    );
+    expect(hero?.textContent).toContain(
+      "It does not read or modify events in your existing personal calendars.",
+    );
+    expect(hero?.textContent).not.toContain("CalenderZW by aiDo");
+    expect(screen.getAllByText(/Operated by aiDo/i).length).toBeGreaterThan(0);
+  });
+
   it("uses one shared accessible header and mobile menu on public pages", () => {
     for (const path of [
       "/",
@@ -157,7 +182,15 @@ describe("public student flow", () => {
       screen.getByRole("heading", { name: /Google verification readiness/i }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("CalenderZW").length).toBeGreaterThan(0);
-    expect(screen.getByText(/Requires external confirmation/i)).toBeInTheDocument();
+    expect(screen.getByText("OAuth app name expected")).toBeInTheDocument();
+    expect(screen.getByText("Homepage visible app name")).toBeInTheDocument();
+    expect(screen.getByText("Operator")).toBeInTheDocument();
+    expect(screen.getByText("Raw HTML app-name match")).toBeInTheDocument();
+    expect(screen.getByText("Metadata app-name match")).toBeInTheDocument();
+    expect(screen.getByText("Manifest app-name match")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/requires manual confirmation/i).length,
+    ).toBeGreaterThanOrEqual(2);
     expect(
       screen.queryByText(/GOOGLE_CLIENT_SECRET|refresh_token|ya29\./i),
     ).toBeNull();

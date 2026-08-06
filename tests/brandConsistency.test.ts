@@ -17,7 +17,7 @@ describe("CalenderZW brand consistency", () => {
     expect(BRAND).toMatchObject({
       productName: "CalenderZW",
       operatorName: "aiDo",
-      attribution: "CalenderZW by aiDo",
+      attribution: "Operated by aiDo",
       descriptor: "Student timetable and calendar synchronisation",
       domain: "calender.aido.co.zw",
       origin: "https://calender.aido.co.zw",
@@ -49,12 +49,22 @@ describe("CalenderZW brand consistency", () => {
 
   it("ships meaningful no-JavaScript homepage content in raw HTML", () => {
     const html = readFileSync("index.html", "utf8");
+    const normalized = html.replace(/\s+/g, " ");
 
+    expect(html).toContain('<p class="product-name">CalenderZW</p>');
+    expect(html).toContain(
+      '<p class="product-category">\n            Student timetable and calendar synchronisation, operated by aiDo.',
+    );
     expect(html).toContain(
       "<h1>Add your university timetable to your calendar</h1>",
     );
     expect(html).toContain(
       "CalenderZW helps students find a verified class timetable",
+    );
+    expect(normalized).toContain("choose useful reminder times");
+    expect(html).toContain("Google Calendar synchronisation");
+    expect(normalized).toContain(
+      "It does not read or modify events in your existing personal calendars.",
     );
     expect(html).toContain(
       "Why CalenderZW asks for Google Calendar access",
@@ -64,8 +74,26 @@ describe("CalenderZW brand consistency", () => {
     expect(html).toContain('href="/data-deletion"');
     expect(html).toContain('href="/support"');
     expect(html).toContain('property="og:site_name" content="CalenderZW"');
+    expect(html).toContain('name="application-name" content="CalenderZW"');
+    expect(html).toContain(
+      'name="apple-mobile-web-app-title" content="CalenderZW"',
+    );
     expect(html).toContain('"name": "CalenderZW"');
+    expect(html).toContain('"name": "aiDo"');
+    expect(html).not.toContain("CalenderZW by aiDo");
     expect(html).not.toMatch(/<div id="root"><\/div>/);
+  });
+
+  it("keeps public production output free of ambiguous principal app names", () => {
+    for (const file of publicFiles) {
+      const text = readFileSync(file, "utf8");
+      expect(text).not.toContain("CalenderZW by aiDo");
+      expect(text).not.toContain("aiDo CalenderZW");
+      expect(text).not.toContain("CalendarZW");
+      expect(text).not.toMatch(
+        /calendar\.aido\.co\.zw|www\.calender\.aido\.co\.zw|localhost/i,
+      );
+    }
   });
 
   it("uses shared shell markers on static public verification pages", () => {

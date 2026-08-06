@@ -1117,8 +1117,22 @@ dd {
   font-size: clamp(2.25rem, 7vw, 5rem);
   letter-spacing: 0;
   line-height: 1;
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   max-width: 48rem;
+}
+
+.product-name {
+  color: #fff;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0 0 0.6rem;
+}
+
+.product-category {
+  color: #e4f1ec;
+  font-weight: 800;
+  margin: 0 0 1rem;
 }
 
 .home-hero p,

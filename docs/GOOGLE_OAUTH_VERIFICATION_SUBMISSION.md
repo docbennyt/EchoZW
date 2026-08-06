@@ -67,6 +67,25 @@ CalenderZW helps students add a selected university timetable to a dedicated sec
 - [ ] Resubmit only after all rejection reasons are fixed.
 - [ ] Reply to the existing verification email when instructed instead of creating conflicting duplicate submissions.
 
+## Manual Pre-Submission Checklist
+
+- [ ] Open Google Auth Platform -> Branding.
+- [ ] Check whether Draft Branding differs from Published Branding.
+- [ ] Confirm the submitted draft app name is exactly `CalenderZW`.
+- [ ] Confirm no leading or trailing whitespace exists.
+- [ ] Confirm the homepage is `https://calender.aido.co.zw/`.
+- [ ] Confirm the square OAuth logo is the current CalenderZW icon.
+- [ ] Confirm the homepage visibly presents `CalenderZW` as the app name.
+- [ ] Confirm `Operated by aiDo` is separate operator attribution.
+- [ ] Confirm the homepage purpose appears above the fold.
+- [ ] Confirm the Google data-use explanation appears above the fold.
+- [ ] Confirm all URLs return direct 200 responses.
+- [ ] Only then select "I have fixed the issues" and request re-verification.
+
+## OAuth Logo Operator Note
+
+Use the same square CalenderZW bell-calendar icon in Google Auth Platform. The OAuth logo is configured outside this repository, so this document does not claim that the external OAuth logo has been updated.
+
 ## Remaining External Actions
 
 The operator must complete Search Console DNS verification, Google Auth Platform branding fields, OAuth logo upload, support/developer email checks, Google Calendar API project configuration checks, and demo-video recording. Domain ownership remains externally unverified until Search Console confirms it.

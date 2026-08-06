@@ -5,12 +5,13 @@ This audit was created from local repository and production-build inspection. Li
 | Location | Current value | Google-visible? | Required action |
 |---|---|---:|---|
 | `index.html` title | `CalenderZW | Add your university timetable to your calendar` | Yes | Keep. |
-| `index.html` raw body | Contains CalenderZW, H1, product-purpose copy, Google disclosure, privacy, terms, deletion, support links before hydration | Yes | Keep and verify after deploy. |
+| `index.html` raw body | Contains visible `CalenderZW`, separate `Operated by aiDo`, H1, product-purpose copy, Google disclosure, privacy, terms, deletion, support links before hydration | Yes | Keep and verify after deploy. |
 | `index.html` canonical | `https://calender.aido.co.zw/` | Yes | Keep. |
 | `index.html` Open Graph | `og:site_name=CalenderZW`, `og:title=CalenderZW`, root URL | Yes | Keep. |
 | `index.html` JSON-LD | `name=CalenderZW`, publisher `aiDo`, root URL, privacy policy URL | Yes | Keep. |
 | `public/site.webmanifest` | `name=CalenderZW`, `short_name=CalenderZW` | Yes | Keep. |
 | `public/manifest.webmanifest` | Alias manifest with `name=CalenderZW`, `short_name=CalenderZW` | Yes | Keep for reviewer smoke checks. |
+| OAuth logo | Must use the square CalenderZW bell-calendar icon | External | Confirm manually in Google Auth Platform; repo cannot update this setting. |
 | `public/privacy/index.html` | CalenderZW static privacy page with shared header/footer markers | Yes | Keep until server-side rendering replaces static legal pages. |
 | `public/terms/index.html` | CalenderZW static terms page with shared header/footer markers | Yes | Keep until server-side rendering replaces static legal pages. |
 | `public/data-deletion/index.html` | CalenderZW static deletion page with shared header/footer markers | Yes | Keep until server-side rendering replaces static legal pages. |
