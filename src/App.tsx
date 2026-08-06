@@ -1,43 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
-  BarChart3,
   CalendarCheck,
   Check,
   Download,
-  FileClock,
-  Flag,
   GraduationCap,
   History,
-  Home,
   Link,
   Lock,
   Menu,
-  Pencil,
-  Plus,
-  QrCode,
   Search,
-  Share2,
   ShieldCheck,
-  Trash2,
-  Upload,
   X,
 } from "lucide-react";
 import { appConfig } from "./config/app";
 import { BRAND } from "./config/brand";
 import { legalConfig } from "./config/legal";
 import { downloadIcs } from "./domain/calendar";
-import { demoTimetable, popularTimetables } from "./domain/timetableData";
 import { getNextEvent, formatLectureTime } from "./domain/nextEvent";
 import {
   reminderPresets,
   supportedReminderMinutes,
   validateReminderMinutes,
 } from "./domain/reminders";
-import { correctionReportSchema } from "./domain/validation";
 import { isExternallyFetchableUrl } from "./domain/publicUrl";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
+import { fetchAdminSession, type AdminSessionUser } from "./api/adminSession";
 import { track } from "./analytics";
+import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import type {
   AcademicCalendarEvent,
@@ -159,7 +149,7 @@ const navigationLinks = [
   { label: "How it works", href: "/#how-it-works" },
   { label: "Calendar options", href: "/#calendar-options" },
   { label: "Privacy", href: "/privacy" },
-  { label: "Dashboard", href: "/dashboard" },
+  { label: "Admin", href: "/admin" },
 ] as const;
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -257,14 +247,12 @@ function GlobalFooter() {
           <a href="/find">Find timetable</a>
           <a href="/#how-it-works">How it works</a>
           <a href="/#calendar-options">Calendar options</a>
-          <a href={`/t/${demoTimetable.slug}`}>View sample timetable</a>
+          <a href="/find">Published timetables</a>
         </nav>
         <nav aria-label="Support">
           <h2>Support</h2>
           <a href="/support">Help centre</a>
-          <a href={`/t/${demoTimetable.slug}#report`}>
-            Report a timetable problem
-          </a>
+          <a href="/support">Report a timetable problem</a>
           <a href="/support">Google Calendar setup</a>
           <a href="/support">Apple Calendar setup</a>
         </nav>
@@ -968,197 +956,31 @@ function SyncWizard({
 
 function PublicTimetablePage() {
   usePageMetadata({
-    title: `${demoTimetable.title} | CalenderZW`,
+    title: "Timetable unavailable | CalenderZW",
     description:
-      "Review this student timetable, choose reminders, and add it to a supported calendar.",
-    canonicalPath: `/t/${demoTimetable.slug}`,
+      "This timetable is not available because no published Supabase timetable has been loaded.",
+    canonicalPath: currentPath(),
   });
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState(reminderPresets[0]);
-  const [reportOpen, setReportOpen] = useState(false);
-  const [dismissedCalendarState, setDismissedCalendarState] = useState<
-    string | null
-  >(null);
-  const calendarState = new URLSearchParams(window.location.search).get(
-    "calendar",
-  );
-  const calendarMessage =
-    calendarState === "google-success"
-      ? {
-          title: "Google Calendar connected",
-          text: "Your classes were added to a dedicated timetable calendar.",
-          tone: "success" as const,
-        }
-      : calendarState === "google-setup-needed"
-        ? {
-            title: "Google Calendar setup needs one more step",
-            text: "Our team needs to finish the Google configuration. You can still download your calendar now.",
-            tone: "warning" as const,
-          }
-        : calendarState === "google-failed"
-          ? {
-              title: "Google Calendar could not finish",
-              text: "Your timetable is still safe here. Try again or download the calendar file.",
-              tone: "warning" as const,
-            }
-          : null;
-  const activeCalendarMessage =
-    calendarState !== dismissedCalendarState ? calendarMessage : null;
+
   return (
     <Shell>
-      <main>
-        <TimetableHero
-          timetable={demoTimetable}
-          onSync={() => setWizardOpen(true)}
+      <main className="page">
+        <PageHeader
+          icon={<CalendarCheck />}
+          title="Timetable unavailable"
+          text="No published timetable is available from the database for this link."
         />
-        <div className="content-grid">
-          <div>
-            <NextLectureCard
-              timetable={demoTimetable}
-              reminders={selectedPreset.minutes}
-            />
-            <AgendaView timetable={demoTimetable} />
-          </div>
-          <aside className="side-panel">
-            <h2>Trust details</h2>
-            <p>{demoTimetable.source}</p>
-            <p>Verified by {demoTimetable.verifiedBy}</p>
-            <a href={`/t/${demoTimetable.slug}/history`}>
-              <History size={18} /> View update history
-            </a>
-            <button onClick={() => setReportOpen(true)}>
-              <Flag size={18} /> Report a problem
-            </button>
-            <button
-              onClick={() =>
-                navigator.share?.({
-                  title: demoTimetable.title,
-                  url: window.location.href,
-                }) ?? navigator.clipboard.writeText(window.location.href)
-              }
-            >
-              <Share2 size={18} /> Share timetable
-            </button>
-            <button
-              onClick={() => downloadIcs(demoTimetable, selectedPreset.minutes)}
-            >
-              <Download size={18} /> Download .ics
-            </button>
-            <div className="qr-block">
-              <QrCode size={84} />
-              <span>QR poster ready</span>
-            </div>
-          </aside>
-        </div>
-        <WeekView timetable={demoTimetable} />
-        <div className="sticky-action">
-          <button className="primary" onClick={() => setWizardOpen(true)}>
-            <CalendarCheck size={20} /> Add to my calendar
-          </button>
-        </div>
+        <section className="action-panel">
+          <h2>This timetable has not been published yet.</h2>
+          <p>
+            CalenderZW cannot show timetable sessions or create calendar files
+            until a published Supabase timetable exists for this class link.
+          </p>
+          <a href="/find">Find another timetable</a>
+          <a href="/support">Contact support</a>
+        </section>
       </main>
-      {wizardOpen && (
-        <SyncWizard
-          timetable={demoTimetable}
-          selectedPreset={selectedPreset}
-          setSelectedPreset={setSelectedPreset}
-          onClose={() => setWizardOpen(false)}
-        />
-      )}
-      {reportOpen && <ReportDialog onClose={() => setReportOpen(false)} />}
-      {activeCalendarMessage && (
-        <MessageDialog
-          title={activeCalendarMessage.title}
-          text={activeCalendarMessage.text}
-          tone={activeCalendarMessage.tone}
-          onContinue={() => setDismissedCalendarState(calendarState)}
-        />
-      )}
     </Shell>
-  );
-}
-
-function ReportDialog({ onClose }: { onClose: () => void }) {
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState("");
-  const [reference, setReference] = useState("");
-  return (
-    <div className="sheet-backdrop" role="presentation">
-      <section
-        className="sync-sheet compact"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="report-title"
-      >
-        <div className="sheet-header">
-          <h2 id="report-title">Report timetable issue</h2>
-          <button
-            className="icon-button"
-            onClick={onClose}
-            aria-label="Close report form"
-          >
-            x
-          </button>
-        </div>
-        {submitted ? (
-          <div className="success-state tall">
-            <Check />
-            <strong>Report sent to verification queue.</strong>
-            <span>Reference {reference}</span>
-          </div>
-        ) : (
-          <form
-            className="report-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              const parsed = correctionReportSchema.safeParse({
-                timetableId: demoTimetable.id,
-                issueType: form.get("issueType"),
-                details: form.get("details"),
-                contact: form.get("contact") || undefined,
-              });
-              if (!parsed.success) {
-                setError(
-                  parsed.error.issues[0]?.message ??
-                    "Check the report details.",
-                );
-                return;
-              }
-              setReference(`ECO-${Date.now().toString().slice(-5)}`);
-              setSubmitted(true);
-            }}
-          >
-            <label>
-              Issue type
-              <select name="issueType">
-                <option value="wrong_venue">Wrong venue</option>
-                <option value="wrong_time">Wrong time</option>
-                <option value="missing_lecture">Missing lecture</option>
-                <option value="duplicate">Duplicate</option>
-                <option value="outdated">Outdated</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label>
-              Details
-              <textarea
-                name="details"
-                placeholder="Example: DB202 is now in Lab 4 from 10:00."
-              />
-            </label>
-            <label>
-              Contact for follow-up
-              <input name="contact" placeholder="Optional email or phone" />
-            </label>
-            {error && <p className="field-error">{error}</p>}
-            <button className="primary" type="submit">
-              Send report
-            </button>
-          </form>
-        )}
-      </section>
-    </div>
   );
 }
 
@@ -1172,15 +994,6 @@ function FinderPage() {
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<"request" | "upload" | null>(null);
   const [submitted, setSubmitted] = useState<TimetableSubmission | null>(null);
-  const results = useMemo(
-    () =>
-      popularTimetables.filter((item) =>
-        `${item.institution} ${item.programme} ${item.part}`
-          .toLowerCase()
-          .includes(query.toLowerCase()),
-      ),
-    [query],
-  );
   return (
     <Shell>
       <main className="page">
@@ -1198,9 +1011,14 @@ function FinderPage() {
           />
         </label>
         <div className="result-list">
-          {results.map((timetable) => (
-            <TimetableCard timetable={timetable} key={timetable.id} />
-          ))}
+          <EmptyState
+            title="No timetables have been published."
+            text={
+              query
+                ? "No published database timetable matches this search yet."
+                : "Published timetables will appear here after the operator publishes them."
+            }
+          />
         </div>
         <section className="request-band">
           <h2>No timetable has been published for this class yet.</h2>
@@ -1355,19 +1173,6 @@ function SubmissionDialog({
         </form>
       </section>
     </div>
-  );
-}
-
-function TimetableCard({ timetable }: { timetable: Timetable }) {
-  return (
-    <a className="timetable-card" href={`/t/${timetable.slug}`}>
-      <VerificationBadge status={timetable.verificationStatus} />
-      <strong>{timetable.programme}</strong>
-      <span>
-        {timetable.part} · {timetable.semester} · {timetable.groupName}
-      </span>
-      <em>{timetable.events.length} weekly events</em>
-    </a>
   );
 }
 
@@ -1580,8 +1385,8 @@ function HomePage() {
               <Search size={20} aria-hidden="true" />
               Find my timetable
             </a>
-            <a className="secondary dark" href={`/t/${demoTimetable.slug}`}>
-              View sample timetable
+            <a className="secondary dark" href="/support">
+              Request a timetable
             </a>
           </div>
         </section>
@@ -1610,117 +1415,19 @@ function PageHeader({
   );
 }
 
-function DashboardPage() {
-  return (
-    <Shell>
-      <main className="page dashboard">
-        <PageHeader
-          icon={<Home />}
-          title="Dashboard"
-          text="Pilot operations for students, representatives, verifiers, and institution admins."
-        />
-        <div className="metrics">
-          <MetricCard label="Views" value="1,248" icon={<BarChart3 />} />
-          <MetricCard label="Syncs" value="534" icon={<CalendarCheck />} />
-          <MetricCard label="Reports" value="7" icon={<AlertTriangle />} />
-          <MetricCard label="Published" value="18" icon={<ShieldCheck />} />
-        </div>
-        <section className="ops-grid">
-          <ActionPanel
-            icon={<Upload />}
-            title="Representative"
-            items={[
-              "Create draft timetable",
-              "Import CSV",
-              "Generate QR poster",
-              "View activation stats",
-            ]}
-          />
-          <ActionPanel
-            icon={<FileClock />}
-            title="Verifier"
-            items={[
-              "Review submitted versions",
-              "Compare venue changes",
-              "Publish official version",
-              "Rollback safely",
-            ]}
-          />
-          <ActionPanel
-            icon={<Lock />}
-            title="Institution admin"
-            items={[
-              "Manage programmes",
-              "Assign roles",
-              "Inspect reports",
-              "Export audit logs",
-            ]}
-          />
-        </section>
-      </main>
-    </Shell>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <article className="metric-card">
-      <span>{icon}</span>
-      <small>{label}</small>
-      <strong>{value}</strong>
-    </article>
-  );
-}
-
-function ActionPanel({
-  icon,
-  title,
-  items,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  items: string[];
-}) {
-  return (
-    <article className="action-panel">
-      <span>{icon}</span>
-      <h2>{title}</h2>
-      {items.map((item) => (
-        <button key={item}>{item}</button>
-      ))}
-    </article>
-  );
-}
-
 function HistoryPage() {
   return (
     <Shell>
       <main className="page">
         <PageHeader
           icon={<History />}
-          title="Update history"
-          text="Published changes remain auditable and reversible."
+          title="Update history unavailable"
+          text="No published timetable history is available from the database for this link."
         />
-        <div className="timeline">
-          {demoTimetable.history.map((item) => (
-            <article key={item.id}>
-              <strong>{item.version}</strong>
-              <p>{item.summary}</p>
-              <small>
-                {new Date(item.publishedAt).toLocaleString("en-ZW")} by{" "}
-                {item.publishedBy}
-              </small>
-            </article>
-          ))}
-        </div>
+        <EmptyState
+          title="No published history."
+          text="Version history will appear after a real timetable has been published."
+        />
       </main>
     </Shell>
   );
@@ -2191,377 +1898,234 @@ function AccountSettingsPage() {
 }
 
 function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "forbidden" | "error"
+  >("idle");
+  const [message, setMessage] = useState("");
+
+  async function signIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setStatus("loading");
+    setMessage("");
+
+    let supabase;
+    try {
+      supabase = createSupabaseBrowserClient();
+    } catch {
+      setStatus("error");
+      setMessage("Administrator sign-in is not configured.");
+      return;
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    const accessToken = data.session?.access_token;
+    if (error || !accessToken) {
+      setStatus("error");
+      setMessage("Email or password is incorrect.");
+      return;
+    }
+
+    try {
+      await fetchAdminSession(accessToken);
+      track("admin_logged_in");
+      window.history.replaceState({}, "", "/admin");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    } catch (caught) {
+      await supabase.auth.signOut();
+      if (caught instanceof Error && caught.name === "FORBIDDEN") {
+        setStatus("forbidden");
+        setMessage(
+          "This account does not have CalenderZW administrator access.",
+        );
+        return;
+      }
+      setStatus("error");
+      setMessage("Administrator sign-in is temporarily unavailable.");
+    }
+  }
+
   return (
     <Shell>
       <main className="page admin-page">
         <PageHeader
           icon={<Lock />}
           title="Admin login"
-          text="Administrative access is disabled until Supabase Auth, server-side roles, and RLS are wired into this deployment."
+          text="Sign in with the administrator email and password provisioned in Supabase Auth."
         />
-        <section className="action-panel">
-          <h2>Admin sign-in unavailable</h2>
-          <p>
-            The previous MVP login checked a client-visible email allowlist and
-            was not a security boundary. It has been retired so production
-            traffic cannot enter mock administration flows.
-          </p>
-          <p className="content-notice">
-            Configure Supabase Auth, server-side role provisioning, and database
-            policies before re-enabling admin access.
-          </p>
+        <section className="action-panel" aria-labelledby="admin-login-title">
+          <h2 id="admin-login-title">Administrator sign-in</h2>
+          <form className="admin-form" onSubmit={signIn}>
+            <label>
+              Email
+              <input
+                autoComplete="email"
+                inputMode="email"
+                name="email"
+                required
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <label>
+              Password
+              <input
+                autoComplete="current-password"
+                name="password"
+                required
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            <button className="primary" disabled={status === "loading"}>
+              <Lock size={18} />
+              {status === "loading" ? "Signing in" : "Sign in"}
+            </button>
+          </form>
+          {message && (
+            <p
+              className="content-notice"
+              role={status === "error" || status === "forbidden" ? "alert" : "status"}
+            >
+              {message}
+            </p>
+          )}
+          <a href="/">Back to CalenderZW home</a>
         </section>
       </main>
     </Shell>
   );
 }
 
-// TODO: Delete this retired mock workbench when the Supabase-backed AdminShell lands.
 function AdminPage() {
-  const [events, setEvents] = useState<AcademicCalendarEvent[]>(
-    demoTimetable.events,
-  );
-  const [submissions, setSubmissions] =
-    useState<TimetableSubmission[]>(readSubmissions);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftEvent, setDraftEvent] = useState({
-    courseCode: "",
-    title: "",
-    weekdayDate: "2026-08-17",
-    startTime: "08:00",
-    endTime: "10:00",
-    location: "",
-    lecturer: "",
-    groupName: demoTimetable.groupName,
-  });
+  const [status, setStatus] = useState<
+    "checking" | "authorized" | "forbidden" | "login" | "error"
+  >("checking");
+  const [user, setUser] = useState<AdminSessionUser | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
-  function resetDraft() {
-    setEditingId(null);
-    setDraftEvent({
-      courseCode: "",
-      title: "",
-      weekdayDate: "2026-08-17",
-      startTime: "08:00",
-      endTime: "10:00",
-      location: "",
-      lecturer: "",
-      groupName: demoTimetable.groupName,
-    });
-  }
+  useEffect(() => {
+    let active = true;
 
-  function upsertEvent() {
-    const startsAtLocal = `${draftEvent.weekdayDate}T${draftEvent.startTime}:00`;
-    const endsAtLocal = `${draftEvent.weekdayDate}T${draftEvent.endTime}:00`;
-    if (new Date(startsAtLocal) >= new Date(endsAtLocal)) {
-      window.alert("Start time must be before end time.");
-      return;
+    async function verifyAdmin() {
+      let supabase;
+      try {
+        supabase = createSupabaseBrowserClient();
+      } catch {
+        window.history.replaceState({}, "", "/admin/login");
+        if (active) setStatus("login");
+        return;
+      }
+
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        window.history.replaceState({}, "", "/admin/login");
+        if (active) setStatus("login");
+        return;
+      }
+
+      try {
+        const session = await fetchAdminSession(accessToken);
+        if (!active) return;
+        setUser(session.user);
+        setStatus("authorized");
+      } catch (caught) {
+        if (!active) return;
+        if (caught instanceof Error && caught.name === "FORBIDDEN") {
+          setStatus("forbidden");
+        } else {
+          window.history.replaceState({}, "", "/admin/login");
+          setStatus("login");
+        }
+      }
     }
-    if (!draftEvent.courseCode || !draftEvent.title || !draftEvent.location) {
-      window.alert("Course code, title, and venue are required.");
-      return;
-    }
 
-    const nextEvent: AcademicCalendarEvent = {
-      id:
-        editingId ??
-        `${draftEvent.courseCode.toLowerCase()}-${draftEvent.weekdayDate}-${draftEvent.startTime}`.replace(
-          /[^a-z0-9]+/g,
-          "-",
-        ),
-      timetableId: demoTimetable.id,
-      timetableVersionId: `local-${demoTimetable.version}`,
-      courseCode: draftEvent.courseCode.toUpperCase(),
-      title: draftEvent.title,
-      location: draftEvent.location,
-      lecturer: draftEvent.lecturer || undefined,
-      groupName: draftEvent.groupName,
-      timezone: demoTimetable.timezone,
-      startsAtLocal,
-      endsAtLocal,
-      recurrence: {
-        frequency: "weekly",
-        interval: 1,
-        weekdays: ["MO"],
-        until: demoTimetable.semesterEnd,
-      },
-      reminders: [1440, 30],
-      status: "confirmed",
-      verificationStatus: demoTimetable.verificationStatus,
-      sequence: editingId ? 4 : 1,
-      lastModified: new Date().toISOString(),
+    void verifyAdmin();
+    return () => {
+      active = false;
     };
+  }, []);
 
-    setEvents((current) =>
-      editingId
-        ? current.map((event) => (event.id === editingId ? nextEvent : event))
-        : [nextEvent, ...current],
-    );
-    track(editingId ? "admin_timetable_updated" : "admin_timetable_created");
-    resetDraft();
+  async function signOut() {
+    setSigningOut(true);
+    setUser(null);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      await supabase.auth.signOut();
+    } finally {
+      window.history.replaceState({}, "", "/admin/login");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
   }
 
-  function editEvent(event: AcademicCalendarEvent) {
-    setEditingId(event.id);
-    setDraftEvent({
-      courseCode: event.courseCode,
-      title: event.title,
-      weekdayDate: event.startsAtLocal.slice(0, 10),
-      startTime: event.startsAtLocal.slice(11, 16),
-      endTime: event.endsAtLocal.slice(11, 16),
-      location: event.location ?? "",
-      lecturer: event.lecturer ?? "",
-      groupName: event.groupName ?? demoTimetable.groupName,
-    });
+  if (status === "forbidden") {
+    return (
+      <Shell>
+        <main className="page admin-page">
+          <PageHeader
+            icon={<ShieldCheck />}
+            title="Administrator access"
+            text="This account does not have CalenderZW administrator access."
+          />
+          <section className="action-panel">
+            <h2>Access denied</h2>
+            <p>This account does not have CalenderZW administrator access.</p>
+            <a href="/admin/login">Return to admin login</a>
+          </section>
+        </main>
+      </Shell>
+    );
   }
 
-  function closeSubmission(id: string) {
-    const next = submissions.map((submission) =>
-      submission.id === id
-        ? { ...submission, status: "closed" as const }
-        : submission,
+  if (status === "login") {
+    return <AdminLoginPage />;
+  }
+
+  if (status !== "authorized") {
+    return (
+      <Shell>
+        <main className="page admin-page">
+          <PageHeader
+            icon={<Lock />}
+            title="Checking admin access"
+            text="Verifying the current Supabase session."
+          />
+        </main>
+      </Shell>
     );
-    setSubmissions(next);
-    saveSubmissions(next);
   }
 
   return (
     <Shell>
       <main className="page admin-page">
         <PageHeader
-          icon={<FileClock />}
-          title="Admin timetables"
-          text="Simple MVP controls for creating, editing, publishing, previewing, and archiving timetables."
+          icon={<ShieldCheck />}
+          title="Admin access verified"
+          text="Phase 2 secure admin authentication is active for this session."
         />
-        <section className="admin-grid">
-          <article className="action-panel">
-            <h2>{demoTimetable.programme}</h2>
-            <p>
-              {demoTimetable.part} · {demoTimetable.semester} · {events.length}{" "}
-              events
-            </p>
-            <button onClick={() => track("admin_timetable_updated")}>
-              Edit metadata
-            </button>
-            <button onClick={() => track("admin_timetable_updated")}>
-              Edit lecture entries
-            </button>
-            <button onClick={() => track("admin_timetable_published")}>
-              Publish new version
-            </button>
-            <a href={`/t/${demoTimetable.slug}`}>Preview public page</a>
-          </article>
-          <article className="action-panel">
-            <h2>Create timetable</h2>
-            <p>
-              Production should persist these forms through Supabase with RLS
-              and server validation.
-            </p>
-            <button onClick={() => track("admin_timetable_created")}>
-              New timetable
-            </button>
-            <button>Duplicate current timetable</button>
-            <button>Archive timetable</button>
-            <button>Download QR code</button>
-          </article>
-          <article className="action-panel">
-            <h2>Reports and sync</h2>
-            <p>
-              Publishing queues Google sync jobs and updates feed output while
-              keeping stable event identities.
-            </p>
-            <button>View reported problems</button>
-            <button>View subscription counts</button>
-            <button>Revoke calendar link</button>
-          </article>
-        </section>
-        <section className="admin-workbench">
-          <article className="admin-editor">
-            <h2>Lecture CRUD</h2>
-            <div className="admin-form inline-editor">
-              <label>
-                Code
-                <input
-                  value={draftEvent.courseCode}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      courseCode: event.target.value,
-                    }))
-                  }
-                  placeholder="SE201"
-                />
-              </label>
-              <label>
-                Class name
-                <input
-                  value={draftEvent.title}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      title: event.target.value,
-                    }))
-                  }
-                  placeholder="Software Engineering"
-                />
-              </label>
-              <label>
-                Date
-                <input
-                  type="date"
-                  value={draftEvent.weekdayDate}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      weekdayDate: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label>
-                Start
-                <input
-                  type="time"
-                  value={draftEvent.startTime}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      startTime: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label>
-                End
-                <input
-                  type="time"
-                  value={draftEvent.endTime}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      endTime: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label>
-                Venue
-                <input
-                  value={draftEvent.location}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      location: event.target.value,
-                    }))
-                  }
-                  placeholder="Innovation Hub"
-                />
-              </label>
-              <label>
-                Lecturer
-                <input
-                  value={draftEvent.lecturer}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      lecturer: event.target.value,
-                    }))
-                  }
-                  placeholder="Dr N. Chigora"
-                />
-              </label>
-              <label>
-                Group
-                <input
-                  value={draftEvent.groupName}
-                  onChange={(event) =>
-                    setDraftEvent((draft) => ({
-                      ...draft,
-                      groupName: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <button className="primary" onClick={upsertEvent}>
-                <Plus size={18} /> {editingId ? "Save class" : "Add class"}
-              </button>
-              {editingId && (
-                <button className="secondary light" onClick={resetDraft}>
-                  Cancel edit
-                </button>
-              )}
-            </div>
-          </article>
-          <article className="admin-editor">
-            <h2>Classes</h2>
-            <div className="admin-list">
-              {events.map((event) => (
-                <div className="admin-row" key={event.id}>
-                  <span>
-                    <strong>
-                      {event.courseCode} · {event.title}
-                    </strong>
-                    <small>
-                      {event.startsAtLocal.slice(0, 10)} ·{" "}
-                      {event.startsAtLocal.slice(11, 16)}-
-                      {event.endsAtLocal.slice(11, 16)} · {event.location}
-                    </small>
-                  </span>
-                  <button
-                    onClick={() => editEvent(event)}
-                    aria-label={`Edit ${event.title}`}
-                  >
-                    <Pencil size={17} />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setEvents((current) =>
-                        current.filter((item) => item.id !== event.id),
-                      )
-                    }
-                    aria-label={`Delete ${event.title}`}
-                  >
-                    <Trash2 size={17} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </article>
-          <article className="admin-editor">
-            <h2>Requests and uploads</h2>
-            <div className="admin-list">
-              {submissions.length === 0 && (
-                <p className="helper">No public requests or uploads yet.</p>
-              )}
-              {submissions.map((submission) => (
-                <div className="admin-row" key={submission.id}>
-                  <span>
-                    <strong>
-                      {submission.type === "request" ? "Request" : "Upload"} ·{" "}
-                      {submission.programme}
-                    </strong>
-                    <small>
-                      {submission.institution} · {submission.part} ·{" "}
-                      {submission.semester}
-                      {submission.fileName ? ` · ${submission.fileName}` : ""}
-                    </small>
-                  </span>
-                  <em>{submission.status}</em>
-                  {submission.status !== "closed" && (
-                    <button onClick={() => closeSubmission(submission.id)}>
-                      Close
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </article>
+        <section className="action-panel">
+          <h2>Admin access verified</h2>
+          <p>{user?.email ?? user?.id}</p>
+          <p className="content-notice">
+            Current status: PHASE 2 - Secure admin authentication. CRUD begins
+            in Phase 4 after the canonical schema is verified.
+          </p>
+          <button className="secondary" disabled={signingOut} onClick={signOut}>
+            {signingOut ? "Signing out" : "Sign out"}
+          </button>
         </section>
       </main>
     </Shell>
   );
 }
-
-void AdminPage;
 
 function EmptyState({ title, text }: { title: string; text: string }) {
   return (
@@ -2574,7 +2138,17 @@ function EmptyState({ title, text }: { title: string; text: string }) {
 }
 
 export function App() {
-  const path = currentPath();
+  const [path, setPath] = useState(currentPath());
+  useEffect(() => {
+    const updatePath = () => setPath(currentPath());
+    window.addEventListener("popstate", updatePath);
+    return () => window.removeEventListener("popstate", updatePath);
+  }, []);
+
+  if (path === "/dashboard" || path.startsWith("/dashboard/")) {
+    window.history.replaceState({}, "", "/admin");
+    return <AdminPage />;
+  }
   if (path === "/") return <HomePage />;
   if (path === "/privacy") return <LegalDocumentPage type="privacy" />;
   if (path === "/terms") return <LegalDocumentPage type="terms" />;
@@ -2586,9 +2160,7 @@ export function App() {
     return <GoogleVerificationReadinessPage />;
   if (path === "/admin/login") return <AdminLoginPage />;
   if (path === "/admin") return <AdminPage />;
-  if (path.startsWith("/admin/")) return <AdminLoginPage />;
-  if (path === "/dashboard" || path.startsWith("/dashboard/"))
-    return <DashboardPage />;
+  if (path.startsWith("/admin/")) return <AdminPage />;
   if (path.endsWith("/history")) return <HistoryPage />;
   if (path.startsWith("/t/") || path.startsWith("/sync/"))
     return <PublicTimetablePage />;

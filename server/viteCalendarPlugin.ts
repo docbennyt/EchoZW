@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Plugin } from "vite";
+import { isDemoDataAllowed } from "../src/domain/demoConfig.js";
 import { mapToGoogleEvents } from "../src/domain/googleCalendar.js";
 import { demoTimetable } from "../src/domain/timetableData.js";
 import {
@@ -88,6 +89,16 @@ function sendJson(
     ...headers,
   });
   res.end(JSON.stringify(body));
+}
+
+function sendDemoTimetableUnavailable(res: ServerResponse) {
+  sendJson(res, 404, {
+    error: {
+      code: "TIMETABLE_NOT_PUBLISHED",
+      message:
+        "This timetable is not published yet. Demo timetable data is disabled.",
+    },
+  });
 }
 
 function readBody(req: IncomingMessage) {
@@ -197,6 +208,7 @@ export async function handleCalendarRequest(
 
   await loadStore();
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
+  const demoDataAllowed = isDemoDataAllowed(process.env, mode);
 
   if (req.method === "GET" && requestUrl.pathname === "/healthz") {
     sendJson(res, 200, { ok: true, service: "calenderzw" });
@@ -218,6 +230,11 @@ export async function handleCalendarRequest(
             details: parsed.error.flatten(),
           },
         });
+        return true;
+      }
+
+      if (!demoDataAllowed) {
+        sendDemoTimetableUnavailable(res);
         return true;
       }
 
@@ -390,6 +407,11 @@ export async function handleCalendarRequest(
     /^\/calendar\/feed\/([^/]+)\.ics$/,
   );
   if ((req.method === "GET" || req.method === "HEAD") && feedMatch) {
+    if (!demoDataAllowed) {
+      sendDemoTimetableUnavailable(res);
+      return true;
+    }
+
     const token = decodeURIComponent(feedMatch[1]);
     const tokenHash = await sha256Base64Url(token);
     const subscriptionId = subscriptionIdByTokenHash.get(tokenHash);
@@ -417,6 +439,11 @@ export async function handleCalendarRequest(
     /^\/calendar\/download\/([^/]+)\.ics$/,
   );
   if ((req.method === "GET" || req.method === "HEAD") && downloadMatch) {
+    if (!demoDataAllowed) {
+      sendDemoTimetableUnavailable(res);
+      return true;
+    }
+
     const subscription = subscriptionsById.get(
       decodeURIComponent(downloadMatch[1]),
     );
@@ -457,6 +484,11 @@ export async function handleCalendarRequest(
     req.method === "GET" &&
     requestUrl.pathname === "/api/calendar/google/connect"
   ) {
+    if (!demoDataAllowed) {
+      sendDemoTimetableUnavailable(res);
+      return true;
+    }
+
     const subscriptionId = requestUrl.searchParams.get("subscriptionId");
     const subscription = subscriptionId
       ? subscriptionsById.get(subscriptionId)
@@ -502,6 +534,11 @@ export async function handleCalendarRequest(
     req.method === "GET" &&
     requestUrl.pathname === "/api/calendar/google/callback"
   ) {
+    if (!demoDataAllowed) {
+      sendDemoTimetableUnavailable(res);
+      return true;
+    }
+
     const code = requestUrl.searchParams.get("code");
     const state = requestUrl.searchParams.get("state");
     const subscriptionId = state ? googleStates.get(state) : undefined;

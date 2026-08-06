@@ -12,6 +12,8 @@ import {
   validateGoogleOAuthProductionConfig,
 } from "../src/domain/googleOAuthConfig.js";
 import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
+import { handleAdminRequest } from "./adminApi.js";
+import { validateSupabaseProductionConfig } from "./supabase/config.js";
 import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 
 const port = Number(process.env.PORT ?? 80);
@@ -20,6 +22,7 @@ const distDir = resolve(serverDir, "../../dist");
 
 if (process.env.NODE_ENV === "production") {
   validateLegalProductionConfig(process.env);
+  validateSupabaseProductionConfig(process.env);
   const googleStatus = validateGoogleOAuthProductionConfig(process.env);
   if (googleStatus.enabled) {
     const { redirectUri, clientIdSuffix } = getGoogleOAuthStartupStatus(
@@ -142,6 +145,19 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
+  const requestUrl = new URL(req.url ?? "/", "http://localhost");
+  if (
+    requestUrl.pathname === "/dashboard" ||
+    requestUrl.pathname.startsWith("/dashboard/")
+  ) {
+    res.writeHead(308, {
+      Location: "/admin",
+      "Cache-Control": "public, max-age=300",
+    });
+    res.end();
+    return;
+  }
+
   const filePath = resolveStaticPath(req);
   if (filePath) {
     try {
@@ -158,6 +174,7 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse) {
 const server = createServer(async (req, res) => {
   applySecurityHeaders(res);
   try {
+    if (await handleAdminRequest(req, res)) return;
     if (await handleCalendarRequest(req, res, "production")) return;
     await serveStatic(req, res);
   } catch {

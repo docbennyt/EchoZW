@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173/t/zou-bscse-2-1-2026-s2`.
+Open `http://localhost:5173/find` to see the published timetable entry point. Until a real timetable repository is implemented, fixture-backed timetable links render an unavailable state instead of demo classes.
 
 Google and Apple Calendar subscriptions need a public HTTPS app URL. Use the local `.ics` download for direct testing, or set `PUBLIC_APP_URL` and `VITE_PUBLIC_APP_URL` to the live deployment URL for provider subscription testing.
 
@@ -58,9 +58,9 @@ npm run format:check
 
 ## Known Limitations
 
-- This Vite pilot generates downloadable `.ics` files in the browser. A production subscribed feed needs a server or edge function that returns `text/calendar`.
+- This Vite pilot no longer generates calendar files from demo timetable data in production paths. A production subscribed feed needs the server API to read published timetable rows from Supabase.
 - Supabase, Google Calendar, PesePay, Sentry, and PostHog are scaffolded or documented, not live-connected without credentials.
-- The seed data is fictional and safe for demos.
+- Fictional seed data remains for local development and tests only.
 
 ## Deployment
 
