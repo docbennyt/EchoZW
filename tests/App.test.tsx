@@ -27,7 +27,13 @@ describe("public student flow", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("CalenderZW").length).toBeGreaterThan(0);
-    expect(screen.getByText("CalenderZW by aiDo")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /CalenderZW home/i }),
+    ).toHaveAttribute("href", "/");
+    expect(screen.getByRole("contentinfo")).toHaveAttribute(
+      "data-component",
+      "GlobalFooter",
+    );
     expect(
       screen.getByText(/Google Calendar connection is optional/i),
     ).toBeInTheDocument();
@@ -37,26 +43,63 @@ describe("public student flow", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Find my timetable" }),
+      screen.getAllByRole("link", { name: "Find my timetable" })[0],
     ).toHaveAttribute("href", "/find");
     const footer = screen.getByRole("contentinfo");
     const footerLinks = within(footer);
-    expect(footerLinks.getByRole("link", { name: "Privacy" })).toHaveAttribute(
-      "href",
-      "/privacy",
-    );
-    expect(footerLinks.getByRole("link", { name: "Terms" })).toHaveAttribute(
-      "href",
-      "/terms",
-    );
+    expect(
+      footerLinks.getByRole("link", { name: "Privacy Policy" }),
+    ).toHaveAttribute("href", "/privacy");
+    expect(
+      footerLinks.getByRole("link", { name: "Terms of Service" }),
+    ).toHaveAttribute("href", "/terms");
     expect(
       footerLinks.getByRole("link", { name: "Data deletion" }),
     ).toHaveAttribute("href", "/data-deletion");
-    expect(footerLinks.getByRole("link", { name: "Support" })).toHaveAttribute(
+    expect(
+      footerLinks.getByRole("link", { name: "Help centre" }),
+    ).toHaveAttribute("href", "/support");
+    expect(footerLinks.getByRole("link", { name: "Contact" })).toHaveAttribute(
       "href",
       "/support",
     );
     expect(screen.queryByText(/BSc Software Engineering/i)).toBeNull();
+  });
+
+  it("uses one shared accessible header and mobile menu on public pages", () => {
+    for (const path of [
+      "/",
+      "/privacy",
+      "/terms",
+      "/data-deletion",
+      "/support",
+      "/t/zou-bscse-2-1-2026-s2",
+    ]) {
+      window.history.pushState({}, "", path);
+      const { unmount } = render(<App />);
+      expect(
+        document.querySelectorAll('[data-component="GlobalHeader"]'),
+      ).toHaveLength(1);
+      expect(
+        document.querySelectorAll('[data-component="GlobalFooter"]'),
+      ).toHaveLength(1);
+      expect(
+        screen.getByRole("link", { name: /CalenderZW home/i }),
+      ).toHaveAttribute("href", "/");
+      expect(
+        screen.getByRole("button", { name: /Open navigation menu/i }),
+      ).toHaveAttribute("aria-controls", "global-navigation");
+      unmount();
+    }
+
+    window.history.pushState({}, "", "/");
+    render(<App />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Open navigation menu/i }),
+    );
+    expect(
+      screen.getByRole("button", { name: /Close navigation menu/i }),
+    ).toHaveAttribute("aria-expanded", "true");
   });
 
   it("renders legal and data deletion pages without authentication", () => {

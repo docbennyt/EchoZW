@@ -13,7 +13,7 @@ describe("calendar generation", () => {
     expect(ics).toContain("BEGIN:VCALENDAR");
     expect(ics).toContain("VERSION:2.0");
     expect(ics).toContain("BEGIN:VEVENT");
-    expect(ics).toContain("UID:bscse21-se201-mo-0800@calendar.aido.co.zw");
+    expect(ics).toContain("UID:bscse21-se201-mo-0800@calender.aido.co.zw");
     expect(ics).toContain("RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;");
     expect(ics).toContain("BEGIN:VALARM");
     expect(ics).toContain("TRIGGER:-PT1440M");

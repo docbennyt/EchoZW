@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="author" content="Dr BennyT" />
     <meta name="copyright" content="aiDo" />
+    <meta name="application-name" content="CalenderZW" />
+    <meta name="apple-mobile-web-app-title" content="CalenderZW" />
     <meta name="theme-color" content="#17423a" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -16,6 +18,7 @@
       content="Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar app."
     />
     <link rel="canonical" href="https://calender.aido.co.zw/" />
+    <meta property="og:site_name" content="CalenderZW" />
     <meta property="og:title" content="CalenderZW" />
     <meta
       property="og:description"
@@ -36,7 +39,7 @@
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Web",
         "url": "https://calender.aido.co.zw/",
-        "description": "Student timetable and calendar synchronisation",
+        "description": "Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.",
         "publisher": {
           "@type": "Organization",
           "name": "aiDo"
@@ -47,7 +50,85 @@
     <title>CalenderZW | Add your university timetable to your calendar</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <header data-prerender="GlobalHeader">
+        <a href="/" aria-label="CalenderZW home">CalenderZW by aiDo</a>
+        <nav aria-label="Main navigation">
+          <a href="/find">Find timetable</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#calendar-options">Calendar options</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/dashboard">Dashboard</a>
+        </nav>
+      </header>
+      <main>
+        <section>
+          <p>Your timetable, already organised</p>
+          <h1>Add your university timetable to your calendar</h1>
+          <p>
+            CalenderZW helps students find a verified class timetable, choose
+            useful reminders, and add lectures to Google Calendar, Apple
+            Calendar, Outlook, or another calendar application.
+          </p>
+          <p>
+            Google Calendar connection is optional. When you choose direct
+            Google Calendar sync, CalenderZW asks for permission to create and
+            manage a separate timetable calendar created by CalenderZW. It does
+            not read or modify events in your existing personal calendars.
+          </p>
+          <p>
+            <a href="/find">Find my timetable</a>
+            <a href="/#how-it-works">See how it works</a>
+            <a href="/find">Use a calendar file instead</a>
+          </p>
+        </section>
+        <section id="google-calendar-access">
+          <h2>Why CalenderZW asks for Google Calendar access</h2>
+          <p>
+            When you select direct Google Calendar synchronisation, CalenderZW
+            asks for permission to create and manage a separate timetable
+            calendar created by CalenderZW. We use that permission to add your
+            selected lectures, apply your reminder choices, and maintain those
+            CalenderZW-created events when a published timetable changes.
+          </p>
+          <p>
+            CalenderZW does not use this permission to read, analyse, modify, or
+            delete events from your existing personal calendars.
+          </p>
+          <p>
+            <a href="/privacy">Read the Privacy Policy</a>
+            <a href="/data-deletion">View data-deletion controls</a>
+            <a href="/find">Use .ics instead</a>
+          </p>
+        </section>
+        <section>
+          <h2>Privacy summary</h2>
+          <p>
+            CalenderZW collects only the information needed to provide timetable
+            and calendar features. Google Calendar access is optional and
+            limited to a separate calendar created by CalenderZW.
+          </p>
+        </section>
+      </main>
+      <footer data-prerender="GlobalFooter">
+        <p>
+          CalenderZW by aiDo. Verified university timetables, useful reminders,
+          and simple calendar sync for students.
+        </p>
+        <nav aria-label="Product">
+          <a href="/find">Find timetable</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#calendar-options">Calendar options</a>
+          <a href="/t/zou-bscse-2-1-2026-s2">View sample timetable</a>
+        </nav>
+        <nav aria-label="Legal">
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+          <a href="/data-deletion">Data deletion</a>
+          <a href="/support">Support</a>
+        </nav>
+      </footer>
+    </div>
     <noscript>
       <main>
         <h1>Add your university timetable to your calendar</h1>

@@ -114,7 +114,7 @@ export function generateIcsFromPersonalizedCalendar(
 
   for (const event of timetable.events) {
     lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${event.id}@calendar.aido.co.zw`);
+    lines.push(`UID:${event.id}@calender.aido.co.zw`);
     lines.push(`DTSTAMP:${now}`);
     lines.push(
       `DTSTART;TZID=${event.timezone}:${localIcsDate(event.startsAtLocal)}`,

@@ -1,0 +1,40 @@
+# Google Branding Rejection Audit
+
+This audit was created from local repository and production-build inspection. Live `https://calender.aido.co.zw` checks still need to be repeated after deployment.
+
+| Location | Current value | Google-visible? | Required action |
+|---|---|---:|---|
+| `index.html` title | `CalenderZW | Add your university timetable to your calendar` | Yes | Keep. |
+| `index.html` raw body | Contains CalenderZW, H1, product-purpose copy, Google disclosure, privacy, terms, deletion, support links before hydration | Yes | Keep and verify after deploy. |
+| `index.html` canonical | `https://calender.aido.co.zw/` | Yes | Keep. |
+| `index.html` Open Graph | `og:site_name=CalenderZW`, `og:title=CalenderZW`, root URL | Yes | Keep. |
+| `index.html` JSON-LD | `name=CalenderZW`, publisher `aiDo`, root URL, privacy policy URL | Yes | Keep. |
+| `public/site.webmanifest` | `name=CalenderZW`, `short_name=CalenderZW` | Yes | Keep. |
+| `public/manifest.webmanifest` | Alias manifest with `name=CalenderZW`, `short_name=CalenderZW` | Yes | Keep for reviewer smoke checks. |
+| `public/privacy/index.html` | CalenderZW static privacy page with shared header/footer markers | Yes | Keep until server-side rendering replaces static legal pages. |
+| `public/terms/index.html` | CalenderZW static terms page with shared header/footer markers | Yes | Keep until server-side rendering replaces static legal pages. |
+| `public/data-deletion/index.html` | CalenderZW static deletion page with shared header/footer markers | Yes | Keep until server-side rendering replaces static legal pages. |
+| `public/support/index.html` | CalenderZW static support page with shared header/footer markers | Yes | Keep until server-side rendering replaces static support page. |
+| `src/config/brand.ts` | Canonical `CalenderZW`, `aiDo`, `calender.aido.co.zw` | Yes through app output | Keep as single source of truth. |
+| `src/App.tsx` shell | `GlobalHeader` and `GlobalFooter` reused by homepage, find, legal, support, account, timetable, dashboard, and admin pages | Yes | Keep. |
+| `server/productionServer.ts` | Serves direct 200 SPA shell and canonical URLs for public routes | Yes | Verify route smoke after deploy. |
+| Service worker | No service-worker source or precache file found | Yes if present after deploy | Clear old browser caches after deployment; no local SW cache version to increment. |
+| `README.md`, `Progress.md`, old docs | Historical `EchoZW Calendar` references | No, documentation only | Leave or update separately; excluded from public-output failure tests. |
+| `branding/site.webmanifest.erb` | Historical `EchoZW` template | No, source asset template only | Do not ship; public manifest is canonical CalenderZW. |
+| Calendar UID host | `calendar.aido.co.zw` in event UID domain | Calendar feed visible | Follow-up recommended to migrate UID host carefully without breaking stable calendar event identity. |
+
+## Local Production Smoke Results
+
+Run after `npm run build` against `node dist-server/server/productionServer.js` on `http://127.0.0.1:4173`.
+
+| Route | Status | Title | Canonical | Purpose copy | Privacy link | Legacy brand |
+|---|---:|---|---|---:|---:|---:|
+| `/` | 200 | `CalenderZW | Add your university timetable to your calendar` | `https://calender.aido.co.zw/` | Yes | Yes | No |
+| `/privacy` | 200 | `Privacy Policy | CalenderZW` | `https://calender.aido.co.zw/privacy` | Yes | Yes | No |
+| `/terms` | 200 | `Terms of Service | CalenderZW` | `https://calender.aido.co.zw/terms` | Yes | Yes | No |
+| `/data-deletion` | 200 | `Data Deletion | CalenderZW` | `https://calender.aido.co.zw/data-deletion` | Yes | Yes | No |
+| `/support` | 200 | `Support | CalenderZW` | `https://calender.aido.co.zw/support` | Yes | Yes | No |
+| `/t/zou-bscse-2-1-2026-s2` | 200 | `CalenderZW | Add your university timetable to your calendar` | `https://calender.aido.co.zw/t/zou-bscse-2-1-2026-s2` | Yes | Yes | No |
+| `/manifest.webmanifest` | 200 | n/a | n/a | n/a | n/a | No |
+
+The application code cannot prove Google Search Console ownership. That must be completed externally.

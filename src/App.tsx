@@ -12,6 +12,7 @@ import {
   Home,
   Link,
   Lock,
+  Menu,
   Pencil,
   Plus,
   QrCode,
@@ -20,6 +21,7 @@ import {
   ShieldCheck,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import { appConfig } from "./config/app";
 import { BRAND } from "./config/brand";
@@ -152,54 +154,134 @@ function addSubmission(
   return submission;
 }
 
+const navigationLinks = [
+  { label: "Find timetable", href: "/find" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Calendar options", href: "/#calendar-options" },
+  { label: "Privacy", href: "/privacy" },
+  { label: "Dashboard", href: "/dashboard" },
+] as const;
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="/">
-          <span className="brand-mark">
-            <img src="/favicon-96x96.png" alt="" />
-          </span>
-          <span>
-            <strong>{appConfig.productName}</strong>
-            <small>by {appConfig.companyName}</small>
-          </span>
-        </a>
-        <nav aria-label="Main navigation">
-          <a href="/find">Find timetable</a>
-          <a href="/#how-it-works">How it works</a>
-          <a href="/#calendar-options">Calendar options</a>
-          <a href="/privacy">Privacy</a>
-          <a href="/dashboard">Dashboard</a>
-        </nav>
-      </header>
+      <GlobalHeader />
       {children}
-      <LegalFooter />
+      <GlobalFooter />
     </div>
   );
 }
 
-function LegalFooter() {
+function GlobalHeader() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const path = currentPath();
+
   return (
-    <footer className="site-footer">
-      <div>
-        <strong>{appConfig.attribution}</strong>
-        <span>
-          &copy; {currentYear} {legalConfig.operatorName}.{" "}
-          {legalConfig.tradingName} is operated by {legalConfig.operatorName}.
+    <header className="topbar" data-component="GlobalHeader">
+      <a className="brand" href="/" aria-label="CalenderZW home">
+        <span className="brand-mark">
+          <img src="/favicon-96x96.png" alt="" />
         </span>
         <span>
-          {legalConfig.operatorName} · {legalConfig.country}
+          <strong>{appConfig.productName}</strong>
+          <small>by {appConfig.companyName}</small>
+        </span>
+      </a>
+      <a className="nav-find" href="/find">
+        <Search size={18} aria-hidden="true" />
+        Find timetable
+      </a>
+      <button
+        className="menu-trigger"
+        type="button"
+        aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={menuOpen}
+        aria-controls="global-navigation"
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        {menuOpen ? (
+          <X size={22} aria-hidden="true" />
+        ) : (
+          <Menu size={22} aria-hidden="true" />
+        )}
+      </button>
+      <nav
+        id="global-navigation"
+        className={menuOpen ? "open" : ""}
+        aria-label="Main navigation"
+      >
+        {navigationLinks.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            aria-current={
+              isCurrentNavigationPath(path, item.href) ? "page" : undefined
+            }
+            onClick={() => setMenuOpen(false)}
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
+    </header>
+  );
+}
+
+function isCurrentNavigationPath(path: string, href: string) {
+  if (href === "/") return path === "/";
+  const [hrefPath] = href.split("#");
+  if (hrefPath === "/" && href.includes("#")) return false;
+  return path === hrefPath || path.startsWith(`${hrefPath}/`);
+}
+
+function GlobalFooter() {
+  return (
+    <footer className="site-footer" data-component="GlobalFooter">
+      <div className="footer-inner">
+        <section className="footer-brand" aria-label="CalenderZW brand">
+          <span className="brand-mark footer-mark">
+            <img src="/favicon-96x96.png" alt="" />
+          </span>
+          <div>
+            <strong>{appConfig.productName}</strong>
+            <span>by {appConfig.companyName}</span>
+          </div>
+          <p>
+            Verified university timetables, useful reminders, and simple
+            calendar sync for students.
+          </p>
+          <small>Built in Zimbabwe.</small>
+        </section>
+        <nav aria-label="Product">
+          <h2>Product</h2>
+          <a href="/find">Find timetable</a>
+          <a href="/#how-it-works">How it works</a>
+          <a href="/#calendar-options">Calendar options</a>
+          <a href={`/t/${demoTimetable.slug}`}>View sample timetable</a>
+        </nav>
+        <nav aria-label="Support">
+          <h2>Support</h2>
+          <a href="/support">Help centre</a>
+          <a href={`/t/${demoTimetable.slug}#report`}>
+            Report a timetable problem
+          </a>
+          <a href="/support">Google Calendar setup</a>
+          <a href="/support">Apple Calendar setup</a>
+        </nav>
+        <nav aria-label="Legal">
+          <h2>Legal</h2>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+          <a href="/data-deletion">Data deletion</a>
+          <a href="/support">Contact</a>
+        </nav>
+      </div>
+      <div className="footer-bottom">
+        <span>&copy; {currentYear} {legalConfig.operatorName}</span>
+        <span>
+          {legalConfig.tradingName} is operated by {legalConfig.operatorName}
         </span>
       </div>
-      <nav aria-label="Legal and support links">
-        <a href="/find">Find timetable</a>
-        <a href="/#how-it-works">How it works</a>
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-        <a href="/data-deletion">Data deletion</a>
-        <a href="/support">Support</a>
-      </nav>
     </footer>
   );
 }
@@ -1312,10 +1394,11 @@ function HomePage() {
               Calendar, Outlook, or another calendar app.
             </p>
             <p className="trust-copy">
-              Google Calendar connection is optional. When you choose it,
-              CalenderZW creates and manages a separate timetable calendar. It
+              Google Calendar connection is optional. When you choose direct
+              Google Calendar sync, CalenderZW asks for permission to create and
+              manage a separate timetable calendar created by CalenderZW. It
               does not read or modify events in your existing personal
-              calendars. CalenderZW is operated by aiDo.
+              calendars.
             </p>
             <div className="hero-actions">
               <a className="primary" href="/find">
@@ -1325,8 +1408,8 @@ function HomePage() {
               <a className="secondary dark" href="#how-it-works">
                 See how it works
               </a>
-              <a className="text-link" href={`/t/${demoTimetable.slug}`}>
-                View a sample timetable
+              <a className="text-link" href="/find">
+                Use a calendar file instead
               </a>
             </div>
           </div>
@@ -1410,19 +1493,19 @@ function HomePage() {
         <section id="google-calendar-access" className="home-section disclosure-band">
           <h2>Why CalenderZW asks for Google Calendar access</h2>
           <p>
-            If you choose direct Google Calendar synchronisation, CalenderZW asks
-            for permission to create and manage a separate calendar created by
-            CalenderZW. We use that permission to add the timetable you selected,
-            apply your reminder choices, and update those CalenderZW-created
-            events when the published timetable changes.
+            When you select direct Google Calendar synchronisation, CalenderZW
+            asks for permission to create and manage a separate timetable
+            calendar created by CalenderZW. We use that permission to add your
+            selected lectures, apply your reminder choices, and maintain those
+            CalenderZW-created events when a published timetable changes.
           </p>
           <p>
-            We do not use this permission to read, analyse, change, or delete
-            events in your existing personal calendars.
+            CalenderZW does not use this permission to read, analyse, modify, or
+            delete events from your existing personal calendars.
           </p>
           <div className="inline-links">
-            <a href="/privacy">Read our Privacy Policy</a>
-            <a href="/data-deletion">Learn about data deletion</a>
+            <a href="/privacy">Read the Privacy Policy</a>
+            <a href="/data-deletion">View data-deletion controls</a>
             <a href="/find">Use .ics instead</a>
           </div>
         </section>
@@ -1479,6 +1562,23 @@ function HomePage() {
             <a href="/terms">Terms of Service</a>
             <a href="/data-deletion">Data deletion</a>
             <a href="/support">Support</a>
+          </div>
+        </section>
+
+        <section className="home-section final-cta">
+          <h2>Ready to add your class timetable?</h2>
+          <p>
+            Search for your programme, check the verification status, and choose
+            the calendar method that works best on your device.
+          </p>
+          <div className="hero-actions">
+            <a className="primary" href="/find">
+              <Search size={20} aria-hidden="true" />
+              Find my timetable
+            </a>
+            <a className="secondary dark" href={`/t/${demoTimetable.slug}`}>
+              View sample timetable
+            </a>
           </div>
         </section>
       </main>
@@ -1988,24 +2088,28 @@ function GoogleVerificationReadinessPage() {
   });
 
   const rows = [
-    ["Canonical app name", BRAND.productName],
+    ["Public app name", BRAND.productName],
     ["Homepage URL", `${BRAND.origin}/`],
+    ["Homepage status", "Expected direct 200 after production smoke test"],
+    ["Homepage title", "CalenderZW | Add your university timetable to your calendar"],
+    ["Homepage H1", "Add your university timetable to your calendar"],
     ["Privacy URL", `${BRAND.origin}/privacy`],
     ["Terms URL", `${BRAND.origin}/terms`],
     ["Deletion URL", `${BRAND.origin}/data-deletion`],
     ["Support URL", `${BRAND.origin}/support`],
+    ["Canonical host", BRAND.domain],
     ["OAuth scope", "https://www.googleapis.com/auth/calendar.app.created"],
     [
       "Redirect URI",
       `${BRAND.origin}/api/calendar/google/callback`,
     ],
-    ["Google Calendar API enabled status", "Locally unknowable"],
-    ["Legacy-name scan result", "Checked by automated tests"],
-    ["Homepage direct-200 test", "Run production smoke test"],
-    ["Legal-placeholder scan result", "Checked by automated tests"],
-    ["Google disclosure present", "Homepage and pre-consent flow"],
+    ["Manifest name", BRAND.productName],
+    ["JSON-LD name", BRAND.productName],
+    ["Legacy-brand scan", "Checked by automated tests"],
+    ["No-JavaScript purpose-content check", "Present in raw index.html"],
+    ["Service-worker version", "No local service worker source found"],
     ["Production logo asset", BRAND.squareIconPath],
-    ["Domain-verification status", "Requires external confirmation"],
+    ["Search Console ownership", "Requires external confirmation"],
   ];
 
   return (

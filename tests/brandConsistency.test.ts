@@ -5,6 +5,7 @@ import { BRAND } from "../src/config/brand";
 const publicFiles = [
   "index.html",
   "public/site.webmanifest",
+  "public/manifest.webmanifest",
   "public/privacy/index.html",
   "public/terms/index.html",
   "public/data-deletion/index.html",
@@ -34,10 +35,52 @@ describe("CalenderZW brand consistency", () => {
   });
 
   it("sets manifest name and short name to CalenderZW", () => {
-    const manifest = JSON.parse(
-      readFileSync("public/site.webmanifest", "utf8"),
-    ) as { name: string; short_name: string };
-    expect(manifest.name).toBe("CalenderZW");
-    expect(manifest.short_name).toBe("CalenderZW");
+    for (const manifestPath of [
+      "public/site.webmanifest",
+      "public/manifest.webmanifest",
+    ]) {
+      const manifest = JSON.parse(
+        readFileSync(manifestPath, "utf8"),
+      ) as { name: string; short_name: string };
+      expect(manifest.name).toBe("CalenderZW");
+      expect(manifest.short_name).toBe("CalenderZW");
+    }
+  });
+
+  it("ships meaningful no-JavaScript homepage content in raw HTML", () => {
+    const html = readFileSync("index.html", "utf8");
+
+    expect(html).toContain(
+      "<h1>Add your university timetable to your calendar</h1>",
+    );
+    expect(html).toContain(
+      "CalenderZW helps students find a verified class timetable",
+    );
+    expect(html).toContain(
+      "Why CalenderZW asks for Google Calendar access",
+    );
+    expect(html).toContain('href="/privacy"');
+    expect(html).toContain('href="/terms"');
+    expect(html).toContain('href="/data-deletion"');
+    expect(html).toContain('href="/support"');
+    expect(html).toContain('property="og:site_name" content="CalenderZW"');
+    expect(html).toContain('"name": "CalenderZW"');
+    expect(html).not.toMatch(/<div id="root"><\/div>/);
+  });
+
+  it("uses shared shell markers on static public verification pages", () => {
+    for (const file of [
+      "public/privacy/index.html",
+      "public/terms/index.html",
+      "public/data-deletion/index.html",
+      "public/support/index.html",
+    ]) {
+      const html = readFileSync(file, "utf8");
+      expect(html).toContain('data-component="GlobalHeader"');
+      expect(html).toContain('data-component="GlobalFooter"');
+      expect(html).toContain('aria-label="Product"');
+      expect(html).toContain('aria-label="Support"');
+      expect(html).toContain('aria-label="Legal"');
+    }
   });
 });

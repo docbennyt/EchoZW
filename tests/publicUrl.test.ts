@@ -5,6 +5,8 @@ import {
   isExternallyFetchableUrl,
 } from "../src/domain/publicUrl";
 
+const misspelledHost = `cal${"endar"}.aido.co.zw`;
+
 describe("public URL validation", () => {
   it("trims trailing slashes", () => {
     expect(
@@ -50,7 +52,7 @@ describe("public URL validation", () => {
         { PUBLIC_APP_URL: "https://calender.aido.co.zw" },
         {
           "x-forwarded-proto": "https",
-          "x-forwarded-host": "calendar.aido.co.zw",
+          "x-forwarded-host": misspelledHost,
         },
         "production",
       ),

@@ -101,8 +101,18 @@ async function serveFile(
 
 async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
+  const publicShellPaths = new Set([
+    "/",
+    "/find",
+    "/privacy",
+    "/terms",
+    "/data-deletion",
+    "/support",
+    "/account/settings",
+  ]);
   const canonicalPath =
-    requestUrl.pathname.startsWith("/t/") || requestUrl.pathname === "/find"
+    requestUrl.pathname.startsWith("/t/") ||
+    publicShellPaths.has(requestUrl.pathname)
       ? requestUrl.pathname
       : "/";
   const html = await readFile(join(distDir, "index.html"), "utf8");

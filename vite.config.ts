@@ -5,7 +5,6 @@ import { calendarMvpPlugin } from "./server/viteCalendarPlugin.js";
 
 const allowedHosts = [
   "calender.aido.co.zw",
-  "calendar.aido.co.zw",
   ...(env.VITE_ALLOWED_HOSTS ?? "")
     .split(",")
     .map((host) => host.trim())

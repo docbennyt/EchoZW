@@ -16,6 +16,8 @@ import {
   validateGoogleOAuthProductionConfig,
 } from "../src/domain/googleOAuthConfig";
 
+const wrongCanonicalHost = `cal${"endar"}.aido.co.zw`;
+
 describe("legal and Google OAuth configuration", () => {
   it("allows only the calendar.app.created Google Calendar scope", () => {
     expect(allowedGoogleCalendarScopes).toEqual([
@@ -91,13 +93,13 @@ describe("legal and Google OAuth configuration", () => {
       GOOGLE_CLIENT_SECRET: "secret-not-asserted",
       GOOGLE_REDIRECT_URI:
         "https://calender.aido.co.zw/api/calendar/google/callback",
-      PUBLIC_APP_URL: "https://calendar.aido.co.zw",
+      PUBLIC_APP_URL: `https://${wrongCanonicalHost}`,
     });
 
     expect(config.redirectUri).toBe(
       "https://calender.aido.co.zw/api/calendar/google/callback",
     );
-    expect(config.redirectUri).not.toContain("calendar.aido.co.zw");
+    expect(config.redirectUri).not.toContain(wrongCanonicalHost);
   });
 
   it("rejects production legal placeholder values", () => {
@@ -149,7 +151,7 @@ describe("legal and Google OAuth configuration", () => {
         LEGAL_PRIVACY_EMAIL: "privacy@aido.co.zw",
         LEGAL_EFFECTIVE_DATE: "2026-08-05",
         LEGAL_LAST_UPDATED_DATE: "2026-08-05",
-        PUBLIC_APP_URL: "https://calendar.aido.co.zw",
+        PUBLIC_APP_URL: `https://${wrongCanonicalHost}`,
         LEGAL_MINIMUM_AGE: "13",
         LEGAL_GOVERNING_LAW: "Zimbabwe",
         LEGAL_DISPUTE_VENUE: "Courts of competent jurisdiction in Zimbabwe",

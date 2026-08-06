@@ -18,11 +18,16 @@
 - Simple MVP admin route scaffold with production auth requirements documented.
 - Public timetable request and upload forms that create admin-visible records.
 - Admin-only route surface with local lecture CRUD for create, edit, and delete operations.
+- Supabase timetable import schema migration for academic units, programmes, cohorts, periods, courses, source documents, import batches, candidates, warnings, sessions, verification records, audit logs, and private timetable-source storage.
+- Timetable import parser helpers for CSV, structured DOCX rows, and assisted master-PDF extracted text with cohort grouping, warning generation, conflict detection, stable session keys, and draft-readiness checks.
+- Import documentation for source analysis, architecture, CSV, DOCX, master PDF, course catalogs, review workflow, source traceability, security, and testing.
 - Unit and component tests.
 
 ## External Blockers
 
 - Supabase project URL and anon key are required for live database, auth, storage, RLS, and server-backed feeds.
+- The requested `SIST_Master_Timetable_Semester1_2026(First Draft).pdf` and `MY TIMETABLE.docx` files were not available in the workspace or attachments, so direct source-file extraction remains blocked.
+- Supabase MCP authentication was visible as configured but unsupported from the shell environment, so the remote schema was not inspected or migrated from this session.
 - Google OAuth credentials are required for direct Google Calendar sync.
 - Current official PesePay credentials and API details are required for live checkout and webhook verification.
 - `PUBLIC_APP_URL`, `VITE_PUBLIC_APP_URL`, and persistent `/data` storage are required for production calendar subscription links to remain stable.
