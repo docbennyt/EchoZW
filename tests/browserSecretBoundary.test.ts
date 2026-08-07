@@ -20,7 +20,6 @@ describe("browser secret boundary", () => {
 
     expect(joined).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(joined).not.toContain("service_role");
-    expect(joined).not.toContain("MVP_ADMIN_EMAILS");
   });
 
   it(".env.example contains placeholders and no live project secrets", () => {

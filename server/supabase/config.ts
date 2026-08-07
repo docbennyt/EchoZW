@@ -6,7 +6,6 @@ export type ServerSupabaseEnv = {
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string;
   SUPABASE_ANON_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
-  MVP_ADMIN_EMAILS?: string;
 };
 
 export type ServerSupabaseConfig = {
@@ -14,15 +13,7 @@ export type ServerSupabaseConfig = {
   projectHost: string;
   publishableKey: string;
   serviceRoleKey?: string;
-  bootstrapEmails: string[];
 };
-
-export function parseAdminEmailAllowlist(value: string | undefined) {
-  return (value ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
 
 function parseSupabaseUrl(rawUrl: string | undefined) {
   if (!rawUrl) return undefined;
@@ -61,7 +52,6 @@ export function getServerSupabaseConfig(
     ...parsedUrl,
     publishableKey,
     serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
-    bootstrapEmails: parseAdminEmailAllowlist(env.MVP_ADMIN_EMAILS),
   };
 }
 

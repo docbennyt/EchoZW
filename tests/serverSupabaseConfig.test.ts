@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   getServerSupabaseConfig,
-  parseAdminEmailAllowlist,
   validateSupabaseProductionConfig,
 } from "../server/supabase/config";
 import { checkSupabaseConnectivity } from "../server/supabase/connectivity";
@@ -25,13 +24,6 @@ describe("server Supabase configuration", () => {
         VITE_SUPABASE_PUBLISHABLE_KEY: "publishable",
       }),
     ).toThrow(/SUPABASE_SERVICE_ROLE_KEY/);
-  });
-
-  it("normalizes the one-time admin bootstrap allowlist", () => {
-    expect(parseAdminEmailAllowlist(" Admin@Example.test, second@example.test ")).toEqual([
-      "admin@example.test",
-      "second@example.test",
-    ]);
   });
 
   it("reports project reachability without returning keys", async () => {

@@ -1,4 +1,4 @@
-# CalenderZW Pilot Progress
+ï»¿# CalenderZW Pilot Progress
 
 ## 1. Pilot mission
 
@@ -52,9 +52,9 @@ These items may not be implemented during this pilot-completion pass.
 | frontend framework | React + Vite + TypeScript in `src/App.tsx` with path-based routing from `window.location.pathname`. | No | Partial | IN PROGRESS |
 | production server | Node HTTP server in `server/productionServer.ts` serves `dist/`, `/healthz`, calendar API routes, and SPA shell. | No | Partial | IN PROGRESS |
 | route system | Manual route switches in `App`; `/dashboard` redirects client-side to `/admin`; production server returns 308 for `/dashboard`. | No | Partial | VERIFIED |
-| Supabase clients | Browser publishable-key client remains client-only; server user/admin clients now exist in `server/supabase/*`, validate config, and require `SUPABASE_SERVICE_ROLE_KEY` for server admin authorization. | No | Partial | IN PROGRESS |
-| authentication | `/admin/login` uses Supabase email/password sign-in, `/admin` checks the browser session with `/api/admin/session`, and admin API routes require a Supabase user plus active `admin_users` row. Not verified against persisted Supabase state yet. | No | Partial | BLOCKED |
-| database schema | Local migrations `0001_initial_schema.sql` and `0002_timetable_import_pipeline.sql` exist. New migration `0003_secure_admin_auth.sql` creates `admin_users`, enables RLS, revokes anon/authenticated table access, and intentionally exposes no browser policies. It has not been applied remotely. | Local only | Partial | BLOCKED |
+| Supabase clients | Browser publishable-key client remains client-only; server user/admin clients exist in `server/supabase/*`, validate config, and require `SUPABASE_SERVICE_ROLE_KEY` for server admin authorization. Compatibility aliases remain for URL/publishable-key lookup, but Vite `VITE_*` names are canonical for browser config. | No | Partial | IN PROGRESS |
+| authentication | `/admin/login` uses Supabase email/password sign-in, `/admin` checks the browser session with `/api/admin/session`, and admin API routes require a Supabase user plus active `admin_users` row. Remote Auth now has one active admin identity and one non-admin identity, but real login/API/logout verification is blocked by missing server-side runtime env and no usable sessions. | No | Partial | BLOCKED |
+| database schema | Remote project `jkafqgdymfiiklmozvhi` was inspected through authorized Supabase MCP. Migration `secure_admin_auth` was applied remotely and created `public.admin_users` with RLS enabled, no ordinary-client policies, and no anon/authenticated privileges. | Supabase | Partial | VERIFIED |
 | source of public timetable data | `src/App.tsx` no longer imports `demoTimetable` or `popularTimetables`; timetable links render a truthful unpublished/unavailable state until a Supabase repository exists. | No | Partial | VERIFIED |
 | source of admin timetable data | The retired mock admin workbench was removed from production route rendering on 2026-08-06; real admin data source is not implemented. | No | Partial | VERIFIED |
 | source of .ics data | Server .ics download rejects demo-backed requests with `TIMETABLE_NOT_PUBLISHED` when `ALLOW_DEMO_DATA=false`; no client route offers fake .ics download from the unavailable public timetable page. | No | Partial | VERIFIED |
@@ -71,15 +71,15 @@ Supabase PostgreSQL is the canonical source of truth.
 
 ## 6. Current phase
 
-Current phase: PHASE 2 — Secure admin authentication: BLOCKED
+Current phase: PHASE 2 â€” Secure admin authentication: BLOCKED
 
 ## 7. Phase tracker
 
 | Phase | Status | Entry condition | Exit evidence |
 |------|--------|-----------------|---------------|
-| 0. Repository and Supabase audit | VERIFIED | Start from existing repository state and read `Progress.md`. | Local audit recorded here on 2026-08-06; Supabase MCP unavailable, so remote state is recorded as BLOCKED. |
+| 0. Repository and Supabase audit | VERIFIED | Start from existing repository state and read `Progress.md`. | Local audit recorded on 2026-08-06; Supabase MCP was later authorized and verified against project `jkafqgdymfiiklmozvhi`. |
 | 1. Remove duplicate/mock production paths | VERIFIED | Phase 0 audit recorded. | Public timetable, finder, history, static links, `/dashboard`, `/admin`, calendar subscription creation, .ics download, and calendar feed no longer serve fake timetable/calendar data when `ALLOW_DEMO_DATA=false`. Tests, lint, build, and production smoke evidence recorded below. |
-| 2. Secure admin authentication | BLOCKED | Phase 1 VERIFIED. | Code, focused tests, lint, build, and anonymous production smoke passed. Remote Supabase migration/admin-user verification is blocked because callable Supabase MCP tools and server credentials are unavailable. |
+| 2. Secure admin authentication | BLOCKED | Phase 1 VERIFIED. | MCP, remote schema inspection, migration application, `admin_users` RLS/grants, admin provisioning, non-admin identity presence, anonymous API 401, self-promotion denial, secret-boundary canary, tests, lint, and build are verified. Blocked on real app-server service-role env and usable login sessions for non-admin 403, admin 200, inactive-admin, and logout verification. |
 | 3. Create canonical Supabase schema | NOT STARTED | Phase 2 VERIFIED. | Not yet available. |
 | 4. Institution/programme/class-group/period CRUD | NOT STARTED | Phase 3 VERIFIED. | Not yet available. |
 | 5. Timetable draft and session CRUD | NOT STARTED | Phase 4 VERIFIED. | Not yet available. |
@@ -107,13 +107,13 @@ Current phase: PHASE 2 — Secure admin authentication: BLOCKED
 ## 9. Database state
 
 - Applied local migrations: `supabase/migrations/0001_initial_schema.sql`, `supabase/migrations/0002_timetable_import_pipeline.sql` exist in the repo; not re-applied in this session.
-- New local migration pending application: `supabase/migrations/0003_secure_admin_auth.sql` creates `public.admin_users` with `user_id`, `active`, `created_at`, `created_by`, `disabled_at`, and `notes`; enables RLS; revokes anon/authenticated table privileges; and adds focused indexes.
-- Applied remote migrations: BLOCKED because no Supabase MCP or remote database connection is available in this Codex session.
-- Existing production tables: BLOCKED because remote schema inspection is unavailable.
-- Migration drift: Unknown until remote migration history and schema are inspected.
+- New local migration: `supabase/migrations/0003_secure_admin_auth.sql` creates `public.admin_users` with `user_id`, `active`, `created_at`, `created_by`, `disabled_at`, and `notes`; enables RLS; revokes anon/authenticated table privileges; and adds focused indexes.
+- Applied remote migrations: Supabase MCP reports `20260806213828 secure_admin_auth`.
+- Existing production tables: remote public schema inspected; no `admin_users`, `profiles`, `user_roles`, `roles`, `memberships`, `institution_users`, `admins`, or `permissions` table existed before `secure_admin_auth`.
+- Migration drift: remote migration history was empty before this session even though the public schema already contained tables resembling local `0001`/`0002`; treat remote history as drifted and reconcile forward-only.
 - Seed-data state: `supabase/seed/demo.sql` inserts a demo institution; no seed command was run this session.
-- RLS state: Local migration `0002` enables RLS on several import/hierarchy tables. Pending migration `0003` enables RLS on `admin_users` and exposes no direct browser policies because admin authorization is checked server-side with the service-role client.
-- Current admin user state: Unknown; no remote auth user inspection is available and no `admin_users` row was provisioned in this session.
+- RLS state: `admin_users` has RLS enabled, no policies, and table ACL limited to `postgres` and `service_role`; direct `anon`/`authenticated` select/insert/update/delete attempts return SQLSTATE `42501`.
+- Current admin user state: remote `auth.users` has two confirmed identities. Admin UUID `0a11b91f-4978-43cc-8446-95194ae81fa4` (`d***@gmail.com`) has exactly one active `admin_users` row. Non-admin UUID `773f97e5-46c2-46ec-b8c8-5210801da81b` (`s***@gmail.com`) has no `admin_users` row.
 
 ## 10. Route state
 
@@ -232,8 +232,8 @@ Expected result:
 Anonymous users cannot use admin APIs; browser code cannot receive service-role/admin allowlist values; admin authorization requires a verified Supabase Auth user and an active `admin_users` row; production startup requires server-side Supabase admin configuration.
 
 Actual result:
-- `CODEX_HOME=C:\Users\User\.codex; codex mcp list` shows the Supabase MCP configured for project `jkafqgdymfiiklmozvhi`, but this Codex runtime exposes no callable Supabase MCP tools and the CLI reports Auth unsupported.
-- `.env.local` contains the project publishable/browser Supabase values for `jkafqgdymfiiklmozvhi`, but no `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, or `MVP_ADMIN_EMAILS`.
+- Earlier local CLI inspection showed Supabase MCP config for project `jkafqgdymfiiklmozvhi`; this was superseded by the later authorized MCP verification below.
+- `.env.local` contains the project publishable/browser Supabase values for `jkafqgdymfiiklmozvhi`, but no `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`.
 - Read-only Supabase Auth settings endpoint for host `jkafqgdymfiiklmozvhi.supabase.co` returned HTTP 200 when tested with the publishable key, confirming the project host is reachable without exposing the key here.
 - `/api/admin/session` returns typed `AUTH_REQUIRED`, `FORBIDDEN`, or `DATABASE_UNAVAILABLE` errors and returns only safe user id/email on success.
 - Future `/api/admin/*` routes are protected by `requireAdmin` before returning `NOT_IMPLEMENTED`.
@@ -255,24 +255,86 @@ Production smoke result with `NODE_ENV=production`, `APP_ENV=production`, `ALLOW
 - `/api/admin/session`: HTTP 401 JSON error code `AUTH_REQUIRED`.
 
 Bundle/source scan classification:
-- Browser bundle contains no `SUPABASE_SERVICE_ROLE_KEY`, `MVP_ADMIN_EMAILS`, `server-secret`, or `service_role`.
+- Browser bundle contains no `SUPABASE_SERVICE_ROLE_KEY`, `server-secret`, or `service_role`.
 - Browser bundle contains Supabase library text `sb_secret_` only as a static key-format detector from `@supabase/supabase-js`, not as a configured value.
-- Server bundle contains `SUPABASE_SERVICE_ROLE_KEY` and `MVP_ADMIN_EMAILS` only as server-side environment variable names in `dist-server/server/supabase/*`.
+- Server bundle contains `SUPABASE_SERVICE_ROLE_KEY` only as a server-side environment variable name in `dist-server/server/supabase/*`.
 - Tests contain placeholder strings such as `server-secret` only as local assertions; `.env.example` contains empty placeholders only.
+
+### Phase 2 real Supabase verification
+
+Date:
+2026-08-06 Africa/Harare
+
+Action:
+Used the now-authorized Supabase MCP against the actual CalenderZW project, performed read-only discovery before migration, applied only the Phase 2 `admin_users` migration, verified the resulting database state, removed unused `MVP_ADMIN_EMAILS` bootstrap scaffolding, removed obsolete Phase 1 timetable/sync components, and reran the verification suite.
+
+Remote discovery:
+- Supabase MCP: VERIFIED.
+- Project URL confirmed by MCP: `https://jkafqgdymfiiklmozvhi.supabase.co`.
+- Project ref confirmed from MCP URL: `jkafqgdymfiiklmozvhi`.
+- Remote migration history before this session: empty.
+- Remote public schema before `secure_admin_auth`: timetable/import/calendar tables existed, all with zero rows in the inspected table summary.
+- No pre-existing admin authority table found for `admin_users`, `profiles`, `user_roles`, `roles`, `memberships`, `institution_users`, `admins`, or `permissions`.
+- Remote policies before this session used some legacy `auth.jwt()->app_metadata.role` import-admin concepts for import tables, but no table provided the Phase 2 active-admin authority semantics.
+- Remote function discovery found `public.rls_auto_enable()` as a public `SECURITY DEFINER` event-trigger helper; it is unrelated to Phase 2 admin authorization and is listed by Supabase advisors as callable by anon/authenticated. It was not changed in this Phase 2 pass.
+- Remote Auth users at that time: zero rows in `auth.users`; superseded by the 2026-08-07 identity check below.
+
+Migration result:
+- Applied migration through MCP as `20260806213828 secure_admin_auth`.
+- Post-apply verification confirmed `public.admin_users` exists.
+- Columns verified: `user_id uuid not null`, `active boolean not null default true`, `created_at timestamptz not null default now()`, `created_by uuid`, `disabled_at timestamptz`, `notes text`.
+- Constraints verified: primary key on `user_id`; `user_id` foreign key references `auth.users(id) on delete cascade`; `created_by` foreign key references `auth.users(id) on delete set null`.
+- RLS verified enabled.
+- Policies verified: none.
+- Grants verified: ACL contains `postgres` and `service_role`; anon/authenticated grants are absent.
+- Service-role path verified by role simulation: `service_role` can select `count(*)` from `admin_users`.
+- Ordinary-client denial verified by direct role simulation: anon SELECT and INSERT return SQLSTATE `42501`; authenticated SELECT, INSERT, UPDATE, and DELETE return SQLSTATE `42501`.
+
+Phase 2 verification matrix:
+
+| Capability | Status | Evidence |
+|---|---|---|
+| Supabase MCP authorized | VERIFIED | `get_project_url` returned `https://jkafqgdymfiiklmozvhi.supabase.co`. |
+| Supabase project reachable | VERIFIED | MCP listed migrations/tables and executed read-only SQL. |
+| Supabase Auth reachable | VERIFIED | MCP inspected `auth.users`; Auth logs show `/settings` HTTP 200. |
+| Remote schema inspected | VERIFIED | Public/auth tables, policies, grants, functions, and migration history inspected. |
+| `admin_users` migration applied | VERIFIED | MCP migration `20260806213828 secure_admin_auth`. |
+| `admin_users` RLS | VERIFIED | RLS enabled; no ordinary-client policies. |
+| Login implementation | VERIFIED locally | UI/tests use `supabase.auth.signInWithPassword`; real login still blocked by missing usable sessions/service-role runtime env. |
+| Anonymous API 401 | VERIFIED | Production smoke: `/api/admin/session` returned HTTP 401 `AUTH_REQUIRED`. |
+| Non-admin API 403 | BLOCKED | No real non-admin Auth user exists and MCP exposes no Auth-user creation tool. |
+| Admin API 200 | BLOCKED | No real admin Auth user exists and no server service-role env is available for app-server verification. |
+| Inactive admin rejected | BLOCKED | Requires a real admin Auth user/admin row to disable and restore safely. |
+| Logout invalidates access | BLOCKED | Requires real browser login session. |
+| Browser secret isolation | VERIFIED | Canary build with `SUPABASE_SERVICE_ROLE_KEY=CALENDERZW_SERVICE_ROLE_CANARY_20260806` and `MVP_ADMIN_EMAILS=calenderzw-admin-canary@example.invalid`; exact canaries absent from `dist/`. |
+| Self-promotion denied | VERIFIED | Authenticated role SELECT/INSERT/UPDATE/DELETE against `admin_users` returned SQLSTATE `42501`. |
+
+Test result:
+- `npm test`: passed, 18 test files, 95 tests.
+- `npm run lint`: passed with zero warnings.
+- `npm run build`: passed; Vite output `dist/assets/index-CjgrtNQB.js` 457.35 kB, gzip 130.26 kB.
+
+Production smoke result with `NODE_ENV=production`, `APP_ENV=production`, `ALLOW_DEMO_DATA=false`, placeholder server Supabase admin env values, and legal env values:
+- `/admin/login`: HTTP 200 SPA shell.
+- `/admin`: HTTP 200 SPA shell; raw shell had no matches for `admin_users`, canary values, privileged env names, placeholder service key, `access_token`, or `refresh_token`.
+- `/dashboard`: HTTP 308 with `Location: /admin`.
+- `/api/admin/session`: HTTP 401 JSON error code `AUTH_REQUIRED`.
+
+Cleanup:
+- Removed obsolete `NextLectureCard`, `AgendaView`, `WeekView`, `TimetableHero`, `SyncWizard`, and the now-unused `MessageDialog` helper from `src/App.tsx`.
+- Removed unused `MVP_ADMIN_EMAILS` bootstrap parser/config/test/env placeholder; the only administrator authority mechanism is now `admin_users`.
 
 ## 12. Open blockers
 
 | Exact blocker | Affected phase | Why it blocks progress | Owner | Next concrete action |
 |---------------|----------------|------------------------|-------|----------------------|
-| Supabase MCP is configured for `jkafqgdymfiiklmozvhi`, but no callable Supabase MCP tools are exposed in this Codex runtime; CLI reports Auth unsupported. | Phase 2 persisted verification and Phase 3 migration planning | Remote migration history, `admin_users` existence, RLS state, and Auth users cannot be inspected or verified. | Operator | Enable callable Supabase MCP tools for this runtime or provide a trusted remote schema/migration export. |
-| Server-only Supabase admin env values are not available in the repo environment. | Phase 2 persisted verification | The server-side active-admin lookup requires `SUPABASE_SERVICE_ROLE_KEY`; a real login cannot be verified without safe staging/production server env. | Operator | Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and any pilot bootstrap/admin email config in the target server environment. |
-| `0003_secure_admin_auth.sql` has not been applied and no active `admin_users` row has been confirmed. | Phase 2 exit verification | Code tests prove behavior with mocked dependencies, but Phase 2 requires persisted Supabase state before it can be marked VERIFIED. | Operator | Apply the migration to the confirmed Supabase project and provision one active pilot admin row linked to a Supabase Auth user. |
+| Real app-server login/API/logout verification cannot run from this shell because server-side `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are absent from the process environment, and no usable admin/non-admin login sessions are available without credentials. | Phase 2 exit verification | Remote Auth identities and admin row now exist, but non-admin 403, admin 200, inactive-admin rejection, and logout require real Supabase sessions plus the Node server running with its service-role configuration. Passwords must not be requested or recorded. | Operator | Run the app with server-only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, then perform/admin-share a safe authenticated session flow for the existing admin and non-admin users without exposing passwords or secrets. |
 
 ## 13. Next three actions
 
-1. Enable callable Supabase MCP access for project `jkafqgdymfiiklmozvhi` or provide remote schema and migration history.
-2. Apply `supabase/migrations/0003_secure_admin_auth.sql` to the confirmed project and verify `admin_users` RLS/privileges remotely.
-3. Create or confirm one Supabase Auth pilot admin, set server-only Supabase env values, insert one active `admin_users` row, then run real login/logout/admin/non-admin verification.
+1. Start the CalenderZW Node server with server-only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` present in the process environment.
+2. Authenticate the existing non-admin and admin users through the real login flow without exposing passwords, producing real Supabase sessions.
+3. Verify non-admin 403, admin 200, inactive-admin 403 then restored 200, and logout returns to 401.
 
 ## 14. Verification log
 
@@ -282,7 +344,7 @@ Bundle/source scan classification:
 - migrations created/applied: none.
 - tests run: `npm test -- demoDataConfig.test.ts`; `npm test -- App.test.tsx`; `npm test`; `npm run lint`; `npm run build`; production build smoke with `ALLOW_DEMO_DATA=false`.
 - tests passed/failed: all tests and build passed; lint exited successfully with the unused-component warnings listed above.
-- current phase: PHASE 1 — Remove duplicate and mock paths, VERIFIED.
+- current phase: PHASE 1 â€” Remove duplicate and mock paths, VERIFIED.
 - next action: Start Phase 2 only after confirmation; do not begin authentication, Supabase schema work, UI redesign, or CSS cleanup in this Phase 1 session.
 - unresolved blocker: Supabase remote schema/auth inspection unavailable in this session.
 
@@ -293,5 +355,32 @@ Bundle/source scan classification:
 - tests run: `npm test -- adminAuth.test.ts adminMigration.test.ts serverSupabaseConfig.test.ts browserSecretBoundary.test.ts`; `npm test -- App.test.tsx adminAuth.test.ts`; `npm test`; `npm run lint`; `npm run build`; production anonymous smoke with `ALLOW_DEMO_DATA=false`.
 - tests passed/failed: all tests and build passed; lint exited successfully with five existing unused-component warnings from Phase 1 leftovers.
 - production smoke: `/admin/login` 200, `/admin` 200 SPA shell, `/dashboard` 308 to `/admin`, `/api/admin/session` 401 `AUTH_REQUIRED`.
-- current phase: PHASE 2 — Secure admin authentication, BLOCKED.
+- current phase: PHASE 2 â€” Secure admin authentication, BLOCKED.
 - next action: unblock Supabase remote verification, apply `0003_secure_admin_auth.sql`, provision one active admin user, then verify real persisted login/logout/admin/non-admin behavior.
+
+### 2026-08-06 Phase 2 real Supabase continuation
+
+- files materially changed: `Progress.md`, `.env.example`, `server/supabase/config.ts`, `src/App.tsx`, `tests/browserSecretBoundary.test.ts`, `tests/serverSupabaseConfig.test.ts`.
+- remote MCP result: Supabase MCP authorized and verified against project `jkafqgdymfiiklmozvhi`.
+- remote migration result: applied `20260806213828 secure_admin_auth`; verified `public.admin_users` columns, FK constraints, RLS, no policies, and no anon/authenticated privileges.
+- remote auth state at that time: `auth.users` had zero rows and `admin_users` had zero rows; superseded by the 2026-08-07 identity check below.
+- RLS/self-promotion evidence: anon SELECT/INSERT and authenticated SELECT/INSERT/UPDATE/DELETE on `admin_users` returned SQLSTATE `42501`; `service_role` SELECT count succeeded.
+- tests run: `npm test`; `npm run lint`; `npm run build` with canary env; production anonymous smoke with `ALLOW_DEMO_DATA=false`.
+- tests passed/failed: `npm test` passed, 18 files and 95 tests; `npm run lint` passed with zero warnings; `npm run build` passed.
+- canary evidence: exact `SUPABASE_SERVICE_ROLE_KEY` canary and `MVP_ADMIN_EMAILS` canary strings were absent from `dist/`; browser source/assets do not reference server Supabase modules or privileged env names.
+- production smoke: `/admin/login` 200, `/admin` 200 SPA shell with no privileged marker leaks, `/dashboard` 308 to `/admin`, `/api/admin/session` 401 `AUTH_REQUIRED`.
+- removed: obsolete Phase 1 timetable/sync components and unused `MVP_ADMIN_EMAILS` bootstrap scaffolding.
+- current phase: PHASE 2 â€” Secure admin authentication, BLOCKED.
+- remaining blocker: no real Supabase Auth admin/non-admin identities exist and no server-side `SUPABASE_SERVICE_ROLE_KEY` is available for app-server persisted auth verification.
+
+### 2026-08-07 Phase 2 identity check
+
+- remote MCP result: `auth.users` now contains two confirmed identities.
+- admin identity: UUID `0a11b91f-4978-43cc-8446-95194ae81fa4`, redacted email `d***@gmail.com`, active admin row present.
+- non-admin identity: UUID `773f97e5-46c2-46ec-b8c8-5210801da81b`, redacted email `s***@gmail.com`, no `admin_users` row.
+- admin provisioning result: no insertion was needed in this session because exactly one intended active admin row already existed; verified total admin rows = 1 and active admin rows = 1.
+- local runtime env check: current shell and `.env.local` do not expose `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`; no secrets were printed.
+- tests run: not rerun in this gate because no application code changed and Phase 2 remains blocked before real app-server login verification.
+- current phase: PHASE 2 â€” Secure admin authentication, BLOCKED.
+- remaining blocker: run the Node server with server-only Supabase service-role env and complete real admin/non-admin login sessions without exposing passwords.
+
