@@ -5,6 +5,7 @@ export type ServerSupabaseEnv = {
   VITE_SUPABASE_PUBLISHABLE_KEY?: string;
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string;
   SUPABASE_ANON_KEY?: string;
+  SUPABASE_SECRET_KEY?: string;
   SUPABASE_SERVICE_ROLE_KEY?: string;
 };
 
@@ -12,7 +13,7 @@ export type ServerSupabaseConfig = {
   url: string;
   projectHost: string;
   publishableKey: string;
-  serviceRoleKey?: string;
+  privilegedKey?: string;
 };
 
 function parseSupabaseUrl(rawUrl: string | undefined) {
@@ -51,7 +52,7 @@ export function getServerSupabaseConfig(
   return {
     ...parsedUrl,
     publishableKey,
-    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    privilegedKey: env.SUPABASE_SECRET_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY,
   };
 }
 
@@ -59,9 +60,9 @@ export function validateSupabaseProductionConfig(
   env: ServerSupabaseEnv = process.env,
 ) {
   const config = getServerSupabaseConfig(env);
-  if (!config.serviceRoleKey) {
+  if (!config.privilegedKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is required for server-side admin authorization.",
+      "SUPABASE_SECRET_KEY is required for server-side admin authorization.",
     );
   }
   return config;

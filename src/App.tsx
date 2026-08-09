@@ -1,7 +1,5 @@
 ﻿import { useEffect, useState } from "react";
 import {
-  CalendarCheck,
-  Check,
   Download,
   GraduationCap,
   History,
@@ -14,27 +12,18 @@ import {
 import { appConfig } from "./config/app";
 import { BRAND } from "./config/brand";
 import { legalConfig } from "./config/legal";
-import { fetchAdminSession, type AdminSessionUser } from "./api/adminSession";
+import { fetchAdminSession } from "./api/adminSession";
 import { track } from "./analytics";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
 import type { Timetable } from "./domain/types";
+import {
+  AdminMvpScreen,
+  FinderMvpScreen,
+  PublicTimetableMvpScreen,
+} from "./pilotMvp";
 
 const currentPath = () => window.location.pathname;
-const submissionStorageKey = "calenderzw_submissions";
 const currentYear = new Date().getFullYear();
-
-type TimetableSubmission = {
-  id: string;
-  type: "request" | "upload";
-  institution: string;
-  programme: string;
-  part: string;
-  semester: string;
-  contact?: string;
-  fileName?: string;
-  status: "open" | "reviewing" | "closed";
-  createdAt: string;
-};
 
 function setPageMetadata(input: {
   title: string;
@@ -100,32 +89,6 @@ function usePageMetadata(input: Parameters<typeof setPageMetadata>[0]) {
   }, [title, description, canonicalPath, ogTitle, ogDescription, robots]);
 }
 
-function readSubmissions() {
-  try {
-    return JSON.parse(
-      localStorage.getItem(submissionStorageKey) ?? "[]",
-    ) as TimetableSubmission[];
-  } catch {
-    return [];
-  }
-}
-
-function saveSubmissions(submissions: TimetableSubmission[]) {
-  localStorage.setItem(submissionStorageKey, JSON.stringify(submissions));
-}
-
-function addSubmission(
-  input: Omit<TimetableSubmission, "id" | "status" | "createdAt">,
-) {
-  const submission: TimetableSubmission = {
-    ...input,
-    id: globalThis.crypto.randomUUID(),
-    status: "open",
-    createdAt: new Date().toISOString(),
-  };
-  saveSubmissions([submission, ...readSubmissions()]);
-  return submission;
-}
 
 const navigationLinks = [
   { label: "Find timetable", href: "/find" },
@@ -278,224 +241,18 @@ function VerificationBadge({
 }
 
 function PublicTimetablePage() {
-  usePageMetadata({
-    title: "Timetable unavailable | CalenderZW",
-    description:
-      "This timetable is not available because no published Supabase timetable has been loaded.",
-    canonicalPath: currentPath(),
-  });
-
   return (
     <Shell>
-      <main className="page">
-        <PageHeader
-          icon={<CalendarCheck />}
-          title="Timetable unavailable"
-          text="No published timetable is available from the database for this link."
-        />
-        <section className="action-panel">
-          <h2>This timetable has not been published yet.</h2>
-          <p>
-            CalenderZW cannot show timetable sessions or create calendar files
-            until a published Supabase timetable exists for this class link.
-          </p>
-          <a href="/find">Find another timetable</a>
-          <a href="/support">Contact support</a>
-        </section>
-      </main>
+      <PublicTimetableMvpScreen slug={currentPath().replace(/^\/t\//, "")} />
     </Shell>
   );
 }
 
 function FinderPage() {
-  usePageMetadata({
-    title: "Find your timetable | CalenderZW",
-    description:
-      "Search for a student timetable by institution, programme, year, group, or semester.",
-    canonicalPath: "/find",
-  });
-  const [query, setQuery] = useState("");
-  const [dialog, setDialog] = useState<"request" | "upload" | null>(null);
-  const [submitted, setSubmitted] = useState<TimetableSubmission | null>(null);
   return (
     <Shell>
-      <main className="page">
-        <PageHeader
-          icon={<Search />}
-          title="Find your timetable"
-          text="Search by institution, programme, year, group, or semester."
-        />
-        <label className="search-box">
-          <Search size={20} />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Try BSc Software Engineering Part 2.1"
-          />
-        </label>
-        <div className="result-list">
-          <EmptyState
-            title="No timetables have been published."
-            text={
-              query
-                ? "No published database timetable matches this search yet."
-                : "Published timetables will appear here after the operator publishes them."
-            }
-          />
-        </div>
-        <section className="request-band">
-          <h2>No timetable has been published for this class yet.</h2>
-          <button className="primary" onClick={() => setDialog("request")}>
-            Request it
-          </button>
-          <button className="secondary" onClick={() => setDialog("upload")}>
-            Upload timetable
-          </button>
-        </section>
-      </main>
-      {dialog && (
-        <SubmissionDialog
-          type={dialog}
-          onClose={() => setDialog(null)}
-          onSubmitted={(submission) => {
-            setSubmitted(submission);
-            setDialog(null);
-          }}
-        />
-      )}
-      {submitted && (
-        <div className="sheet-backdrop" role="presentation">
-          <section
-            className="sync-sheet compact"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="submission-success"
-          >
-            <div className="sheet-header">
-              <h2 id="submission-success">Submitted</h2>
-              <button
-                className="icon-button"
-                onClick={() => setSubmitted(null)}
-                aria-label="Close submission success"
-              >
-                x
-              </button>
-            </div>
-            <div className="success-state tall">
-              <Check />
-              <strong>
-                {submitted.type === "request"
-                  ? "Timetable request received."
-                  : "Timetable upload received."}
-              </strong>
-              <span>Admin reference {submitted.id.slice(0, 8)}</span>
-            </div>
-          </section>
-        </div>
-      )}
+      <FinderMvpScreen />
     </Shell>
-  );
-}
-
-function SubmissionDialog({
-  type,
-  onClose,
-  onSubmitted,
-}: {
-  type: "request" | "upload";
-  onClose: () => void;
-  onSubmitted: (submission: TimetableSubmission) => void;
-}) {
-  const [error, setError] = useState("");
-  const isUpload = type === "upload";
-
-  return (
-    <div className="sheet-backdrop" role="presentation">
-      <section
-        className="sync-sheet compact"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="submission-title"
-      >
-        <div className="sheet-header">
-          <h2 id="submission-title">
-            {isUpload ? "Upload timetable" : "Request timetable"}
-          </h2>
-          <button
-            className="icon-button"
-            onClick={onClose}
-            aria-label="Close timetable submission"
-          >
-            x
-          </button>
-        </div>
-        <form
-          className="report-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            const institution = String(form.get("institution") ?? "").trim();
-            const programme = String(form.get("programme") ?? "").trim();
-            const part = String(form.get("part") ?? "").trim();
-            const semester = String(form.get("semester") ?? "").trim();
-            const file = form.get("file");
-
-            if (!institution || !programme || !part || !semester) {
-              setError(
-                "Institution, programme, part, and semester are required.",
-              );
-              return;
-            }
-            if (isUpload && (!(file instanceof File) || !file.name)) {
-              setError("Choose a timetable file to upload.");
-              return;
-            }
-
-            const submission = addSubmission({
-              type,
-              institution,
-              programme,
-              part,
-              semester,
-              contact: String(form.get("contact") ?? "").trim() || undefined,
-              fileName: file instanceof File ? file.name : undefined,
-            });
-            onSubmitted(submission);
-          }}
-        >
-          <label>
-            Institution
-            <input name="institution" defaultValue="aiDo Demo University" />
-          </label>
-          <label>
-            Programme
-            <input name="programme" placeholder="BSc Software Engineering" />
-          </label>
-          <label>
-            Part or year
-            <input name="part" placeholder="Part 2.1" />
-          </label>
-          <label>
-            Semester
-            <input name="semester" placeholder="Semester 2, 2026" />
-          </label>
-          {isUpload && (
-            <label>
-              Timetable file
-              <input name="file" type="file" accept=".csv,.pdf,image/*" />
-            </label>
-          )}
-          <label>
-            Contact for follow-up
-            <input name="contact" placeholder="Optional email or phone" />
-          </label>
-          {error && <p className="field-error">{error}</p>}
-          <button className="primary" type="submit">
-            {isUpload ? "Upload for review" : "Send request"}
-          </button>
-        </form>
-      </section>
-    </div>
   );
 }
 
@@ -1328,124 +1085,9 @@ function AdminLoginPage() {
 }
 
 function AdminPage() {
-  const [status, setStatus] = useState<
-    "checking" | "authorized" | "forbidden" | "login" | "error"
-  >("checking");
-  const [user, setUser] = useState<AdminSessionUser | null>(null);
-  const [signingOut, setSigningOut] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    async function verifyAdmin() {
-      let supabase;
-      try {
-        supabase = createSupabaseBrowserClient();
-      } catch {
-        window.history.replaceState({}, "", "/admin/login");
-        if (active) setStatus("login");
-        return;
-      }
-
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-      if (!accessToken) {
-        window.history.replaceState({}, "", "/admin/login");
-        if (active) setStatus("login");
-        return;
-      }
-
-      try {
-        const session = await fetchAdminSession(accessToken);
-        if (!active) return;
-        setUser(session.user);
-        setStatus("authorized");
-      } catch (caught) {
-        if (!active) return;
-        if (caught instanceof Error && caught.name === "FORBIDDEN") {
-          setStatus("forbidden");
-        } else {
-          window.history.replaceState({}, "", "/admin/login");
-          setStatus("login");
-        }
-      }
-    }
-
-    void verifyAdmin();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  async function signOut() {
-    setSigningOut(true);
-    setUser(null);
-    try {
-      const supabase = createSupabaseBrowserClient();
-      await supabase.auth.signOut();
-    } finally {
-      window.history.replaceState({}, "", "/admin/login");
-      window.dispatchEvent(new PopStateEvent("popstate"));
-    }
-  }
-
-  if (status === "forbidden") {
-    return (
-      <Shell>
-        <main className="page admin-page">
-          <PageHeader
-            icon={<ShieldCheck />}
-            title="Administrator access"
-            text="This account does not have CalenderZW administrator access."
-          />
-          <section className="action-panel">
-            <h2>Access denied</h2>
-            <p>This account does not have CalenderZW administrator access.</p>
-            <a href="/admin/login">Return to admin login</a>
-          </section>
-        </main>
-      </Shell>
-    );
-  }
-
-  if (status === "login") {
-    return <AdminLoginPage />;
-  }
-
-  if (status !== "authorized") {
-    return (
-      <Shell>
-        <main className="page admin-page">
-          <PageHeader
-            icon={<Lock />}
-            title="Checking admin access"
-            text="Verifying the current Supabase session."
-          />
-        </main>
-      </Shell>
-    );
-  }
-
   return (
     <Shell>
-      <main className="page admin-page">
-        <PageHeader
-          icon={<ShieldCheck />}
-          title="Admin access verified"
-          text="Phase 2 secure admin authentication is active for this session."
-        />
-        <section className="action-panel">
-          <h2>Admin access verified</h2>
-          <p>{user?.email ?? user?.id}</p>
-          <p className="content-notice">
-            Current status: PHASE 2 - Secure admin authentication. CRUD begins
-            in Phase 4 after the canonical schema is verified.
-          </p>
-          <button className="secondary" disabled={signingOut} onClick={signOut}>
-            {signingOut ? "Signing out" : "Sign out"}
-          </button>
-        </section>
-      </main>
+      <AdminMvpScreen path={currentPath()} />
     </Shell>
   );
 }

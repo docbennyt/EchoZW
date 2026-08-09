@@ -9,6 +9,20 @@ export type AdminSessionResponse = {
   user: AdminSessionUser;
 };
 
+function isAdminSessionResponse(
+  value: unknown,
+): value is AdminSessionResponse {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<AdminSessionResponse>;
+  return (
+    candidate.authenticated === true &&
+    candidate.admin === true &&
+    Boolean(candidate.user) &&
+    typeof candidate.user?.id === "string" &&
+    (typeof candidate.user?.email === "string" || candidate.user?.email === null)
+  );
+}
+
 export async function fetchAdminSession(accessToken: string) {
   const response = await fetch("/api/admin/session", {
     headers: {
@@ -34,5 +48,13 @@ export async function fetchAdminSession(accessToken: string) {
     throw error;
   }
 
-  return body as AdminSessionResponse;
+  if (!isAdminSessionResponse(body)) {
+    const error = new Error(
+      "Administrator session verification returned an invalid response.",
+    );
+    error.name = "INVALID_ADMIN_SESSION";
+    throw error;
+  }
+
+  return body;
 }

@@ -10,20 +10,41 @@ describe("server Supabase configuration", () => {
     const config = getServerSupabaseConfig({
       SUPABASE_URL: "https://jkafqgdymfiiklmozvhi.supabase.co",
       VITE_SUPABASE_PUBLISHABLE_KEY: "publishable",
-      SUPABASE_SERVICE_ROLE_KEY: "server-secret",
+      SUPABASE_SECRET_KEY: "server-secret",
     });
 
     expect(config.projectHost).toBe("jkafqgdymfiiklmozvhi.supabase.co");
-    expect(config).not.toHaveProperty("serviceRoleKey", "publishable");
+    expect(config).not.toHaveProperty("privilegedKey", "publishable");
   });
 
-  it("requires service-role config for production admin authorization", () => {
+  it("prefers SUPABASE_SECRET_KEY over the legacy fallback", () => {
+    const config = getServerSupabaseConfig({
+      SUPABASE_URL: "https://jkafqgdymfiiklmozvhi.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable",
+      SUPABASE_SECRET_KEY: "preferred-secret",
+      SUPABASE_SERVICE_ROLE_KEY: "legacy-secret",
+    });
+
+    expect(config.privilegedKey).toBe("preferred-secret");
+  });
+
+  it("accepts the legacy fallback when the preferred key is absent", () => {
+    const config = getServerSupabaseConfig({
+      SUPABASE_URL: "https://jkafqgdymfiiklmozvhi.supabase.co",
+      VITE_SUPABASE_PUBLISHABLE_KEY: "publishable",
+      SUPABASE_SERVICE_ROLE_KEY: "legacy-secret",
+    });
+
+    expect(config.privilegedKey).toBe("legacy-secret");
+  });
+
+  it("requires SUPABASE_SECRET_KEY-configured privileged access for production admin authorization", () => {
     expect(() =>
       validateSupabaseProductionConfig({
         SUPABASE_URL: "https://jkafqgdymfiiklmozvhi.supabase.co",
         VITE_SUPABASE_PUBLISHABLE_KEY: "publishable",
       }),
-    ).toThrow(/SUPABASE_SERVICE_ROLE_KEY/);
+    ).toThrow(/SUPABASE_SECRET_KEY/);
   });
 
   it("reports project reachability without returning keys", async () => {

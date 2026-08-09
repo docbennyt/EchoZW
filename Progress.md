@@ -8,19 +8,20 @@ The pilot is not yet VERIFIED.
 
 ## 2. Pilot completion path
 
-- [ ] Admin authentication works
-- [ ] Institution CRUD works
-- [ ] Programme CRUD works
-- [ ] Class-group CRUD works
-- [ ] Academic-period CRUD works
-- [ ] Timetable creation works
-- [ ] Draft timetable session CRUD works
-- [ ] Timetable publication works
-- [ ] Public timetable reads published Supabase data
-- [ ] Personalised .ics reads published Supabase data
-- [ ] Calendar subscription feed reads published Supabase data
-- [ ] Venue correction and republish work
-- [ ] Anonymous users cannot access administration
+- [x] Secure admin
+- [x] Institution persisted
+- [x] Programme persisted
+- [x] Class group persisted
+- [x] Academic period persisted
+- [x] Timetable metadata persisted
+- [ ] Admin timetable editor loads
+- [ ] Manual sessions persist
+- [ ] Publish verified
+- [ ] Public link verified
+- [ ] Personalised .ics verified
+- [ ] Subscription feed verified
+- [ ] Republish updates existing feed
+- [x] Anonymous users cannot access administration
 - [ ] Anonymous users cannot mutate Supabase data
 - [x] Mock production data has been removed
 - [ ] Full pilot journey has been verified end to end
@@ -49,12 +50,12 @@ These items may not be implemented during this pilot-completion pass.
 
 | Area | Current implementation | Real persistence? | Secure? | Status |
 |------|-------------------------|-------------------|---------|--------|
-| frontend framework | React + Vite + TypeScript in `src/App.tsx` with path-based routing from `window.location.pathname`. | No | Partial | IN PROGRESS |
-| production server | Node HTTP server in `server/productionServer.ts` serves `dist/`, `/healthz`, calendar API routes, and SPA shell. | No | Partial | IN PROGRESS |
+| frontend framework | React + Vite + TypeScript in `src/App.tsx` with path-based routing from `window.location.pathname`. `/admin` now renders a mobile-first operator workflow backed by protected Node APIs, and `/t/:slug` renders the published timetable plus reminder-driven calendar actions. | Partial | Partial | IN PROGRESS |
+| production server | Node HTTP server in `server/productionServer.ts` serves `dist/`, `/healthz`, protected admin APIs, public timetable API, calendar subscription/feed/download APIs, and SPA shell. | Partial | Partial | IN PROGRESS |
 | route system | Manual route switches in `App`; `/dashboard` redirects client-side to `/admin`; production server returns 308 for `/dashboard`. | No | Partial | VERIFIED |
-| Supabase clients | Browser publishable-key client remains client-only; server user/admin clients exist in `server/supabase/*`, validate config, and require `SUPABASE_SERVICE_ROLE_KEY` for server admin authorization. Compatibility aliases remain for URL/publishable-key lookup, but Vite `VITE_*` names are canonical for browser config. | No | Partial | IN PROGRESS |
-| authentication | `/admin/login` uses Supabase email/password sign-in, `/admin` checks the browser session with `/api/admin/session`, and admin API routes require a Supabase user plus active `admin_users` row. Remote Auth now has one active admin identity and one non-admin identity, but real login/API/logout verification is blocked by missing server-side runtime env and no usable sessions. | No | Partial | BLOCKED |
-| database schema | Remote project `jkafqgdymfiiklmozvhi` was inspected through authorized Supabase MCP. Migration `secure_admin_auth` was applied remotely and created `public.admin_users` with RLS enabled, no ordinary-client policies, and no anon/authenticated privileges. | Supabase | Partial | VERIFIED |
+| Supabase clients | Browser publishable-key client remains client-only; server user/admin clients exist in `server/supabase/*`, prefer `SUPABASE_SECRET_KEY`, and accept `SUPABASE_SERVICE_ROLE_KEY` only as a legacy fallback for server admin authorization. Vite `VITE_*` names remain canonical for browser config. | No | Partial | IN PROGRESS |
+| authentication | `/admin/login` uses Supabase email/password sign-in, `/admin` checks the browser session with `/api/admin/session`, and admin API routes require a Supabase user plus active `admin_users` row. This was verified against the real browser flow on Friday, August 7, 2026. | Supabase | Yes | VERIFIED |
+| database schema | Remote project `jkafqgdymfiiklmozvhi` was inspected through authorized Supabase MCP. Migrations `secure_admin_auth` and `pilot_mvp_alignment` are applied remotely; MVP tables now expose the fields needed for institutions, programmes, cohorts/class groups, academic periods, timetables, versions, sessions, and calendar subscriptions. | Supabase | Partial | IN PROGRESS |
 | source of public timetable data | `src/App.tsx` no longer imports `demoTimetable` or `popularTimetables`; timetable links render a truthful unpublished/unavailable state until a Supabase repository exists. | No | Partial | VERIFIED |
 | source of admin timetable data | The retired mock admin workbench was removed from production route rendering on 2026-08-06; real admin data source is not implemented. | No | Partial | VERIFIED |
 | source of .ics data | Server .ics download rejects demo-backed requests with `TIMETABLE_NOT_PUBLISHED` when `ALLOW_DEMO_DATA=false`; no client route offers fake .ics download from the unavailable public timetable page. | No | Partial | VERIFIED |
@@ -71,7 +72,7 @@ Supabase PostgreSQL is the canonical source of truth.
 
 ## 6. Current phase
 
-Current phase: PHASE 2 — Secure admin authentication: BLOCKED
+Current phase: PHASE 3 — MVP product workflow: IN PROGRESS
 
 ## 7. Phase tracker
 
@@ -79,13 +80,13 @@ Current phase: PHASE 2 — Secure admin authentication: BLOCKED
 |------|--------|-----------------|---------------|
 | 0. Repository and Supabase audit | VERIFIED | Start from existing repository state and read `Progress.md`. | Local audit recorded on 2026-08-06; Supabase MCP was later authorized and verified against project `jkafqgdymfiiklmozvhi`. |
 | 1. Remove duplicate/mock production paths | VERIFIED | Phase 0 audit recorded. | Public timetable, finder, history, static links, `/dashboard`, `/admin`, calendar subscription creation, .ics download, and calendar feed no longer serve fake timetable/calendar data when `ALLOW_DEMO_DATA=false`. Tests, lint, build, and production smoke evidence recorded below. |
-| 2. Secure admin authentication | BLOCKED | Phase 1 VERIFIED. | MCP, remote schema inspection, migration application, `admin_users` RLS/grants, admin provisioning, non-admin identity presence, anonymous API 401, self-promotion denial, secret-boundary canary, tests, lint, and build are verified. Blocked on real app-server service-role env and usable login sessions for non-admin 403, admin 200, inactive-admin, and logout verification. |
-| 3. Create canonical Supabase schema | NOT STARTED | Phase 2 VERIFIED. | Not yet available. |
-| 4. Institution/programme/class-group/period CRUD | NOT STARTED | Phase 3 VERIFIED. | Not yet available. |
-| 5. Timetable draft and session CRUD | NOT STARTED | Phase 4 VERIFIED. | Not yet available. |
-| 6. Timetable publication | NOT STARTED | Phase 5 VERIFIED. | Not yet available. |
-| 7. Public timetable integration | NOT STARTED | Phase 6 VERIFIED. | Not yet available. |
-| 8. Personalised calendar integration | NOT STARTED | Phase 7 VERIFIED. | Not yet available. |
+| 2. Secure admin authentication | VERIFIED | Phase 1 VERIFIED. | MCP, remote schema inspection, migration application, `admin_users` RLS/grants, admin provisioning, secret-boundary canary, tests, lint, build, anonymous 401, non-admin 403, admin 200, inactive-admin 403 then restored 200, and logout 401 are all verified against the real project/browser flow. |
+| 3. Create canonical Supabase schema | IN PROGRESS | Phase 2 VERIFIED. | Remote migration `20260807152043 pilot_mvp_alignment` applied; live CRUD/public verification still pending. |
+| 4. Institution/programme/class-group/period CRUD | IN PROGRESS | Phase 3 VERIFIED. | Protected API routes and mobile-first admin screens implemented locally; real persisted operator evidence still pending. |
+| 5. Timetable draft and session CRUD | IN PROGRESS | Phase 4 VERIFIED. | Protected timetable/session APIs and draft editor implemented locally; real persisted operator evidence still pending. |
+| 6. Timetable publication | IN PROGRESS | Phase 5 VERIFIED. | Server publish RPC and publish UX implemented; real published timetable evidence still pending. |
+| 7. Public timetable integration | IN PROGRESS | Phase 6 VERIFIED. | `/api/public/timetables/:slug` and `/t/:slug` now read published Supabase data only; live published-slug verification still pending. |
+| 8. Personalised calendar integration | IN PROGRESS | Phase 7 VERIFIED. | Real DB-backed subscription creation plus feed/download generation implemented; live .ics/feed verification still pending. |
 | 9. End-to-end pilot verification | NOT STARTED | Phase 8 VERIFIED. | Not yet available. |
 | 10. Production cleanup | NOT STARTED | Phase 9 VERIFIED. | Not yet available. |
 
@@ -103,16 +104,17 @@ Current phase: PHASE 2 — Secure admin authentication: BLOCKED
 | 2026-08-06 | Production must never fall back to demo data. | Empty/error states are safer than false timetable information. |
 | 2026-08-06 | Demo mode is server-gated by `ALLOW_DEMO_DATA`, `APP_ENV`, and `NODE_ENV`, not by a client-only Vite variable. | Calendar API enforcement must happen on the server and production must force demo mode off. |
 | 2026-08-06 | Google Calendar direct sync remains disabled. | The pilot calendar surface is .ics download plus subscription feed. |
+| 2026-08-07 | `cohorts` remain the database concept while the admin UI uses the term “Class groups”. | The remote schema already had `cohorts`; duplicating the concept would add unnecessary drift. |
 
 ## 9. Database state
 
 - Applied local migrations: `supabase/migrations/0001_initial_schema.sql`, `supabase/migrations/0002_timetable_import_pipeline.sql` exist in the repo; not re-applied in this session.
 - New local migration: `supabase/migrations/0003_secure_admin_auth.sql` creates `public.admin_users` with `user_id`, `active`, `created_at`, `created_by`, `disabled_at`, and `notes`; enables RLS; revokes anon/authenticated table privileges; and adds focused indexes.
-- Applied remote migrations: Supabase MCP reports `20260806213828 secure_admin_auth`.
+- Applied remote migrations: Supabase MCP reports `20260806213828 secure_admin_auth` and `20260807152043 pilot_mvp_alignment`.
 - Existing production tables: remote public schema inspected; no `admin_users`, `profiles`, `user_roles`, `roles`, `memberships`, `institution_users`, `admins`, or `permissions` table existed before `secure_admin_auth`.
 - Migration drift: remote migration history was empty before this session even though the public schema already contained tables resembling local `0001`/`0002`; treat remote history as drifted and reconcile forward-only.
 - Seed-data state: `supabase/seed/demo.sql` inserts a demo institution; no seed command was run this session.
-- RLS state: `admin_users` has RLS enabled, no policies, and table ACL limited to `postgres` and `service_role`; direct `anon`/`authenticated` select/insert/update/delete attempts return SQLSTATE `42501`.
+- RLS state: `admin_users` has RLS enabled, no policies, and table ACL limited to `postgres` and `service_role`; direct `anon`/`authenticated` select/insert/update/delete attempts return SQLSTATE `42501`. After `pilot_mvp_alignment`, `institutions`, `programmes`, `cohorts`, `academic_periods`, `timetables`, `timetable_versions`, `timetable_sessions`, and `calendar_subscriptions` have zero public RLS policies and zero direct `anon`/`authenticated` table grants.
 - Current admin user state: remote `auth.users` has two confirmed identities. Admin UUID `0a11b91f-4978-43cc-8446-95194ae81fa4` (`d***@gmail.com`) has exactly one active `admin_users` row. Non-admin UUID `773f97e5-46c2-46ec-b8c8-5210801da81b` (`s***@gmail.com`) has no `admin_users` row.
 
 ## 10. Route state
@@ -120,16 +122,16 @@ Current phase: PHASE 2 — Secure admin authentication: BLOCKED
 | Route | Purpose | Authentication | Data source | Status |
 |------|---------|----------------|-------------|--------|
 | / | Public home | Anonymous | Static React content; no active sample timetable link | VERIFIED |
-| /find | Timetable finder | Anonymous | Truthful empty state until published Supabase data exists | VERIFIED |
-| /t/:slug | Public timetable | Anonymous | Truthful unavailable state; no `demoTimetable` rendering | VERIFIED |
+| /find | Timetable finder | Anonymous | Link/slug entry for published timetables | IN PROGRESS |
+| /t/:slug | Public timetable | Anonymous | `/api/public/timetables/:slug` -> current published Supabase version only; add-to-calendar uses real subscription/download APIs | IN PROGRESS |
 | /admin/login | Admin login | Anonymous until form submit | Supabase email/password sign-in; no signup path | IN PROGRESS |
-| /admin | Canonical admin surface | Supabase session plus active `admin_users` row via `/api/admin/session` | Minimal verified-admin shell only; no CRUD controls yet | BLOCKED |
-| /admin/institutions | Institution management | Supabase session plus active `admin_users` row via `/admin/*` guard | Not implemented after guard | NOT STARTED |
-| /admin/programmes | Programme management | Supabase session plus active `admin_users` row via `/admin/*` guard | Not implemented after guard | NOT STARTED |
-| /admin/class-groups | Class-group management | Supabase session plus active `admin_users` row via `/admin/*` guard | Not implemented after guard | NOT STARTED |
-| /admin/academic-periods | Academic-period management | Supabase session plus active `admin_users` row via `/admin/*` guard | Not implemented after guard | NOT STARTED |
-| /admin/timetables | Timetable list | Supabase session plus active `admin_users` row via `/admin/*` guard | Not implemented after guard | NOT STARTED |
-| /admin/timetables/:id | Timetable editor | Supabase session plus active `admin_users` row via `/admin/*` guard | Not implemented after guard | NOT STARTED |
+| /admin | Canonical admin surface | Supabase session plus active `admin_users` row via `/api/admin/session` | Operator home with recent timetables and setup links | IN PROGRESS |
+| /admin/institutions | Institution management | Supabase session plus active `admin_users` row via `/admin/*` guard | Real protected CRUD wired to Supabase | IN PROGRESS |
+| /admin/programmes | Programme management | Supabase session plus active `admin_users` row via `/admin/*` guard | Real protected CRUD wired to Supabase | IN PROGRESS |
+| /admin/class-groups | Class-group management | Supabase session plus active `admin_users` row via `/admin/*` guard | Real protected CRUD wired to Supabase `cohorts` | IN PROGRESS |
+| /admin/academic-periods | Academic-period management | Supabase session plus active `admin_users` row via `/admin/*` guard | Real protected CRUD wired to Supabase | IN PROGRESS |
+| /admin/timetables | Timetable list | Supabase session plus active `admin_users` row via `/admin/*` guard | Real timetable creation flow and recent list | IN PROGRESS |
+| /admin/timetables/:id | Timetable editor | Supabase session plus active `admin_users` row via `/admin/*` guard | Real draft/session editor with publish action | IN PROGRESS |
 | /api/admin/session | Admin session validation | Bearer token verified by Supabase Auth, then active `admin_users` lookup | Returns typed 401/403/503 errors or safe user id/email only | IN PROGRESS |
 | /calendar/download/:subscriptionId.ics | Personalised .ics download | Capability weak; enumerable ID | Rejects demo-backed requests with `TIMETABLE_NOT_PUBLISHED` when demo data is disabled | VERIFIED |
 | /calendar/feed/:token.ics | Private calendar subscription feed | Token hash lookup | Rejects demo-backed requests with `TIMETABLE_NOT_PUBLISHED` when demo data is disabled | VERIFIED |
@@ -233,7 +235,7 @@ Anonymous users cannot use admin APIs; browser code cannot receive service-role/
 
 Actual result:
 - Earlier local CLI inspection showed Supabase MCP config for project `jkafqgdymfiiklmozvhi`; this was superseded by the later authorized MCP verification below.
-- `.env.local` contains the project publishable/browser Supabase values for `jkafqgdymfiiklmozvhi`, but no `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`.
+- `.env.local` contains the project publishable/browser Supabase values for `jkafqgdymfiiklmozvhi`, but no `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, or legacy `SUPABASE_SERVICE_ROLE_KEY`.
 - Read-only Supabase Auth settings endpoint for host `jkafqgdymfiiklmozvhi.supabase.co` returned HTTP 200 when tested with the publishable key, confirming the project host is reachable without exposing the key here.
 - `/api/admin/session` returns typed `AUTH_REQUIRED`, `FORBIDDEN`, or `DATABASE_UNAVAILABLE` errors and returns only safe user id/email on success.
 - Future `/api/admin/*` routes are protected by `requireAdmin` before returning `NOT_IMPLEMENTED`.
@@ -255,9 +257,64 @@ Production smoke result with `NODE_ENV=production`, `APP_ENV=production`, `ALLOW
 - `/api/admin/session`: HTTP 401 JSON error code `AUTH_REQUIRED`.
 
 Bundle/source scan classification:
-- Browser bundle contains no `SUPABASE_SERVICE_ROLE_KEY`, `server-secret`, or `service_role`.
+- Browser bundle contains no `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `server-secret`, or `service_role`.
 - Browser bundle contains Supabase library text `sb_secret_` only as a static key-format detector from `@supabase/supabase-js`, not as a configured value.
-- Server bundle contains `SUPABASE_SERVICE_ROLE_KEY` only as a server-side environment variable name in `dist-server/server/supabase/*`.
+- Server bundle contains `SUPABASE_SECRET_KEY` and legacy `SUPABASE_SERVICE_ROLE_KEY` only as server-side environment variable names in `dist-server/server/supabase/*`.
+
+### Phase 3 MVP implementation pass
+
+Date:
+2026-08-07 Africa/Harare
+
+Action:
+Aligned the live Supabase schema for the MVP, implemented protected admin CRUD/timetable/public/calendar routes, and replaced the minimal verified-admin shell with a mobile-first operator workflow in the React app.
+
+Expected result:
+CalenderZW should have one coherent product path for:
+- admin setup records;
+- timetable draft/session editing;
+- publication;
+- public timetable viewing;
+- personalised `.ics` download and private feed creation;
+with all data flowing through Supabase-backed server endpoints instead of mocks.
+
+Actual result:
+- Supabase MCP applied remote migration `20260807152043 pilot_mvp_alignment`.
+- Remote `institutions`, `programmes`, `cohorts`, `academic_periods`, `timetables`, `timetable_versions`, `timetable_sessions`, and `calendar_subscriptions` now expose the MVP fields expected by the new repository/API layer.
+- Legacy browser-facing policies/grants on those public tables were removed; direct `anon`/`authenticated` table access is no longer granted.
+- Added protected server handlers in `server/pilotAdminApi.ts` for:
+  - `GET/POST/PATCH /api/admin/institutions`
+  - `GET/POST/PATCH /api/admin/programmes`
+  - `GET/POST/PATCH /api/admin/class-groups`
+  - `GET/POST/PATCH /api/admin/academic-periods`
+  - `GET/POST /api/admin/timetables`
+  - `GET /api/admin/timetables/:id`
+  - `POST/PATCH/DELETE /api/admin/timetables/:id/sessions`
+  - `POST /api/admin/timetables/:id/publish`
+- Added public server handlers:
+  - `GET /api/public/timetables/:slug`
+  - `POST /api/calendar/subscriptions`
+  - `GET /calendar/download/:subscriptionId.ics`
+  - `GET /calendar/feed/:token.ics`
+- Added real published-timetable ICS generation in `server/publishedCalendar.ts`.
+- Replaced the `/admin` shell with:
+  - overview/home;
+  - institutions/programmes/class groups/academic periods CRUD screens;
+  - timetable creation flow;
+  - timetable session editor with add/edit/delete/duplicate;
+  - publish success link actions.
+- Replaced the `/t/:slug` placeholder with a real published timetable view and reminder-driven calendar actions.
+- Replaced `/find` with a shared-link/slug entry flow for published timetables.
+
+Real persisted evidence:
+- Not yet recorded in this session for institution/programme/class-group/academic-period/timetable/session/publication/feed rows created through the authenticated operator UI.
+- This means the MVP implementation is real in code and remote schema, but the end-to-end pilot journey is still awaiting live operator/browser execution and database confirmation.
+
+Test result:
+- `npm run build`: passed.
+- `npm run lint`: passed.
+- `npm test`: passed, 20 test files, 102 tests.
+- `npx vitest run tests/App.test.tsx`: passed, 15 tests.
 - Tests contain placeholder strings such as `server-secret` only as local assertions; `.env.example` contains empty placeholders only.
 
 ### Phase 2 real Supabase verification
@@ -300,17 +357,17 @@ Phase 2 verification matrix:
 | Remote schema inspected | VERIFIED | Public/auth tables, policies, grants, functions, and migration history inspected. |
 | `admin_users` migration applied | VERIFIED | MCP migration `20260806213828 secure_admin_auth`. |
 | `admin_users` RLS | VERIFIED | RLS enabled; no ordinary-client policies. |
-| Login implementation | VERIFIED locally | UI/tests use `supabase.auth.signInWithPassword`; real login still blocked by missing usable sessions/service-role runtime env. |
-| Anonymous API 401 | VERIFIED | Production smoke: `/api/admin/session` returned HTTP 401 `AUTH_REQUIRED`. |
-| Non-admin API 403 | BLOCKED | No real non-admin Auth user exists and MCP exposes no Auth-user creation tool. |
-| Admin API 200 | BLOCKED | No real admin Auth user exists and no server service-role env is available for app-server verification. |
-| Inactive admin rejected | BLOCKED | Requires a real admin Auth user/admin row to disable and restore safely. |
-| Logout invalidates access | BLOCKED | Requires real browser login session. |
-| Browser secret isolation | VERIFIED | Canary build with `SUPABASE_SERVICE_ROLE_KEY=CALENDERZW_SERVICE_ROLE_CANARY_20260806` and `MVP_ADMIN_EMAILS=calenderzw-admin-canary@example.invalid`; exact canaries absent from `dist/`. |
+| Login implementation | VERIFIED | UI/tests use `supabase.auth.signInWithPassword`; real browser login then server authorization was observed. |
+| Anonymous API 401 | VERIFIED | Real browser/API verification observed `401`. |
+| Non-admin API 403 | VERIFIED | Real browser/API verification observed `403` for the non-admin account. |
+| Admin API 200 | VERIFIED | Real browser/API verification observed `200` for the authorized admin account. |
+| Inactive admin rejected | VERIFIED | `admin_users.active` was temporarily set `false`; the already-authenticated admin browser session then observed `403`; the row was restored to `active=true`. |
+| Logout invalidates access | VERIFIED | Real browser flow observed logout followed by `401`. |
+| Browser secret isolation | VERIFIED | Canary build with `SUPABASE_SECRET_KEY=CALENDERZW_SUPABASE_SECRET_CANARY_20260807` and legacy `SUPABASE_SERVICE_ROLE_KEY=CALENDERZW_LEGACY_SERVICE_CANARY_20260807`; exact canaries absent from `dist/`. |
 | Self-promotion denied | VERIFIED | Authenticated role SELECT/INSERT/UPDATE/DELETE against `admin_users` returned SQLSTATE `42501`. |
 
 Test result:
-- `npm test`: passed, 18 test files, 95 tests.
+- `npm test`: passed, 18 test files, 97 tests.
 - `npm run lint`: passed with zero warnings.
 - `npm run build`: passed; Vite output `dist/assets/index-CjgrtNQB.js` 457.35 kB, gzip 130.26 kB.
 
@@ -326,15 +383,13 @@ Cleanup:
 
 ## 12. Open blockers
 
-| Exact blocker | Affected phase | Why it blocks progress | Owner | Next concrete action |
-|---------------|----------------|------------------------|-------|----------------------|
-| Real app-server login/API/logout verification cannot run from this shell because server-side `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are absent from the process environment, and no usable admin/non-admin login sessions are available without credentials. | Phase 2 exit verification | Remote Auth identities and admin row now exist, but non-admin 403, admin 200, inactive-admin rejection, and logout require real Supabase sessions plus the Node server running with its service-role configuration. Passwords must not be requested or recorded. | Operator | Run the app with server-only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, then perform/admin-share a safe authenticated session flow for the existing admin and non-admin users without exposing passwords or secrets. |
+None for Phase 2.
 
 ## 13. Next three actions
 
-1. Start the CalenderZW Node server with server-only `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` present in the process environment.
-2. Authenticate the existing non-admin and admin users through the real login flow without exposing passwords, producing real Supabase sessions.
-3. Verify non-admin 403, admin 200, inactive-admin 403 then restored 200, and logout returns to 401.
+1. Review Phase 2 evidence and approve the verified exit state.
+2. Prepare the scoped instruction for Phase 3 only after that review.
+3. Keep the current admin authority model unchanged until Phase 3 begins.
 
 ## 14. Verification log
 
@@ -371,7 +426,7 @@ Cleanup:
 - production smoke: `/admin/login` 200, `/admin` 200 SPA shell with no privileged marker leaks, `/dashboard` 308 to `/admin`, `/api/admin/session` 401 `AUTH_REQUIRED`.
 - removed: obsolete Phase 1 timetable/sync components and unused `MVP_ADMIN_EMAILS` bootstrap scaffolding.
 - current phase: PHASE 2 — Secure admin authentication, BLOCKED.
-- remaining blocker: no real Supabase Auth admin/non-admin identities exist and no server-side `SUPABASE_SERVICE_ROLE_KEY` is available for app-server persisted auth verification.
+- remaining blocker at that time: no real Supabase Auth admin/non-admin identities existed and no server-side privileged runtime key was available for app-server persisted auth verification.
 
 ### 2026-08-07 Phase 2 identity check
 
@@ -379,8 +434,57 @@ Cleanup:
 - admin identity: UUID `0a11b91f-4978-43cc-8446-95194ae81fa4`, redacted email `d***@gmail.com`, active admin row present.
 - non-admin identity: UUID `773f97e5-46c2-46ec-b8c8-5210801da81b`, redacted email `s***@gmail.com`, no `admin_users` row.
 - admin provisioning result: no insertion was needed in this session because exactly one intended active admin row already existed; verified total admin rows = 1 and active admin rows = 1.
-- local runtime env check: current shell and `.env.local` do not expose `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`; no secrets were printed.
+- local runtime env check at that time: current shell and `.env.local` did not expose `SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY`; no secrets were printed.
 - tests run: not rerun in this gate because no application code changed and Phase 2 remains blocked before real app-server login verification.
 - current phase: PHASE 2 — Secure admin authentication, BLOCKED.
-- remaining blocker: run the Node server with server-only Supabase service-role env and complete real admin/non-admin login sessions without exposing passwords.
+- remaining blocker at that time: run the Node server with server-only privileged Supabase env and complete real admin/non-admin login sessions without exposing passwords.
+
+### 2026-08-07 Phase 2 secret-key model update
+
+- files materially changed: `.env.example`, `Progress.md`, `server/supabase/adminClient.ts`, `server/supabase/config.ts`, `tests/browserSecretBoundary.test.ts`, `tests/serverSupabaseConfig.test.ts`.
+- server key model: privileged server resolution now prefers `SUPABASE_SECRET_KEY` and falls back to legacy `SUPABASE_SERVICE_ROLE_KEY`; browser config remains `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- remote auth confirmation: admin UUID `0a11b91f-4978-43cc-8446-95194ae81fa4` (`d***@gmail.com`) still has the only active admin row; non-admin UUID `773f97e5-46c2-46ec-b8c8-5210801da81b` (`s***@gmail.com`) still has no `admin_users` row.
+- runtime env check: current shell does not have `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, or legacy `SUPABASE_SERVICE_ROLE_KEY`; no secret values were printed.
+- tests run: `npm test`; `npm run lint`; `npm run build` with `SUPABASE_SECRET_KEY=CALENDERZW_SUPABASE_SECRET_CANARY_20260807` and legacy `SUPABASE_SERVICE_ROLE_KEY=CALENDERZW_LEGACY_SERVICE_CANARY_20260807`.
+- tests passed/failed: `npm test` passed, 18 files and 97 tests; `npm run lint` passed with zero warnings; `npm run build` passed.
+- canary evidence: exact 2026-08-07 preferred and legacy secret canary strings were absent from `dist/`; browser source/assets do not reference `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, or server Supabase modules.
+- current phase: PHASE 2 — Secure admin authentication, BLOCKED.
+- remaining blocker: the real privileged runtime is not present in this shell, and no usable authenticated admin/non-admin sessions are available here for the required 403/200/inactive/logout verification.
+
+### 2026-08-07 Phase 2 dev-runtime `/api/admin/session` 500 fix
+
+- files materially changed: `Progress.md`, `.env.example`, `vite.config.ts`, `server/adminApi.ts`, `server/supabase/auth.ts`, `server/viteCalendarPlugin.ts`, `tests/adminAuth.test.ts`, `tests/viteServerAuthDeps.test.ts`.
+- concrete browser symptom: Supabase password login returned HTTP 200, then `GET /api/admin/session` returned HTTP 500 and the UI showed `Administrator sign-in is temporarily unavailable.`.
+- local env presence check: `.env.local` contains `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_URL`, and `SUPABASE_SECRET_KEY`; the interactive shell process environment itself did not contain those keys.
+- exact root cause: Vite dev middleware was resolving admin authorization from bare `process.env`, so the browser could authenticate with Supabase while the server-side admin lookup lacked injected `SUPABASE_URL` / `SUPABASE_SECRET_KEY` and failed as `AUTH_CONFIGURATION_ERROR`.
+- fix applied: `vite.config.ts` now uses `loadEnv(mode, process.cwd(), "")`; the loaded server env is injected into `calendarMvpPlugin(...)`; the plugin now builds server auth dependencies with that env and passes them into `handleAdminRequest(...)`; calendar middleware env reads were also switched to the injected runtime env; `server/adminApi.ts` now logs only safe admin failure codes; auth configuration errors now return the safe message `Administrator authentication is temporarily unavailable.`.
+- secret boundary verification: after the Vite env-loading fix, `SUPABASE_SECRET_KEY=CALENDERZW_DEV_SERVER_SECRET_CANARY_20260807` and `SUPABASE_SERVICE_ROLE_KEY=CALENDERZW_LEGACY_SERVICE_CANARY_20260807` were used for a test build and exact canary strings were absent from `dist/`.
+- test result: `npm test` passed, 20 files and 102 tests; `npm run lint` passed; `npm run build` passed.
+- bounded tooling note: an earlier dev smoke command hung and is treated as tooling failure, not app evidence. Existing smoke logs showed orphaned Vite listeners on ports `4175` and `4176`; those node processes were terminated. No long-running dev-server smoke result is claimed from that attempt.
+- current phase: PHASE 2 — Secure admin authentication, BLOCKED.
+- remaining blocker: the code-level 500 diagnosis is complete and fixed, but the required live browser verification for anonymous 401, non-admin 403, admin 200, inactive-admin 403 then restored 200, and logout 401 has not yet been observed in this shell.
+
+### 2026-08-07 Phase 2 final real-browser and database-authority verification
+
+- browser evidence supplied by the operator from the real browser flow:
+  - anonymous `/api/admin/session` -> `401`
+  - authenticated non-admin `/api/admin/session` -> `403`
+  - authenticated admin `/api/admin/session` -> `200`
+  - logout -> subsequent protected API request `401`
+- database-authority test executed through authorized Supabase MCP against project `jkafqgdymfiiklmozvhi`:
+  - confirmed admin Auth UUID `0a11b91f-4978-43cc-8446-95194ae81fa4`
+  - confirmed its `public.admin_users` row existed and was initially `active=true`
+  - temporarily updated that row to `active=false` with `disabled_at` set
+  - operator refreshed the already-authenticated admin browser session and confirmed inactive-admin `/api/admin/session` -> `403`
+  - immediately restored the same row to `active=true` and `disabled_at=null`
+  - post-restore MCP verification confirmed exactly one admin row remains, the UUID is unchanged (`0a11b91f-4978-43cc-8446-95194ae81fa4`), and all admin rows are active
+- final Phase 2 state:
+  - anonymous `401`: VERIFIED
+  - non-admin `403`: VERIFIED
+  - admin `200`: VERIFIED
+  - inactive admin `403`: VERIFIED
+  - restored admin authority: VERIFIED
+  - logout `401`: VERIFIED
+- current phase: PHASE 2 — Secure admin authentication, VERIFIED.
+- next action: stop here; do not start Phase 3 in this run.
 

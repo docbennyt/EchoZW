@@ -19,12 +19,12 @@ beforeEach(() => {
 });
 
 describe("public student flow", () => {
-  it("shows an honest unavailable state for timetable links without requiring login", () => {
+  it("shows an honest unavailable state for timetable links without requiring login", async () => {
     window.history.pushState({}, "", "/t/zou-bscse-2-1-2026-s2");
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { name: /Timetable unavailable/i }),
+      await screen.findByRole("heading", { name: /Timetable unavailable/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/This timetable has not been published yet/i),
@@ -155,12 +155,12 @@ describe("public student flow", () => {
     }
   });
 
-  it("does not expose calendar setup actions from unavailable timetable links", () => {
+  it("does not expose calendar setup actions from unavailable timetable links", async () => {
     window.history.pushState({}, "", "/t/zou-bscse-2-1-2026-s2");
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { name: /Timetable unavailable/i }),
+      await screen.findByRole("heading", { name: /Timetable unavailable/i }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /Add to Google Calendar/i }),
@@ -295,11 +295,11 @@ describe("public student flow", () => {
     expect(
       await screen.findByRole("heading", {
         level: 1,
-        name: /Admin access verified/i,
+        name: /CalenderZW Admin/i,
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("admin@example.test")).toBeInTheDocument();
-    expect(screen.getByText(/CRUD begins in Phase 4/i)).toBeInTheDocument();
+    expect(screen.getByText(/Get a class timetable live/i)).toBeInTheDocument();
     expect(screen.queryByText(/Lecture CRUD/i)).toBeNull();
   });
 
@@ -332,7 +332,7 @@ describe("public student flow", () => {
 
     await screen.findByRole("heading", {
       level: 1,
-      name: /Admin access verified/i,
+      name: /CalenderZW Admin/i,
     });
     fireEvent.click(screen.getByRole("button", { name: /Sign out/i }));
 

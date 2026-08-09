@@ -101,7 +101,7 @@ export async function requireAuthenticatedUser(
   } catch {
     throw new AdminAuthError(
       "AUTH_CONFIGURATION_ERROR",
-      "Administrator authentication is not configured.",
+      "Administrator authentication is temporarily unavailable.",
       500,
     );
   }
@@ -131,7 +131,7 @@ export async function requireAdmin(
   } catch {
     throw new AdminAuthError(
       "AUTH_CONFIGURATION_ERROR",
-      "Administrator authorization is not configured.",
+      "Administrator authentication is temporarily unavailable.",
       500,
     );
   }

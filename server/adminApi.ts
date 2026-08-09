@@ -1,9 +1,11 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
+  AdminAuthError,
   requireAdmin,
   sendAdminAuthError,
   type AuthDependencies,
 } from "./supabase/auth.js";
+import { handlePilotAdminApi } from "./pilotAdminApi.js";
 
 function sendJson(
   res: ServerResponse,
@@ -16,6 +18,12 @@ function sendJson(
     ...headers,
   });
   res.end(JSON.stringify(body));
+}
+
+function logAdminFailure(scope: "session" | "admin-api", error: unknown) {
+  const code =
+    error instanceof AdminAuthError ? error.code : "DATABASE_UNAVAILABLE";
+  console.warn(`admin ${scope} failure: ${code}`);
 }
 
 export async function handleAdminRequest(
@@ -34,6 +42,7 @@ export async function handleAdminRequest(
         user,
       });
     } catch (error) {
+      logAdminFailure("session", error);
       sendAdminAuthError(res, error);
     }
     return true;
@@ -41,7 +50,8 @@ export async function handleAdminRequest(
 
   if (requestUrl.pathname.startsWith("/api/admin/")) {
     try {
-      await requireAdmin(req, deps);
+      const user = await requireAdmin(req, deps);
+      if (await handlePilotAdminApi(req, res, user)) return true;
       sendJson(res, 501, {
         error: {
           code: "NOT_IMPLEMENTED",
@@ -49,6 +59,7 @@ export async function handleAdminRequest(
         },
       });
     } catch (error) {
+      logAdminFailure("admin-api", error);
       sendAdminAuthError(res, error);
     }
     return true;

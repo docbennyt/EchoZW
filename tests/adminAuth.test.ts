@@ -145,6 +145,22 @@ describe("admin authentication helpers", () => {
       status: 503,
     });
   });
+
+  it("maps missing privileged config to AUTH_CONFIGURATION_ERROR", async () => {
+    await expect(
+      requireAdmin(request("Bearer valid"), {
+        createUserClient: () =>
+          userClient({ id: "admin-1", email: "admin@example.test" }),
+        createAdminClient: () => {
+          throw new Error("missing config");
+        },
+      }),
+    ).rejects.toMatchObject({
+      code: "AUTH_CONFIGURATION_ERROR",
+      message: "Administrator authentication is temporarily unavailable.",
+      status: 500,
+    });
+  });
 });
 
 describe("admin API routes", () => {
@@ -185,5 +201,24 @@ describe("admin API routes", () => {
       },
     });
     expect(JSON.stringify(body())).not.toMatch(/token|password|service/i);
+  });
+
+  it("returns a safe 500 response when privileged config is missing", async () => {
+    const { res, body } = response();
+    await handleAdminRequest(request("Bearer valid"), res, {
+      createUserClient: () =>
+        userClient({ id: "admin-1", email: "admin@example.test" }),
+      createAdminClient: () => {
+        throw new Error("missing config");
+      },
+    });
+
+    expect(res.statusCode).toBe(500);
+    expect(body()).toEqual({
+      error: {
+        code: "AUTH_CONFIGURATION_ERROR",
+        message: "Administrator authentication is temporarily unavailable.",
+      },
+    });
   });
 });

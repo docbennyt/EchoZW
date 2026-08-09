@@ -18,12 +18,14 @@ describe("browser secret boundary", () => {
       .map((file) => readFileSync(file, "utf8"))
       .join("\n");
 
+    expect(joined).not.toContain("SUPABASE_SECRET_KEY");
     expect(joined).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(joined).not.toContain("service_role");
   });
 
   it(".env.example contains placeholders and no live project secrets", () => {
     const example = readFileSync(".env.example", "utf8");
+    expect(example).toContain("SUPABASE_SECRET_KEY=");
     expect(example).toContain("SUPABASE_SERVICE_ROLE_KEY=");
     expect(example).not.toContain("eyJ");
     expect(example).not.toContain("sb_secret_");

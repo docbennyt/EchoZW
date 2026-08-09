@@ -597,6 +597,260 @@ dd {
   width: 100%;
 }
 
+.pilot-page-hero {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin: 0 auto 1rem;
+  max-width: 1180px;
+  padding: clamp(1.1rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem) 0;
+}
+
+.pilot-page-hero h1,
+.pilot-surface h2,
+.pilot-day-group h3,
+.pilot-session-card h4 {
+  margin: 0;
+}
+
+.pilot-page-hero p,
+.pilot-surface-header p,
+.pilot-muted,
+.pilot-card-meta span,
+.pilot-summary-grid p,
+.pilot-publish-success span {
+  color: var(--muted);
+  margin: 0.25rem 0 0;
+}
+
+.pilot-admin-layout,
+.pilot-public-layout {
+  display: grid;
+  gap: 1rem;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+}
+
+.pilot-admin-layout {
+  grid-template-columns: 15rem minmax(0, 1fr);
+}
+
+.pilot-admin-sidebar {
+  align-self: start;
+  position: sticky;
+  top: 5.25rem;
+}
+
+.pilot-nav,
+.pilot-stack,
+.pilot-form,
+.pilot-card-meta,
+.pilot-day-stack,
+.pilot-session-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pilot-nav a,
+.pilot-manage-grid a {
+  align-items: center;
+  background: #eef5f2;
+  border-radius: var(--radius);
+  color: var(--brand);
+  display: flex;
+  font-weight: 800;
+  min-height: 2.9rem;
+  padding: 0.8rem 1rem;
+}
+
+.pilot-nav a[aria-current="page"] {
+  background: var(--brand);
+  color: #fff;
+}
+
+.pilot-admin-content {
+  min-width: 0;
+}
+
+.pilot-surface {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 0 rgba(18, 33, 31, 0.04);
+  padding: 1rem;
+}
+
+.pilot-surface-header,
+.pilot-day-header,
+.pilot-card-actions,
+.pilot-inline-actions,
+.pilot-surface-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.pilot-card-list {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+
+.pilot-card,
+.pilot-session-card,
+.pilot-inline-note,
+.pilot-publish-success {
+  background: #f7faf8;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem;
+}
+
+.pilot-card-actions,
+.pilot-inline-actions {
+  justify-content: flex-start;
+}
+
+.pilot-card-actions a,
+.pilot-card-actions button,
+.pilot-inline-actions a,
+.pilot-inline-actions button,
+.pilot-manage-grid a {
+  min-height: 2.75rem;
+}
+
+.pilot-manage-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+}
+
+.pilot-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pilot-field span {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pilot-field input,
+.pilot-field select,
+.pilot-field textarea {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-height: 2.9rem;
+  padding: 0.75rem 0.85rem;
+  width: 100%;
+}
+
+.pilot-checkbox {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  min-height: 2.75rem;
+}
+
+.pilot-checkbox input {
+  height: 1rem;
+  width: 1rem;
+}
+
+.pilot-inline-note {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.pilot-inline-note a {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.pilot-two-col,
+.pilot-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pilot-summary-grid strong,
+.pilot-session-card strong {
+  color: var(--brand);
+  display: block;
+}
+
+.pilot-day-group {
+  border-top: 1px solid var(--line);
+  padding-top: 0.9rem;
+}
+
+.pilot-day-group:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.pilot-session-card h4 {
+  font-size: 1rem;
+  margin-top: 0.35rem;
+}
+
+.pilot-session-card p {
+  margin: 0.2rem 0;
+}
+
+.pilot-publish-success {
+  align-items: start;
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .pilot-admin-layout,
+  .pilot-public-layout,
+  .pilot-admin-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pilot-admin-sidebar,
+  .side-panel {
+    position: static;
+  }
+
+  .pilot-nav {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(8rem, 1fr);
+    overflow-x: auto;
+    padding-bottom: 0.2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .pilot-page-hero {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .pilot-two-col,
+  .pilot-summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pilot-card-list,
+  .pilot-manage-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .sheet-backdrop {
   align-items: end;
   background: rgba(12, 29, 25, 0.45);

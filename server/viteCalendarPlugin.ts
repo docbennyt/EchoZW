@@ -2,6 +2,13 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Plugin } from "vite";
+import { handleAdminRequest } from "./adminApi.js";
+import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
+import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
+import type { AuthDependencies } from "./supabase/auth.js";
+import { createSupabaseAdminClient } from "./supabase/adminClient.js";
+import { createSupabaseUserClient } from "./supabase/userClient.js";
+import { setPilotRepositoryEnv } from "./pilotRepository.js";
 import { isDemoDataAllowed } from "../src/domain/demoConfig.js";
 import { mapToGoogleEvents } from "../src/domain/googleCalendar.js";
 import { demoTimetable } from "../src/domain/timetableData.js";
@@ -28,24 +35,54 @@ import {
 } from "../src/domain/googleOAuthConfig.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 
+type RuntimeEnv = NodeJS.ProcessEnv & Record<string, string | undefined>;
+
+type CalendarMvpPluginOptions = {
+  serverEnv?: RuntimeEnv;
+};
+
+export function createViteServerAuthDependencies(
+  env: RuntimeEnv,
+): AuthDependencies {
+  return {
+    createUserClient: (accessToken: string) =>
+      createSupabaseUserClient(accessToken, env) as AuthDependencies["createUserClient"] extends (
+        ...args: never[]
+      ) => infer Client
+        ? Client
+        : never,
+    createAdminClient: () =>
+      createSupabaseAdminClient(env) as AuthDependencies["createAdminClient"] extends (
+        ...args: never[]
+      ) => infer Client
+        ? Client
+        : never,
+  };
+}
+
 const subscriptionsById = new Map<string, CalendarSubscription>();
 const subscriptionIdByTokenHash = new Map<string, string>();
 const googleStates = new Map<string, string>();
-const storePath =
-  process.env.CALENDAR_STORE_PATH ??
-  (process.env.NODE_ENV === "production" && process.platform !== "win32"
-    ? "/data/calenderzw-calendar-store.json"
-    : ".data/calendar-store.json");
 let storeLoaded = false;
 
+function getStorePath(env: RuntimeEnv) {
+  return (
+    env.CALENDAR_STORE_PATH ??
+    (env.NODE_ENV === "production" && process.platform !== "win32"
+      ? "/data/calenderzw-calendar-store.json"
+      : ".data/calendar-store.json")
+  );
+}
+
 function getRequestPublicOrigin(
+  env: RuntimeEnv,
   req: IncomingMessage,
   mode: "development" | "production",
 ) {
-  return getPublicAppUrlFromHeaders(process.env, req.headers, mode);
+  return getPublicAppUrlFromHeaders(env, req.headers, mode);
 }
 
-async function loadStore() {
+async function loadStore(storePath: string) {
   if (storeLoaded) return;
   storeLoaded = true;
   try {
@@ -62,7 +99,7 @@ async function loadStore() {
   }
 }
 
-async function persistStore() {
+async function persistStore(storePath: string) {
   await mkdir(dirname(storePath), { recursive: true });
   await writeFile(
     storePath,
@@ -130,11 +167,12 @@ function getOrCreateAnonymousSession(req: IncomingMessage) {
 }
 
 function isAdminDiagnosticRequest(
+  env: RuntimeEnv,
   req: IncomingMessage,
   mode: "development" | "production",
 ) {
   if (mode === "development") return true;
-  const adminKey = process.env.GOOGLE_CONFIG_STATUS_ADMIN_KEY;
+  const adminKey = env.GOOGLE_CONFIG_STATUS_ADMIN_KEY;
   return Boolean(adminKey && req.headers["x-admin-key"] === adminKey);
 }
 
@@ -201,14 +239,16 @@ export async function handleCalendarRequest(
   req: IncomingMessage,
   res: ServerResponse,
   mode: "development" | "production",
+  env: RuntimeEnv = process.env,
 ) {
+  const storePath = getStorePath(env);
   if (mode === "production") {
-    validateGoogleOAuthProductionConfig(process.env);
+    validateGoogleOAuthProductionConfig(env);
   }
 
-  await loadStore();
+  await loadStore(storePath);
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
-  const demoDataAllowed = isDemoDataAllowed(process.env, mode);
+  const demoDataAllowed = isDemoDataAllowed(env, mode);
 
   if (req.method === "GET" && requestUrl.pathname === "/healthz") {
     sendJson(res, 200, { ok: true, service: "calenderzw" });
@@ -268,9 +308,9 @@ export async function handleCalendarRequest(
 
       subscriptionsById.set(subscription.id, subscription);
       if (tokenHash) subscriptionIdByTokenHash.set(tokenHash, subscription.id);
-      await persistStore();
+      await persistStore(storePath);
 
-      const publicOrigin = getRequestPublicOrigin(req, mode);
+      const publicOrigin = getRequestPublicOrigin(env, req, mode);
       const response = buildSubscriptionResponse({
         subscription,
         publicOrigin,
@@ -359,7 +399,7 @@ export async function handleCalendarRequest(
       subscription.externalCalendarId = parsedBody.deleteCreatedCalendar
         ? undefined
         : subscription.externalCalendarId;
-      await persistStore();
+      await persistStore(storePath);
     }
 
     sendJson(res, 200, {
@@ -393,7 +433,7 @@ export async function handleCalendarRequest(
     subscription.revokedAt = new Date().toISOString();
     subscription.updatedAt = subscription.revokedAt;
     subscription.rawToken = undefined;
-    await persistStore();
+    await persistStore(storePath);
     sendJson(res, 200, {
       ok: true,
       reference: confirmationReference("REV"),
@@ -430,7 +470,7 @@ export async function handleCalendarRequest(
     }
 
     subscription.lastFeedFetchAt = new Date().toISOString();
-    await persistStore();
+    await persistStore(storePath);
     writeIcsResponse(req, res, subscription);
     return true;
   }
@@ -460,7 +500,7 @@ export async function handleCalendarRequest(
     req.method === "GET" &&
     requestUrl.pathname === "/api/calendar/google/config-status"
   ) {
-    if (!isAdminDiagnosticRequest(req, mode)) {
+      if (!isAdminDiagnosticRequest(env, req, mode)) {
       sendJson(res, 404, {
         error: {
           code: "NOT_FOUND",
@@ -470,7 +510,7 @@ export async function handleCalendarRequest(
       return true;
     }
 
-    const config = resolveGoogleOAuthConfig(process.env);
+    const config = resolveGoogleOAuthConfig(env);
     sendJson(res, 200, {
       enabled: config.enabled,
       redirectUri: config.redirectUri ?? null,
@@ -493,7 +533,7 @@ export async function handleCalendarRequest(
     const subscription = subscriptionId
       ? subscriptionsById.get(subscriptionId)
       : undefined;
-    const googleConfig = resolveGoogleOAuthConfig(process.env);
+    const googleConfig = resolveGoogleOAuthConfig(env);
 
     if (!subscription) {
       sendJson(res, 404, {
@@ -510,7 +550,7 @@ export async function handleCalendarRequest(
       !googleConfig.clientId ||
       !googleConfig.redirectUri
     ) {
-      const publicOrigin = getRequestPublicOrigin(req, mode);
+      const publicOrigin = getRequestPublicOrigin(env, req, mode);
       res.writeHead(302, {
         Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-setup-needed`,
       });
@@ -545,8 +585,8 @@ export async function handleCalendarRequest(
     const subscription = subscriptionId
       ? subscriptionsById.get(subscriptionId)
       : undefined;
-    const googleConfig = resolveGoogleOAuthConfig(process.env);
-    const publicOrigin = getRequestPublicOrigin(req, mode);
+    const googleConfig = resolveGoogleOAuthConfig(env);
+    const publicOrigin = getRequestPublicOrigin(env, req, mode);
 
     if (
       !code ||
@@ -624,7 +664,7 @@ export async function handleCalendarRequest(
       subscription.status = "active";
       subscription.externalCalendarId = calendar.id;
       subscription.lastSyncedAt = new Date().toISOString();
-      await persistStore();
+      await persistStore(storePath);
       googleStates.delete(state);
       res.writeHead(302, {
         Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-success`,
@@ -633,7 +673,7 @@ export async function handleCalendarRequest(
     } catch {
       subscription.status = "failed";
       subscription.lastErrorCode = "GOOGLE_SYNC_FAILED";
-      await persistStore();
+      await persistStore(storePath);
       res.writeHead(302, {
         Location: `${publicOrigin}/t/${demoTimetable.slug}?calendar=google-failed`,
       });
@@ -645,18 +685,52 @@ export async function handleCalendarRequest(
   return false;
 }
 
-export function calendarMvpPlugin(): Plugin {
+export function calendarMvpPlugin(
+  options: CalendarMvpPluginOptions = {},
+): Plugin {
+  const runtimeEnv = options.serverEnv ?? process.env;
+  const authDeps = createViteServerAuthDependencies(runtimeEnv);
+  setPilotRepositoryEnv(runtimeEnv);
+
   return {
     name: "calenderzw-mvp-api",
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (await handleCalendarRequest(req, res, "development")) return;
+        if (await handleAdminRequest(req, res, authDeps)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handlePublicTimetableRequest(req, res)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handlePilotCalendarRequest(req, res, runtimeEnv, "development"))
+          return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handleCalendarRequest(req, res, "development", runtimeEnv))
+          return;
         next();
       });
     },
     configurePreviewServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (await handleCalendarRequest(req, res, "production")) return;
+        if (await handleAdminRequest(req, res, authDeps)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handlePublicTimetableRequest(req, res)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handlePilotCalendarRequest(req, res, runtimeEnv, "production"))
+          return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handleCalendarRequest(req, res, "production", runtimeEnv))
+          return;
         next();
       });
     },

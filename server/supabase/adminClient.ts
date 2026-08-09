@@ -5,13 +5,13 @@ export function createSupabaseAdminClient(
   env: NodeJS.ProcessEnv = process.env,
 ): SupabaseClient {
   const config = getServerSupabaseConfig(env);
-  if (!config.serviceRoleKey) {
+  if (!config.privilegedKey) {
     throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is required for server-side admin authorization.",
+      "SUPABASE_SECRET_KEY is required for server-side admin authorization.",
     );
   }
 
-  return createClient(config.url, config.serviceRoleKey, {
+  return createClient(config.url, config.privilegedKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
