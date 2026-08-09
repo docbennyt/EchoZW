@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 import type {
+  AdminCourseMemoryEntry,
   AdminAcademicPeriod,
   AdminClassGroup,
   AdminInstitution,
@@ -67,13 +68,77 @@ function requireString(value: string, code: string, message: string) {
 }
 
 function assertTimeRange(startTime: string, endTime: string) {
-  if (endTime <= startTime) {
+  if (normalizeTimeValue(endTime) <= normalizeTimeValue(startTime)) {
     throw new PilotApiError(
       "INVALID_TIME_RANGE",
       "Class end time must be after the start time.",
       422,
     );
   }
+}
+
+function normalizeTimeValue(value: string) {
+  const match = value.trim().match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return value.trim();
+  return `${match[1]}:${match[2]}:${match[3] ?? "00"}`;
+}
+
+function stableSessionKeyFor(input: {
+  courseCode: string;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  sessionType?: string | null;
+}) {
+  return [
+    slugify(input.courseCode.trim()),
+    input.weekday,
+    normalizeTimeValue(input.startTime),
+    normalizeTimeValue(input.endTime),
+    slugify(input.sessionType?.trim() || "session"),
+  ].join("__");
+}
+
+function buildCourseMemoryEntries(
+  sessions: Array<{
+    courseCode: string;
+    courseName: string;
+    lecturer?: string | null;
+    venue?: string | null;
+    sessionType?: string | null;
+  }>,
+): AdminCourseMemoryEntry[] {
+  const byCode = new Map<string, AdminCourseMemoryEntry>();
+  for (const session of sessions) {
+    const courseCode = session.courseCode.trim();
+    if (!courseCode) continue;
+    const existing = byCode.get(courseCode) ?? {
+      courseCode,
+      courseName: session.courseName.trim(),
+      lecturerSuggestions: [],
+      venueSuggestions: [],
+      sessionTypeSuggestions: [],
+    };
+    if (!existing.courseName && session.courseName.trim()) {
+      existing.courseName = session.courseName.trim();
+    }
+    const lecturer = session.lecturer?.trim();
+    if (lecturer && !existing.lecturerSuggestions.includes(lecturer)) {
+      existing.lecturerSuggestions.push(lecturer);
+    }
+    const venue = session.venue?.trim();
+    if (venue && !existing.venueSuggestions.includes(venue)) {
+      existing.venueSuggestions.push(venue);
+    }
+    const sessionType = session.sessionType?.trim();
+    if (sessionType && !existing.sessionTypeSuggestions.includes(sessionType)) {
+      existing.sessionTypeSuggestions.push(sessionType);
+    }
+    byCode.set(courseCode, existing);
+  }
+  return [...byCode.values()].sort((left, right) =>
+    left.courseCode.localeCompare(right.courseCode),
+  );
 }
 
 function mapInstitution(row: JsonRecord): AdminInstitution {
@@ -308,10 +373,14 @@ function detectOverlap(
   for (const session of sessions) {
     if (candidate.id && session.id === candidate.id) continue;
     if (session.weekday !== candidate.weekday) continue;
-    if (candidate.startTime < session.endTime && candidate.endTime > session.startTime) {
+    const candidateStart = normalizeTimeValue(candidate.startTime);
+    const candidateEnd = normalizeTimeValue(candidate.endTime);
+    const sessionStart = normalizeTimeValue(session.startTime);
+    const sessionEnd = normalizeTimeValue(session.endTime);
+    if (candidateStart < sessionEnd && candidateEnd > sessionStart) {
       throw new PilotApiError(
         "TIMETABLE_CONFLICT",
-        `${candidate.courseCode} overlaps with ${session.courseCode} on ${weekdayName(candidate.weekday)} between ${session.startTime.slice(0, 5)} and ${session.endTime.slice(0, 5)}.`,
+        `${candidate.courseCode} overlaps with ${session.courseCode} on ${weekdayName(candidate.weekday)} between ${sessionStart.slice(0, 5)} and ${sessionEnd.slice(0, 5)}.`,
         409,
       );
     }
@@ -1095,6 +1164,17 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
     "DATABASE_UNAVAILABLE",
     "Could not load timetable sessions.",
   );
+  const versionIds = versions.map((version) => version.id);
+  const courseMemoryRows = versionIds.length
+    ? await expectData(
+        client
+          .from("timetable_sessions")
+          .select("course_code, course_name, lecturer, venue, session_type")
+          .in("timetable_version_id", versionIds),
+        "DATABASE_UNAVAILABLE",
+        "Could not load course memory.",
+      )
+    : [];
 
   const institution = asSingle((timetable as JsonRecord).institutions as JsonRecord | JsonRecord[] | null);
   const programme = asSingle((timetable as JsonRecord).programmes as JsonRecord | JsonRecord[] | null);
@@ -1123,6 +1203,15 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
     activeVersion,
     versions,
     sessions: (sessions ?? []).map((row: unknown) => mapSession(row as JsonRecord)),
+    courseMemory: buildCourseMemoryEntries(
+      (courseMemoryRows ?? []).map((row: unknown) => ({
+        courseCode: String((row as JsonRecord).course_code ?? ""),
+        courseName: String((row as JsonRecord).course_name ?? ""),
+        lecturer: (row as JsonRecord).lecturer ? String((row as JsonRecord).lecturer) : null,
+        venue: (row as JsonRecord).venue ? String((row as JsonRecord).venue) : null,
+        sessionType: (row as JsonRecord).session_type ? String((row as JsonRecord).session_type) : null,
+      })),
+    ),
   } satisfies AdminTimetableEditor;
 }
 
@@ -1143,8 +1232,8 @@ async function listDraftSessionsForTimetable(timetableId: string, userId: string
       id: String((row as JsonRecord).id),
       courseCode: String((row as JsonRecord).course_code),
       weekday: Number((row as JsonRecord).weekday),
-      startTime: String((row as JsonRecord).start_time),
-      endTime: String((row as JsonRecord).end_time),
+      startTime: normalizeTimeValue(String((row as JsonRecord).start_time)),
+      endTime: normalizeTimeValue(String((row as JsonRecord).end_time)),
     })),
   };
 }
@@ -1173,7 +1262,7 @@ export async function createTimetableSession(input: {
     input.timetableId,
     input.userId,
   );
-  detectOverlap(sessions, input);
+  const client = createPilotAdminClient();
 
   const editor = await getTimetableEditor(input.timetableId, input.userId);
   if (!editor.timetable.academicPeriodStartsOn || !editor.timetable.academicPeriodEndsOn) {
@@ -1188,45 +1277,73 @@ export async function createTimetableSession(input: {
     (session: unknown) =>
       (session as { courseCode: string; weekday: number; startTime: string; endTime: string }).courseCode === input.courseCode.trim() &&
       (session as { courseCode: string; weekday: number; startTime: string; endTime: string }).weekday === input.weekday &&
-      (session as { courseCode: string; weekday: number; startTime: string; endTime: string }).startTime === input.startTime &&
-      (session as { courseCode: string; weekday: number; startTime: string; endTime: string }).endTime === input.endTime,
+      normalizeTimeValue((session as { courseCode: string; weekday: number; startTime: string; endTime: string }).startTime) === normalizeTimeValue(input.startTime) &&
+      normalizeTimeValue((session as { courseCode: string; weekday: number; startTime: string; endTime: string }).endTime) === normalizeTimeValue(input.endTime),
   );
   if (duplicate) {
-    throw new PilotApiError(
-      "VALIDATION_ERROR",
-      "This class session already exists in the draft timetable.",
-      422,
+    const existingSession = await expectData(
+      client
+        .from("timetable_sessions")
+        .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+        .eq("id", duplicate.id)
+        .maybeSingle(),
+      "DATABASE_UNAVAILABLE",
+      "Could not load the existing timetable session.",
     );
+    if (existingSession) {
+      return mapSession(existingSession as unknown as JsonRecord);
+    }
   }
 
-  const client = createPilotAdminClient();
-  const data = await expectData(
-    client
-      .from("timetable_sessions")
-      .insert({
-        timetable_version_id: versionId,
-        stable_session_key: crypto.randomUUID(),
-        course_code: input.courseCode.trim(),
-        course_name: input.courseName.trim(),
-        weekday: input.weekday,
-        start_time: input.startTime,
-        end_time: input.endTime,
-        starts_on: editor.timetable.academicPeriodStartsOn,
-        ends_on: editor.timetable.academicPeriodEndsOn,
-        venue: input.venue?.trim() || null,
-        venue_raw: input.venue?.trim() || null,
-        venue_normalized: input.venue?.trim() || null,
-        lecturer: input.lecturer?.trim() || null,
-        lecturer_raw: input.lecturer?.trim() || null,
-        lecturer_normalized: input.lecturer?.trim() || null,
-        session_type: input.sessionType?.trim() || null,
-        notes: input.notes?.trim() || null,
-      })
-      .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
-      .single(),
-    "DATABASE_UNAVAILABLE",
-    "Could not save the timetable session.",
-  );
+  detectOverlap(sessions, input);
+  const payload = {
+    timetable_version_id: versionId,
+    stable_session_key: stableSessionKeyFor(input),
+    course_code: input.courseCode.trim(),
+    course_name: input.courseName.trim(),
+    weekday: input.weekday,
+    start_time: normalizeTimeValue(input.startTime),
+    end_time: normalizeTimeValue(input.endTime),
+    starts_on: editor.timetable.academicPeriodStartsOn,
+    ends_on: editor.timetable.academicPeriodEndsOn,
+    venue: input.venue?.trim() || null,
+    venue_raw: input.venue?.trim() || null,
+    venue_normalized: input.venue?.trim() || null,
+    lecturer: input.lecturer?.trim() || null,
+    lecturer_raw: input.lecturer?.trim() || null,
+    lecturer_normalized: input.lecturer?.trim() || null,
+    session_type: input.sessionType?.trim() || null,
+    notes: input.notes?.trim() || null,
+  };
+  const { data, error } = await client
+    .from("timetable_sessions")
+    .insert(payload)
+    .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+    .single();
+  if (error) {
+    const duplicateConflict = (error as SupabaseErrorLike).code === "23505";
+    if (duplicateConflict) {
+      const existing = await expectData(
+        client
+          .from("timetable_sessions")
+          .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+          .eq("timetable_version_id", versionId)
+          .eq("stable_session_key", payload.stable_session_key)
+          .maybeSingle(),
+        "DATABASE_UNAVAILABLE",
+        "Could not load the saved timetable session.",
+      );
+      if (existing) {
+        return mapSession(existing as unknown as JsonRecord);
+      }
+    }
+    throw new PilotApiError(
+      "DATABASE_UNAVAILABLE",
+      "Could not save the timetable session.",
+      503,
+      error,
+    );
+  }
   return mapSession(data as unknown as JsonRecord);
 }
 

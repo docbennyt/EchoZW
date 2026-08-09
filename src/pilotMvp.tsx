@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarCheck,
   Copy,
@@ -49,6 +49,13 @@ import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import { fetchPublicTimetable } from "./api/publicTimetable";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
+import {
+  applyCourseSuggestion,
+  buildCourseMemoryEntries,
+  findCourseSuggestions,
+  mergeCourseSuggestion,
+  type CourseSuggestion,
+} from "./domain/courseMemory";
 
 const weekdayLabels = [
   "",
@@ -1185,7 +1192,73 @@ const emptySessionForm: SessionFormState = {
   notes: "",
 };
 
-function TimetableEditorPage({
+function sortAdminSessions(sessions: AdminTimetableSession[]) {
+  return [...sessions].sort((left, right) => {
+    if (left.weekday !== right.weekday) return left.weekday - right.weekday;
+    if (left.startTime !== right.startTime) {
+      return left.startTime.localeCompare(right.startTime);
+    }
+    if (left.endTime !== right.endTime) {
+      return left.endTime.localeCompare(right.endTime);
+    }
+    return left.courseCode.localeCompare(right.courseCode);
+  });
+}
+
+function duplicateSignature(session: AdminTimetableSession) {
+  return [
+    session.courseCode.trim().toLowerCase(),
+    session.courseName.trim().toLowerCase(),
+    session.weekday,
+    session.startTime,
+    session.endTime,
+    session.venue?.trim().toLowerCase() || "",
+    session.lecturer?.trim().toLowerCase() || "",
+    session.sessionType?.trim().toLowerCase() || "",
+  ].join("__");
+}
+
+function TimetableEditorSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading timetable" className="pilot-stack pilot-skeleton-shell">
+      <section className="pilot-surface">
+        <div className="pilot-surface-header">
+          <div className="pilot-skeleton-copy">
+            <span className="pilot-skeleton-block pilot-skeleton-title" />
+            <span className="pilot-skeleton-block pilot-skeleton-subtitle" />
+          </div>
+          <span className="pilot-skeleton-block pilot-skeleton-button" />
+        </div>
+        <div className="pilot-summary-grid">
+          <span className="pilot-skeleton-block pilot-skeleton-card" />
+          <span className="pilot-skeleton-block pilot-skeleton-card" />
+          <span className="pilot-skeleton-block pilot-skeleton-card" />
+        </div>
+      </section>
+      <section className="pilot-surface">
+        <div className="pilot-day-stack">
+          {Array.from({ length: 3 }, (_, index) => (
+            <section key={index} className="pilot-day-group">
+              <div className="pilot-day-header">
+                <span className="pilot-skeleton-block pilot-skeleton-day" />
+                <span className="pilot-skeleton-block pilot-skeleton-chip" />
+              </div>
+              <div className="pilot-session-list">
+                <article className="pilot-session-card pilot-skeleton-card-shell">
+                  <span className="pilot-skeleton-block pilot-skeleton-line-short" />
+                  <span className="pilot-skeleton-block pilot-skeleton-line-medium" />
+                  <span className="pilot-skeleton-block pilot-skeleton-line-long" />
+                </article>
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export function TimetableEditorPage({
   accessToken,
   timetableId,
 }: {
@@ -1193,24 +1266,80 @@ function TimetableEditorPage({
   timetableId: string;
 }) {
   const [editor, setEditor] = useState<AdminTimetableEditor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [refreshNotice, setRefreshNotice] = useState("");
   const [message, setMessage] = useState("");
   const [sessionForm, setSessionForm] = useState<SessionFormState>(emptySessionForm);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishLink, setPublishLink] = useState("");
+  const [savingSession, setSavingSession] = useState(false);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [dirtySessionForm, setDirtySessionForm] = useState(false);
+  const [activeCourseField, setActiveCourseField] = useState<"code" | "name" | null>(null);
+  const [saveFocusMode, setSaveFocusMode] = useState<"close" | "add-another">("close");
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(0);
+  const courseCodeInputRef = useRef<HTMLInputElement | null>(null);
+  const savingSessionRef = useRef(false);
+  const editorRef = useRef<AdminTimetableEditor | null>(null);
+  const latestEditorRequestRef = useRef(0);
+  const addButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const returnFocusTargetRef = useRef<HTMLElement | null>(null);
 
-  const loadEditor = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await getTimetable(accessToken, timetableId);
-      setEditor(result.timetable);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not load timetable.");
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken, timetableId]);
+  const loadEditor = useCallback(
+    async ({
+      background = false,
+      refreshFailureMessage,
+    }: {
+      background?: boolean;
+      refreshFailureMessage?: string;
+    } = {}) => {
+      const requestId = latestEditorRequestRef.current + 1;
+      latestEditorRequestRef.current = requestId;
+      const hasUsableEditor = editorRef.current !== null;
+
+      if (background && hasUsableEditor) {
+        setIsRefreshing(true);
+        setRefreshNotice("");
+      } else {
+        setIsInitialLoading(true);
+        setLoadError("");
+      }
+
+      try {
+        const result = await getTimetable(accessToken, timetableId);
+        if (requestId !== latestEditorRequestRef.current) return;
+        editorRef.current = result.timetable;
+        setEditor(result.timetable);
+        setLoadError("");
+        setRefreshNotice("");
+      } catch (error) {
+        if (requestId !== latestEditorRequestRef.current) return;
+        const safeMessage =
+          error instanceof Error ? error.message : "Could not load timetable.";
+        if (background && editorRef.current) {
+          setRefreshNotice(
+            refreshFailureMessage ?? "We couldn't refresh the timetable just now.",
+          );
+        } else {
+          editorRef.current = null;
+          setEditor(null);
+          setLoadError(safeMessage);
+        }
+      } finally {
+        if (requestId === latestEditorRequestRef.current) {
+          if (background && hasUsableEditor) {
+            setIsRefreshing(false);
+          } else {
+            setIsInitialLoading(false);
+          }
+        }
+      }
+    },
+    [accessToken, timetableId],
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -1218,6 +1347,10 @@ function TimetableEditorPage({
     }, 0);
     return () => window.clearTimeout(timeoutId);
   }, [loadEditor]);
+
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   const sessionsByDay = useMemo(() => {
     const map = new Map<number, AdminTimetableSession[]>();
@@ -1230,7 +1363,61 @@ function TimetableEditorPage({
     return map;
   }, [editor]);
 
-  function openNewSession(day: number, source?: AdminTimetableSession) {
+  const courseMemory = useMemo<CourseSuggestion[]>(
+    () =>
+      buildCourseMemoryEntries([
+        ...(editor?.courseMemory ?? []),
+        ...(editor?.sessions ?? []),
+      ]),
+    [editor],
+  );
+
+  const codeSuggestions = useMemo(
+    () =>
+      activeCourseField === "code"
+        ? findCourseSuggestions(courseMemory, sessionForm.courseCode, "code")
+        : [],
+    [activeCourseField, courseMemory, sessionForm.courseCode],
+  );
+  const nameSuggestions = useMemo(
+    () =>
+      activeCourseField === "name"
+        ? findCourseSuggestions(courseMemory, sessionForm.courseName, "name")
+        : [],
+    [activeCourseField, courseMemory, sessionForm.courseName],
+  );
+
+  const matchedCourse = useMemo(
+    () =>
+      courseMemory.find(
+        (entry) =>
+          entry.courseCode.toLowerCase() === sessionForm.courseCode.trim().toLowerCase(),
+      ) ?? null,
+    [courseMemory, sessionForm.courseCode],
+  );
+
+  const duplicateSessionIds = useMemo(() => {
+    const seen = new Map<string, string>();
+    const duplicates = new Set<string>();
+    for (const session of editor?.sessions ?? []) {
+      const signature = duplicateSignature(session);
+      const firstId = seen.get(signature);
+      if (firstId) {
+        duplicates.add(firstId);
+        duplicates.add(session.id);
+      } else {
+        seen.set(signature, session.id);
+      }
+    }
+    return duplicates;
+  }, [editor]);
+
+  function openNewSession(
+    day: number,
+    source?: AdminTimetableSession,
+    trigger?: HTMLElement | null,
+  ) {
+    returnFocusTargetRef.current = trigger ?? addButtonRefs.current[day] ?? null;
     setSessionForm({
       id: undefined,
       courseCode: source?.courseCode ?? "",
@@ -1243,10 +1430,14 @@ function TimetableEditorPage({
       sessionType: source?.sessionType ?? "",
       notes: source?.notes ?? "",
     });
+    setDirtySessionForm(Boolean(source));
+    setActiveCourseField(null);
+    setHighlightedSuggestionIndex(0);
     setSheetOpen(true);
   }
 
-  function openEditSession(session: AdminTimetableSession) {
+  function openEditSession(session: AdminTimetableSession, trigger?: HTMLElement | null) {
+    returnFocusTargetRef.current = trigger ?? null;
     setSessionForm({
       id: session.id,
       courseCode: session.courseCode,
@@ -1259,13 +1450,85 @@ function TimetableEditorPage({
       sessionType: session.sessionType ?? "",
       notes: session.notes ?? "",
     });
+    setDirtySessionForm(false);
+    setActiveCourseField(null);
+    setHighlightedSuggestionIndex(0);
     setSheetOpen(true);
+  }
+
+  function updateSessionForm(
+    update: SessionFormState | ((current: SessionFormState) => SessionFormState),
+  ) {
+    setSessionForm(update);
+    setDirtySessionForm(true);
+  }
+
+  function closeSessionSheet() {
+    if (savingSession) return;
+    if (
+      dirtySessionForm &&
+      !window.confirm("Discard the changes to this class?")
+    ) {
+      return;
+    }
+    setSheetOpen(false);
+    setSessionForm(emptySessionForm);
+    setDirtySessionForm(false);
+    setActiveCourseField(null);
+    setSaveFocusMode("close");
+    setHighlightedSuggestionIndex(0);
+    window.setTimeout(() => returnFocusTargetRef.current?.focus(), 0);
+  }
+
+  function selectCourse(suggestion: CourseSuggestion) {
+    setSessionForm((current) => applyCourseSuggestion(current, suggestion));
+    setDirtySessionForm(true);
+    setActiveCourseField(null);
+    setHighlightedSuggestionIndex(0);
+  }
+
+  function handleSuggestionKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>,
+    suggestions: CourseSuggestion[],
+  ) {
+    if (suggestions.length === 0) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedSuggestionIndex((current) =>
+        Math.min(current + 1, suggestions.length - 1),
+      );
+      return;
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedSuggestionIndex((current) => Math.max(current - 1, 0));
+      return;
+    }
+    if (event.key === "Enter") {
+      if (activeCourseField) {
+        event.preventDefault();
+        selectCourse(suggestions[highlightedSuggestionIndex] ?? suggestions[0]);
+      }
+      return;
+    }
+    if (event.key === "Escape") {
+      setActiveCourseField(null);
+      setHighlightedSuggestionIndex(0);
+    }
   }
 
   async function saveSession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!editor) return;
+    if (!editor || savingSessionRef.current) return;
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as
+      | HTMLButtonElement
+      | null;
+    const mode = submitter?.value === "add-another" ? "add-another" : "close";
+    savingSessionRef.current = true;
+    setSavingSession(true);
+    setSaveFocusMode(mode);
     setMessage("");
+    setRefreshNotice("");
     const payload = {
       courseCode: sessionForm.courseCode,
       courseName: sessionForm.courseName,
@@ -1278,28 +1541,80 @@ function TimetableEditorPage({
       notes: sessionForm.notes || null,
     };
     try {
-      if (sessionForm.id) {
-        await updateTimetableSession(accessToken, editor.timetable.id, sessionForm.id, payload);
+      const result = sessionForm.id
+        ? await updateTimetableSession(accessToken, editor.timetable.id, sessionForm.id, payload)
+        : await createTimetableSession(accessToken, editor.timetable.id, payload);
+      const savedSession = result.session;
+      setEditor((current) => {
+        if (!current) return current;
+        const nextSessions = sessionForm.id
+          ? current.sessions.map((session) =>
+              session.id === savedSession.id ? savedSession : session,
+            )
+          : [...current.sessions, savedSession];
+        return {
+          ...current,
+          sessions: sortAdminSessions(nextSessions),
+          courseMemory: mergeCourseSuggestion(current.courseMemory, savedSession),
+        };
+      });
+      setDirtySessionForm(false);
+      const focusTarget =
+        sessionForm.id
+          ? returnFocusTargetRef.current
+          : addButtonRefs.current[Number(sessionForm.weekday)] ?? returnFocusTargetRef.current;
+      if (mode === "add-another") {
+        setSessionForm({
+          ...emptySessionForm,
+          weekday: sessionForm.weekday,
+        });
+        setHighlightedSuggestionIndex(0);
+        window.setTimeout(() => courseCodeInputRef.current?.focus(), 0);
       } else {
-        await createTimetableSession(accessToken, editor.timetable.id, payload);
+        setSheetOpen(false);
+        setSessionForm(emptySessionForm);
+        setHighlightedSuggestionIndex(0);
+        window.setTimeout(() => focusTarget?.focus(), 0);
       }
-      setSheetOpen(false);
-      setSessionForm(emptySessionForm);
-      await loadEditor();
-      setMessage(sessionForm.id ? "Class updated." : "Class added.");
+      setMessage(`✓ ${savedSession.courseCode} ${sessionForm.id ? "updated" : "added"}`);
+      void loadEditor({
+        background: true,
+        refreshFailureMessage: "Saved. We couldn't refresh the timetable just now.",
+      });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not save class session.");
+    } finally {
+      savingSessionRef.current = false;
+      setSavingSession(false);
     }
   }
 
   async function removeSession(sessionId: string) {
     if (!editor) return;
+    if (!window.confirm("Delete this class from the draft timetable?")) return;
+    setDeletingSessionId(sessionId);
     try {
-      await deleteTimetableSession(accessToken, editor.timetable.id, sessionId);
-      await loadEditor();
+      setRefreshNotice("");
+      const result = await deleteTimetableSession(accessToken, editor.timetable.id, sessionId);
+      setEditor((current) =>
+        current
+          ? {
+              ...current,
+              sessions: current.sessions.filter(
+                (session) => session.id !== result.deletedSessionId,
+              ),
+            }
+          : current,
+      );
       setMessage("Class deleted.");
+      void loadEditor({
+        background: true,
+        refreshFailureMessage: "Deleted. We couldn't refresh the timetable just now.",
+      });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not delete class.");
+    } finally {
+      setDeletingSessionId(null);
     }
   }
 
@@ -1307,12 +1622,16 @@ function TimetableEditorPage({
     if (!editor) return;
     setPublishing(true);
     setMessage("");
+    setRefreshNotice("");
     try {
       const result = await publishTimetable(accessToken, editor.timetable.id);
       const publicUrl = `${window.location.origin}/t/${result.publishResult.publicSlug}`;
       setPublishLink(publicUrl);
-      await loadEditor();
       setMessage("Timetable published.");
+      void loadEditor({
+        background: true,
+        refreshFailureMessage: "Published. We couldn't refresh the timetable just now.",
+      });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not publish timetable.");
     } finally {
@@ -1320,18 +1639,14 @@ function TimetableEditorPage({
     }
   }
 
-  if (loading) {
-    return (
-      <Surface title="Loading timetable" subtitle="Fetching the latest draft and weekly sessions.">
-        <p>Loading...</p>
-      </Surface>
-    );
+  if (isInitialLoading && !editor) {
+    return <TimetableEditorSkeleton />;
   }
 
   if (!editor) {
     return (
       <Surface title="Timetable unavailable">
-        <p>{message || "The requested timetable could not be loaded."}</p>
+        <p>{loadError || "The requested timetable could not be loaded."}</p>
       </Surface>
     );
   }
@@ -1343,6 +1658,7 @@ function TimetableEditorPage({
         subtitle={`${editor.timetable.programmeName} · ${editor.timetable.academicPeriodName}`}
         actions={
           <div className="pilot-inline-actions">
+            {isRefreshing ? <span className="pilot-sync-note">Syncing...</span> : null}
             {editor.timetable.currentPublishedVersionId ? (
               <a className="secondary" href={`/t/${editor.timetable.publicSlug}`} target="_blank" rel="noreferrer">
                 <ExternalLink size={18} />
@@ -1374,6 +1690,7 @@ function TimetableEditorPage({
           </div>
         </div>
         {message ? <p className="content-notice">{message}</p> : null}
+        {refreshNotice ? <p className="pilot-muted">{refreshNotice}</p> : null}
         {publishLink ? (
           <div className="pilot-publish-success">
             <div>
@@ -1405,6 +1722,11 @@ function TimetableEditorPage({
       </Surface>
 
       <Surface title="Weekly classes" subtitle="Add, edit, duplicate, and review recurring sessions by day.">
+        {duplicateSessionIds.size > 0 ? (
+          <p className="content-notice">
+            Possible duplicate draft sessions detected. Review the highlighted cards and remove confirmed accidental duplicates.
+          </p>
+        ) : null}
         <div className="pilot-day-stack">
           {Array.from({ length: 7 }, (_, index) => index + 1).map((day) => {
             const sessions = sessionsByDay.get(day) ?? [];
@@ -1412,7 +1734,14 @@ function TimetableEditorPage({
               <section key={day} className="pilot-day-group">
                 <div className="pilot-day-header">
                   <h3>{weekdayLabels[day]}</h3>
-                  <button className="secondary" type="button" onClick={() => openNewSession(day)}>
+                  <button
+                    className="secondary"
+                    type="button"
+                    ref={(element) => {
+                      addButtonRefs.current[day] = element;
+                    }}
+                    onClick={(event) => openNewSession(day, undefined, event.currentTarget)}
+                  >
                     <Plus size={18} />
                     Add {weekdayLabels[day]} class
                   </button>
@@ -1422,7 +1751,10 @@ function TimetableEditorPage({
                 ) : (
                   <div className="pilot-session-list">
                     {sessions.map((session) => (
-                      <article key={session.id} className="pilot-session-card">
+                      <article
+                        key={session.id}
+                        className={`pilot-session-card${duplicateSessionIds.has(session.id) ? " duplicate-warning" : ""}`}
+                      >
                         <div>
                           <strong>
                             {session.startTime.slice(0, 5)}-{session.endTime.slice(0, 5)}
@@ -1435,15 +1767,30 @@ function TimetableEditorPage({
                           </span>
                         </div>
                         <div className="pilot-card-actions">
-                          <button className="secondary" type="button" onClick={() => openEditSession(session)}>
+                          <button
+                            className="secondary"
+                            type="button"
+                            onClick={(event) => openEditSession(session, event.currentTarget)}
+                          >
                             Edit
                           </button>
-                          <button className="secondary" type="button" onClick={() => openNewSession(day, session)}>
+                          <button
+                            className="secondary"
+                            type="button"
+                            onClick={(event) =>
+                              openNewSession(day, session, event.currentTarget)
+                            }
+                          >
                             Duplicate
                           </button>
-                          <button className="secondary" type="button" onClick={() => void removeSession(session.id)}>
+                          <button
+                            className="secondary"
+                            disabled={deletingSessionId === session.id}
+                            type="button"
+                            onClick={() => void removeSession(session.id)}
+                          >
                             <Trash2 size={16} />
-                            Delete
+                            {deletingSessionId === session.id ? "Deleting..." : "Delete"}
                           </button>
                         </div>
                       </article>
@@ -1458,37 +1805,121 @@ function TimetableEditorPage({
 
       {sheetOpen ? (
         <div className="sheet-backdrop" role="presentation">
-          <section className="sync-sheet compact" aria-modal="true" role="dialog">
+          <section
+            aria-labelledby="session-sheet-title"
+            className="sync-sheet compact session-sheet"
+            aria-modal="true"
+            role="dialog"
+          >
             <div className="sheet-header">
-              <h2>{sessionForm.id ? "Edit class" : "Add class"}</h2>
-              <button className="icon-button" type="button" onClick={() => setSheetOpen(false)}>
+              <h2 id="session-sheet-title">{sessionForm.id ? "Edit class" : "Add class"}</h2>
+              <button
+                aria-label="Close class editor"
+                className="icon-button"
+                disabled={savingSession}
+                type="button"
+                onClick={closeSessionSheet}
+              >
                 x
               </button>
             </div>
             <form className="pilot-form" onSubmit={saveSession}>
               <Field label="Course code">
                 <input
+                  aria-activedescendant={
+                    activeCourseField === "code" && codeSuggestions[highlightedSuggestionIndex]
+                      ? `course-code-suggestion-${highlightedSuggestionIndex}`
+                      : undefined
+                  }
+                  aria-controls="course-code-suggestions"
+                  aria-expanded={activeCourseField === "code" && codeSuggestions.length > 0}
+                  autoComplete="off"
+                  ref={courseCodeInputRef}
                   required
                   value={sessionForm.courseCode}
-                  onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, courseCode: event.target.value }))
-                  }
+                  onFocus={() => {
+                    setActiveCourseField("code");
+                    setHighlightedSuggestionIndex(0);
+                  }}
+                  onKeyDown={(event) => handleSuggestionKeyDown(event, codeSuggestions)}
+                  onChange={(event) => {
+                    setActiveCourseField("code");
+                    setHighlightedSuggestionIndex(0);
+                    updateSessionForm((current) => ({ ...current, courseCode: event.target.value }));
+                  }}
                 />
               </Field>
+              {activeCourseField === "code" && codeSuggestions.length > 0 ? (
+                <div className="suggestion-list" id="course-code-suggestions" role="listbox">
+                  {codeSuggestions.map((suggestion, index) => (
+                    <button
+                      id={`course-code-suggestion-${index}`}
+                      key={suggestion.courseCode}
+                      aria-selected={highlightedSuggestionIndex === index}
+                      className="suggestion-item"
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => selectCourse(suggestion)}
+                    >
+                      <strong>{suggestion.courseCode}</strong>
+                      <span>{suggestion.courseName}</span>
+                      {suggestion.lecturerSuggestions[0] ? (
+                        <small>{suggestion.lecturerSuggestions[0]}</small>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <Field label="Course name">
                 <input
+                  aria-activedescendant={
+                    activeCourseField === "name" && nameSuggestions[highlightedSuggestionIndex]
+                      ? `course-name-suggestion-${highlightedSuggestionIndex}`
+                      : undefined
+                  }
+                  aria-controls="course-name-suggestions"
+                  aria-expanded={activeCourseField === "name" && nameSuggestions.length > 0}
+                  autoComplete="off"
                   required
                   value={sessionForm.courseName}
-                  onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, courseName: event.target.value }))
-                  }
+                  onFocus={() => {
+                    setActiveCourseField("name");
+                    setHighlightedSuggestionIndex(0);
+                  }}
+                  onKeyDown={(event) => handleSuggestionKeyDown(event, nameSuggestions)}
+                  onChange={(event) => {
+                    setActiveCourseField("name");
+                    setHighlightedSuggestionIndex(0);
+                    updateSessionForm((current) => ({ ...current, courseName: event.target.value }));
+                  }}
                 />
               </Field>
+              {activeCourseField === "name" && nameSuggestions.length > 0 ? (
+                <div className="suggestion-list" id="course-name-suggestions" role="listbox">
+                  {nameSuggestions.map((suggestion, index) => (
+                    <button
+                      id={`course-name-suggestion-${index}`}
+                      key={suggestion.courseCode}
+                      aria-selected={highlightedSuggestionIndex === index}
+                      className="suggestion-item"
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => selectCourse(suggestion)}
+                    >
+                      <strong>{suggestion.courseCode}</strong>
+                      <span>{suggestion.courseName}</span>
+                      {suggestion.lecturerSuggestions[0] ? (
+                        <small>{suggestion.lecturerSuggestions[0]}</small>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <Field label="Day">
                 <select
                   value={sessionForm.weekday}
                   onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, weekday: event.target.value }))
+                    updateSessionForm((current) => ({ ...current, weekday: event.target.value }))
                   }
                 >
                   {weekdayLabels.slice(1).map((label, index) => (
@@ -1505,7 +1936,7 @@ function TimetableEditorPage({
                     type="time"
                     value={sessionForm.startTime}
                     onChange={(event) =>
-                      setSessionForm((current) => ({ ...current, startTime: event.target.value }))
+                      updateSessionForm((current) => ({ ...current, startTime: event.target.value }))
                     }
                   />
                 </Field>
@@ -1515,7 +1946,7 @@ function TimetableEditorPage({
                     type="time"
                     value={sessionForm.endTime}
                     onChange={(event) =>
-                      setSessionForm((current) => ({ ...current, endTime: event.target.value }))
+                      updateSessionForm((current) => ({ ...current, endTime: event.target.value }))
                     }
                   />
                 </Field>
@@ -1524,15 +1955,31 @@ function TimetableEditorPage({
                 <input
                   value={sessionForm.venue}
                   onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, venue: event.target.value }))
+                    updateSessionForm((current) => ({ ...current, venue: event.target.value }))
                   }
                 />
               </Field>
+              {matchedCourse?.venueSuggestions.length ? (
+                <div className="suggestion-chip-row" role="list">
+                  {matchedCourse.venueSuggestions.map((venue) => (
+                    <button
+                      key={venue}
+                      className="suggestion-chip"
+                      type="button"
+                      onClick={() =>
+                        updateSessionForm((current) => ({ ...current, venue }))
+                      }
+                    >
+                      {venue}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <Field label="Lecturer">
                 <input
                   value={sessionForm.lecturer}
                   onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, lecturer: event.target.value }))
+                    updateSessionForm((current) => ({ ...current, lecturer: event.target.value }))
                   }
                 />
               </Field>
@@ -1540,7 +1987,7 @@ function TimetableEditorPage({
                 <input
                   value={sessionForm.sessionType}
                   onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, sessionType: event.target.value }))
+                    updateSessionForm((current) => ({ ...current, sessionType: event.target.value }))
                   }
                 />
               </Field>
@@ -1549,14 +1996,26 @@ function TimetableEditorPage({
                   rows={3}
                   value={sessionForm.notes}
                   onChange={(event) =>
-                    setSessionForm((current) => ({ ...current, notes: event.target.value }))
+                    updateSessionForm((current) => ({ ...current, notes: event.target.value }))
                   }
                 />
               </Field>
-              <button className="primary" type="submit">
-                <Save size={18} />
-                {sessionForm.id ? "Save class" : "Add class"}
-              </button>
+              <div className="session-sheet-actions">
+                <button className="secondary" disabled={savingSession} type="button" onClick={closeSessionSheet}>
+                  Cancel
+                </button>
+                <button className="secondary" disabled={savingSession} type="submit" value="add-another">
+                  {savingSession && saveFocusMode === "add-another" ? "Saving..." : "Save & add another"}
+                </button>
+                <button className="primary" disabled={savingSession} type="submit" value="save">
+                  <Save size={18} />
+                  {savingSession && saveFocusMode === "close"
+                    ? "Saving..."
+                    : sessionForm.id
+                      ? "Save class"
+                      : "Add class"}
+                </button>
+              </div>
             </form>
           </section>
         </div>

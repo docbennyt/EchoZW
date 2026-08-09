@@ -14,8 +14,8 @@ The pilot is not yet VERIFIED.
 - [x] Class group persisted
 - [x] Academic period persisted
 - [x] Timetable metadata persisted
-- [ ] Admin timetable editor loads
-- [ ] Manual sessions persist
+- [x] Admin timetable editor loads
+- [x] Manual sessions persist
 - [ ] Publish verified
 - [ ] Public link verified
 - [ ] Personalised .ics verified
@@ -25,6 +25,21 @@ The pilot is not yet VERIFIED.
 - [ ] Anonymous users cannot mutate Supabase data
 - [x] Mock production data has been removed
 - [ ] Full pilot journey has been verified end to end
+
+Manual-entry reliability: BLOCKED
+Double-submit protection: BLOCKED
+Course memory: BLOCKED
+Code autocomplete: BLOCKED
+Name autocomplete: BLOCKED
+Duplicate workflow: BLOCKED
+Real typing-efficiency test: BLOCKED
+Non-blocking session save: BLOCKED
+Whole-editor reload removed: BLOCKED
+Background revalidation: BLOCKED
+Day Add remains interactive: BLOCKED
+Scroll/context preservation: BLOCKED
+Slow-network UX: BLOCKED
+Real rapid-entry test: BLOCKED
 
 ## 3. Explicitly out of scope
 
@@ -487,4 +502,60 @@ None for Phase 2.
   - logout `401`: VERIFIED
 - current phase: PHASE 2 — Secure admin authentication, VERIFIED.
 - next action: stop here; do not start Phase 3 in this run.
+
+### 2026-08-09 Manual-entry reliability hardening
+
+- files materially changed: `Progress.md`, `server/pilotRepository.ts`, `src/api/pilotTypes.ts`, `src/domain/courseMemory.ts`, `src/pilotMvp.tsx`, `src/styles.css`, `tests/courseMemory.test.ts`, `tests/timetableEditor.test.tsx`.
+- operator-reported real symptom before this pass: first save tap appeared stuck, a second tap closed the dialog, and repeated Tuesday `ICS` rows were visible in the draft timetable.
+- code-level root cause identified:
+  - client save flow allowed a second submit before React disabled the button, so rapid repeat taps could enqueue duplicate creates;
+  - server exact-duplicate detection compared browser `HH:MM` values against database `HH:MM:SS` values, so retried identical creates could bypass the duplicate guard;
+  - new draft sessions used non-deterministic `stable_session_key` values, reducing safe create-retry recovery.
+- fix applied:
+  - timetable session save now uses a synchronous in-flight ref guard plus disabled pending actions so one submit path can run at a time;
+  - successful saves update local editor state immediately, sort sessions deterministically, close or reset the drawer intentionally, and keep newly learned course memory in editor state without reload;
+  - duplicate opens a prefilled unsaved form only and does not persist until explicit save;
+  - course code and course name inputs now behave as linked local comboboxes backed by bounded editor-loaded course memory with conservative lecturer/session-type prefill and venue suggestion chips;
+  - server session create now normalizes time values, uses deterministic `stable_session_key` generation, and returns an existing exact duplicate row instead of creating a second one when the same create is retried.
+- focused verification:
+  - `npm test -- courseMemory.test.ts`: passed.
+  - `npm test -- timetableEditor.test.tsx`: passed.
+  - `npm test -- pilotRepository.test.ts`: passed.
+  - `npm run lint`: passed.
+  - `npm run build`: passed.
+- remaining blocker:
+  - independent Supabase MCP verification of the currently duplicated Tuesday draft rows and any real-row cleanup was not completed in this pass because remote MCP usage was unavailable.
+- current status for this pass:
+  - Manual-entry reliability: BLOCKED pending real browser retest plus Supabase row verification.
+  - Double-submit protection: BLOCKED pending rapid-tap verification against the real draft.
+  - Course memory: BLOCKED pending real typing-efficiency verification in the live editor.
+
+### 2026-08-09 Non-blocking timetable-entry state model
+
+- files materially changed: `Progress.md`, `server/pilotAdminApi.ts`, `src/api/pilotAdmin.ts`, `src/api/pilotTypes.ts`, `src/pilotMvp.tsx`, `src/styles.css`, `tests/timetableEditor.test.tsx`.
+- code-level root cause identified:
+  - the timetable editor used one global loading path for editor fetches, so any later `loadEditor()` call could replace the whole editor with the initial loading state instead of treating refresh as background work;
+  - session mutation flows had local reconciliation, but there was no explicit background-refresh state model or stale-request protection around follow-up timetable fetches.
+- fix applied:
+  - split editor fetch state into initial-load vs background-refresh semantics;
+  - added a first-load skeleton for the editor and preserved the mounted editor once usable data exists;
+  - session create/edit/delete now reconcile the confirmed returned record locally, keep weekday ordering deterministic, and trigger non-blocking background revalidation;
+  - background refresh now surfaces only a small `Syncing...` indicator plus a safe subtle warning if revalidation fails after a confirmed save/delete/publish;
+  - added latest-request-wins protection so an older timetable GET cannot overwrite a newer mutation state;
+  - delete API now returns `deletedSessionId`, allowing targeted local removal without a whole-editor reload;
+  - add-button focus targets are retained so ordinary modal close/save returns context to the relevant weekday control.
+- focused verification:
+  - `npm test -- timetableEditor.test.tsx`: passed, 8 tests.
+  - `npm test -- pilotAdminApi.test.ts`: passed, 3 tests.
+  - `npm test`: passed, 25 files and 121 tests.
+  - `npm run lint`: passed.
+  - `npm run build`: passed.
+- current status for this pass:
+  - Non-blocking session save: BLOCKED pending real operator/browser verification on the live draft timetable.
+  - Whole-editor reload removed: BLOCKED pending live browser confirmation after real add/edit/delete actions.
+  - Background revalidation: BLOCKED pending live browser/network observation.
+  - Day Add remains interactive: BLOCKED pending live browser verification during real background refresh.
+  - Scroll/context preservation: BLOCKED pending live browser verification on lower weekday sections.
+  - Slow-network UX: BLOCKED pending throttled live browser verification.
+  - Real rapid-entry test: BLOCKED pending live three-class manual entry confirmation against Supabase.
 

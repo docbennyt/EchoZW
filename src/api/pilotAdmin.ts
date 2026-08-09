@@ -1,6 +1,7 @@
 import type {
   AdminAcademicPeriod,
   AdminClassGroup,
+  DeleteTimetableSessionResponse,
   AdminInstitution,
   AdminProgramme,
   AdminTimetableEditor,
@@ -316,10 +317,13 @@ export function deleteTimetableSession(
   timetableId: string,
   sessionId: string,
 ) {
-  return adminFetch<{ ok: true }>(`/api/admin/timetables/${timetableId}/sessions/${sessionId}`, {
-    method: "DELETE",
-    accessToken,
-  });
+  return adminFetch<DeleteTimetableSessionResponse>(
+    `/api/admin/timetables/${timetableId}/sessions/${sessionId}`,
+    {
+      method: "DELETE",
+      accessToken,
+    },
+  );
 }
 
 export function publishTimetable(accessToken: string, timetableId: string) {

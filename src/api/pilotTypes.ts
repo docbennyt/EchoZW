@@ -88,6 +88,14 @@ export type AdminTimetableVersion = {
   sessionCount: number;
 };
 
+export type AdminCourseMemoryEntry = {
+  courseCode: string;
+  courseName: string;
+  lecturerSuggestions: string[];
+  venueSuggestions: string[];
+  sessionTypeSuggestions: string[];
+};
+
 export type AdminTimetableEditor = {
   timetable: {
     id: string;
@@ -107,6 +115,7 @@ export type AdminTimetableEditor = {
   activeVersion: AdminTimetableVersion;
   versions: AdminTimetableVersion[];
   sessions: AdminTimetableSession[];
+  courseMemory: AdminCourseMemoryEntry[];
 };
 
 export type PublicTimetableSession = {
@@ -143,4 +152,9 @@ export type PublishTimetableResponse = {
   versionNumber: number;
   sessionCount: number;
   publishedAt: string;
+};
+
+export type DeleteTimetableSessionResponse = {
+  ok: true;
+  deletedSessionId: string;
 };

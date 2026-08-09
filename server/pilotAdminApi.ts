@@ -296,12 +296,16 @@ export async function handlePilotAdminApi(
     }
 
     if (req.method === "DELETE" && updateSessionMatch) {
+      const deletedSessionId = decodeURIComponent(updateSessionMatch[2]);
       await deleteTimetableSession({
         timetableId: decodeURIComponent(updateSessionMatch[1]),
-        sessionId: decodeURIComponent(updateSessionMatch[2]),
+        sessionId: deletedSessionId,
         userId: getUserId(user),
       });
-      sendJson(res, 204, {});
+      sendJson(res, 200, {
+        ok: true,
+        deletedSessionId,
+      });
       return true;
     }
 

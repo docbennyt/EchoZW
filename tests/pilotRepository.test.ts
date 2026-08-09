@@ -122,6 +122,12 @@ function createDraftRecoveryClient() {
               };
             }
 
+            if (columns === "course_code, course_name, lecturer, venue, session_type") {
+              return {
+                in: async () => ({ data: [], error: null }),
+              };
+            }
+
             const builder = {
               eq() {
                 return builder;

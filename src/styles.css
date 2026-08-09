@@ -814,6 +814,91 @@ dd {
   gap: 0.75rem;
 }
 
+.pilot-sync-note {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pilot-skeleton-shell {
+  pointer-events: none;
+}
+
+.pilot-skeleton-copy {
+  display: grid;
+  gap: 0.65rem;
+  width: min(100%, 20rem);
+}
+
+.pilot-skeleton-block {
+  animation: skeleton-pulse 1.2s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, #edf3f0 0%, #f7faf8 100%);
+  border-radius: 999px;
+  display: block;
+}
+
+.pilot-skeleton-title {
+  height: 1.5rem;
+  width: 70%;
+}
+
+.pilot-skeleton-subtitle {
+  height: 1rem;
+  width: 92%;
+}
+
+.pilot-skeleton-button,
+.pilot-skeleton-chip {
+  height: 2.75rem;
+  width: 9rem;
+}
+
+.pilot-skeleton-card {
+  height: 4.5rem;
+  width: 100%;
+}
+
+.pilot-skeleton-day {
+  height: 1.1rem;
+  width: 7rem;
+}
+
+.pilot-skeleton-card-shell {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.pilot-skeleton-line-short {
+  height: 0.9rem;
+  width: 30%;
+}
+
+.pilot-skeleton-line-medium {
+  height: 1rem;
+  width: 55%;
+}
+
+.pilot-skeleton-line-long {
+  height: 0.9rem;
+  width: 75%;
+}
+
+@keyframes skeleton-pulse {
+  from {
+    opacity: 0.72;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pilot-skeleton-block {
+    animation: none;
+  }
+}
+
 @media (max-width: 900px) {
   .pilot-admin-layout,
   .pilot-public-layout,
@@ -928,6 +1013,15 @@ dd {
   max-width: 34rem;
 }
 
+.session-sheet {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.session-sheet .pilot-form {
+  gap: 0.8rem;
+}
+
 .quick-add {
   display: grid;
   gap: 0.75rem;
@@ -958,6 +1052,67 @@ dd {
   font-size: 1.5rem;
   height: 2.75rem;
   width: 2.75rem;
+}
+
+.suggestion-list {
+  display: grid;
+  gap: 0.4rem;
+  margin: -0.25rem 0 0.25rem;
+}
+
+.suggestion-item {
+  align-items: start;
+  background: #f7faf8;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem;
+  text-align: left;
+}
+
+.suggestion-item strong,
+.suggestion-item span,
+.suggestion-item small {
+  margin: 0;
+}
+
+.suggestion-item small {
+  color: var(--muted);
+}
+
+.suggestion-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: -0.35rem;
+}
+
+.suggestion-chip {
+  background: #eef5f2;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0.55rem 0.9rem;
+}
+
+.session-sheet-actions {
+  background: #fff;
+  border-top: 1px solid var(--line);
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 0.85rem;
+  position: sticky;
+}
+
+.duplicate-warning {
+  border-color: #d98c2f;
+  box-shadow: 0 0 0 1px rgba(217, 140, 47, 0.15);
 }
 
 .step-panel {
@@ -1900,6 +2055,10 @@ dd {
   .sync-sheet {
     border-radius: 8px 8px 0 0;
     max-height: 92vh;
+  }
+
+  .session-sheet-actions {
+    padding: 0.85rem 0 calc(0.85rem + env(safe-area-inset-bottom, 0));
   }
 
   .provider-card {
