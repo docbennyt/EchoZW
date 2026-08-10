@@ -12,9 +12,12 @@ import {
   validateGoogleOAuthProductionConfig,
 } from "../src/domain/googleOAuthConfig.js";
 import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
+import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
 import { handleAdminRequest } from "./adminApi.js";
 import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
+import { getPublishedTimetableBySlug } from "./pilotRepository.js";
+import { injectSpaMetadata } from "./spaMetadata.js";
 import { validateSupabaseProductionConfig } from "./supabase/config.js";
 import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 
@@ -121,10 +124,27 @@ async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
       ? requestUrl.pathname
       : "/";
   const html = await readFile(join(distDir, "index.html"), "utf8");
-  const responseBody = html.replace(
-    '<link rel="canonical" href="https://calender.aido.co.zw/" />',
-    `<link rel="canonical" href="https://calender.aido.co.zw${canonicalPath}" />`,
-  );
+  let responseBody = injectSpaMetadata(html, {
+    title: "CalenderZW | Add your university timetable to your calendar",
+    description:
+      "Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.",
+    canonicalPath,
+    ogTitle: "CalenderZW",
+    ogDescription: "Add your university timetable to your calendar.",
+  });
+
+  if (requestUrl.pathname.startsWith("/t/")) {
+    const slug = decodeURIComponent(requestUrl.pathname.replace(/^\/t\//, ""));
+    try {
+      const timetable = await getPublishedTimetableBySlug(slug);
+      responseBody = injectSpaMetadata(
+        responseBody,
+        buildPublicTimetableMetadata(timetable),
+      );
+    } catch {
+      // Keep the generic public shell metadata when a timetable cannot be loaded.
+    }
+  }
 
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",

@@ -1527,6 +1527,9 @@ async function getPublishedTimetable(
     timetableId: String(timetableRecord.id),
     publicSlug: String(timetableRecord.public_slug),
     institution: institution?.name ? String(institution.name) : "",
+    institutionShortName: institution?.short_name
+      ? String(institution.short_name)
+      : null,
     institutionTimezone: institution?.timezone ? String(institution.timezone) : "Africa/Harare",
     programme: programme?.name ? String(programme.name) : "",
     classGroup: cohort?.label ? String(cohort.label) : "",

@@ -7,7 +7,7 @@ describe("reminder validation", () => {
   });
 
   it("rejects unsupported reminder values", () => {
-    expect(() => validateReminderMinutes([999])).toThrow(
+    expect(() => validateReminderMinutes([10081])).toThrow(
       "Unsupported reminder value",
     );
   });

@@ -9,6 +9,7 @@ function makeTimetable(
     timetableId: "tt-1",
     publicSlug: "hit-cs-1-1-august-2026",
     institution: "Harare Institute of Technology",
+    institutionShortName: "HIT",
     institutionTimezone: "Africa/Harare",
     programme: "BTech Computer Science",
     classGroup: "1.1",

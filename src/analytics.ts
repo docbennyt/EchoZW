@@ -1,4 +1,10 @@
 export type AnalyticsEventName =
+  | "timetable_viewed"
+  | "calendar_cta_clicked"
+  | "reminder_selected"
+  | "calendar_method_selected"
+  | "ics_downloaded"
+  | "subscription_created"
   | "calendar_drawer_opened"
   | "reminder_preset_selected"
   | "calendar_provider_selected"

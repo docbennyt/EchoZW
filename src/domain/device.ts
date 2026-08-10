@@ -31,7 +31,7 @@ export function orderedProvidersForDevice(
     return ["apple_subscription", "google_api", "ics_download"];
   }
   if (device === "android") {
-    return ["google_api", "ics_download", "webcal_subscription"];
+    return ["ics_download", "webcal_subscription", "google_api"];
   }
   if (device === "desktop") {
     return [

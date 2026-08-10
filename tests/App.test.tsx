@@ -1,8 +1,87 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
+import type { PublicTimetable } from "../src/api/pilotTypes";
 
 const createSupabaseClient = vi.fn();
+
+const publishedTimetable: PublicTimetable = {
+  timetableId: "tt-hit-1",
+  publicSlug: "hit-ics-1-1-august-semester-2026",
+  institution: "Harare Institute of Technology",
+  institutionShortName: "HIT",
+  institutionTimezone: "Africa/Harare",
+  programme: "BTech Computer Science",
+  classGroup: "1.1",
+  academicPeriod: "August Semester 2026",
+  startsOn: "2026-08-10",
+  endsOn: "2026-12-10",
+  publishedAt: "2026-08-09T08:00:00.000Z",
+  versionNumber: 1,
+  sessions: [
+    {
+      stableSessionKey: "mon-0800",
+      courseCode: "HIT1101",
+      courseName: "Technopreneurship I",
+      weekday: 1,
+      startTime: "08:00:00",
+      endTime: "10:00:00",
+      venue: "E/HALL",
+      lecturer: "TDC",
+      sessionType: "Lecture",
+      notes: null,
+    },
+    {
+      stableSessionKey: "wed-1100",
+      courseCode: "HCS1204",
+      courseName: "Discrete Mathematics",
+      weekday: 3,
+      startTime: "11:00:00",
+      endTime: "13:00:00",
+      venue: "A1",
+      lecturer: "Moyo",
+      sessionType: "Lecture",
+      notes: null,
+    },
+  ],
+};
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function installPublicTimetableFetchMock(options?: {
+  subscriptionResponse?: Record<string, unknown>;
+  timetable?: PublicTimetable;
+}) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    if (url.includes("/api/public/timetables/")) {
+      return jsonResponse({ timetable: options?.timetable ?? publishedTimetable });
+    }
+    if (url === "/api/calendar/subscriptions" && init?.method === "POST") {
+      return jsonResponse(
+        options?.subscriptionResponse ?? {
+          subscriptionId: "sub-1",
+          provider: "webcal_subscription",
+          calendarName: "BTech Computer Science - August Semester 2026",
+          feedUrl: "https://calender.aido.co.zw/calendar/feed/private-token.ics",
+          appleSubscribeUrl: "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
+          downloadUrl: "https://calender.aido.co.zw/calendar/download/sub-1.ics",
+          warnings: [],
+          expiresAt: null,
+        },
+        201,
+      );
+    }
+    return new Response("{}", { status: 401 });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
 
 vi.mock("../src/utils/supabase/client", () => ({
   createClient: () => createSupabaseClient(),
@@ -11,6 +90,22 @@ vi.mock("../src/utils/supabase/client", () => ({
 beforeEach(() => {
   createSupabaseClient.mockImplementation(() => {
     throw new Error("Supabase test config missing");
+  });
+  Object.defineProperty(window.navigator, "userAgent", {
+    configurable: true,
+    value: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+  });
+  Object.defineProperty(window.navigator, "maxTouchPoints", {
+    configurable: true,
+    value: 0,
+  });
+  Object.defineProperty(window.navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: vi.fn(async () => undefined) },
+  });
+  Object.defineProperty(window.navigator, "share", {
+    configurable: true,
+    value: undefined,
   });
   vi.stubGlobal(
     "fetch",
@@ -34,6 +129,160 @@ describe("public student flow", () => {
     expect(
       screen.queryByRole("button", { name: /Add to my calendar/i }),
     ).toBeNull();
+  });
+
+  it("shows class identity, trust, upcoming context, and the calendar CTA before the schedule", async () => {
+    installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "BTech Computer Science" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("HIT")).toBeInTheDocument();
+    expect(screen.getByText("Class 1.1")).toBeInTheDocument();
+    expect(screen.getByText("August Semester 2026")).toBeInTheDocument();
+    expect(screen.getByText(/Published by CalenderZW/i)).toBeInTheDocument();
+    expect(screen.getByText(/Next class/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Technopreneurship I").length).toBeGreaterThan(0);
+
+    const cta = screen.getByRole("button", { name: /Add timetable to my calendar/i });
+    const scheduleHeading = screen.getByRole("heading", {
+      level: 2,
+      name: /Useful now, full week when you need it/i,
+    });
+    expect(
+      cta.compareDocumentPosition(scheduleHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+  });
+
+  it("keeps On time selected by default and creates subscriptions only on intentional method selection", async () => {
+    const fetchMock = installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+    );
+
+    const dialog = screen.getByRole("dialog", { name: /When should we remind you/i });
+    expect(within(dialog).getByRole("radio", { name: /On time/i })).toBeChecked();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+    ).toHaveLength(0);
+
+    expect(within(dialog).getByText(/How should we deliver it/i)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+    ).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /Subscribe using calendar URL/i }));
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+      ).toHaveLength(1),
+    );
+    expect(await screen.findByText(/Your timetable is ready/i)).toBeInTheDocument();
+  });
+
+  it("closes the reminder dialog with Escape and restores focus to the calendar CTA", async () => {
+    installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    render(<App />);
+
+    const cta = await screen.findByRole("button", { name: /Add timetable to my calendar/i });
+    fireEvent.click(cta);
+    expect(screen.getByRole("dialog", { name: /When should we remind you/i })).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: /When should we remind you/i })).toBeNull(),
+    );
+    expect(cta).toHaveFocus();
+  });
+
+  it("shares the public timetable URL after calendar setup, never the private feed URL", async () => {
+    const share = vi.fn(async (_payload?: unknown) => undefined);
+    Object.defineProperty(window.navigator, "share", {
+      configurable: true,
+      value: share,
+    });
+    installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Subscribe using calendar URL/i }));
+
+    const successTitle = await screen.findByText(/Your timetable is ready/i);
+    const successCard = successTitle.closest("section");
+    expect(successCard).not.toBeNull();
+    fireEvent.click(
+      within(successCard as HTMLElement).getByRole("button", { name: /Share with classmates/i }),
+    );
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    const payload = share.mock.calls.at(0)?.[0] as { url?: string } | undefined;
+    expect(payload).toBeDefined();
+    expect(payload?.url ?? "").toContain("/t/hit-ics-1-1-august-semester-2026");
+    expect(JSON.stringify(payload ?? {})).not.toContain("/calendar/feed/");
+  });
+
+  it("shows honest Android delivery copy without claiming one-tap Google Calendar subscription", async () => {
+    Object.defineProperty(window.navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (Linux; Android 14; Pixel 8)",
+    });
+    installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+    );
+
+    expect(screen.getByRole("button", { name: /Download calendar file/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Copy subscription link/i })).toBeInTheDocument();
+    expect(screen.getByText(/Google Calendar direct sync/i)).toBeInTheDocument();
+    expect(screen.getByText(/Coming soon/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Subscribe in Google Calendar/i)).toBeNull();
+  });
+
+  it("lets the user set a custom reminder with hours and minutes before choosing delivery", async () => {
+    const fetchMock = installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    render(<App />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: /Custom/i }));
+    fireEvent.change(screen.getByLabelText(/Hours before class/i), {
+      target: { value: "2" },
+    });
+    fireEvent.change(screen.getByLabelText(/Minutes before class/i), {
+      target: { value: "15" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Subscribe using calendar URL/i }));
+
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+      ).toHaveLength(1),
+    );
+
+    const subscriptionCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/api/calendar/subscriptions"),
+    );
+    expect(subscriptionCall).toBeDefined();
+    const body = JSON.parse(String((subscriptionCall?.[1] as RequestInit | undefined)?.body ?? "{}"));
+    expect(body.reminderPreset).toBe("custom");
+    expect(body.customReminderOffsets).toEqual([135]);
   });
 
   it("shows legal footer links on the public homepage", () => {
@@ -111,14 +360,7 @@ describe("public student flow", () => {
   });
 
   it("uses one shared accessible header and mobile menu on public pages", () => {
-    for (const path of [
-      "/",
-      "/privacy",
-      "/terms",
-      "/data-deletion",
-      "/support",
-      "/t/zou-bscse-2-1-2026-s2",
-    ]) {
+    for (const path of ["/", "/privacy", "/terms", "/data-deletion", "/support"]) {
       window.history.pushState({}, "", path);
       const { unmount } = render(<App />);
       expect(
@@ -135,6 +377,20 @@ describe("public student flow", () => {
       ).toHaveAttribute("aria-controls", "global-navigation");
       unmount();
     }
+
+    installPublicTimetableFetchMock();
+    window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
+    const timetableRoute = render(<App />);
+    expect(
+      document.querySelectorAll('[data-component="GlobalHeader"]'),
+    ).toHaveLength(1);
+    expect(
+      document.querySelectorAll('[data-component="CompactFooter"]'),
+    ).toHaveLength(1);
+    expect(
+      document.querySelectorAll('[data-component="GlobalFooter"]'),
+    ).toHaveLength(0);
+    timetableRoute.unmount();
 
     window.history.pushState({}, "", "/");
     render(<App />);

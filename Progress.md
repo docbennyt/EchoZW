@@ -40,6 +40,15 @@ Day Add remains interactive: BLOCKED
 Scroll/context preservation: BLOCKED
 Slow-network UX: BLOCKED
 Real rapid-entry test: BLOCKED
+Public mobile timetable UX: VERIFIED
+Above-fold calendar CTA: VERIFIED
+Reminder onboarding: VERIFIED
+Calendar method onboarding: VERIFIED
+Public/private URL separation: VERIFIED
+Mobile share loop: VERIFIED
+WhatsApp/social metadata: VERIFIED
+Compact timetable footer: VERIFIED
+Real mobile activation flow: BLOCKED
 
 ## 3. Explicitly out of scope
 

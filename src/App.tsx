@@ -98,12 +98,18 @@ const navigationLinks = [
   { label: "Admin", href: "/admin" },
 ] as const;
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children,
+  footerVariant = "global",
+}: {
+  children: React.ReactNode;
+  footerVariant?: "global" | "compact";
+}) {
   return (
     <div className="app-shell">
       <GlobalHeader />
       {children}
-      <GlobalFooter />
+      {footerVariant === "compact" ? <CompactFooter /> : <GlobalFooter />}
     </div>
   );
 }
@@ -242,9 +248,24 @@ function VerificationBadge({
 
 function PublicTimetablePage() {
   return (
-    <Shell>
+    <Shell footerVariant="compact">
       <PublicTimetableMvpScreen slug={currentPath().replace(/^\/t\//, "")} />
     </Shell>
+  );
+}
+
+function CompactFooter() {
+  return (
+    <footer className="site-footer compact-site-footer" data-component="CompactFooter">
+      <div className="compact-footer-inner">
+        <strong>CalenderZW · Operated by aiDo</strong>
+        <nav aria-label="Timetable footer">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="/support">Report a timetable problem</a>
+        </nav>
+      </div>
+    </footer>
   );
 }
 

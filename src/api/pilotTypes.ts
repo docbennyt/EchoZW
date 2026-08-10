@@ -135,6 +135,7 @@ export type PublicTimetable = {
   timetableId: string;
   publicSlug: string;
   institution: string;
+  institutionShortName: string | null;
   institutionTimezone: string;
   programme: string;
   classGroup: string;

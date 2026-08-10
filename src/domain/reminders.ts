@@ -35,7 +35,7 @@ export function validateReminderMinutes(minutes: number[]) {
     throw new Error("Choose one to five reminders.");
   }
   for (const minute of unique) {
-    if (!supportedReminderMinutes.includes(minute)) {
+    if (!Number.isInteger(minute) || minute <= 0 || minute > 10080) {
       throw new Error(`Unsupported reminder value: ${minute}`);
     }
   }

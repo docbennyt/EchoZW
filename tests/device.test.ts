@@ -13,6 +13,6 @@ describe("device calendar provider ordering", () => {
     expect(detectDevice("Mozilla/5.0 (Linux; Android 14; Pixel)")).toBe(
       "android",
     );
-    expect(orderedProvidersForDevice("android")[0]).toBe("google_api");
+    expect(orderedProvidersForDevice("android")[0]).toBe("ics_download");
   });
 });

@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import { track } from "./analytics";
 import { fetchAdminSession, type AdminSessionUser } from "./api/adminSession";
 import {
   createAcademicPeriod,
@@ -49,6 +50,7 @@ import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import { fetchPublicTimetable } from "./api/publicTimetable";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
+import { detectDevice, type DeviceKind } from "./domain/device";
 import {
   applyCourseSuggestion,
   buildCourseMemoryEntries,
@@ -56,6 +58,14 @@ import {
   mergeCourseSuggestion,
   type CourseSuggestion,
 } from "./domain/courseMemory";
+import {
+  buildPublicTimetableMetadata,
+  formatClassGroupLabel,
+  formatOccurrenceTime,
+  formatPublishedTimestamp,
+  getInstitutionIdentity,
+  getUpcomingOccurrences,
+} from "./domain/publicTimetable";
 
 const weekdayLabels = [
   "",
@@ -2247,7 +2257,8 @@ export function FinderMvpScreen() {
   );
 }
 
-export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
   useDocumentMetadata("Timetable | CalenderZW", "View a published timetable and add it to your calendar.");
   const [timetable, setTimetable] = useState<PublicTimetable | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -2463,6 +2474,789 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
           ) : null}
         </aside>
       </div>
+    </main>
+  );
+}
+
+type ReminderPresetId = "prepared" | "on_time" | "commuter" | "custom";
+type PublicCalendarProvider =
+  | "apple_subscription"
+  | "webcal_subscription"
+  | "ics_download";
+
+type PublicCalendarResult = {
+  provider: PublicCalendarProvider;
+  reminderPreset: ReminderPresetId;
+  downloadUrl?: string;
+  feedUrl?: string;
+  appleSubscribeUrl?: string;
+};
+
+const reminderChoices: Array<{
+  id: ReminderPresetId;
+  title: string;
+  detail: string;
+  hint?: string;
+}> = [
+  {
+    id: "on_time",
+    title: "On time",
+    detail: "30 minutes before",
+    hint: "Recommended",
+  },
+  {
+    id: "prepared",
+    title: "Prepared",
+    detail: "24 hours + 30 minutes before",
+  },
+  {
+    id: "commuter",
+    title: "Commuter",
+    detail: "60 minutes + 15 minutes before",
+  },
+  {
+    id: "custom",
+    title: "Custom",
+    detail: "Choose your own reminder minutes",
+  },
+];
+
+function getReminderChoice(preset: ReminderPresetId) {
+  return reminderChoices.find((choice) => choice.id === preset) ?? reminderChoices[0];
+}
+
+function buildTimetableSharePayload(timetable: PublicTimetable, publicUrl: string) {
+  return {
+    title: `${formatClassGroupLabel(timetable.classGroup)} timetable`,
+    text:
+      `${formatClassGroupLabel(timetable.classGroup)} timetable is ready on CalenderZW.\n\n` +
+      "View the published timetable and add it to your calendar with reminders:\n\n" +
+      `${publicUrl}\n\n` +
+      "No app needed.",
+    url: publicUrl,
+  };
+}
+
+function getCalendarMethods(device: DeviceKind) {
+  if (device === "ios") {
+    return [
+      {
+        provider: "apple_subscription" as const,
+        title: "Subscribe in Apple Calendar",
+        description: "Stay connected to future published timetable changes.",
+        accent: "Best on iPhone",
+      },
+      {
+        provider: "ics_download" as const,
+        title: "Download calendar file",
+        description: "Import this timetable as a one-time calendar file.",
+      },
+    ];
+  }
+
+  if (device === "android") {
+    return [
+      {
+        provider: "ics_download" as const,
+        title: "Download calendar file",
+        description: "Works on Android without needing an account.",
+        accent: "Best supported",
+      },
+      {
+        provider: "webcal_subscription" as const,
+        title: "Copy subscription link",
+        description: "Google Calendar URL subscriptions may require desktop setup.",
+      },
+      {
+        provider: null,
+        title: "Google Calendar direct sync",
+        description: "Coming soon",
+      },
+    ];
+  }
+
+  return [
+    {
+      provider: "webcal_subscription" as const,
+      title: "Subscribe using calendar URL",
+      description: "Use this in Apple Calendar, Outlook, or another calendar app.",
+      accent: "Keeps future updates",
+    },
+    {
+      provider: "ics_download" as const,
+      title: "Download .ics",
+      description: "Import a one-time calendar file.",
+    },
+  ];
+}
+
+function triggerCalendarDownload(url: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.rel = "noreferrer";
+  link.target = "_blank";
+  document.body.append(link);
+  link.click();
+  link.remove();
+}
+
+function getFocusableElements(root: HTMLElement | null) {
+  if (!root) return [];
+  return Array.from(
+    root.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hasAttribute("hidden"));
+}
+
+export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
+  const [timetable, setTimetable] = useState<PublicTimetable | null>(null);
+  const metadata = timetable ? buildPublicTimetableMetadata(timetable) : null;
+  useDocumentMetadata(
+    metadata ? `${metadata.title} | CalenderZW` : "Timetable | CalenderZW",
+    metadata?.description ?? "View a published timetable and add it to your calendar.",
+  );
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [viewMode, setViewMode] = useState<"upcoming" | "week">("upcoming");
+  const [reminderPreset, setReminderPreset] = useState<ReminderPresetId>("on_time");
+  const [customReminderHours, setCustomReminderHours] = useState("1");
+  const [customReminderMinutes, setCustomReminderMinutes] = useState("30");
+  const [calendarResult, setCalendarResult] = useState<PublicCalendarResult | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [calendarError, setCalendarError] = useState("");
+  const [calendarBusy, setCalendarBusy] = useState<PublicCalendarProvider | null>(null);
+  const [shareState, setShareState] = useState<"idle" | "copied" | "manual">("idle");
+  const [stickyVisible, setStickyVisible] = useState(false);
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const lastFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      setStatus("loading");
+      try {
+        const result = await fetchPublicTimetable(slug);
+        if (!active) return;
+        setTimetable(result);
+        setStatus("ready");
+        track("timetable_viewed", {
+          publicSlug: result.publicSlug,
+        });
+      } catch {
+        if (!active) return;
+        setStatus("error");
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [slug]);
+
+  const groupedSessions = useMemo(() => {
+    const map = new Map<number, PublicTimetable["sessions"]>();
+    for (let day = 1; day <= 7; day += 1) {
+      map.set(day, []);
+    }
+    for (const session of timetable?.sessions ?? []) {
+      map.get(session.weekday)?.push(session);
+    }
+    return map;
+  }, [timetable]);
+
+  const deviceKind = useMemo(
+    () => detectDevice(window.navigator.userAgent, window.navigator.maxTouchPoints ?? 0),
+    [],
+  );
+  const upcoming = useMemo(
+    () => (timetable ? getUpcomingOccurrences(timetable, new Date(), 3) : []),
+    [timetable],
+  );
+  const nextClass = upcoming[0] ?? null;
+  const publicUrl =
+    timetable ? `${window.location.origin}/t/${encodeURIComponent(timetable.publicSlug)}` : "";
+  const reminderChoice = getReminderChoice(reminderPreset);
+  const calendarMethods = getCalendarMethods(deviceKind);
+  const customReminderOffset = useMemo(() => {
+    const hours = Number(customReminderHours.trim() || "0");
+    const minutes = Number(customReminderMinutes.trim() || "0");
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    if (hours < 0 || minutes < 0) return null;
+    const totalMinutes = hours * 60 + minutes;
+    return totalMinutes > 0 ? totalMinutes : null;
+  }, [customReminderHours, customReminderMinutes]);
+
+  useEffect(() => {
+    if (!sheetOpen) return;
+    const triggerElement = triggerButtonRef.current;
+    lastFocusedRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : triggerElement;
+    const frame = window.requestAnimationFrame(() => {
+      getFocusableElements(sheetRef.current)[0]?.focus();
+    });
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSheetOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const focusable = getFocusableElements(sheetRef.current);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      const focusTarget = triggerElement ?? lastFocusedRef.current;
+      window.setTimeout(() => focusTarget?.focus(), 0);
+    };
+  }, [sheetOpen]);
+
+  useEffect(() => {
+    function onScroll() {
+      setStickyVisible(window.innerWidth <= 820 && window.scrollY > 260 && !sheetOpen);
+    }
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [sheetOpen]);
+
+  async function prepareCalendar(provider: PublicCalendarProvider) {
+    if (!timetable) return;
+    setCalendarBusy(provider);
+    setCalendarError("");
+    try {
+      const customReminderOffsets =
+        reminderPreset === "custom"
+          ? customReminderOffset
+            ? [customReminderOffset]
+            : []
+          : [];
+      const result = await createCalendarSubscription({
+        timetableId: timetable.timetableId,
+        provider,
+        reminderPreset,
+        customReminderOffsets,
+        timezone: timetable.institutionTimezone,
+      });
+      setCalendarResult({
+        provider,
+        reminderPreset,
+        downloadUrl: result.downloadUrl,
+        feedUrl: result.feedUrl,
+        appleSubscribeUrl: result.appleSubscribeUrl,
+      });
+      setSheetOpen(false);
+      track("subscription_created", {
+        publicSlug: timetable.publicSlug,
+        provider,
+      });
+      track("calendar_method_selected", {
+        publicSlug: timetable.publicSlug,
+        provider,
+      });
+      if (provider === "ics_download" && result.downloadUrl) {
+        track("ics_downloaded", {
+          publicSlug: timetable.publicSlug,
+        });
+        triggerCalendarDownload(result.downloadUrl);
+      }
+      if (provider === "apple_subscription" && result.appleSubscribeUrl) {
+        window.location.assign(result.appleSubscribeUrl);
+      }
+    } catch (error) {
+      setCalendarError(
+        error instanceof Error
+          ? error.message
+          : "We couldn't prepare your calendar just now.",
+      );
+    } finally {
+      setCalendarBusy(null);
+    }
+  }
+
+  async function handleShare() {
+    if (!timetable) return;
+    const payload = buildTimetableSharePayload(timetable, publicUrl);
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        track("timetable_shared", {
+          method: "web-share",
+          publicSlug: timetable.publicSlug,
+        });
+        setShareState("idle");
+        return;
+      }
+      await copyText(publicUrl);
+      track("timetable_shared", {
+        method: "copy-link",
+        publicSlug: timetable.publicSlug,
+      });
+      setShareState("copied");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+      try {
+        await copyText(publicUrl);
+        track("timetable_shared", {
+          method: "copy-link",
+          publicSlug: timetable.publicSlug,
+        });
+        setShareState("copied");
+      } catch {
+        setShareState("manual");
+      }
+    }
+  }
+
+  async function copySubscriptionLink() {
+    if (!calendarResult?.feedUrl) return;
+    try {
+      await copyText(calendarResult.feedUrl);
+      track("subscription_link_copied", {
+        publicSlug: timetable?.publicSlug,
+      });
+      setCalendarError("Copied");
+    } catch {
+      setCalendarError("Select and copy the subscription URL below.");
+    }
+  }
+
+  function openSheet() {
+    setSheetOpen(true);
+    setCalendarError("");
+    track("calendar_cta_clicked", {
+      publicSlug: timetable?.publicSlug,
+    });
+  }
+
+  function closeSheet() {
+    setSheetOpen(false);
+    setCalendarError("");
+  }
+
+  function renderDeliverySuccess() {
+    if (!timetable || !calendarResult) return null;
+
+    const primaryLabel =
+      calendarResult.provider === "apple_subscription"
+        ? "Subscribe in Apple Calendar"
+        : calendarResult.provider === "webcal_subscription"
+          ? "Copy subscription link"
+          : "Download calendar file";
+
+    return (
+      <section className="public-success-card" aria-live="polite">
+        <div className="public-success-copy">
+          <span className="public-kicker">Your timetable is ready</span>
+          <h2>{timetable.programme}</h2>
+          <p>
+            {formatClassGroupLabel(timetable.classGroup)} - {timetable.sessions.length} weekly classes
+          </p>
+          <p>{reminderChoice.title} reminders</p>
+        </div>
+        <div className="public-success-actions">
+          {calendarResult.provider === "apple_subscription" && calendarResult.appleSubscribeUrl ? (
+            <a className="primary" href={calendarResult.appleSubscribeUrl}>
+              <Link2 size={18} />
+              {primaryLabel}
+            </a>
+          ) : null}
+          {calendarResult.provider === "webcal_subscription" ? (
+            <button className="primary" type="button" onClick={() => void copySubscriptionLink()}>
+              <Copy size={18} />
+              {primaryLabel}
+            </button>
+          ) : null}
+          {calendarResult.provider === "ics_download" ? (
+            <button
+              className="primary"
+              type="button"
+              onClick={() => {
+                if (calendarResult.downloadUrl) {
+                  triggerCalendarDownload(calendarResult.downloadUrl);
+                }
+              }}
+            >
+              <Download size={18} />
+              {primaryLabel}
+            </button>
+          ) : null}
+          <button className="secondary light" type="button" onClick={() => void handleShare()}>
+            <Share2 size={18} />
+            Share with classmates
+          </button>
+        </div>
+        {calendarResult.feedUrl ? (
+          <div className="subscription-link-panel">
+            <label htmlFor="subscription-link">Private subscription link</label>
+            <input
+              id="subscription-link"
+              readOnly
+              value={calendarResult.feedUrl}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </div>
+        ) : null}
+      </section>
+    );
+  }
+
+  function renderNextClassCard() {
+    if (!timetable) return null;
+    if (!nextClass) {
+      return (
+        <article className="public-next-card">
+          <span className="public-kicker">Next class</span>
+          <strong>No upcoming classes</strong>
+          <p>This timetable has no more classes inside the current academic period.</p>
+        </article>
+      );
+    }
+
+    return (
+      <article className="public-next-card">
+        <span className="public-kicker">Next class</span>
+        <strong>
+          {nextClass.relativeLabel} - {formatOccurrenceTime(nextClass.start, timetable.institutionTimezone)}
+        </strong>
+        <h2>{nextClass.session.courseName}</h2>
+        <p>{nextClass.session.courseCode}</p>
+        <span>
+          {nextClass.session.venue || "Venue not set"}
+          {nextClass.session.lecturer ? ` - ${nextClass.session.lecturer}` : ""}
+        </span>
+      </article>
+    );
+  }
+
+  if (status === "loading") {
+    return (
+      <main className="page">
+        <section className="pilot-page-hero">
+          <CalendarCheck size={28} />
+          <div>
+            <h1>Loading timetable</h1>
+            <p>Fetching the current published version.</p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (status === "error" || !timetable) {
+    return (
+      <main className="page">
+        <section className="pilot-page-hero">
+          <CalendarCheck size={28} />
+          <div>
+            <h1>Timetable unavailable</h1>
+            <p>This timetable has not been published yet.</p>
+          </div>
+        </section>
+        <Surface title="Try another link">
+          <a href="/find">Open another timetable</a>
+        </Surface>
+      </main>
+    );
+  }
+
+  return (
+    <main className="page public-timetable-page">
+      <section className="public-hero">
+        <div className="public-hero-copy">
+          <span className="public-kicker">CalenderZW public timetable</span>
+          <p className="public-institution">{getInstitutionIdentity(timetable)}</p>
+          <h1>{timetable.programme}</h1>
+          <p className="public-class-group">{formatClassGroupLabel(timetable.classGroup)}</p>
+          <p className="public-academic-period">{timetable.academicPeriod}</p>
+          <div className="public-trust-row">
+            <span className="public-trust-badge">
+              <ShieldCheck size={16} />
+              Published by CalenderZW
+            </span>
+            <span className="public-trust-meta">
+              Updated {formatPublishedTimestamp(timetable.publishedAt, timetable.institutionTimezone)}
+            </span>
+          </div>
+          {renderNextClassCard()}
+          <div className="public-hero-actions">
+            <button
+              ref={triggerButtonRef}
+              className="primary"
+              type="button"
+              onClick={openSheet}
+            >
+              <CalendarCheck size={18} />
+              Add timetable to my calendar
+            </button>
+            <p className="public-helper">No account needed. Choose your reminders.</p>
+            <button className="secondary light" type="button" onClick={() => void handleShare()}>
+              <Share2 size={18} />
+              Share with classmates
+            </button>
+            {shareState === "copied" ? <p className="pilot-muted">Copied</p> : null}
+            {shareState === "manual" ? (
+              <div className="share-fallback-panel">
+                <label htmlFor="public-timetable-url">Public timetable link</label>
+                <input
+                  id="public-timetable-url"
+                  readOnly
+                  value={publicUrl}
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div className="public-hero-side">{renderDeliverySuccess()}</div>
+      </section>
+
+      <div className="public-schedule-layout">
+        <section className="pilot-surface public-schedule-surface">
+          <div className="public-schedule-header">
+            <div>
+              <span className="public-kicker">Browse timetable</span>
+              <h2>Useful now, full week when you need it</h2>
+            </div>
+            <div className="public-view-toggle" role="tablist" aria-label="Timetable view">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === "upcoming"}
+                className={viewMode === "upcoming" ? "selected" : ""}
+                onClick={() => setViewMode("upcoming")}
+              >
+                Upcoming
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={viewMode === "week"}
+                className={viewMode === "week" ? "selected" : ""}
+                onClick={() => setViewMode("week")}
+              >
+                Week
+              </button>
+            </div>
+          </div>
+
+          {viewMode === "upcoming" ? (
+            upcoming.length > 0 ? (
+              <div className="public-upcoming-list">
+                {upcoming.map((item) => (
+                  <article key={`${item.session.stableSessionKey}-${item.dateKey}`} className="public-upcoming-card">
+                    <div>
+                      <span className="public-upcoming-time">
+                        {item.relativeLabel} - {formatOccurrenceTime(item.start, timetable.institutionTimezone)}
+                      </span>
+                      <h3>{item.session.courseName}</h3>
+                      <p>{item.session.courseCode}</p>
+                    </div>
+                    <span className="public-upcoming-meta">
+                      {item.session.venue || "Venue not set"}
+                      {item.session.lecturer ? ` - ${item.session.lecturer}` : ""}
+                    </span>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptyPanel
+                title="No upcoming classes"
+                text="There are no more published classes inside this academic period."
+              />
+            )
+          ) : (
+            <div className="pilot-day-stack">
+              {Array.from({ length: 7 }, (_, index) => index + 1).map((day) => {
+                const sessions = groupedSessions.get(day) ?? [];
+                if (sessions.length === 0) return null;
+                return (
+                  <section key={day} className="public-day-group">
+                    <div className="public-day-header">
+                      <h3>{weekdayLabels[day]}</h3>
+                    </div>
+                    <div className="public-session-list">
+                      {sessions.map((session) => (
+                        <article key={session.stableSessionKey} className="public-session-card">
+                          <strong>{session.startTime.slice(0, 5)} - {session.endTime.slice(0, 5)}</strong>
+                          <h4>{session.courseCode}</h4>
+                          <p>{session.courseName}</p>
+                          <span>{session.venue || "Venue not set"}</span>
+                          <small>{session.lecturer || "Lecturer not set"}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
+
+      {stickyVisible ? (
+        <div className="sticky-action public-sticky-action">
+          <button className="primary" type="button" onClick={openSheet}>
+            <CalendarCheck size={18} />
+            Add to calendar
+          </button>
+        </div>
+      ) : null}
+
+      {sheetOpen ? (
+        <div className="sheet-backdrop" role="presentation" onClick={closeSheet}>
+          <div
+            ref={sheetRef}
+            className="sync-sheet compact public-calendar-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="calendar-sheet-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="sheet-header">
+              <div>
+                <span className="public-kicker">Add timetable to my calendar</span>
+                <h2 id="calendar-sheet-title">When should we remind you?</h2>
+              </div>
+              <button className="icon-button" type="button" aria-label="Close dialog" onClick={closeSheet}>
+                x
+              </button>
+            </div>
+            <div className="step-panel">
+              <div className="public-reminder-list" role="radiogroup" aria-label="Reminder choices">
+                {reminderChoices.map((choice) => (
+                  <label
+                    key={choice.id}
+                    className={`public-reminder-card ${reminderPreset === choice.id ? "selected" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="reminder-preset"
+                      value={choice.id}
+                      checked={reminderPreset === choice.id}
+                      onChange={() => {
+                        setReminderPreset(choice.id);
+                        track("reminder_selected", { preset: choice.id });
+                      }}
+                    />
+                    <div>
+                      <strong>{choice.title}</strong>
+                      <p>{choice.detail}</p>
+                      {choice.hint ? <small>{choice.hint}</small> : null}
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              {reminderPreset === "custom" ? (
+                <div className="public-custom-reminder-panel">
+                  <div className="public-custom-reminder-grid">
+                    <Field label="Hours before class">
+                      <input
+                        inputMode="numeric"
+                        value={customReminderHours}
+                        onChange={(event) => setCustomReminderHours(event.target.value.replace(/[^\d]/g, ""))}
+                        placeholder="1"
+                      />
+                    </Field>
+                    <Field label="Minutes before class">
+                      <input
+                        inputMode="numeric"
+                        value={customReminderMinutes}
+                        onChange={(event) => setCustomReminderMinutes(event.target.value.replace(/[^\d]/g, ""))}
+                        placeholder="30"
+                      />
+                    </Field>
+                  </div>
+                  <p className="public-helper">Set a quick reminder using hours and minutes before class.</p>
+                </div>
+              ) : null}
+
+              <div className="public-sheet-divider" />
+              <div className="public-sheet-section">
+                <div>
+                  <span className="public-kicker">Delivery method</span>
+                  <h3 className="public-sheet-heading">How should we deliver it?</h3>
+                  <p className="public-helper">{reminderChoice.title} reminders selected.</p>
+                </div>
+                <div className="provider-list">
+                  {calendarMethods.map((method) =>
+                    method.provider ? (
+                      <button
+                        key={method.title}
+                        className="provider-card"
+                        type="button"
+                        onClick={() => void prepareCalendar(method.provider)}
+                        disabled={calendarBusy !== null || (reminderPreset === "custom" && customReminderOffset === null)}
+                      >
+                        <span className="provider-icon">
+                          {method.provider === "ics_download" ? (
+                            <Download size={18} />
+                          ) : (
+                            <Link2 size={18} />
+                          )}
+                        </span>
+                        <div>
+                          <strong>{method.title}</strong>
+                          <small>{method.description}</small>
+                        </div>
+                        {method.accent ? <em>{method.accent}</em> : null}
+                      </button>
+                    ) : (
+                      <div key={method.title} className="provider-card" aria-disabled="true">
+                        <span className="provider-icon">
+                          <CalendarCheck size={18} />
+                        </span>
+                        <div>
+                          <strong>{method.title}</strong>
+                          <small>{method.description}</small>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </div>
+
+              {calendarError ? (
+                <div className="public-inline-error" role="status" aria-live="polite">
+                  <p>{calendarError}</p>
+                  {calendarBusy === null ? (
+                    <button className="secondary light" type="button" onClick={() => setCalendarError("")}>
+                      Try again
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+              {reminderPreset === "custom" && customReminderOffset === null ? (
+                <p className="public-helper">Enter at least 1 minute before class to continue.</p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

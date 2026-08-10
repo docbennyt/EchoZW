@@ -168,7 +168,7 @@ export async function handlePilotCalendarRequest(
           provider: parsed.data.provider,
           calendarName: String(subscription.calendar_name),
           feedUrl,
-          webcalUrl:
+          appleSubscribeUrl:
             feedUrl && isExternallyFetchableUrl(publicOrigin)
               ? `webcal://${new URL(feedUrl).host}${new URL(feedUrl).pathname}${new URL(feedUrl).search}`
               : undefined,
