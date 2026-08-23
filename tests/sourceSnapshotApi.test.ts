@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   computeCanonicalSourceContentHash,
   computeSourceRelaySignature,
@@ -85,6 +85,10 @@ const sourceRecord = {
 };
 
 describe("source snapshot API", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("accepts a valid signed snapshot request", async () => {
     const payload = createPayload();
     const body = JSON.stringify(payload);
@@ -178,6 +182,186 @@ describe("source snapshot API", () => {
 
     expect(res.statusCode).toBe(401);
     expect(body().error.code).toBe("SOURCE_AUTH_INVALID");
+  });
+
+  it("rejects requests when the runtime relay secret resolves to empty", async () => {
+    const payload = createPayload();
+    const timestamp = "1724315400000";
+    const { res, body } = createResponse();
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+
+    await handleSourceSnapshotRequest(
+      createRequest({
+        body: JSON.stringify(payload),
+        headers: {
+          "x-czw-source": "hit-sist-master-sem1-2026",
+          "x-czw-timestamp": timestamp,
+          "x-czw-signature": "abc",
+          "x-czw-content-hash": payload.contentHash,
+        },
+      }),
+      res,
+      {
+        HIT_TIMETABLE_RELAY_SECRET: "   ",
+      } as NodeJS.ProcessEnv,
+      {
+        getNowMs: () => Number(timestamp),
+        loadSourceByKey: vi.fn(async () => sourceRecord),
+        markSourceError: vi.fn(async () => undefined),
+      },
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(body().error.code).toBe("SOURCE_AUTH_INVALID");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "source relay auth failed",
+      expect.objectContaining({
+        reason: "relay_secret_missing",
+        secretConfigured: false,
+        sourceKey: "hit-sist-master-sem1-2026",
+      }),
+    );
+  });
+
+  it("accepts requests signed with the trimmed secret contract", async () => {
+    const payload = createPayload();
+    const bodyString = JSON.stringify(payload);
+    const timestamp = "1724315400000";
+    const signature = computeSourceRelaySignature({
+      rawBody: bodyString,
+      secret: "test-secret",
+      timestamp,
+    });
+    const { res, body } = createResponse();
+
+    await handleSourceSnapshotRequest(
+      createRequest({
+        body: bodyString,
+        headers: {
+          "x-czw-source": "hit-sist-master-sem1-2026",
+          "x-czw-timestamp": timestamp,
+          "x-czw-signature": signature,
+          "x-czw-content-hash": payload.contentHash,
+        },
+      }),
+      res,
+      {
+        HIT_TIMETABLE_RELAY_SECRET: "  test-secret  ",
+      } as NodeJS.ProcessEnv,
+      {
+        acceptSnapshot: vi.fn(async () => ({
+          status: "accepted" as const,
+          snapshotId: "snapshot-1",
+          contentHash: payload.contentHash,
+        })),
+        getNowMs: () => Number(timestamp),
+        loadSourceByKey: vi.fn(async () => sourceRecord),
+        markSourceError: vi.fn(async () => undefined),
+      },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(body()).toEqual({
+      status: "accepted",
+      snapshotId: "snapshot-1",
+      contentHash: payload.contentHash,
+    });
+  });
+
+  it("rejects requests signed with untrimmed secret bytes when the runtime trims configuration", async () => {
+    const payload = createPayload();
+    const bodyString = JSON.stringify(payload);
+    const timestamp = "1724315400000";
+    const signature = computeSourceRelaySignature({
+      rawBody: bodyString,
+      secret: "  test-secret  ",
+      timestamp,
+    });
+    const { res, body } = createResponse();
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+
+    await handleSourceSnapshotRequest(
+      createRequest({
+        body: bodyString,
+        headers: {
+          "x-czw-source": "hit-sist-master-sem1-2026",
+          "x-czw-timestamp": timestamp,
+          "x-czw-signature": signature,
+          "x-czw-content-hash": payload.contentHash,
+        },
+      }),
+      res,
+      {
+        HIT_TIMETABLE_RELAY_SECRET: "  test-secret  ",
+      } as NodeJS.ProcessEnv,
+      {
+        getNowMs: () => Number(timestamp),
+        loadSourceByKey: vi.fn(async () => sourceRecord),
+        markSourceError: vi.fn(async () => undefined),
+      },
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(body().error.code).toBe("SOURCE_AUTH_INVALID");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "source relay auth failed",
+      expect.objectContaining({
+        reason: "signature_mismatch",
+        secretConfigured: true,
+        sourceKey: "hit-sist-master-sem1-2026",
+      }),
+    );
+  });
+
+  it("rejects requests when the raw body changes after signing", async () => {
+    const payload = createPayload();
+    const timestamp = "1724315400000";
+    const originalBody = JSON.stringify(payload);
+    const signature = computeSourceRelaySignature({
+      rawBody: originalBody,
+      secret: "test-secret",
+      timestamp,
+    });
+    const mutatedBody = `${originalBody} `;
+    const { res, body } = createResponse();
+    const warnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+
+    await handleSourceSnapshotRequest(
+      createRequest({
+        body: mutatedBody,
+        headers: {
+          "x-czw-source": "hit-sist-master-sem1-2026",
+          "x-czw-timestamp": timestamp,
+          "x-czw-signature": signature,
+          "x-czw-content-hash": payload.contentHash,
+        },
+      }),
+      res,
+      process.env,
+      {
+        getNowMs: () => Number(timestamp),
+        getRelaySecret: () => "test-secret",
+        loadSourceByKey: vi.fn(async () => sourceRecord),
+        markSourceError: vi.fn(async () => undefined),
+      },
+    );
+
+    expect(res.statusCode).toBe(401);
+    expect(body().error.code).toBe("SOURCE_AUTH_INVALID");
+    expect(warnSpy).toHaveBeenCalledWith(
+      "source relay auth failed",
+      expect.objectContaining({
+        reason: "signature_mismatch",
+        secretConfigured: true,
+        sourceKey: "hit-sist-master-sem1-2026",
+      }),
+    );
   });
 
   it("rejects stale timestamps", async () => {

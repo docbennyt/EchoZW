@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   GOOGLE_DOCS_APPS_SCRIPT_PROVIDER,
@@ -35,6 +36,20 @@ function createPayload() {
       },
     ],
   };
+}
+
+function computeAppsScriptCompatibleSignature(input: {
+  rawBody: string;
+  secret: string;
+  timestamp: string;
+}) {
+  return createHmac("sha256", Buffer.from(input.secret, "utf8"))
+    .update(Buffer.from(`${input.timestamp}.${input.rawBody}`, "utf8"))
+    .digest()
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
 }
 
 describe("source snapshot hashing", () => {
@@ -76,6 +91,28 @@ describe("source snapshot signatures", () => {
       timingSafeEqualBase64Url(signature, `${signature.slice(0, -1)}A`),
     ).toBe(false);
     expect(timingSafeEqualBase64Url(signature, "not-base64url!!!")).toBe(false);
+  });
+
+  it("matches a fixed Apps Script-compatible HMAC test vector", () => {
+    const rawBody = JSON.stringify({ schemaVersion: 1, hello: "world" });
+    const timestamp = "1787500000123";
+    const secret = "czw-test-secret-not-production";
+    const expected = "DdQd5Kv33Uyh5__Qso0YvSJqaSgvwwa15Dzkfog2EkM";
+
+    expect(
+      computeSourceRelaySignature({
+        rawBody,
+        secret,
+        timestamp,
+      }),
+    ).toBe(expected);
+    expect(
+      computeAppsScriptCompatibleSignature({
+        rawBody,
+        secret,
+        timestamp,
+      }),
+    ).toBe(expected);
   });
 });
 

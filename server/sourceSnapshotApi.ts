@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createHash } from "node:crypto";
 import {
   type GoogleDocsSourceSnapshot,
   SOURCE_REQUEST_WINDOW_MS,
@@ -253,6 +254,26 @@ function logSourceSnapshotEvent(input: {
   });
 }
 
+function logSourceRelayAuthFailure(input: {
+  bodyBytes?: number;
+  rawBody?: string;
+  reason: "relay_secret_missing" | "signature_mismatch";
+  sourceKey: string;
+}) {
+  console.warn("source relay auth failed", {
+    bodyBytes: input.bodyBytes ?? null,
+    bodyHashPrefix: input.rawBody
+      ? createHash("sha256")
+          .update(input.rawBody, "utf8")
+          .digest("hex")
+          .slice(0, 12)
+      : null,
+    reason: input.reason,
+    secretConfigured: input.reason === "signature_mismatch",
+    sourceKey: input.sourceKey,
+  });
+}
+
 export async function handleSourceSnapshotRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -312,6 +333,12 @@ export async function handleSourceSnapshotRequest(
 
     const relaySecret = getRelaySecret(sourceHeader, env);
     if (!relaySecret) {
+      logSourceRelayAuthFailure({
+        bodyBytes: Buffer.byteLength(rawBody, "utf8"),
+        rawBody,
+        reason: "relay_secret_missing",
+        sourceKey: resolvedSource.sourceKey,
+      });
       throw new SourceSnapshotApiError(
         "SOURCE_AUTH_INVALID",
         401,
@@ -326,6 +353,12 @@ export async function handleSourceSnapshotRequest(
     });
 
     if (!timingSafeEqualBase64Url(expectedSignature, signatureHeader)) {
+      logSourceRelayAuthFailure({
+        bodyBytes: Buffer.byteLength(rawBody, "utf8"),
+        rawBody,
+        reason: "signature_mismatch",
+        sourceKey: resolvedSource.sourceKey,
+      });
       throw new SourceSnapshotApiError(
         "SOURCE_AUTH_INVALID",
         401,
