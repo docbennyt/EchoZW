@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@types/node": "latest",
@@ -40,6 +41,7 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "jsdom": "latest",
+    "playwright": "^1.62.1",
     "prettier": "latest",
     "typescript-eslint": "latest",
     "vitest": "latest"

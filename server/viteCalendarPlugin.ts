@@ -5,6 +5,7 @@ import type { Plugin } from "vite";
 import { handleAdminRequest } from "./adminApi.js";
 import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
+import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
 import type { AuthDependencies } from "./supabase/auth.js";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 import { createSupabaseUserClient } from "./supabase/userClient.js";
@@ -46,13 +47,18 @@ export function createViteServerAuthDependencies(
 ): AuthDependencies {
   return {
     createUserClient: (accessToken: string) =>
-      createSupabaseUserClient(accessToken, env) as AuthDependencies["createUserClient"] extends (
+      createSupabaseUserClient(
+        accessToken,
+        env,
+      ) as AuthDependencies["createUserClient"] extends (
         ...args: never[]
       ) => infer Client
         ? Client
         : never,
     createAdminClient: () =>
-      createSupabaseAdminClient(env) as AuthDependencies["createAdminClient"] extends (
+      createSupabaseAdminClient(
+        env,
+      ) as AuthDependencies["createAdminClient"] extends (
         ...args: never[]
       ) => infer Client
         ? Client
@@ -500,7 +506,7 @@ export async function handleCalendarRequest(
     req.method === "GET" &&
     requestUrl.pathname === "/api/calendar/google/config-status"
   ) {
-      if (!isAdminDiagnosticRequest(env, req, mode)) {
+    if (!isAdminDiagnosticRequest(env, req, mode)) {
       sendJson(res, 404, {
         error: {
           code: "NOT_FOUND",
@@ -704,7 +710,13 @@ export function calendarMvpPlugin(
         next();
       });
       server.middlewares.use(async (req, res, next) => {
-        if (await handlePilotCalendarRequest(req, res, runtimeEnv, "development"))
+        if (await handleSourceSnapshotRequest(req, res, runtimeEnv)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (
+          await handlePilotCalendarRequest(req, res, runtimeEnv, "development")
+        )
           return;
         next();
       });
@@ -724,7 +736,13 @@ export function calendarMvpPlugin(
         next();
       });
       server.middlewares.use(async (req, res, next) => {
-        if (await handlePilotCalendarRequest(req, res, runtimeEnv, "production"))
+        if (await handleSourceSnapshotRequest(req, res, runtimeEnv)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (
+          await handlePilotCalendarRequest(req, res, runtimeEnv, "production")
+        )
           return;
         next();
       });

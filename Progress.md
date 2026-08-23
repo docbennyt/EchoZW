@@ -50,6 +50,30 @@ WhatsApp/social metadata: VERIFIED
 Compact timetable footer: VERIFIED
 Real mobile activation flow: BLOCKED
 
+Live Schedule Sync protected source boundary:
+Protected HIT Docs access: VERIFIED
+Apps Script structured read: VERIFIED
+- 1 document tab
+- 5 tables
+- document text successfully read
+Remote migration: BLOCKED
+- Supabase project `jkafqgdymfiiklmozvhi` does not yet expose `public.timetable_sources`
+Production endpoint: BLOCKED
+- live `POST https://calender.aido.co.zw/api/internal/source-snapshots` returned `405 Method not allowed.`
+- live `GET https://calender.aido.co.zw/api/internal/source-snapshots` returned the SPA shell
+Source snapshot API: VERIFIED locally / BLOCKED for deployed relay verification
+HMAC authentication: VERIFIED locally / BLOCKED for deployed relay verification
+Server-side hash verification: VERIFIED locally / BLOCKED for deployed relay verification
+Snapshot persistence: VERIFIED in additive schema and repository logic / BLOCKED pending remote migration application
+Remote snapshot: BLOCKED
+Tab count = 1: VERIFIED from protected source read / BLOCKED for remote snapshot proof
+Table count = 5: VERIFIED from protected source read / BLOCKED for remote snapshot proof
+Idempotent retry: VERIFIED in repository and API tests / BLOCKED pending remote database verification
+Same-hash retry: BLOCKED
+Reset-checkpoint retry: BLOCKED
+Real Apps Script forceSync: BLOCKED
+Watcher installed exactly once: BLOCKED
+
 ## 3. Explicitly out of scope
 
 - Google Calendar direct OAuth sync

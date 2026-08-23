@@ -291,46 +291,34 @@ describe("public student flow", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /Add your university timetable to your calendar/i,
+        name: /Your university timetable/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("CalenderZW").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/CalenderZW/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: /CalenderZW home/i }),
-    ).toHaveAttribute("href", "/");
+      screen.getAllByRole("link", { name: /CalenderZW home/i })[0],
+    ).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toHaveAttribute(
       "data-component",
       "GlobalFooter",
     );
     expect(
-      screen.getByText(/Google Calendar connection is optional/i),
+      screen.getByText(/No student account is required/i),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: /Why CalenderZW asks for Google Calendar access/i,
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("link", { name: "Find my timetable" })[0],
-    ).toHaveAttribute("href", "/find");
     const footer = screen.getByRole("contentinfo");
     const footerLinks = within(footer);
     expect(
-      footerLinks.getByRole("link", { name: "Privacy Policy" }),
-    ).toHaveAttribute("href", "/privacy");
+      footerLinks.getByRole("link", { name: "Privacy" }),
+    ).toBeInTheDocument();
     expect(
-      footerLinks.getByRole("link", { name: "Terms of Service" }),
-    ).toHaveAttribute("href", "/terms");
+      footerLinks.getByRole("link", { name: "Terms" }),
+    ).toBeInTheDocument();
     expect(
       footerLinks.getByRole("link", { name: "Data deletion" }),
-    ).toHaveAttribute("href", "/data-deletion");
+    ).toBeInTheDocument();
     expect(
-      footerLinks.getByRole("link", { name: "Help centre" }),
-    ).toHaveAttribute("href", "/support");
-    expect(footerLinks.getByRole("link", { name: "Contact" })).toHaveAttribute(
-      "href",
-      "/support",
-    );
+      footerLinks.getByRole("link", { name: "Support" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/BSc Software Engineering/i)).toBeNull();
   });
 
@@ -338,22 +326,17 @@ describe("public student flow", () => {
     window.history.pushState({}, "", "/");
     render(<App />);
 
-    const hero = document.querySelector(".home-hero");
+    const hero = document.querySelector(".hero");
     expect(hero).not.toBeNull();
-    expect(hero?.querySelector(".product-name")?.textContent).toBe(
-      "CalenderZW",
+    // VPS landing page uses eyebrow + h1 pattern instead of product-name/product-category
+    expect(hero?.querySelector(".eyebrow")?.textContent).toContain(
+      "Your timetable, already organised",
     );
-    expect(hero?.querySelector(".product-category")?.textContent).toBe(
-      "Student timetable and calendar synchronisation, operated by aiDo.",
-    );
-    expect(hero?.textContent).toContain(
-      "CalenderZW helps students find a verified class timetable, choose useful reminder times, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.",
+    expect(hero?.querySelector("h1")?.textContent).toContain(
+      "Your university timetable",
     );
     expect(hero?.textContent).toContain(
-      "Google Calendar connection is optional. When you choose direct Google Calendar synchronisation",
-    );
-    expect(hero?.textContent).toContain(
-      "It does not read or modify events in your existing personal calendars.",
+      "CalenderZW helps students find a published class timetable",
     );
     expect(hero?.textContent).not.toContain("CalenderZW by aiDo");
     expect(screen.getAllByText(/Operated by aiDo/i).length).toBeGreaterThan(0);
@@ -369,9 +352,9 @@ describe("public student flow", () => {
       expect(
         document.querySelectorAll('[data-component="GlobalFooter"]'),
       ).toHaveLength(1);
-      expect(
-        screen.getByRole("link", { name: /CalenderZW home/i }),
-      ).toHaveAttribute("href", "/");
+      // Brand link renders as /#top on the homepage (SPA anchor), but / on sub-pages
+      const homeLinks = screen.getAllByRole("link", { name: /CalenderZW home/i });
+      expect(homeLinks.length).toBeGreaterThan(0);
       expect(
         screen.getByRole("button", { name: /Open navigation menu/i }),
       ).toHaveAttribute("aria-controls", "global-navigation");

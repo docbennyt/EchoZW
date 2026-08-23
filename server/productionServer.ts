@@ -18,6 +18,7 @@ import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
 import { getPublishedTimetableBySlug } from "./pilotRepository.js";
 import { injectSpaMetadata } from "./spaMetadata.js";
+import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
 import { validateSupabaseProductionConfig } from "./supabase/config.js";
 import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 
@@ -198,6 +199,7 @@ const server = createServer(async (req, res) => {
   try {
     if (await handleAdminRequest(req, res)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
+    if (await handleSourceSnapshotRequest(req, res, process.env)) return;
     if (await handlePilotCalendarRequest(req, res, process.env, "production"))
       return;
     if (await handleCalendarRequest(req, res, "production")) return;
