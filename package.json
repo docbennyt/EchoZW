@@ -10,6 +10,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
     "preview": "node dist-server/server/productionServer.js",
+    "source:parse": "node --env-file-if-exists=.env.local dist-server/server/sourceSnapshotParseCli.js",
     "test": "vitest run",
     "lint": "eslint .",
     "format:check": "prettier --check ."

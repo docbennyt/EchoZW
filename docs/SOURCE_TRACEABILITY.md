@@ -4,6 +4,7 @@ Every imported timetable artifact should be traceable back to its source:
 
 - `timetable_sources` records the configured trusted source identity, provider, external file ID, and high-level relay health timestamps.
 - `timetable_source_snapshots` records immutable structured relay snapshots with canonical content hash, observed time, accepted time, processing status, and raw structured payload.
+- `timetable_source_parse_runs` records the deterministic parser version, immutable parse summary, full result payload, failure metadata, and idempotent `(snapshot_id, parser_version)` execution history for protected-source parsing.
 - `source_documents` records checksum, storage path, filename, document type, parser version, and metadata.
 - `import_batches` records parser mode, selected context, operator, status, and summary.
 - `import_candidates` records raw text, source page/table/cell/row, normalized payload, match IDs, and review status.
@@ -11,4 +12,4 @@ Every imported timetable artifact should be traceable back to its source:
 - `timetable_sessions` links to the candidate that produced the confirmed session.
 - `calendar_events` can link to both normalized sessions and source candidates.
 
-This makes it possible to answer which external source, file, snapshot hash, page, row, and reviewer produced a published calendar entry.
+This makes it possible to answer which external source, file, snapshot hash, parser version, tab, table, row, cell context, and reviewer produced a published calendar entry.
