@@ -188,7 +188,8 @@ describe("admin API routes", () => {
     await handleAdminRequest(request("Bearer valid"), res, {
       createUserClient: () =>
         userClient({ id: "admin-1", email: "admin@example.test" }),
-      createAdminClient: () => adminClient({ user_id: "admin-1", active: true }),
+      createAdminClient: () =>
+        adminClient({ user_id: "admin-1", active: true }),
     });
 
     expect(res.statusCode).toBe(200);

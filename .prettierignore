@@ -4,3 +4,6 @@ dist-server/
 coverage/
 playwright-report/
 test-results/
+.agents/
+CalenderZW-VPS/
+CalenderZW_Antigravity_Landing_Pack/

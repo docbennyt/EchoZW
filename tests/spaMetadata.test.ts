@@ -25,10 +25,18 @@ describe("SPA metadata injection", () => {
       canonicalPath: "/t/hit-ics-1-1-august-semester-2026",
     });
 
-    expect(html).toContain("<title>HIT · BTech Computer Science · Class 1.1</title>");
-    expect(html).toContain('property="og:title" content="HIT · BTech Computer Science · Class 1.1"');
-    expect(html).toContain('property="og:url" content="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"');
-    expect(html).toContain('rel="canonical" href="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"');
+    expect(html).toContain(
+      "<title>HIT · BTech Computer Science · Class 1.1</title>",
+    );
+    expect(html).toContain(
+      'property="og:title" content="HIT · BTech Computer Science · Class 1.1"',
+    );
+    expect(html).toContain(
+      'property="og:url" content="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"',
+    );
+    expect(html).toContain(
+      'rel="canonical" href="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"',
+    );
     expect(html).not.toContain("/calendar/feed/");
   });
 });

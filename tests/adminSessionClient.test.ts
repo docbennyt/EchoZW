@@ -9,18 +9,19 @@ describe("fetchAdminSession", () => {
   it("returns a verified admin session payload", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            authenticated: true,
-            admin: true,
-            user: {
-              id: "admin-1",
-              email: "admin@example.test",
-            },
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              authenticated: true,
+              admin: true,
+              user: {
+                id: "admin-1",
+                email: "admin@example.test",
+              },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
 
@@ -37,11 +38,12 @@ describe("fetchAdminSession", () => {
   it("rejects malformed success payloads instead of treating them as valid sessions", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response("<!doctype html><html></html>", {
-          status: 200,
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        }),
+      vi.fn(
+        async () =>
+          new Response("<!doctype html><html></html>", {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          }),
       ),
     );
 

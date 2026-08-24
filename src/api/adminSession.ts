@@ -9,9 +9,7 @@ export type AdminSessionResponse = {
   user: AdminSessionUser;
 };
 
-function isAdminSessionResponse(
-  value: unknown,
-): value is AdminSessionResponse {
+function isAdminSessionResponse(value: unknown): value is AdminSessionResponse {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<AdminSessionResponse>;
   return (
@@ -19,7 +17,8 @@ function isAdminSessionResponse(
     candidate.admin === true &&
     Boolean(candidate.user) &&
     typeof candidate.user?.id === "string" &&
-    (typeof candidate.user?.email === "string" || candidate.user?.email === null)
+    (typeof candidate.user?.email === "string" ||
+      candidate.user?.email === null)
   );
 }
 

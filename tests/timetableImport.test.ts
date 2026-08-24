@@ -163,14 +163,11 @@ describe("timetable import domain", () => {
       invalid: 0,
     });
     expect(
-      Array.from(detectSessionConflicts(candidates).values()).flat().map(
-        (warning) => warning.code,
-      ),
+      Array.from(detectSessionConflicts(candidates).values())
+        .flat()
+        .map((warning) => warning.code),
     ).toEqual(
-      expect.arrayContaining([
-        "DUPLICATE_CANDIDATE",
-        "LECTURER_MISMATCH",
-      ]),
+      expect.arrayContaining(["DUPLICATE_CANDIDATE", "LECTURER_MISMATCH"]),
     );
   });
 
@@ -197,9 +194,7 @@ describe("timetable import domain", () => {
           reviewStatus: "warning",
         },
       ]),
-    ).toThrow(
-      /Blocking warnings/,
-    );
+    ).toThrow(/Blocking warnings/);
   });
 
   it("keeps CSV and DOCX enabled by default but gates risky master PDF and AI paths", () => {

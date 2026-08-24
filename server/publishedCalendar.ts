@@ -1,5 +1,9 @@
 import type { PublicTimetable } from "../src/api/pilotTypes.js";
-import { escapeIcsText, foldIcsLine, toCalendarDate } from "../src/domain/calendar.js";
+import {
+  escapeIcsText,
+  foldIcsLine,
+  toCalendarDate,
+} from "../src/domain/calendar.js";
 
 const weekdayMap: Record<number, string> = {
   1: "MO",
@@ -49,7 +53,9 @@ export function generatePublishedTimetableIcs(input: {
   const publishedAt = timetable.publishedAt ?? new Date().toISOString();
   const dtStamp = toCalendarDate(publishedAt);
   const lastModified = toCalendarDate(publishedAt);
-  const reminders = [...new Set(input.reminderOffsetsMinutes)].sort((a, b) => b - a);
+  const reminders = [...new Set(input.reminderOffsetsMinutes)].sort(
+    (a, b) => b - a,
+  );
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -66,7 +72,9 @@ export function generatePublishedTimetableIcs(input: {
     }
     const firstDate = firstOccurrence(timetable.startsOn, session.weekday);
     lines.push("BEGIN:VEVENT");
-    lines.push(`UID:${escapeIcsText(`${session.stableSessionKey}@calender.aido.co.zw`)}`);
+    lines.push(
+      `UID:${escapeIcsText(`${session.stableSessionKey}@calender.aido.co.zw`)}`,
+    );
     lines.push(`DTSTAMP:${dtStamp}`);
     lines.push(
       `DTSTART;TZID=${timetable.institutionTimezone}:${toLocalDateTime(firstDate, session.startTime)}`,
@@ -92,7 +100,9 @@ export function generatePublishedTimetableIcs(input: {
       )}`,
     );
     lines.push(`LOCATION:${escapeIcsText(session.venue ?? "")}`);
-    lines.push(`RRULE:FREQ=WEEKLY;BYDAY=${weekdayMap[session.weekday]};UNTIL=${localDateUntil(timetable.endsOn)}`);
+    lines.push(
+      `RRULE:FREQ=WEEKLY;BYDAY=${weekdayMap[session.weekday]};UNTIL=${localDateUntil(timetable.endsOn)}`,
+    );
     lines.push(`LAST-MODIFIED:${lastModified}`);
     lines.push(`SEQUENCE:${timetable.versionNumber}`);
     for (const minutes of reminders) {
