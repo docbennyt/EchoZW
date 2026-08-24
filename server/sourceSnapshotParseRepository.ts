@@ -7,6 +7,8 @@ import type { GoogleDocsSourceSnapshot } from "../src/domain/sourceSnapshots.js"
 import { SourceSnapshotRepositoryError } from "./sourceSnapshotRepository.js";
 
 type JsonRecord = Record<string, unknown>;
+type JsonValue =
+  null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 type QueryResult<T> = { data: T | null; error: SupabaseErrorLike | null };
 type SupabaseErrorLike = {
   code?: string;
@@ -78,6 +80,42 @@ function mapParseRun(row: JsonRecord): SourceSnapshotParseRunRecord {
       unknown
     >,
   };
+}
+
+function isPlainJsonObject(value: unknown): value is Record<string, JsonValue> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function canonicalizeJsonValue(value: unknown): JsonValue {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => canonicalizeJsonValue(entry));
+  }
+
+  if (isPlainJsonObject(value)) {
+    return Object.keys(value)
+      .sort()
+      .reduce<Record<string, JsonValue>>((result, key) => {
+        result[key] = canonicalizeJsonValue(value[key]);
+        return result;
+      }, {});
+  }
+
+  return JSON.parse(JSON.stringify(value)) as JsonValue;
+}
+
+function canonicalJsonString(value: unknown) {
+  return JSON.stringify(canonicalizeJsonValue(value));
 }
 
 export async function loadLatestRelaySnapshotForParsing(
@@ -212,10 +250,10 @@ export async function persistSourceSnapshotParseRun(
     }
 
     const sameResult =
-      JSON.stringify(existing.resultPayload) ===
-        JSON.stringify(input.parserResult) &&
-      JSON.stringify(existing.summary) ===
-        JSON.stringify(input.parserResult.summary) &&
+      canonicalJsonString(existing.resultPayload) ===
+        canonicalJsonString(input.parserResult) &&
+      canonicalJsonString(existing.summary) ===
+        canonicalJsonString(input.parserResult.summary) &&
       existing.status === input.parserResult.status;
     if (!sameResult) {
       throw new SourceSnapshotRepositoryError(
