@@ -47,8 +47,12 @@ describe("course memory helpers", () => {
       },
     ]);
 
-    expect(findCourseSuggestions(entries, "ICS1", "code")[0]?.courseCode).toBe("ICS1102");
-    expect(findCourseSuggestions(entries, "Operating", "name")[0]?.courseCode).toBe("ICS1102");
+    expect(findCourseSuggestions(entries, "ICS1", "code")[0]?.courseCode).toBe(
+      "ICS1102",
+    );
+    expect(
+      findCourseSuggestions(entries, "Operating", "name")[0]?.courseCode,
+    ).toBe("ICS1102");
   });
 
   it("fills code and name and only fills lecturer when the field is empty", () => {

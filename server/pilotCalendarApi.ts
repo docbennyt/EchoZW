@@ -9,8 +9,14 @@ import {
 } from "./pilotRepository.js";
 import { generatePublishedTimetableIcs } from "./publishedCalendar.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
-import { getReminderOffsets, subscriptionRequestSchema } from "../src/domain/subscriptions.js";
-import { getPublicAppUrlFromHeaders, isExternallyFetchableUrl } from "../src/domain/publicUrl.js";
+import {
+  getReminderOffsets,
+  subscriptionRequestSchema,
+} from "../src/domain/subscriptions.js";
+import {
+  getPublicAppUrlFromHeaders,
+  isExternallyFetchableUrl,
+} from "../src/domain/publicUrl.js";
 
 function sendJson(
   res: ServerResponse,
@@ -146,7 +152,9 @@ export async function handlePilotCalendarRequest(
         parsed.data.customReminderOffsets,
       );
       const rawToken =
-        parsed.data.provider === "ics_download" ? undefined : generateFeedToken();
+        parsed.data.provider === "ics_download"
+          ? undefined
+          : generateFeedToken();
       const tokenHash = rawToken ? await sha256Base64Url(rawToken) : undefined;
       const anonymousSessionId = getOrCreateAnonymousSession(req);
       const subscription = await createCalendarSubscriptionRecord({
@@ -159,7 +167,9 @@ export async function handlePilotCalendarRequest(
         rawToken,
         tokenHash,
       });
-      const feedUrl = rawToken ? buildFeedUrl(publicOrigin, rawToken) : undefined;
+      const feedUrl = rawToken
+        ? buildFeedUrl(publicOrigin, rawToken)
+        : undefined;
       sendJson(
         res,
         201,
@@ -189,14 +199,23 @@ export async function handlePilotCalendarRequest(
     return true;
   }
 
-  const downloadMatch = requestUrl.pathname.match(/^\/calendar\/download\/([^/]+)\.ics$/);
+  const downloadMatch = requestUrl.pathname.match(
+    /^\/calendar\/download\/([^/]+)\.ics$/,
+  );
   if ((req.method === "GET" || req.method === "HEAD") && downloadMatch) {
     try {
       const subscription = await getCalendarSubscriptionById(
         decodeURIComponent(downloadMatch[1]),
       );
-      if (!subscription || (subscription as Record<string, unknown>).revoked_at) {
-        throw new PilotApiError("NOT_FOUND", "Calendar download not found.", 404);
+      if (
+        !subscription ||
+        (subscription as Record<string, unknown>).revoked_at
+      ) {
+        throw new PilotApiError(
+          "NOT_FOUND",
+          "Calendar download not found.",
+          404,
+        );
       }
       const timetable = await getPublishedTimetableById(
         String((subscription as Record<string, unknown>).timetable_id),
@@ -221,13 +240,18 @@ export async function handlePilotCalendarRequest(
     return true;
   }
 
-  const feedMatch = requestUrl.pathname.match(/^\/calendar\/feed\/([^/]+)\.ics$/);
+  const feedMatch = requestUrl.pathname.match(
+    /^\/calendar\/feed\/([^/]+)\.ics$/,
+  );
   if ((req.method === "GET" || req.method === "HEAD") && feedMatch) {
     try {
       const token = decodeURIComponent(feedMatch[1]);
       const tokenHash = await sha256Base64Url(token);
       const subscription = await getCalendarSubscriptionByTokenHash(tokenHash);
-      if (!subscription || (subscription as Record<string, unknown>).revoked_at) {
+      if (
+        !subscription ||
+        (subscription as Record<string, unknown>).revoked_at
+      ) {
         throw new PilotApiError("NOT_FOUND", "Calendar feed not found.", 404);
       }
       const timetable = await getPublishedTimetableById(

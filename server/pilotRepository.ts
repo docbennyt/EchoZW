@@ -53,7 +53,17 @@ function slugify(value: string) {
 }
 
 function weekdayName(weekday: number) {
-  return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][weekday - 1] ?? "Unknown";
+  return (
+    [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ][weekday - 1] ?? "Unknown"
+  );
 }
 
 function asSingle<T>(value: T | T[] | null | undefined): T | null {
@@ -155,7 +165,9 @@ function mapInstitution(row: JsonRecord): AdminInstitution {
 }
 
 function mapProgramme(row: JsonRecord): AdminProgramme {
-  const institution = asSingle(row.institutions as JsonRecord | JsonRecord[] | null);
+  const institution = asSingle(
+    row.institutions as JsonRecord | JsonRecord[] | null,
+  );
   return {
     id: String(row.id),
     institutionId: String(row.institution_id),
@@ -170,7 +182,9 @@ function mapProgramme(row: JsonRecord): AdminProgramme {
 }
 
 function mapClassGroup(row: JsonRecord): AdminClassGroup {
-  const programme = asSingle(row.programmes as JsonRecord | JsonRecord[] | null);
+  const programme = asSingle(
+    row.programmes as JsonRecord | JsonRecord[] | null,
+  );
   return {
     id: String(row.id),
     programmeId: String(row.programme_id),
@@ -189,7 +203,9 @@ function mapClassGroup(row: JsonRecord): AdminClassGroup {
 }
 
 function mapAcademicPeriod(row: JsonRecord): AdminAcademicPeriod {
-  const institution = asSingle(row.institutions as JsonRecord | JsonRecord[] | null);
+  const institution = asSingle(
+    row.institutions as JsonRecord | JsonRecord[] | null,
+  );
   return {
     id: String(row.id),
     institutionId: String(row.institution_id),
@@ -249,7 +265,9 @@ async function requireInstitution(id: string) {
   const data = await expectData(
     client
       .from("institutions")
-      .select("id, name, short_name, slug, timezone, active, created_at, updated_at")
+      .select(
+        "id, name, short_name, slug, timezone, active, created_at, updated_at",
+      )
       .eq("id", id)
       .maybeSingle(),
     "DATABASE_UNAVAILABLE",
@@ -266,7 +284,9 @@ async function requireProgramme(id: string) {
   const data = await expectData(
     client
       .from("programmes")
-      .select("id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)")
+      .select(
+        "id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)",
+      )
       .eq("id", id)
       .maybeSingle(),
     "DATABASE_UNAVAILABLE",
@@ -281,13 +301,16 @@ async function requireClassGroup(id: string) {
   const data = await expectData(
     client
       .from("cohorts")
-      .select("id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)")
+      .select(
+        "id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)",
+      )
       .eq("id", id)
       .maybeSingle(),
     "DATABASE_UNAVAILABLE",
     "Class group lookup failed.",
   );
-  if (!data) throw new PilotApiError("NOT_FOUND", "Class group not found.", 404);
+  if (!data)
+    throw new PilotApiError("NOT_FOUND", "Class group not found.", 404);
   return mapClassGroup(data as unknown as JsonRecord);
 }
 
@@ -296,7 +319,9 @@ async function requireAcademicPeriod(id: string) {
   const data = await expectData(
     client
       .from("academic_periods")
-      .select("id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)")
+      .select(
+        "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+      )
       .eq("id", id)
       .maybeSingle(),
     "DATABASE_UNAVAILABLE",
@@ -332,7 +357,11 @@ async function ensureUniquePublicSlug(baseSlug: string) {
   }
 }
 
-function deriveAcademicYear(name: string, startsOn: string | null, endsOn: string | null) {
+function deriveAcademicYear(
+  name: string,
+  startsOn: string | null,
+  endsOn: string | null,
+) {
   if (startsOn) return startsOn.slice(0, 4);
   if (endsOn) return endsOn.slice(0, 4);
   const match = name.match(/\b(20\d{2})\b/);
@@ -392,13 +421,17 @@ async function getVersionsForTimetable(timetableId: string) {
   const versions = await expectData(
     client
       .from("timetable_versions")
-      .select("id, version_number, status, published_at, change_summary, created_at")
+      .select(
+        "id, version_number, status, published_at, change_summary, created_at",
+      )
       .eq("timetable_id", timetableId)
       .order("version_number", { ascending: false }),
     "DATABASE_UNAVAILABLE",
     "Timetable version lookup failed.",
   );
-  const versionIds = (versions ?? []).map((row: unknown) => String((row as JsonRecord).id));
+  const versionIds = (versions ?? []).map((row: unknown) =>
+    String((row as JsonRecord).id),
+  );
   const sessions = versionIds.length
     ? await expectData(
         client
@@ -417,23 +450,39 @@ async function getVersionsForTimetable(timetableId: string) {
   }
 
   return (versions ?? []).map((row: unknown) =>
-    mapVersion(row as JsonRecord, counts.get(String((row as JsonRecord).id)) ?? 0),
+    mapVersion(
+      row as JsonRecord,
+      counts.get(String((row as JsonRecord).id)) ?? 0,
+    ),
   );
 }
 
-async function createDraftFromPublished(timetableId: string, createdBy: string) {
+async function createDraftFromPublished(
+  timetableId: string,
+  createdBy: string,
+) {
   const client = createPilotAdminClient();
   const versions = await getVersionsForTimetable(timetableId);
-  const draft = versions.find((version: unknown) => (version as AdminTimetableVersion).status === "draft");
+  const draft = versions.find(
+    (version: unknown) => (version as AdminTimetableVersion).status === "draft",
+  );
   if (draft) return draft.id;
 
-  const published = versions.find((version: unknown) => (version as AdminTimetableVersion).status === "published");
+  const published = versions.find(
+    (version: unknown) =>
+      (version as AdminTimetableVersion).status === "published",
+  );
   if (!published) {
     throw new PilotApiError("NOT_FOUND", "Timetable draft not found.", 404);
   }
 
   const nextVersionNumber =
-    Math.max(...versions.map((version: unknown) => (version as AdminTimetableVersion).versionNumber), 0) + 1;
+    Math.max(
+      ...versions.map(
+        (version: unknown) => (version as AdminTimetableVersion).versionNumber,
+      ),
+      0,
+    ) + 1;
 
   const insertedVersion = await expectData(
     client
@@ -493,7 +542,9 @@ async function createDraftFromPublished(timetableId: string, createdBy: string) 
       };
     });
 
-    const { error } = await client.from("timetable_sessions").insert(copiedSessions);
+    const { error } = await client
+      .from("timetable_sessions")
+      .insert(copiedSessions);
     if (error) {
       throw new PilotApiError(
         "DATABASE_UNAVAILABLE",
@@ -522,7 +573,8 @@ async function createInitialDraftVersion(
         source: "manual",
         version_number: versionNumber,
         status: "draft",
-        change_summary: versionNumber === 1 ? "Initial draft" : "Recovered draft",
+        change_summary:
+          versionNumber === 1 ? "Initial draft" : "Recovered draft",
         created_by: createdBy,
         source_label: "Manual entry",
       })
@@ -559,14 +611,24 @@ async function createInitialDraftVersion(
 
 async function getEditableVersion(timetableId: string, userId: string) {
   const versions = await getVersionsForTimetable(timetableId);
-  const existingDraft = versions.find((version: unknown) => (version as AdminTimetableVersion).status === "draft");
+  const existingDraft = versions.find(
+    (version: unknown) => (version as AdminTimetableVersion).status === "draft",
+  );
   if (existingDraft) return existingDraft.id;
-  const published = versions.find((version: unknown) => (version as AdminTimetableVersion).status === "published");
+  const published = versions.find(
+    (version: unknown) =>
+      (version as AdminTimetableVersion).status === "published",
+  );
   if (published) {
     return createDraftFromPublished(timetableId, userId);
   }
   const nextVersionNumber =
-    Math.max(...versions.map((version: unknown) => (version as AdminTimetableVersion).versionNumber), 0) + 1;
+    Math.max(
+      ...versions.map(
+        (version: unknown) => (version as AdminTimetableVersion).versionNumber,
+      ),
+      0,
+    ) + 1;
   return createInitialDraftVersion(timetableId, userId, nextVersionNumber);
 }
 
@@ -575,7 +637,9 @@ export async function listInstitutions() {
   const data = await expectData(
     client
       .from("institutions")
-      .select("id, name, short_name, slug, timezone, active, created_at, updated_at")
+      .select(
+        "id, name, short_name, slug, timezone, active, created_at, updated_at",
+      )
       .order("name"),
     "DATABASE_UNAVAILABLE",
     "Could not load institutions.",
@@ -590,7 +654,11 @@ export async function createInstitution(input: {
   timezone?: string | null;
   active?: boolean;
 }) {
-  requireString(input.name, "VALIDATION_ERROR", "Institution name is required.");
+  requireString(
+    input.name,
+    "VALIDATION_ERROR",
+    "Institution name is required.",
+  );
   const client = createPilotAdminClient();
   const payload = {
     name: input.name.trim(),
@@ -603,7 +671,9 @@ export async function createInstitution(input: {
   const { data, error } = await client
     .from("institutions")
     .insert(payload)
-    .select("id, name, short_name, slug, timezone, active, created_at, updated_at")
+    .select(
+      "id, name, short_name, slug, timezone, active, created_at, updated_at",
+    )
     .single();
   if (error) {
     const databaseError = error as SupabaseErrorLike;
@@ -643,7 +713,9 @@ export async function updateInstitution(
   const payload = {
     name: input.name?.trim() || current.name,
     short_name:
-      input.shortName === undefined ? current.shortName : input.shortName?.trim() || null,
+      input.shortName === undefined
+        ? current.shortName
+        : input.shortName?.trim() || null,
     slug:
       input.slug === undefined
         ? current.slug
@@ -657,7 +729,9 @@ export async function updateInstitution(
       .from("institutions")
       .update(payload)
       .eq("id", id)
-      .select("id, name, short_name, slug, timezone, active, created_at, updated_at")
+      .select(
+        "id, name, short_name, slug, timezone, active, created_at, updated_at",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not update institution.",
@@ -669,7 +743,9 @@ export async function listProgrammes(institutionId?: string) {
   const client = createPilotAdminClient();
   let query = client
     .from("programmes")
-    .select("id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)")
+    .select(
+      "id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)",
+    )
     .order("name");
   if (institutionId) query = query.eq("institution_id", institutionId);
   const data = await expectData(
@@ -702,7 +778,9 @@ export async function createProgramme(input: {
         status: input.active === false ? "inactive" : "active",
         updated_at: new Date().toISOString(),
       })
-      .select("id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)")
+      .select(
+        "id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not create programme.",
@@ -730,7 +808,8 @@ export async function updateProgramme(
       .update({
         institution_id: institutionId,
         name: input.name?.trim() || current.name,
-        code: input.code === undefined ? current.code : input.code?.trim() || null,
+        code:
+          input.code === undefined ? current.code : input.code?.trim() || null,
         slug:
           input.slug === undefined
             ? current.slug
@@ -740,7 +819,9 @@ export async function updateProgramme(
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .select("id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)")
+      .select(
+        "id, institution_id, name, code, slug, active, created_at, updated_at, institutions(name)",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not update programme.",
@@ -752,7 +833,9 @@ export async function listClassGroups(programmeId?: string) {
   const client = createPilotAdminClient();
   let query = client
     .from("cohorts")
-    .select("id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)")
+    .select(
+      "id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)",
+    )
     .order("label");
   if (programmeId) query = query.eq("programme_id", programmeId);
   const data = await expectData(
@@ -772,16 +855,32 @@ export async function createClassGroup(input: {
   groupName?: string | null;
   active?: boolean;
 }) {
-  requireString(input.label, "VALIDATION_ERROR", "Class group label is required.");
-  if (input.yearLevel !== undefined && input.yearLevel !== null && input.yearLevel <= 0) {
-    throw new PilotApiError("VALIDATION_ERROR", "Year level must be greater than zero.", 422);
+  requireString(
+    input.label,
+    "VALIDATION_ERROR",
+    "Class group label is required.",
+  );
+  if (
+    input.yearLevel !== undefined &&
+    input.yearLevel !== null &&
+    input.yearLevel <= 0
+  ) {
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Year level must be greater than zero.",
+      422,
+    );
   }
   if (
     input.semesterNumber !== undefined &&
     input.semesterNumber !== null &&
     input.semesterNumber <= 0
   ) {
-    throw new PilotApiError("VALIDATION_ERROR", "Semester number must be greater than zero.", 422);
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Semester number must be greater than zero.",
+      422,
+    );
   }
   const programme = await requireProgramme(input.programmeId);
   const client = createPilotAdminClient();
@@ -796,7 +895,9 @@ export async function createClassGroup(input: {
         level_label: label,
         slug: slugify(input.slug?.trim() || label),
         year_level:
-          input.yearLevel === undefined ? deriveYearLevel(label) : input.yearLevel,
+          input.yearLevel === undefined
+            ? deriveYearLevel(label)
+            : input.yearLevel,
         semester_number:
           input.semesterNumber === undefined
             ? deriveSemesterNumber(label)
@@ -807,7 +908,9 @@ export async function createClassGroup(input: {
         status: input.active === false ? "inactive" : "active",
         updated_at: new Date().toISOString(),
       })
-      .select("id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)")
+      .select(
+        "id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not create class group.",
@@ -828,15 +931,27 @@ export async function updateClassGroup(
   }>,
 ) {
   const current = await requireClassGroup(id);
-  if (input.yearLevel !== undefined && input.yearLevel !== null && input.yearLevel <= 0) {
-    throw new PilotApiError("VALIDATION_ERROR", "Year level must be greater than zero.", 422);
+  if (
+    input.yearLevel !== undefined &&
+    input.yearLevel !== null &&
+    input.yearLevel <= 0
+  ) {
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Year level must be greater than zero.",
+      422,
+    );
   }
   if (
     input.semesterNumber !== undefined &&
     input.semesterNumber !== null &&
     input.semesterNumber <= 0
   ) {
-    throw new PilotApiError("VALIDATION_ERROR", "Semester number must be greater than zero.", 422);
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Semester number must be greater than zero.",
+      422,
+    );
   }
   const programmeId = input.programmeId ?? current.programmeId;
   await requireProgramme(programmeId);
@@ -850,22 +965,32 @@ export async function updateClassGroup(
         label,
         code: label,
         level_label: label,
-        slug: input.slug === undefined ? current.slug : slugify(input.slug || label),
-        year_level: input.yearLevel === undefined ? current.yearLevel : input.yearLevel,
+        slug:
+          input.slug === undefined
+            ? current.slug
+            : slugify(input.slug || label),
+        year_level:
+          input.yearLevel === undefined ? current.yearLevel : input.yearLevel,
         semester_number:
           input.semesterNumber === undefined
             ? current.semesterNumber
             : input.semesterNumber,
         group_name:
-          input.groupName === undefined ? current.groupName : input.groupName?.trim() || null,
+          input.groupName === undefined
+            ? current.groupName
+            : input.groupName?.trim() || null,
         group_label:
-          input.groupName === undefined ? current.groupName : input.groupName?.trim() || null,
+          input.groupName === undefined
+            ? current.groupName
+            : input.groupName?.trim() || null,
         active: input.active ?? current.active,
         status: (input.active ?? current.active) ? "active" : "inactive",
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .select("id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)")
+      .select(
+        "id, programme_id, label, code, slug, year_level, semester_number, group_name, active, created_at, updated_at, programmes(name)",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not update class group.",
@@ -877,7 +1002,9 @@ export async function listAcademicPeriods(institutionId?: string) {
   const client = createPilotAdminClient();
   let query = client
     .from("academic_periods")
-    .select("id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)")
+    .select(
+      "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+    )
     .order("starts_on", { ascending: false })
     .order("name");
   if (institutionId) query = query.eq("institution_id", institutionId);
@@ -886,7 +1013,9 @@ export async function listAcademicPeriods(institutionId?: string) {
     "DATABASE_UNAVAILABLE",
     "Could not load academic periods.",
   );
-  return (data ?? []).map((row: unknown) => mapAcademicPeriod(row as JsonRecord));
+  return (data ?? []).map((row: unknown) =>
+    mapAcademicPeriod(row as JsonRecord),
+  );
 }
 
 export async function createAcademicPeriod(input: {
@@ -896,7 +1025,11 @@ export async function createAcademicPeriod(input: {
   endsOn: string;
   active?: boolean;
 }) {
-  requireString(input.name, "VALIDATION_ERROR", "Academic period name is required.");
+  requireString(
+    input.name,
+    "VALIDATION_ERROR",
+    "Academic period name is required.",
+  );
   requireString(input.startsOn, "VALIDATION_ERROR", "Start date is required.");
   requireString(input.endsOn, "VALIDATION_ERROR", "End date is required.");
   if (input.endsOn < input.startsOn) {
@@ -916,13 +1049,19 @@ export async function createAcademicPeriod(input: {
         name: input.name.trim(),
         starts_on: input.startsOn,
         ends_on: input.endsOn,
-        academic_year: deriveAcademicYear(input.name, input.startsOn, input.endsOn),
+        academic_year: deriveAcademicYear(
+          input.name,
+          input.startsOn,
+          input.endsOn,
+        ),
         period_number: derivePeriodNumber(input.name),
         active: input.active ?? true,
         status: input.active === false ? "archived" : "confirmed",
         updated_at: new Date().toISOString(),
       })
-      .select("id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)")
+      .select(
+        "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not create academic period.",
@@ -970,7 +1109,9 @@ export async function updateAcademicPeriod(
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .select("id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)")
+      .select(
+        "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not update academic period.",
@@ -983,7 +1124,9 @@ export async function listTimetables() {
   const rows = await expectData(
     client
       .from("timetables")
-      .select("id, public_slug, updated_at, current_published_version_id, institution_id, programme_id, cohort_id, academic_period_id, institutions(name), programmes(name), cohorts(label), academic_periods(name)")
+      .select(
+        "id, public_slug, updated_at, current_published_version_id, institution_id, programme_id, cohort_id, academic_period_id, institutions(name), programmes(name), cohorts(label), academic_periods(name)",
+      )
       .order("updated_at", { ascending: false }),
     "DATABASE_UNAVAILABLE",
     "Could not load timetables.",
@@ -992,18 +1135,35 @@ export async function listTimetables() {
   const timetables = (rows ?? []) as JsonRecord[];
   const versionsByTimetable = new Map<string, AdminTimetableVersion[]>();
   for (const row of timetables) {
-    versionsByTimetable.set(String(row.id), await getVersionsForTimetable(String(row.id)));
+    versionsByTimetable.set(
+      String(row.id),
+      await getVersionsForTimetable(String(row.id)),
+    );
   }
 
   return timetables.map((row: unknown) => {
     const timetableRow = row as JsonRecord;
-    const institution = asSingle(timetableRow.institutions as JsonRecord | JsonRecord[] | null);
-    const programme = asSingle(timetableRow.programmes as JsonRecord | JsonRecord[] | null);
-    const cohort = asSingle(timetableRow.cohorts as JsonRecord | JsonRecord[] | null);
-    const period = asSingle(timetableRow.academic_periods as JsonRecord | JsonRecord[] | null);
+    const institution = asSingle(
+      timetableRow.institutions as JsonRecord | JsonRecord[] | null,
+    );
+    const programme = asSingle(
+      timetableRow.programmes as JsonRecord | JsonRecord[] | null,
+    );
+    const cohort = asSingle(
+      timetableRow.cohorts as JsonRecord | JsonRecord[] | null,
+    );
+    const period = asSingle(
+      timetableRow.academic_periods as JsonRecord | JsonRecord[] | null,
+    );
     const versions = versionsByTimetable.get(String(timetableRow.id)) ?? [];
-    const draft = versions.find((version: unknown) => (version as AdminTimetableVersion).status === "draft");
-    const published = versions.find((version: unknown) => (version as AdminTimetableVersion).status === "published");
+    const draft = versions.find(
+      (version: unknown) =>
+        (version as AdminTimetableVersion).status === "draft",
+    );
+    const published = versions.find(
+      (version: unknown) =>
+        (version as AdminTimetableVersion).status === "published",
+    );
     return {
       id: String(timetableRow.id),
       publicSlug: String(timetableRow.public_slug),
@@ -1014,10 +1174,9 @@ export async function listTimetables() {
       status: published ? "Published" : "Draft",
       lastUpdated: String(timetableRow.updated_at),
       currentDraftVersionId: draft?.id ?? null,
-      currentPublishedVersionId:
-        timetableRow.current_published_version_id
-          ? String(timetableRow.current_published_version_id)
-          : null,
+      currentPublishedVersionId: timetableRow.current_published_version_id
+        ? String(timetableRow.current_published_version_id)
+        : null,
     } satisfies AdminTimetableSummary;
   });
 }
@@ -1086,7 +1245,11 @@ export async function createTimetable(input: {
     "Could not create timetable.",
   );
   if (!timetable) {
-    throw new PilotApiError("DATABASE_UNAVAILABLE", "Could not create timetable.", 503);
+    throw new PilotApiError(
+      "DATABASE_UNAVAILABLE",
+      "Could not create timetable.",
+      503,
+    );
   }
 
   const version = await expectData<JsonRecord | null>(
@@ -1137,7 +1300,9 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
   const timetable = await expectData<JsonRecord | null>(
     client
       .from("timetables")
-      .select("id, public_slug, institution_id, programme_id, cohort_id, academic_period_id, current_published_version_id, institutions(name), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)")
+      .select(
+        "id, public_slug, institution_id, programme_id, cohort_id, academic_period_id, current_published_version_id, institutions(name), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)",
+      )
       .eq("id", timetableId)
       .maybeSingle(),
     "DATABASE_UNAVAILABLE",
@@ -1149,15 +1314,24 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
 
   const editableVersionId = await getEditableVersion(timetableId, userId);
   const versions = await getVersionsForTimetable(timetableId);
-  const activeVersion = versions.find((version: unknown) => (version as AdminTimetableVersion).id === editableVersionId);
+  const activeVersion = versions.find(
+    (version: unknown) =>
+      (version as AdminTimetableVersion).id === editableVersionId,
+  );
   if (!activeVersion) {
-    throw new PilotApiError("NOT_FOUND", "Editable timetable version not found.", 404);
+    throw new PilotApiError(
+      "NOT_FOUND",
+      "Editable timetable version not found.",
+      404,
+    );
   }
 
   const sessions = await expectData(
     client
       .from("timetable_sessions")
-      .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+      .select(
+        "id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes",
+      )
       .eq("timetable_version_id", editableVersionId)
       .order("weekday")
       .order("start_time"),
@@ -1176,10 +1350,19 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
       )
     : [];
 
-  const institution = asSingle((timetable as JsonRecord).institutions as JsonRecord | JsonRecord[] | null);
-  const programme = asSingle((timetable as JsonRecord).programmes as JsonRecord | JsonRecord[] | null);
-  const cohort = asSingle((timetable as JsonRecord).cohorts as JsonRecord | JsonRecord[] | null);
-  const period = asSingle((timetable as JsonRecord).academic_periods as JsonRecord | JsonRecord[] | null);
+  const institution = asSingle(
+    (timetable as JsonRecord).institutions as JsonRecord | JsonRecord[] | null,
+  );
+  const programme = asSingle(
+    (timetable as JsonRecord).programmes as JsonRecord | JsonRecord[] | null,
+  );
+  const cohort = asSingle(
+    (timetable as JsonRecord).cohorts as JsonRecord | JsonRecord[] | null,
+  );
+  const period = asSingle(
+    (timetable as JsonRecord).academic_periods as
+      JsonRecord | JsonRecord[] | null,
+  );
 
   return {
     timetable: {
@@ -1193,35 +1376,50 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
       classGroupLabel: cohort?.label ? String(cohort.label) : "",
       academicPeriodId: String((timetable as JsonRecord).academic_period_id),
       academicPeriodName: period?.name ? String(period.name) : "",
-      academicPeriodStartsOn: period?.starts_on ? String(period.starts_on) : null,
+      academicPeriodStartsOn: period?.starts_on
+        ? String(period.starts_on)
+        : null,
       academicPeriodEndsOn: period?.ends_on ? String(period.ends_on) : null,
-      currentPublishedVersionId:
-        (timetable as JsonRecord).current_published_version_id
-          ? String((timetable as JsonRecord).current_published_version_id)
-          : null,
+      currentPublishedVersionId: (timetable as JsonRecord)
+        .current_published_version_id
+        ? String((timetable as JsonRecord).current_published_version_id)
+        : null,
     },
     activeVersion,
     versions,
-    sessions: (sessions ?? []).map((row: unknown) => mapSession(row as JsonRecord)),
+    sessions: (sessions ?? []).map((row: unknown) =>
+      mapSession(row as JsonRecord),
+    ),
     courseMemory: buildCourseMemoryEntries(
       (courseMemoryRows ?? []).map((row: unknown) => ({
         courseCode: String((row as JsonRecord).course_code ?? ""),
         courseName: String((row as JsonRecord).course_name ?? ""),
-        lecturer: (row as JsonRecord).lecturer ? String((row as JsonRecord).lecturer) : null,
-        venue: (row as JsonRecord).venue ? String((row as JsonRecord).venue) : null,
-        sessionType: (row as JsonRecord).session_type ? String((row as JsonRecord).session_type) : null,
+        lecturer: (row as JsonRecord).lecturer
+          ? String((row as JsonRecord).lecturer)
+          : null,
+        venue: (row as JsonRecord).venue
+          ? String((row as JsonRecord).venue)
+          : null,
+        sessionType: (row as JsonRecord).session_type
+          ? String((row as JsonRecord).session_type)
+          : null,
       })),
     ),
   } satisfies AdminTimetableEditor;
 }
 
-async function listDraftSessionsForTimetable(timetableId: string, userId: string) {
+async function listDraftSessionsForTimetable(
+  timetableId: string,
+  userId: string,
+) {
   const versionId = await getEditableVersion(timetableId, userId);
   const client = createPilotAdminClient();
   const sessions = await expectData(
     client
       .from("timetable_sessions")
-      .select("id, stable_session_key, course_code, weekday, start_time, end_time")
+      .select(
+        "id, stable_session_key, course_code, weekday, start_time, end_time",
+      )
       .eq("timetable_version_id", versionId),
     "DATABASE_UNAVAILABLE",
     "Could not load draft sessions.",
@@ -1251,10 +1449,22 @@ export async function createTimetableSession(input: {
   sessionType?: string | null;
   notes?: string | null;
 }) {
-  requireString(input.courseCode, "VALIDATION_ERROR", "Course code is required.");
-  requireString(input.courseName, "VALIDATION_ERROR", "Course name is required.");
+  requireString(
+    input.courseCode,
+    "VALIDATION_ERROR",
+    "Course code is required.",
+  );
+  requireString(
+    input.courseName,
+    "VALIDATION_ERROR",
+    "Course name is required.",
+  );
   if (input.weekday < 1 || input.weekday > 7) {
-    throw new PilotApiError("VALIDATION_ERROR", "Weekday must be between 1 and 7.", 422);
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Weekday must be between 1 and 7.",
+      422,
+    );
   }
   assertTimeRange(input.startTime, input.endTime);
 
@@ -1265,7 +1475,10 @@ export async function createTimetableSession(input: {
   const client = createPilotAdminClient();
 
   const editor = await getTimetableEditor(input.timetableId, input.userId);
-  if (!editor.timetable.academicPeriodStartsOn || !editor.timetable.academicPeriodEndsOn) {
+  if (
+    !editor.timetable.academicPeriodStartsOn ||
+    !editor.timetable.academicPeriodEndsOn
+  ) {
     throw new PilotApiError(
       "VALIDATION_ERROR",
       "Academic period dates are required before adding timetable sessions.",
@@ -1275,16 +1488,50 @@ export async function createTimetableSession(input: {
 
   const duplicate = sessions.find(
     (session: unknown) =>
-      (session as { courseCode: string; weekday: number; startTime: string; endTime: string }).courseCode === input.courseCode.trim() &&
-      (session as { courseCode: string; weekday: number; startTime: string; endTime: string }).weekday === input.weekday &&
-      normalizeTimeValue((session as { courseCode: string; weekday: number; startTime: string; endTime: string }).startTime) === normalizeTimeValue(input.startTime) &&
-      normalizeTimeValue((session as { courseCode: string; weekday: number; startTime: string; endTime: string }).endTime) === normalizeTimeValue(input.endTime),
+      (
+        session as {
+          courseCode: string;
+          weekday: number;
+          startTime: string;
+          endTime: string;
+        }
+      ).courseCode === input.courseCode.trim() &&
+      (
+        session as {
+          courseCode: string;
+          weekday: number;
+          startTime: string;
+          endTime: string;
+        }
+      ).weekday === input.weekday &&
+      normalizeTimeValue(
+        (
+          session as {
+            courseCode: string;
+            weekday: number;
+            startTime: string;
+            endTime: string;
+          }
+        ).startTime,
+      ) === normalizeTimeValue(input.startTime) &&
+      normalizeTimeValue(
+        (
+          session as {
+            courseCode: string;
+            weekday: number;
+            startTime: string;
+            endTime: string;
+          }
+        ).endTime,
+      ) === normalizeTimeValue(input.endTime),
   );
   if (duplicate) {
     const existingSession = await expectData(
       client
         .from("timetable_sessions")
-        .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+        .select(
+          "id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes",
+        )
         .eq("id", duplicate.id)
         .maybeSingle(),
       "DATABASE_UNAVAILABLE",
@@ -1318,7 +1565,9 @@ export async function createTimetableSession(input: {
   const { data, error } = await client
     .from("timetable_sessions")
     .insert(payload)
-    .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+    .select(
+      "id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes",
+    )
     .single();
   if (error) {
     const duplicateConflict = (error as SupabaseErrorLike).code === "23505";
@@ -1326,7 +1575,9 @@ export async function createTimetableSession(input: {
       const existing = await expectData(
         client
           .from("timetable_sessions")
-          .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+          .select(
+            "id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes",
+          )
           .eq("timetable_version_id", versionId)
           .eq("stable_session_key", payload.stable_session_key)
           .maybeSingle(),
@@ -1361,10 +1612,22 @@ export async function updateTimetableSession(input: {
   sessionType?: string | null;
   notes?: string | null;
 }) {
-  requireString(input.courseCode, "VALIDATION_ERROR", "Course code is required.");
-  requireString(input.courseName, "VALIDATION_ERROR", "Course name is required.");
+  requireString(
+    input.courseCode,
+    "VALIDATION_ERROR",
+    "Course code is required.",
+  );
+  requireString(
+    input.courseName,
+    "VALIDATION_ERROR",
+    "Course name is required.",
+  );
   if (input.weekday < 1 || input.weekday > 7) {
-    throw new PilotApiError("VALIDATION_ERROR", "Weekday must be between 1 and 7.", 422);
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Weekday must be between 1 and 7.",
+      422,
+    );
   }
   assertTimeRange(input.startTime, input.endTime);
 
@@ -1396,7 +1659,9 @@ export async function updateTimetableSession(input: {
       })
       .eq("id", input.sessionId)
       .eq("timetable_version_id", versionId)
-      .select("id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+      .select(
+        "id, timetable_version_id, stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes",
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not update the timetable session.",
@@ -1432,7 +1697,10 @@ export async function deleteTimetableSession(input: {
 export async function publishTimetable(timetableId: string, userId: string) {
   const versionId = await getEditableVersion(timetableId, userId);
   const editor = await getTimetableEditor(timetableId, userId);
-  if (!editor.timetable.academicPeriodStartsOn || !editor.timetable.academicPeriodEndsOn) {
+  if (
+    !editor.timetable.academicPeriodStartsOn ||
+    !editor.timetable.academicPeriodEndsOn
+  ) {
     throw new PilotApiError(
       "VALIDATION_ERROR",
       "Academic period dates are required before publishing.",
@@ -1447,12 +1715,11 @@ export async function publishTimetable(timetableId: string, userId: string) {
     p_published_by: userId,
   });
   if (error) {
-    const message =
-      error.message.includes("TIMETABLE_EMPTY")
-        ? "Add at least one class session before publishing."
-        : error.message.includes("TIMETABLE_CONFLICT")
-          ? "Resolve timetable overlaps before publishing."
-          : "Could not publish the timetable.";
+    const message = error.message.includes("TIMETABLE_EMPTY")
+      ? "Add at least one class session before publishing."
+      : error.message.includes("TIMETABLE_CONFLICT")
+        ? "Resolve timetable overlaps before publishing."
+        : "Could not publish the timetable.";
     throw new PilotApiError("PUBLISH_FAILED", message, 422, error);
   }
   const record = Array.isArray(data) ? data[0] : data;
@@ -1464,13 +1731,16 @@ export async function publishTimetable(timetableId: string, userId: string) {
   };
 }
 
-async function getPublishedTimetable(
-  filter: { publicSlug?: string; timetableId?: string },
-) {
+async function getPublishedTimetable(filter: {
+  publicSlug?: string;
+  timetableId?: string;
+}) {
   const client = createPilotAdminClient();
   let query = client
     .from("timetables")
-    .select("id, public_slug, current_published_version_id, institutions(name, timezone), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)")
+    .select(
+      "id, public_slug, current_published_version_id, institutions(name, timezone), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)",
+    )
     .not("current_published_version_id", "is", null);
   if (filter.publicSlug) query = query.eq("public_slug", filter.publicSlug);
   if (filter.timetableId) query = query.eq("id", filter.timetableId);
@@ -1487,7 +1757,9 @@ async function getPublishedTimetable(
     );
   }
 
-  const publishedVersionId = String((timetable as JsonRecord).current_published_version_id);
+  const publishedVersionId = String(
+    (timetable as JsonRecord).current_published_version_id,
+  );
   const version = await expectData<JsonRecord | null>(
     client
       .from("timetable_versions")
@@ -1508,7 +1780,9 @@ async function getPublishedTimetable(
   const sessions = await expectData(
     client
       .from("timetable_sessions")
-      .select("stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes")
+      .select(
+        "stable_session_key, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes",
+      )
       .eq("timetable_version_id", publishedVersionId)
       .order("weekday")
       .order("start_time"),
@@ -1518,10 +1792,18 @@ async function getPublishedTimetable(
 
   const timetableRecord = timetable as JsonRecord;
   const versionRecord = version as JsonRecord;
-  const institution = asSingle(timetableRecord.institutions as JsonRecord | JsonRecord[] | null);
-  const programme = asSingle(timetableRecord.programmes as JsonRecord | JsonRecord[] | null);
-  const cohort = asSingle(timetableRecord.cohorts as JsonRecord | JsonRecord[] | null);
-  const period = asSingle(timetableRecord.academic_periods as JsonRecord | JsonRecord[] | null);
+  const institution = asSingle(
+    timetableRecord.institutions as JsonRecord | JsonRecord[] | null,
+  );
+  const programme = asSingle(
+    timetableRecord.programmes as JsonRecord | JsonRecord[] | null,
+  );
+  const cohort = asSingle(
+    timetableRecord.cohorts as JsonRecord | JsonRecord[] | null,
+  );
+  const period = asSingle(
+    timetableRecord.academic_periods as JsonRecord | JsonRecord[] | null,
+  );
 
   return {
     timetableId: String(timetableRecord.id),
@@ -1530,13 +1812,17 @@ async function getPublishedTimetable(
     institutionShortName: institution?.short_name
       ? String(institution.short_name)
       : null,
-    institutionTimezone: institution?.timezone ? String(institution.timezone) : "Africa/Harare",
+    institutionTimezone: institution?.timezone
+      ? String(institution.timezone)
+      : "Africa/Harare",
     programme: programme?.name ? String(programme.name) : "",
     classGroup: cohort?.label ? String(cohort.label) : "",
     academicPeriod: period?.name ? String(period.name) : "",
     startsOn: period?.starts_on ? String(period.starts_on) : null,
     endsOn: period?.ends_on ? String(period.ends_on) : null,
-    publishedAt: versionRecord.published_at ? String(versionRecord.published_at) : null,
+    publishedAt: versionRecord.published_at
+      ? String(versionRecord.published_at)
+      : null,
     versionNumber: Number(versionRecord.version_number ?? 1),
     sessions: (sessions ?? []).map((row: unknown) => ({
       stableSessionKey: String((row as JsonRecord).stable_session_key),
@@ -1545,11 +1831,18 @@ async function getPublishedTimetable(
       weekday: Number((row as JsonRecord).weekday),
       startTime: String((row as JsonRecord).start_time),
       endTime: String((row as JsonRecord).end_time),
-      venue: (row as JsonRecord).venue ? String((row as JsonRecord).venue) : null,
-      lecturer: (row as JsonRecord).lecturer ? String((row as JsonRecord).lecturer) : null,
-      sessionType:
-        (row as JsonRecord).session_type ? String((row as JsonRecord).session_type) : null,
-      notes: (row as JsonRecord).notes ? String((row as JsonRecord).notes) : null,
+      venue: (row as JsonRecord).venue
+        ? String((row as JsonRecord).venue)
+        : null,
+      lecturer: (row as JsonRecord).lecturer
+        ? String((row as JsonRecord).lecturer)
+        : null,
+      sessionType: (row as JsonRecord).session_type
+        ? String((row as JsonRecord).session_type)
+        : null,
+      notes: (row as JsonRecord).notes
+        ? String((row as JsonRecord).notes)
+        : null,
     })) satisfies PublicTimetableSession[],
   } satisfies PublicTimetable;
 }
@@ -1600,7 +1893,11 @@ export async function createCalendarSubscriptionRecord(input: {
 export async function getCalendarSubscriptionById(id: string) {
   const client = createPilotAdminClient();
   return expectData(
-    client.from("calendar_subscriptions").select("*").eq("id", id).maybeSingle(),
+    client
+      .from("calendar_subscriptions")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle(),
     "DATABASE_UNAVAILABLE",
     "Could not load the calendar subscription.",
   );

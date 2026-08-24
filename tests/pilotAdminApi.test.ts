@@ -10,9 +10,9 @@ const repositoryMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../server/pilotRepository", async () => {
-  const actual = await vi.importActual<typeof import("../server/pilotRepository")>(
-    "../server/pilotRepository",
-  );
+  const actual = await vi.importActual<
+    typeof import("../server/pilotRepository")
+  >("../server/pilotRepository");
 
   return {
     ...actual,
@@ -24,11 +24,7 @@ vi.mock("../server/pilotRepository", async () => {
 
 import { handlePilotAdminApi } from "../server/pilotAdminApi";
 
-function request(
-  method: string,
-  url: string,
-  body?: unknown,
-): IncomingMessage {
+function request(method: string, url: string, body?: unknown): IncomingMessage {
   const stream = Readable.from(
     body === undefined ? [] : [JSON.stringify(body)],
   ) as IncomingMessage;

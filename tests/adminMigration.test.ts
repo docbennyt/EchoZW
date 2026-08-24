@@ -8,7 +8,9 @@ const migration = readFileSync(
 
 describe("admin_users migration", () => {
   it("creates the canonical admin authorization table", () => {
-    expect(migration).toContain("create table if not exists public.admin_users");
+    expect(migration).toContain(
+      "create table if not exists public.admin_users",
+    );
     expect(migration).toContain(
       "user_id uuid primary key references auth.users(id) on delete cascade",
     );

@@ -206,7 +206,10 @@ export function normalizeVenue(value?: string) {
 
 export function normalizeLecturer(value?: string) {
   if (!value) return undefined;
-  return value.replace(/\s*\/\s*/g, " / ").replace(/\s+/g, " ").trim();
+  return value
+    .replace(/\s*\/\s*/g, " / ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function candidateId(seed: string) {
@@ -253,7 +256,11 @@ function baseWarnings(
       suggestedValue: "SE",
     });
   }
-  if (knownProgrammeCodes.size && input.programmeCode && !knownProgrammeCodes.has(input.programmeCode)) {
+  if (
+    knownProgrammeCodes.size &&
+    input.programmeCode &&
+    !knownProgrammeCodes.has(input.programmeCode)
+  ) {
     warnings.push({
       code: "UNKNOWN_PROGRAMME_PREFIX",
       severity: "blocking",
@@ -261,7 +268,11 @@ function baseWarnings(
       fieldName: "programme_code",
     });
   }
-  if (knownCohortCodes.size && input.cohortCode && !knownCohortCodes.has(input.cohortCode)) {
+  if (
+    knownCohortCodes.size &&
+    input.cohortCode &&
+    !knownCohortCodes.has(input.cohortCode)
+  ) {
     warnings.push({
       code: "UNKNOWN_COHORT",
       severity: "blocking",
@@ -269,7 +280,11 @@ function baseWarnings(
       fieldName: "cohort_code",
     });
   }
-  if (knownCourseCodes.size && input.courseCode && !knownCourseCodes.has(input.courseCode)) {
+  if (
+    knownCourseCodes.size &&
+    input.courseCode &&
+    !knownCourseCodes.has(input.courseCode)
+  ) {
     warnings.push({
       code: "UNKNOWN_COURSE",
       severity: "blocking",
@@ -277,7 +292,11 @@ function baseWarnings(
       fieldName: "course_code",
     });
   }
-  if (programmeCourseCodes.size && input.courseCode && !programmeCourseCodes.has(input.courseCode)) {
+  if (
+    programmeCourseCodes.size &&
+    input.courseCode &&
+    !programmeCourseCodes.has(input.courseCode)
+  ) {
     warnings.push({
       code: "COURSE_NOT_ASSOCIATED_WITH_PROGRAMME",
       severity: "blocking",
@@ -300,7 +319,10 @@ function baseWarnings(
       message: "Venue is missing.",
       fieldName: "venue",
     });
-  } else if (/\bN\d{3}LAB\b/i.test(input.venue) || /\bN\d{3}\s+LAB\b/i.test(input.venue)) {
+  } else if (
+    /\bN\d{3}LAB\b/i.test(input.venue) ||
+    /\bN\d{3}\s+LAB\b/i.test(input.venue)
+  ) {
     warnings.push({
       code: "UNRECOGNIZED_VENUE_FORMAT",
       severity: "warning",
@@ -329,7 +351,8 @@ function baseWarnings(
     warnings.push({
       code: "SEMESTER_DATES_MISSING",
       severity: "blocking",
-      message: "Academic period start and end dates must be supplied before confirmation.",
+      message:
+        "Academic period start and end dates must be supplied before confirmation.",
       fieldName: "academic_period",
     });
   }
@@ -338,7 +361,10 @@ function baseWarnings(
 }
 
 export function parseCsv(text: string) {
-  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(Boolean);
+  const lines = text
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter(Boolean);
   const headers = splitCsvLine(lines[0] ?? "").map((header) =>
     header.trim().toLowerCase(),
   );
@@ -373,14 +399,12 @@ function splitCsvLine(line: string) {
   return cells;
 }
 
-export function createCandidatesFromCsv(
-  text: string,
-  context: ImportContext,
-) {
+export function createCandidatesFromCsv(text: string, context: ImportContext) {
   return parseCsv(text).map((row, index) => {
     const programmeCode =
       row.programme_code?.toUpperCase() ?? context.selectedProgrammeCode;
-    const cohortCode = row.cohort_code?.toUpperCase() ?? context.selectedCohortCode;
+    const cohortCode =
+      row.cohort_code?.toUpperCase() ?? context.selectedCohortCode;
     const weekday = parseWeekday(row.day);
     const warnings: ImportWarning[] = [];
     const required: Array<[keyof CsvImportRow, string]> = [
@@ -544,11 +568,15 @@ export function createCandidatesFromMasterPdfText(
     const time = parseTimeRange(trimmed);
     if (time) currentTime = `${time.start}-${time.end}`;
     if (/break/i.test(trimmed)) {
-      candidates.push(ignoredCandidate(trimmed, "BREAK_ROW_IGNORED", sourcePage, index + 1));
+      candidates.push(
+        ignoredCandidate(trimmed, "BREAK_ROW_IGNORED", sourcePage, index + 1),
+      );
       continue;
     }
     if (/lunch/i.test(trimmed)) {
-      candidates.push(ignoredCandidate(trimmed, "LUNCH_ROW_IGNORED", sourcePage, index + 1));
+      candidates.push(
+        ignoredCandidate(trimmed, "LUNCH_ROW_IGNORED", sourcePage, index + 1),
+      );
       continue;
     }
 
@@ -629,11 +657,14 @@ function ignoredCandidate(
 }
 
 export function groupCandidatesByCohort(candidates: ImportCandidate[]) {
-  return candidates.reduce<Record<string, ImportCandidate[]>>((groups, candidate) => {
-    const key = candidate.cohortCodeRaw ?? "unassigned";
-    groups[key] = [...(groups[key] ?? []), candidate];
-    return groups;
-  }, {});
+  return candidates.reduce<Record<string, ImportCandidate[]>>(
+    (groups, candidate) => {
+      const key = candidate.cohortCodeRaw ?? "unassigned";
+      groups[key] = [...(groups[key] ?? []), candidate];
+      return groups;
+    },
+    {},
+  );
 }
 
 export function summarizeCohortCandidates(candidates: ImportCandidate[]) {
@@ -641,9 +672,15 @@ export function summarizeCohortCandidates(candidates: ImportCandidate[]) {
     ([cohortCode, cohortCandidates]) => ({
       cohortCode,
       candidates: cohortCandidates.length,
-      valid: cohortCandidates.filter((candidate) => candidate.reviewStatus === "valid").length,
-      warnings: cohortCandidates.filter((candidate) => candidate.reviewStatus === "warning").length,
-      invalid: cohortCandidates.filter((candidate) => candidate.reviewStatus === "invalid").length,
+      valid: cohortCandidates.filter(
+        (candidate) => candidate.reviewStatus === "valid",
+      ).length,
+      warnings: cohortCandidates.filter(
+        (candidate) => candidate.reviewStatus === "warning",
+      ).length,
+      invalid: cohortCandidates.filter(
+        (candidate) => candidate.reviewStatus === "invalid",
+      ).length,
     }),
   );
 }
@@ -659,7 +696,11 @@ export function detectSessionConflicts(candidates: ImportCandidate[]) {
   );
 
   for (let leftIndex = 0; leftIndex < sessions.length; leftIndex += 1) {
-    for (let rightIndex = leftIndex + 1; rightIndex < sessions.length; rightIndex += 1) {
+    for (
+      let rightIndex = leftIndex + 1;
+      rightIndex < sessions.length;
+      rightIndex += 1
+    ) {
       const left = sessions[leftIndex];
       const right = sessions[rightIndex];
       if (!overlaps(left, right)) continue;
@@ -708,7 +749,10 @@ function addConflict(
   candidateIdValue: string,
   warning: ImportWarning,
 ) {
-  warnings.set(candidateIdValue, [...(warnings.get(candidateIdValue) ?? []), warning]);
+  warnings.set(candidateIdValue, [
+    ...(warnings.get(candidateIdValue) ?? []),
+    warning,
+  ]);
 }
 
 function overlaps(left: ImportCandidate, right: ImportCandidate) {
@@ -773,7 +817,9 @@ export function buildStableSessionKey(candidate: ImportCandidate) {
 
 export function assertReadyForDraft(candidates: ImportCandidate[]) {
   const approved = candidates.filter(
-    (candidate) => candidate.reviewStatus === "valid" || candidate.reviewStatus === "warning",
+    (candidate) =>
+      candidate.reviewStatus === "valid" ||
+      candidate.reviewStatus === "warning",
   );
   const blocking = approved.flatMap((candidate) =>
     candidate.warnings.filter((warning) => warning.severity === "blocking"),
@@ -782,7 +828,9 @@ export function assertReadyForDraft(candidates: ImportCandidate[]) {
     throw new Error("No approved candidates are available for draft creation.");
   }
   if (blocking.length) {
-    throw new Error("Blocking warnings must be resolved before draft creation.");
+    throw new Error(
+      "Blocking warnings must be resolved before draft creation.",
+    );
   }
   return approved;
 }

@@ -6,13 +6,11 @@ export const legalConfig = {
   tradingName: import.meta.env.VITE_LEGAL_TRADING_NAME ?? BRAND.productName,
   operatorName: import.meta.env.VITE_LEGAL_OPERATOR_NAME ?? BRAND.operatorName,
   operatorAddress:
-    import.meta.env.VITE_LEGAL_OPERATOR_ADDRESS ??
-    "60B Mahombekombe Kariba",
+    import.meta.env.VITE_LEGAL_OPERATOR_ADDRESS ?? "60B Mahombekombe Kariba",
   country: import.meta.env.VITE_LEGAL_COUNTRY ?? "Zimbabwe",
   supportEmail:
     import.meta.env.VITE_LEGAL_SUPPORT_EMAIL ?? appConfig.supportEmail,
-  privacyEmail:
-    import.meta.env.VITE_LEGAL_PRIVACY_EMAIL ?? BRAND.privacyEmail,
+  privacyEmail: import.meta.env.VITE_LEGAL_PRIVACY_EMAIL ?? BRAND.privacyEmail,
   effectiveDate: import.meta.env.VITE_LEGAL_EFFECTIVE_DATE ?? "2026-08-05",
   lastUpdatedDate: import.meta.env.VITE_LEGAL_LAST_UPDATED_DATE ?? "2026-08-05",
   publicAppUrl: appConfig.baseUrl,

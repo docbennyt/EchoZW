@@ -56,10 +56,14 @@ describe("timetable import migration contract", () => {
   it("models traceability and forbids draft sources from becoming silent official records", () => {
     expect(migration).toContain("source_document_id");
     expect(migration).toContain("source_candidate_id");
-    expect(migration).toContain("source_is_draft boolean not null default false");
+    expect(migration).toContain(
+      "source_is_draft boolean not null default false",
+    );
     expect(migration).toContain(
       "verification_status in ('unverified', 'community_verified', 'official')",
     );
-    expect(migration).toContain("unique (timetable_version_id, stable_session_key)");
+    expect(migration).toContain(
+      "unique (timetable_version_id, stable_session_key)",
+    );
   });
 });

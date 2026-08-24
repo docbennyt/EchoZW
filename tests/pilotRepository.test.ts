@@ -44,7 +44,10 @@ function createDraftRecoveryClient() {
               return {
                 eq() {
                   return {
-                    maybeSingle: async () => ({ data: timetableRow, error: null }),
+                    maybeSingle: async () => ({
+                      data: timetableRow,
+                      error: null,
+                    }),
                   };
                 },
               };
@@ -58,7 +61,10 @@ function createDraftRecoveryClient() {
                 return {
                   select() {
                     return {
-                      single: async () => ({ data: { id: "tt-1" }, error: null }),
+                      single: async () => ({
+                        data: { id: "tt-1" },
+                        error: null,
+                      }),
                     };
                   },
                 };
@@ -105,7 +111,10 @@ function createDraftRecoveryClient() {
             return {
               select() {
                 return {
-                  single: async () => ({ data: { id: "version-1" }, error: null }),
+                  single: async () => ({
+                    data: { id: "version-1" },
+                    error: null,
+                  }),
                 };
               },
             };
@@ -122,7 +131,10 @@ function createDraftRecoveryClient() {
               };
             }
 
-            if (columns === "course_code, course_name, lecturer, venue, session_type") {
+            if (
+              columns ===
+              "course_code, course_name, lecturer, venue, session_type"
+            ) {
               return {
                 in: async () => ({ data: [], error: null }),
               };

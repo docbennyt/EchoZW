@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
 import type { PublicTimetable } from "../src/api/pilotTypes";
@@ -57,28 +63,40 @@ function installPublicTimetableFetchMock(options?: {
   subscriptionResponse?: Record<string, unknown>;
   timetable?: PublicTimetable;
 }) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-    if (url.includes("/api/public/timetables/")) {
-      return jsonResponse({ timetable: options?.timetable ?? publishedTimetable });
-    }
-    if (url === "/api/calendar/subscriptions" && init?.method === "POST") {
-      return jsonResponse(
-        options?.subscriptionResponse ?? {
-          subscriptionId: "sub-1",
-          provider: "webcal_subscription",
-          calendarName: "BTech Computer Science - August Semester 2026",
-          feedUrl: "https://calender.aido.co.zw/calendar/feed/private-token.ics",
-          appleSubscribeUrl: "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
-          downloadUrl: "https://calender.aido.co.zw/calendar/download/sub-1.ics",
-          warnings: [],
-          expiresAt: null,
-        },
-        201,
-      );
-    }
-    return new Response("{}", { status: 401 });
-  });
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : input instanceof URL
+            ? input.toString()
+            : input.url;
+      if (url.includes("/api/public/timetables/")) {
+        return jsonResponse({
+          timetable: options?.timetable ?? publishedTimetable,
+        });
+      }
+      if (url === "/api/calendar/subscriptions" && init?.method === "POST") {
+        return jsonResponse(
+          options?.subscriptionResponse ?? {
+            subscriptionId: "sub-1",
+            provider: "webcal_subscription",
+            calendarName: "BTech Computer Science - August Semester 2026",
+            feedUrl:
+              "https://calender.aido.co.zw/calendar/feed/private-token.ics",
+            appleSubscribeUrl:
+              "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
+            downloadUrl:
+              "https://calender.aido.co.zw/calendar/download/sub-1.ics",
+            warnings: [],
+            expiresAt: null,
+          },
+          201,
+        );
+      }
+      return new Response("{}", { status: 401 });
+    },
+  );
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
@@ -137,22 +155,30 @@ describe("public student flow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "BTech Computer Science" }),
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "BTech Computer Science",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByText("HIT")).toBeInTheDocument();
     expect(screen.getByText("Class 1.1")).toBeInTheDocument();
     expect(screen.getByText("August Semester 2026")).toBeInTheDocument();
     expect(screen.getByText(/Published by CalenderZW/i)).toBeInTheDocument();
     expect(screen.getByText(/Next class/i)).toBeInTheDocument();
-    expect(screen.getAllByText("Technopreneurship I").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Technopreneurship I").length).toBeGreaterThan(
+      0,
+    );
 
-    const cta = screen.getByRole("button", { name: /Add timetable to my calendar/i });
+    const cta = screen.getByRole("button", {
+      name: /Add timetable to my calendar/i,
+    });
     const scheduleHeading = screen.getByRole("heading", {
       level: 2,
       name: /Useful now, full week when you need it/i,
     });
     expect(
-      cta.compareDocumentPosition(scheduleHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+      cta.compareDocumentPosition(scheduleHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).not.toBe(0);
   });
 
@@ -162,28 +188,46 @@ describe("public student flow", () => {
     render(<App />);
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+      await screen.findByRole("button", {
+        name: /Add timetable to my calendar/i,
+      }),
     );
 
-    const dialog = screen.getByRole("dialog", { name: /When should we remind you/i });
-    expect(within(dialog).getByRole("radio", { name: /On time/i })).toBeChecked();
+    const dialog = screen.getByRole("dialog", {
+      name: /When should we remind you/i,
+    });
     expect(
-      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+      within(dialog).getByRole("radio", { name: /On time/i }),
+    ).toBeChecked();
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes("/api/calendar/subscriptions"),
+      ),
     ).toHaveLength(0);
 
-    expect(within(dialog).getByText(/How should we deliver it/i)).toBeInTheDocument();
     expect(
-      fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+      within(dialog).getByText(/How should we deliver it/i),
+    ).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes("/api/calendar/subscriptions"),
+      ),
     ).toHaveLength(0);
 
-    fireEvent.click(screen.getByRole("button", { name: /Subscribe using calendar URL/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Subscribe using calendar URL/i }),
+    );
 
     await waitFor(() =>
       expect(
-        fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+        fetchMock.mock.calls.filter(([url]) =>
+          String(url).includes("/api/calendar/subscriptions"),
+        ),
       ).toHaveLength(1),
     );
-    expect(await screen.findByText(/Your timetable is ready/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Your timetable is ready/i),
+    ).toBeInTheDocument();
   });
 
   it("closes the reminder dialog with Escape and restores focus to the calendar CTA", async () => {
@@ -191,14 +235,20 @@ describe("public student flow", () => {
     window.history.pushState({}, "", "/t/hit-ics-1-1-august-semester-2026");
     render(<App />);
 
-    const cta = await screen.findByRole("button", { name: /Add timetable to my calendar/i });
+    const cta = await screen.findByRole("button", {
+      name: /Add timetable to my calendar/i,
+    });
     fireEvent.click(cta);
-    expect(screen.getByRole("dialog", { name: /When should we remind you/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: /When should we remind you/i }),
+    ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
 
     await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: /When should we remind you/i })).toBeNull(),
+      expect(
+        screen.queryByRole("dialog", { name: /When should we remind you/i }),
+      ).toBeNull(),
     );
     expect(cta).toHaveFocus();
   });
@@ -214,15 +264,21 @@ describe("public student flow", () => {
     render(<App />);
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+      await screen.findByRole("button", {
+        name: /Add timetable to my calendar/i,
+      }),
     );
-    fireEvent.click(screen.getByRole("button", { name: /Subscribe using calendar URL/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Subscribe using calendar URL/i }),
+    );
 
     const successTitle = await screen.findByText(/Your timetable is ready/i);
     const successCard = successTitle.closest("section");
     expect(successCard).not.toBeNull();
     fireEvent.click(
-      within(successCard as HTMLElement).getByRole("button", { name: /Share with classmates/i }),
+      within(successCard as HTMLElement).getByRole("button", {
+        name: /Share with classmates/i,
+      }),
     );
 
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
@@ -242,12 +298,20 @@ describe("public student flow", () => {
     render(<App />);
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+      await screen.findByRole("button", {
+        name: /Add timetable to my calendar/i,
+      }),
     );
 
-    expect(screen.getByRole("button", { name: /Download calendar file/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Copy subscription link/i })).toBeInTheDocument();
-    expect(screen.getByText(/Google Calendar direct sync/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Download calendar file/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Copy subscription link/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Google Calendar direct sync/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Coming soon/i)).toBeInTheDocument();
     expect(screen.queryByText(/Subscribe in Google Calendar/i)).toBeNull();
   });
@@ -258,7 +322,9 @@ describe("public student flow", () => {
     render(<App />);
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /Add timetable to my calendar/i }),
+      await screen.findByRole("button", {
+        name: /Add timetable to my calendar/i,
+      }),
     );
 
     fireEvent.click(screen.getByRole("radio", { name: /Custom/i }));
@@ -268,11 +334,15 @@ describe("public student flow", () => {
     fireEvent.change(screen.getByLabelText(/Minutes before class/i), {
       target: { value: "15" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Subscribe using calendar URL/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Subscribe using calendar URL/i }),
+    );
 
     await waitFor(() =>
       expect(
-        fetchMock.mock.calls.filter(([url]) => String(url).includes("/api/calendar/subscriptions")),
+        fetchMock.mock.calls.filter(([url]) =>
+          String(url).includes("/api/calendar/subscriptions"),
+        ),
       ).toHaveLength(1),
     );
 
@@ -280,7 +350,9 @@ describe("public student flow", () => {
       String(url).includes("/api/calendar/subscriptions"),
     );
     expect(subscriptionCall).toBeDefined();
-    const body = JSON.parse(String((subscriptionCall?.[1] as RequestInit | undefined)?.body ?? "{}"));
+    const body = JSON.parse(
+      String((subscriptionCall?.[1] as RequestInit | undefined)?.body ?? "{}"),
+    );
     expect(body.reminderPreset).toBe("custom");
     expect(body.customReminderOffsets).toEqual([135]);
   });
@@ -343,7 +415,13 @@ describe("public student flow", () => {
   });
 
   it("uses one shared accessible header and mobile menu on public pages", () => {
-    for (const path of ["/", "/privacy", "/terms", "/data-deletion", "/support"]) {
+    for (const path of [
+      "/",
+      "/privacy",
+      "/terms",
+      "/data-deletion",
+      "/support",
+    ]) {
       window.history.pushState({}, "", path);
       const { unmount } = render(<App />);
       expect(
@@ -353,7 +431,9 @@ describe("public student flow", () => {
         document.querySelectorAll('[data-component="GlobalFooter"]'),
       ).toHaveLength(1);
       // Brand link renders as /#top on the homepage (SPA anchor), but / on sub-pages
-      const homeLinks = screen.getAllByRole("link", { name: /CalenderZW home/i });
+      const homeLinks = screen.getAllByRole("link", {
+        name: /CalenderZW home/i,
+      });
       expect(homeLinks.length).toBeGreaterThan(0);
       expect(
         screen.getByRole("button", { name: /Open navigation menu/i }),
@@ -404,9 +484,7 @@ describe("public student flow", () => {
     expect(
       screen.queryByRole("button", { name: /Add to Google Calendar/i }),
     ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: /Download .ics/i }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Download .ics/i })).toBeNull();
   });
 
   it("renders support and readiness pages without exposing secrets", () => {
@@ -449,8 +527,12 @@ describe("public student flow", () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^Email$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sign in/i })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /create account|sign up/i })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Sign in/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /create account|sign up/i }),
+    ).toBeNull();
     expect(screen.queryByText(/Lecture CRUD/i)).toBeNull();
     expect(
       screen.queryByRole("button", { name: /Publish new version/i }),
@@ -479,16 +561,17 @@ describe("public student flow", () => {
     });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            error: {
-              code: "FORBIDDEN",
-              message: "This account does not have administrator access.",
-            },
-          }),
-          { status: 403, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: "FORBIDDEN",
+                message: "This account does not have administrator access.",
+              },
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
 
@@ -516,15 +599,16 @@ describe("public student flow", () => {
     });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            authenticated: true,
-            admin: true,
-            user: { id: "admin-1", email: "admin@example.test" },
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              authenticated: true,
+              admin: true,
+              user: { id: "admin-1", email: "admin@example.test" },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
 
@@ -554,15 +638,16 @@ describe("public student flow", () => {
     });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            authenticated: true,
-            admin: true,
-            user: { id: "admin-1", email: "admin@example.test" },
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              authenticated: true,
+              admin: true,
+              user: { id: "admin-1", email: "admin@example.test" },
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
 
@@ -622,16 +707,17 @@ describe("public student flow", () => {
     });
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            error: {
-              code: "FORBIDDEN",
-              message: "This account does not have administrator access.",
-            },
-          }),
-          { status: 403, headers: { "Content-Type": "application/json" } },
-        ),
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: "FORBIDDEN",
+                message: "This account does not have administrator access.",
+              },
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } },
+          ),
       ),
     );
 

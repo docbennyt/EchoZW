@@ -5,7 +5,14 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default [
-  { ignores: ["dist", "dist-server"] },
+  {
+    ignores: [
+      "dist",
+      "dist-server",
+      "CalenderZW-VPS",
+      "CalenderZW_Antigravity_Landing_Pack",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

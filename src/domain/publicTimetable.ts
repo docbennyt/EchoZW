@@ -1,4 +1,7 @@
-import type { PublicTimetable, PublicTimetableSession } from "../api/pilotTypes.js";
+import type {
+  PublicTimetable,
+  PublicTimetableSession,
+} from "../api/pilotTypes.js";
 
 const weekdayLabels = [
   "Sunday",
@@ -49,7 +52,8 @@ function getOffsetMinutes(date: Date, timeZone: string) {
     timeZone,
     timeZoneName: "shortOffset",
   }).formatToParts(date);
-  const zoneName = parts.find((part) => part.type === "timeZoneName")?.value ?? "GMT";
+  const zoneName =
+    parts.find((part) => part.type === "timeZoneName")?.value ?? "GMT";
   const match = zoneName.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/i);
   if (!match) return 0;
   const sign = match[1] === "-" ? -1 : 1;
@@ -82,7 +86,9 @@ function getZonedParts(date: Date, timeZone: string) {
     day: "2-digit",
     weekday: "short",
   }).formatToParts(date);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
   return {
     dateKey: `${values.year}-${values.month}-${values.day}`,
     weekdayIndex: weekdayShortToIndex[values.weekday] ?? 0,
@@ -115,7 +121,10 @@ export function getInstitutionIdentity(timetable: PublicTimetable) {
   return timetable.institutionShortName?.trim() || timetable.institution;
 }
 
-export function formatPublishedTimestamp(value: string | null, timeZone: string) {
+export function formatPublishedTimestamp(
+  value: string | null,
+  timeZone: string,
+) {
   if (!value) return "Publication time unavailable";
   return new Intl.DateTimeFormat("en-ZW", {
     timeZone,
@@ -149,7 +158,11 @@ export function getUpcomingOccurrences(
   now = new Date(),
   limit = 3,
 ): UpcomingTimetableOccurrence[] {
-  if (!timetable.startsOn || !timetable.endsOn || timetable.startsOn > timetable.endsOn) {
+  if (
+    !timetable.startsOn ||
+    !timetable.endsOn ||
+    timetable.startsOn > timetable.endsOn
+  ) {
     return [];
   }
 
@@ -157,7 +170,11 @@ export function getUpcomingOccurrences(
   const today = getZonedParts(now, timeZone).dateKey;
   const occurrences: UpcomingTimetableOccurrence[] = [];
 
-  for (let dayOffset = 0; dayOffset <= 21 && occurrences.length < limit * 3; dayOffset += 1) {
+  for (
+    let dayOffset = 0;
+    dayOffset <= 21 && occurrences.length < limit * 3;
+    dayOffset += 1
+  ) {
     const dateKey = addDaysToYmd(today, dayOffset);
     if (dateKey < timetable.startsOn || dateKey > timetable.endsOn) continue;
 

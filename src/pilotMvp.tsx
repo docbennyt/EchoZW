@@ -190,7 +190,9 @@ function useAdminData(accessToken: string | null) {
   const [institutions, setInstitutions] = useState<AdminInstitution[]>([]);
   const [programmes, setProgrammes] = useState<AdminProgramme[]>([]);
   const [classGroups, setClassGroups] = useState<AdminClassGroup[]>([]);
-  const [academicPeriods, setAcademicPeriods] = useState<AdminAcademicPeriod[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<AdminAcademicPeriod[]>(
+    [],
+  );
   const [timetables, setTimetables] = useState<AdminTimetableSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -219,7 +221,9 @@ function useAdminData(accessToken: string | null) {
       setAcademicPeriods(academicPeriodResult.academicPeriods ?? []);
       setTimetables(timetableResult.timetables ?? []);
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Could not load admin data.");
+      setError(
+        error instanceof Error ? error.message : "Could not load admin data.",
+      );
     } finally {
       setLoading(false);
     }
@@ -262,7 +266,9 @@ function Surface({
           <h2>{title}</h2>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
-        {actions ? <div className="pilot-surface-actions">{actions}</div> : null}
+        {actions ? (
+          <div className="pilot-surface-actions">{actions}</div>
+        ) : null}
       </div>
       {children}
     </section>
@@ -310,7 +316,11 @@ function AdminNav({ path }: { path: string }) {
         <a
           key={item.href}
           href={item.href}
-          aria-current={path === item.href || path.startsWith(`${item.href}/`) ? "page" : undefined}
+          aria-current={
+            path === item.href || path.startsWith(`${item.href}/`)
+              ? "page"
+              : undefined
+          }
         >
           {item.label}
         </a>
@@ -352,15 +362,23 @@ function AdminOverview({
                   <span>{timetable.academicPeriodName}</span>
                 </div>
                 <div className="pilot-card-row">
-                  <span className={`status ${timetable.status === "Published" ? "confirmed" : ""}`}>
+                  <span
+                    className={`status ${timetable.status === "Published" ? "confirmed" : ""}`}
+                  >
                     {timetable.status}
                   </span>
-                  <small>Updated {formatTimestamp(timetable.lastUpdated)}</small>
+                  <small>
+                    Updated {formatTimestamp(timetable.lastUpdated)}
+                  </small>
                 </div>
                 <div className="pilot-card-actions">
                   <a href={`/admin/timetables/${timetable.id}`}>Open</a>
                   {timetable.currentPublishedVersionId ? (
-                    <a href={`/t/${timetable.publicSlug}`} target="_blank" rel="noreferrer">
+                    <a
+                      href={`/t/${timetable.publicSlug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Preview
                     </a>
                   ) : null}
@@ -371,7 +389,10 @@ function AdminOverview({
         )}
       </Surface>
 
-      <Surface title="Manage setup" subtitle="These records power every timetable you publish.">
+      <Surface
+        title="Manage setup"
+        subtitle="These records power every timetable you publish."
+      >
         <div className="pilot-manage-grid">
           <a href="/admin/institutions">Institutions</a>
           <a href="/admin/programmes">Programmes</a>
@@ -424,7 +445,9 @@ function InstitutionsPage({
       await refreshAll();
       setMessage(editing ? "Institution updated." : "Institution created.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save institution.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not save institution.",
+      );
     } finally {
       setSaving(false);
     }
@@ -432,7 +455,10 @@ function InstitutionsPage({
 
   return (
     <div className="pilot-stack">
-      <Surface title="Institutions" subtitle="Use one clear record per university or college.">
+      <Surface
+        title="Institutions"
+        subtitle="Use one clear record per university or college."
+      >
         <div className="pilot-card-list">
           {institutions.map((institution) => (
             <article key={institution.id} className="pilot-card">
@@ -470,28 +496,38 @@ function InstitutionsPage({
             <input
               required
               value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, name: event.target.value }))
+              }
             />
           </Field>
           <Field label="Short name">
             <input
               value={form.shortName}
               onChange={(event) =>
-                setForm((current) => ({ ...current, shortName: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  shortName: event.target.value,
+                }))
               }
             />
           </Field>
           <Field label="Slug">
             <input
               value={form.slug}
-              onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, slug: event.target.value }))
+              }
             />
           </Field>
           <Field label="Timezone">
             <input
               value={form.timezone}
               onChange={(event) =>
-                setForm((current) => ({ ...current, timezone: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  timezone: event.target.value,
+                }))
               }
             />
           </Field>
@@ -500,7 +536,10 @@ function InstitutionsPage({
               checked={form.active}
               type="checkbox"
               onChange={(event) =>
-                setForm((current) => ({ ...current, active: event.target.checked }))
+                setForm((current) => ({
+                  ...current,
+                  active: event.target.checked,
+                }))
               }
             />
             Active
@@ -509,7 +548,11 @@ function InstitutionsPage({
           <div className="pilot-inline-actions">
             <button className="primary" disabled={saving} type="submit">
               <Save size={18} />
-              {saving ? "Saving" : editing ? "Save changes" : "Create institution"}
+              {saving
+                ? "Saving"
+                : editing
+                  ? "Save changes"
+                  : "Create institution"}
             </button>
             {editing ? (
               <button
@@ -585,13 +628,18 @@ function ProgrammesPage({
       });
       setMessage(editing ? "Programme updated." : "Programme created.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save programme.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not save programme.",
+      );
     }
   }
 
   return (
     <div className="pilot-stack">
-      <Surface title="Programmes" subtitle="Every programme belongs to one institution.">
+      <Surface
+        title="Programmes"
+        subtitle="Every programme belongs to one institution."
+      >
         <div className="pilot-card-list">
           {programmes.map((programme) => (
             <article key={programme.id} className="pilot-card">
@@ -630,7 +678,10 @@ function ProgrammesPage({
               required
               value={selectedInstitutionId}
               onChange={(event) =>
-                setForm((current) => ({ ...current, institutionId: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  institutionId: event.target.value,
+                }))
               }
             >
               <option value="">Select institution</option>
@@ -645,19 +696,25 @@ function ProgrammesPage({
             <input
               required
               value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, name: event.target.value }))
+              }
             />
           </Field>
           <Field label="Code">
             <input
               value={form.code}
-              onChange={(event) => setForm((current) => ({ ...current, code: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, code: event.target.value }))
+              }
             />
           </Field>
           <Field label="Slug">
             <input
               value={form.slug}
-              onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, slug: event.target.value }))
+              }
             />
           </Field>
           <label className="pilot-checkbox">
@@ -665,7 +722,10 @@ function ProgrammesPage({
               checked={form.active}
               type="checkbox"
               onChange={(event) =>
-                setForm((current) => ({ ...current, active: event.target.checked }))
+                setForm((current) => ({
+                  ...current,
+                  active: event.target.checked,
+                }))
               }
             />
             Active
@@ -737,7 +797,9 @@ function ClassGroupsPage({
       });
       setMessage(editing ? "Class group updated." : "Class group created.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save class group.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not save class group.",
+      );
     }
   }
 
@@ -754,7 +816,10 @@ function ClassGroupsPage({
                 <strong>{classGroup.label}</strong>
                 <span>{classGroup.programmeName}</span>
                 <span>
-                  {classGroup.yearLevel ? `Year ${classGroup.yearLevel}` : "Year optional"} ·{" "}
+                  {classGroup.yearLevel
+                    ? `Year ${classGroup.yearLevel}`
+                    : "Year optional"}{" "}
+                  ·{" "}
                   {classGroup.semesterNumber
                     ? `Semester ${classGroup.semesterNumber}`
                     : "Semester optional"}
@@ -771,7 +836,8 @@ function ClassGroupsPage({
                       label: classGroup.label,
                       slug: classGroup.slug,
                       yearLevel: classGroup.yearLevel?.toString() ?? "",
-                      semesterNumber: classGroup.semesterNumber?.toString() ?? "",
+                      semesterNumber:
+                        classGroup.semesterNumber?.toString() ?? "",
                       groupName: classGroup.groupName ?? "",
                       active: classGroup.active,
                     });
@@ -792,7 +858,10 @@ function ClassGroupsPage({
               required
               value={selectedProgrammeId}
               onChange={(event) =>
-                setForm((current) => ({ ...current, programmeId: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  programmeId: event.target.value,
+                }))
               }
             >
               <option value="">Select programme</option>
@@ -807,14 +876,21 @@ function ClassGroupsPage({
             <input
               required
               value={form.label}
-              onChange={(event) => setForm((current) => ({ ...current, label: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  label: event.target.value,
+                }))
+              }
               placeholder="Part 2.1"
             />
           </Field>
           <Field label="Slug">
             <input
               value={form.slug}
-              onChange={(event) => setForm((current) => ({ ...current, slug: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, slug: event.target.value }))
+              }
             />
           </Field>
           <Field label="Year level">
@@ -822,7 +898,10 @@ function ClassGroupsPage({
               inputMode="numeric"
               value={form.yearLevel}
               onChange={(event) =>
-                setForm((current) => ({ ...current, yearLevel: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  yearLevel: event.target.value,
+                }))
               }
             />
           </Field>
@@ -831,7 +910,10 @@ function ClassGroupsPage({
               inputMode="numeric"
               value={form.semesterNumber}
               onChange={(event) =>
-                setForm((current) => ({ ...current, semesterNumber: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  semesterNumber: event.target.value,
+                }))
               }
             />
           </Field>
@@ -839,7 +921,10 @@ function ClassGroupsPage({
             <input
               value={form.groupName}
               onChange={(event) =>
-                setForm((current) => ({ ...current, groupName: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  groupName: event.target.value,
+                }))
               }
             />
           </Field>
@@ -848,7 +933,10 @@ function ClassGroupsPage({
               checked={form.active}
               type="checkbox"
               onChange={(event) =>
-                setForm((current) => ({ ...current, active: event.target.checked }))
+                setForm((current) => ({
+                  ...current,
+                  active: event.target.checked,
+                }))
               }
             />
             Active
@@ -911,15 +999,24 @@ function AcademicPeriodsPage({
         endsOn: "",
         active: true,
       });
-      setMessage(editing ? "Academic period updated." : "Academic period created.");
+      setMessage(
+        editing ? "Academic period updated." : "Academic period created.",
+      );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save academic period.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not save academic period.",
+      );
     }
   }
 
   return (
     <div className="pilot-stack">
-      <Surface title="Academic periods" subtitle="Use confirmed start and end dates.">
+      <Surface
+        title="Academic periods"
+        subtitle="Use confirmed start and end dates."
+      >
         <div className="pilot-card-list">
           {academicPeriods.map((period) => (
             <article key={period.id} className="pilot-card">
@@ -958,7 +1055,10 @@ function AcademicPeriodsPage({
               required
               value={selectedInstitutionId}
               onChange={(event) =>
-                setForm((current) => ({ ...current, institutionId: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  institutionId: event.target.value,
+                }))
               }
             >
               <option value="">Select institution</option>
@@ -973,7 +1073,9 @@ function AcademicPeriodsPage({
             <input
               required
               value={form.name}
-              onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, name: event.target.value }))
+              }
               placeholder="Semester 1, 2026"
             />
           </Field>
@@ -983,7 +1085,10 @@ function AcademicPeriodsPage({
               type="date"
               value={form.startsOn}
               onChange={(event) =>
-                setForm((current) => ({ ...current, startsOn: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  startsOn: event.target.value,
+                }))
               }
             />
           </Field>
@@ -993,7 +1098,10 @@ function AcademicPeriodsPage({
               type="date"
               value={form.endsOn}
               onChange={(event) =>
-                setForm((current) => ({ ...current, endsOn: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  endsOn: event.target.value,
+                }))
               }
             />
           </Field>
@@ -1002,7 +1110,10 @@ function AcademicPeriodsPage({
               checked={form.active}
               type="checkbox"
               onChange={(event) =>
-                setForm((current) => ({ ...current, active: event.target.checked }))
+                setForm((current) => ({
+                  ...current,
+                  active: event.target.checked,
+                }))
               }
             />
             Active
@@ -1043,13 +1154,17 @@ function TimetableSetupForm({
   const filteredProgrammes = programmes.filter(
     (programme) => programme.institutionId === selectedInstitutionId,
   );
-  const selectedProgrammeId = filteredProgrammes.some((item) => item.id === programmeId)
+  const selectedProgrammeId = filteredProgrammes.some(
+    (item) => item.id === programmeId,
+  )
     ? programmeId
     : filteredProgrammes[0]?.id || "";
   const filteredClassGroups = classGroups.filter(
     (classGroup) => classGroup.programmeId === selectedProgrammeId,
   );
-  const selectedClassGroupId = filteredClassGroups.some((item) => item.id === classGroupId)
+  const selectedClassGroupId = filteredClassGroups.some(
+    (item) => item.id === classGroupId,
+  )
     ? classGroupId
     : filteredClassGroups[0]?.id || "";
   const filteredAcademicPeriods = academicPeriods.filter(
@@ -1065,7 +1180,7 @@ function TimetableSetupForm({
     event.preventDefault();
     setMessage("");
     try {
-        const result = await createTimetable(accessToken, {
+      const result = await createTimetable(accessToken, {
         institutionId: selectedInstitutionId,
         programmeId: selectedProgrammeId,
         classGroupId: selectedClassGroupId,
@@ -1074,15 +1189,23 @@ function TimetableSetupForm({
       await refreshAll();
       navigate(`/admin/timetables/${result.timetable.timetable.id}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not create timetable.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not create timetable.",
+      );
     }
   }
 
   return (
-    <Surface title="New timetable" subtitle="Choose the academic setup, then enter weekly classes.">
+    <Surface
+      title="New timetable"
+      subtitle="Choose the academic setup, then enter weekly classes."
+    >
       <form className="pilot-form" onSubmit={submit}>
         <Field label="Institution">
-          <select value={selectedInstitutionId} onChange={(event) => setInstitutionId(event.target.value)}>
+          <select
+            value={selectedInstitutionId}
+            onChange={(event) => setInstitutionId(event.target.value)}
+          >
             <option value="">Select institution</option>
             {institutions.map((institution) => (
               <option key={institution.id} value={institution.id}>
@@ -1091,12 +1214,18 @@ function TimetableSetupForm({
             ))}
           </select>
         </Field>
-        <InlineCreateHint href="/admin/institutions" show={institutions.length === 0}>
+        <InlineCreateHint
+          href="/admin/institutions"
+          show={institutions.length === 0}
+        >
           Add an institution first.
         </InlineCreateHint>
 
         <Field label="Programme">
-          <select value={selectedProgrammeId} onChange={(event) => setProgrammeId(event.target.value)}>
+          <select
+            value={selectedProgrammeId}
+            onChange={(event) => setProgrammeId(event.target.value)}
+          >
             <option value="">Select programme</option>
             {filteredProgrammes.map((programme) => (
               <option key={programme.id} value={programme.id}>
@@ -1105,12 +1234,18 @@ function TimetableSetupForm({
             ))}
           </select>
         </Field>
-        <InlineCreateHint href="/admin/programmes" show={filteredProgrammes.length === 0}>
+        <InlineCreateHint
+          href="/admin/programmes"
+          show={filteredProgrammes.length === 0}
+        >
           Add a programme for this institution.
         </InlineCreateHint>
 
         <Field label="Class group">
-          <select value={selectedClassGroupId} onChange={(event) => setClassGroupId(event.target.value)}>
+          <select
+            value={selectedClassGroupId}
+            onChange={(event) => setClassGroupId(event.target.value)}
+          >
             <option value="">Select class group</option>
             {filteredClassGroups.map((classGroup) => (
               <option key={classGroup.id} value={classGroup.id}>
@@ -1119,7 +1254,10 @@ function TimetableSetupForm({
             ))}
           </select>
         </Field>
-        <InlineCreateHint href="/admin/class-groups" show={filteredClassGroups.length === 0}>
+        <InlineCreateHint
+          href="/admin/class-groups"
+          show={filteredClassGroups.length === 0}
+        >
           Add a class group for this programme.
         </InlineCreateHint>
 
@@ -1136,7 +1274,10 @@ function TimetableSetupForm({
             ))}
           </select>
         </Field>
-        <InlineCreateHint href="/admin/academic-periods" show={filteredAcademicPeriods.length === 0}>
+        <InlineCreateHint
+          href="/admin/academic-periods"
+          show={filteredAcademicPeriods.length === 0}
+        >
           Add an academic period for this institution.
         </InlineCreateHint>
 
@@ -1230,7 +1371,11 @@ function duplicateSignature(session: AdminTimetableSession) {
 
 function TimetableEditorSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading timetable" className="pilot-stack pilot-skeleton-shell">
+    <div
+      aria-busy="true"
+      aria-label="Loading timetable"
+      className="pilot-stack pilot-skeleton-shell"
+    >
       <section className="pilot-surface">
         <div className="pilot-surface-header">
           <div className="pilot-skeleton-copy">
@@ -1281,16 +1426,24 @@ export function TimetableEditorPage({
   const [loadError, setLoadError] = useState("");
   const [refreshNotice, setRefreshNotice] = useState("");
   const [message, setMessage] = useState("");
-  const [sessionForm, setSessionForm] = useState<SessionFormState>(emptySessionForm);
+  const [sessionForm, setSessionForm] =
+    useState<SessionFormState>(emptySessionForm);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishLink, setPublishLink] = useState("");
   const [savingSession, setSavingSession] = useState(false);
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(
+    null,
+  );
   const [dirtySessionForm, setDirtySessionForm] = useState(false);
-  const [activeCourseField, setActiveCourseField] = useState<"code" | "name" | null>(null);
-  const [saveFocusMode, setSaveFocusMode] = useState<"close" | "add-another">("close");
-  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(0);
+  const [activeCourseField, setActiveCourseField] = useState<
+    "code" | "name" | null
+  >(null);
+  const [saveFocusMode, setSaveFocusMode] = useState<"close" | "add-another">(
+    "close",
+  );
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] =
+    useState(0);
   const courseCodeInputRef = useRef<HTMLInputElement | null>(null);
   const savingSessionRef = useRef(false);
   const editorRef = useRef<AdminTimetableEditor | null>(null);
@@ -1331,7 +1484,8 @@ export function TimetableEditorPage({
           error instanceof Error ? error.message : "Could not load timetable.";
         if (background && editorRef.current) {
           setRefreshNotice(
-            refreshFailureMessage ?? "We couldn't refresh the timetable just now.",
+            refreshFailureMessage ??
+              "We couldn't refresh the timetable just now.",
           );
         } else {
           editorRef.current = null;
@@ -1355,7 +1509,10 @@ export function TimetableEditorPage({
     const timeoutId = window.setTimeout(() => {
       void loadEditor();
     }, 0);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+      latestEditorRequestRef.current += 1;
+    };
   }, [loadEditor]);
 
   useEffect(() => {
@@ -1401,7 +1558,8 @@ export function TimetableEditorPage({
     () =>
       courseMemory.find(
         (entry) =>
-          entry.courseCode.toLowerCase() === sessionForm.courseCode.trim().toLowerCase(),
+          entry.courseCode.toLowerCase() ===
+          sessionForm.courseCode.trim().toLowerCase(),
       ) ?? null,
     [courseMemory, sessionForm.courseCode],
   );
@@ -1427,7 +1585,8 @@ export function TimetableEditorPage({
     source?: AdminTimetableSession,
     trigger?: HTMLElement | null,
   ) {
-    returnFocusTargetRef.current = trigger ?? addButtonRefs.current[day] ?? null;
+    returnFocusTargetRef.current =
+      trigger ?? addButtonRefs.current[day] ?? null;
     setSessionForm({
       id: undefined,
       courseCode: source?.courseCode ?? "",
@@ -1446,7 +1605,10 @@ export function TimetableEditorPage({
     setSheetOpen(true);
   }
 
-  function openEditSession(session: AdminTimetableSession, trigger?: HTMLElement | null) {
+  function openEditSession(
+    session: AdminTimetableSession,
+    trigger?: HTMLElement | null,
+  ) {
     returnFocusTargetRef.current = trigger ?? null;
     setSessionForm({
       id: session.id,
@@ -1467,7 +1629,8 @@ export function TimetableEditorPage({
   }
 
   function updateSessionForm(
-    update: SessionFormState | ((current: SessionFormState) => SessionFormState),
+    update:
+      SessionFormState | ((current: SessionFormState) => SessionFormState),
   ) {
     setSessionForm(update);
     setDirtySessionForm(true);
@@ -1530,9 +1693,8 @@ export function TimetableEditorPage({
   async function saveSession(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editor || savingSessionRef.current) return;
-    const submitter = (event.nativeEvent as SubmitEvent).submitter as
-      | HTMLButtonElement
-      | null;
+    const submitter = (event.nativeEvent as SubmitEvent)
+      .submitter as HTMLButtonElement | null;
     const mode = submitter?.value === "add-another" ? "add-another" : "close";
     savingSessionRef.current = true;
     setSavingSession(true);
@@ -1552,8 +1714,17 @@ export function TimetableEditorPage({
     };
     try {
       const result = sessionForm.id
-        ? await updateTimetableSession(accessToken, editor.timetable.id, sessionForm.id, payload)
-        : await createTimetableSession(accessToken, editor.timetable.id, payload);
+        ? await updateTimetableSession(
+            accessToken,
+            editor.timetable.id,
+            sessionForm.id,
+            payload,
+          )
+        : await createTimetableSession(
+            accessToken,
+            editor.timetable.id,
+            payload,
+          );
       const savedSession = result.session;
       setEditor((current) => {
         if (!current) return current;
@@ -1565,14 +1736,17 @@ export function TimetableEditorPage({
         return {
           ...current,
           sessions: sortAdminSessions(nextSessions),
-          courseMemory: mergeCourseSuggestion(current.courseMemory, savedSession),
+          courseMemory: mergeCourseSuggestion(
+            current.courseMemory,
+            savedSession,
+          ),
         };
       });
       setDirtySessionForm(false);
-      const focusTarget =
-        sessionForm.id
-          ? returnFocusTargetRef.current
-          : addButtonRefs.current[Number(sessionForm.weekday)] ?? returnFocusTargetRef.current;
+      const focusTarget = sessionForm.id
+        ? returnFocusTargetRef.current
+        : (addButtonRefs.current[Number(sessionForm.weekday)] ??
+          returnFocusTargetRef.current);
       if (mode === "add-another") {
         setSessionForm({
           ...emptySessionForm,
@@ -1586,13 +1760,20 @@ export function TimetableEditorPage({
         setHighlightedSuggestionIndex(0);
         window.setTimeout(() => focusTarget?.focus(), 0);
       }
-      setMessage(`✓ ${savedSession.courseCode} ${sessionForm.id ? "updated" : "added"}`);
+      setMessage(
+        `✓ ${savedSession.courseCode} ${sessionForm.id ? "updated" : "added"}`,
+      );
       void loadEditor({
         background: true,
-        refreshFailureMessage: "Saved. We couldn't refresh the timetable just now.",
+        refreshFailureMessage:
+          "Saved. We couldn't refresh the timetable just now.",
       });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not save class session.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not save class session.",
+      );
     } finally {
       savingSessionRef.current = false;
       setSavingSession(false);
@@ -1605,7 +1786,11 @@ export function TimetableEditorPage({
     setDeletingSessionId(sessionId);
     try {
       setRefreshNotice("");
-      const result = await deleteTimetableSession(accessToken, editor.timetable.id, sessionId);
+      const result = await deleteTimetableSession(
+        accessToken,
+        editor.timetable.id,
+        sessionId,
+      );
       setEditor((current) =>
         current
           ? {
@@ -1619,10 +1804,13 @@ export function TimetableEditorPage({
       setMessage("Class deleted.");
       void loadEditor({
         background: true,
-        refreshFailureMessage: "Deleted. We couldn't refresh the timetable just now.",
+        refreshFailureMessage:
+          "Deleted. We couldn't refresh the timetable just now.",
       });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not delete class.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not delete class.",
+      );
     } finally {
       setDeletingSessionId(null);
     }
@@ -1640,10 +1828,13 @@ export function TimetableEditorPage({
       setMessage("Timetable published.");
       void loadEditor({
         background: true,
-        refreshFailureMessage: "Published. We couldn't refresh the timetable just now.",
+        refreshFailureMessage:
+          "Published. We couldn't refresh the timetable just now.",
       });
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not publish timetable.");
+      setMessage(
+        error instanceof Error ? error.message : "Could not publish timetable.",
+      );
     } finally {
       setPublishing(false);
     }
@@ -1668,14 +1859,25 @@ export function TimetableEditorPage({
         subtitle={`${editor.timetable.programmeName} · ${editor.timetable.academicPeriodName}`}
         actions={
           <div className="pilot-inline-actions">
-            {isRefreshing ? <span className="pilot-sync-note">Syncing...</span> : null}
+            {isRefreshing ? (
+              <span className="pilot-sync-note">Syncing...</span>
+            ) : null}
             {editor.timetable.currentPublishedVersionId ? (
-              <a className="secondary" href={`/t/${editor.timetable.publicSlug}`} target="_blank" rel="noreferrer">
+              <a
+                className="secondary"
+                href={`/t/${editor.timetable.publicSlug}`}
+                target="_blank"
+                rel="noreferrer"
+              >
                 <ExternalLink size={18} />
                 Preview
               </a>
             ) : null}
-            <button className="primary" onClick={publishCurrent} disabled={publishing}>
+            <button
+              className="primary"
+              onClick={publishCurrent}
+              disabled={publishing}
+            >
               <CalendarCheck size={18} />
               {publishing ? "Publishing" : "Publish"}
             </button>
@@ -1708,7 +1910,11 @@ export function TimetableEditorPage({
               <span>{publishLink}</span>
             </div>
             <div className="pilot-inline-actions">
-              <button className="secondary" type="button" onClick={() => void copyText(publishLink)}>
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => void copyText(publishLink)}
+              >
                 <Copy size={18} />
                 Copy class link
               </button>
@@ -1717,7 +1923,10 @@ export function TimetableEditorPage({
                 type="button"
                 onClick={() => {
                   if (navigator.share) {
-                    void navigator.share({ title: "CalenderZW timetable", url: publishLink });
+                    void navigator.share({
+                      title: "CalenderZW timetable",
+                      url: publishLink,
+                    });
                   } else {
                     void copyText(publishLink);
                   }
@@ -1731,10 +1940,14 @@ export function TimetableEditorPage({
         ) : null}
       </Surface>
 
-      <Surface title="Weekly classes" subtitle="Add, edit, duplicate, and review recurring sessions by day.">
+      <Surface
+        title="Weekly classes"
+        subtitle="Add, edit, duplicate, and review recurring sessions by day."
+      >
         {duplicateSessionIds.size > 0 ? (
           <p className="content-notice">
-            Possible duplicate draft sessions detected. Review the highlighted cards and remove confirmed accidental duplicates.
+            Possible duplicate draft sessions detected. Review the highlighted
+            cards and remove confirmed accidental duplicates.
           </p>
         ) : null}
         <div className="pilot-day-stack">
@@ -1750,14 +1963,18 @@ export function TimetableEditorPage({
                     ref={(element) => {
                       addButtonRefs.current[day] = element;
                     }}
-                    onClick={(event) => openNewSession(day, undefined, event.currentTarget)}
+                    onClick={(event) =>
+                      openNewSession(day, undefined, event.currentTarget)
+                    }
                   >
                     <Plus size={18} />
                     Add {weekdayLabels[day]} class
                   </button>
                 </div>
                 {sessions.length === 0 ? (
-                  <p className="pilot-muted">No classes added for {weekdayLabels[day].toLowerCase()} yet.</p>
+                  <p className="pilot-muted">
+                    No classes added for {weekdayLabels[day].toLowerCase()} yet.
+                  </p>
                 ) : (
                   <div className="pilot-session-list">
                     {sessions.map((session) => (
@@ -1767,7 +1984,8 @@ export function TimetableEditorPage({
                       >
                         <div>
                           <strong>
-                            {session.startTime.slice(0, 5)}-{session.endTime.slice(0, 5)}
+                            {session.startTime.slice(0, 5)}-
+                            {session.endTime.slice(0, 5)}
                           </strong>
                           <h4>{session.courseCode}</h4>
                           <p>{session.courseName}</p>
@@ -1780,7 +1998,9 @@ export function TimetableEditorPage({
                           <button
                             className="secondary"
                             type="button"
-                            onClick={(event) => openEditSession(session, event.currentTarget)}
+                            onClick={(event) =>
+                              openEditSession(session, event.currentTarget)
+                            }
                           >
                             Edit
                           </button>
@@ -1800,7 +2020,9 @@ export function TimetableEditorPage({
                             onClick={() => void removeSession(session.id)}
                           >
                             <Trash2 size={16} />
-                            {deletingSessionId === session.id ? "Deleting..." : "Delete"}
+                            {deletingSessionId === session.id
+                              ? "Deleting..."
+                              : "Delete"}
                           </button>
                         </div>
                       </article>
@@ -1822,7 +2044,9 @@ export function TimetableEditorPage({
             role="dialog"
           >
             <div className="sheet-header">
-              <h2 id="session-sheet-title">{sessionForm.id ? "Edit class" : "Add class"}</h2>
+              <h2 id="session-sheet-title">
+                {sessionForm.id ? "Edit class" : "Add class"}
+              </h2>
               <button
                 aria-label="Close class editor"
                 className="icon-button"
@@ -1837,12 +2061,15 @@ export function TimetableEditorPage({
               <Field label="Course code">
                 <input
                   aria-activedescendant={
-                    activeCourseField === "code" && codeSuggestions[highlightedSuggestionIndex]
+                    activeCourseField === "code" &&
+                    codeSuggestions[highlightedSuggestionIndex]
                       ? `course-code-suggestion-${highlightedSuggestionIndex}`
                       : undefined
                   }
                   aria-controls="course-code-suggestions"
-                  aria-expanded={activeCourseField === "code" && codeSuggestions.length > 0}
+                  aria-expanded={
+                    activeCourseField === "code" && codeSuggestions.length > 0
+                  }
                   autoComplete="off"
                   ref={courseCodeInputRef}
                   required
@@ -1851,16 +2078,25 @@ export function TimetableEditorPage({
                     setActiveCourseField("code");
                     setHighlightedSuggestionIndex(0);
                   }}
-                  onKeyDown={(event) => handleSuggestionKeyDown(event, codeSuggestions)}
+                  onKeyDown={(event) =>
+                    handleSuggestionKeyDown(event, codeSuggestions)
+                  }
                   onChange={(event) => {
                     setActiveCourseField("code");
                     setHighlightedSuggestionIndex(0);
-                    updateSessionForm((current) => ({ ...current, courseCode: event.target.value }));
+                    updateSessionForm((current) => ({
+                      ...current,
+                      courseCode: event.target.value,
+                    }));
                   }}
                 />
               </Field>
               {activeCourseField === "code" && codeSuggestions.length > 0 ? (
-                <div className="suggestion-list" id="course-code-suggestions" role="listbox">
+                <div
+                  className="suggestion-list"
+                  id="course-code-suggestions"
+                  role="listbox"
+                >
                   {codeSuggestions.map((suggestion, index) => (
                     <button
                       id={`course-code-suggestion-${index}`}
@@ -1883,12 +2119,15 @@ export function TimetableEditorPage({
               <Field label="Course name">
                 <input
                   aria-activedescendant={
-                    activeCourseField === "name" && nameSuggestions[highlightedSuggestionIndex]
+                    activeCourseField === "name" &&
+                    nameSuggestions[highlightedSuggestionIndex]
                       ? `course-name-suggestion-${highlightedSuggestionIndex}`
                       : undefined
                   }
                   aria-controls="course-name-suggestions"
-                  aria-expanded={activeCourseField === "name" && nameSuggestions.length > 0}
+                  aria-expanded={
+                    activeCourseField === "name" && nameSuggestions.length > 0
+                  }
                   autoComplete="off"
                   required
                   value={sessionForm.courseName}
@@ -1896,16 +2135,25 @@ export function TimetableEditorPage({
                     setActiveCourseField("name");
                     setHighlightedSuggestionIndex(0);
                   }}
-                  onKeyDown={(event) => handleSuggestionKeyDown(event, nameSuggestions)}
+                  onKeyDown={(event) =>
+                    handleSuggestionKeyDown(event, nameSuggestions)
+                  }
                   onChange={(event) => {
                     setActiveCourseField("name");
                     setHighlightedSuggestionIndex(0);
-                    updateSessionForm((current) => ({ ...current, courseName: event.target.value }));
+                    updateSessionForm((current) => ({
+                      ...current,
+                      courseName: event.target.value,
+                    }));
                   }}
                 />
               </Field>
               {activeCourseField === "name" && nameSuggestions.length > 0 ? (
-                <div className="suggestion-list" id="course-name-suggestions" role="listbox">
+                <div
+                  className="suggestion-list"
+                  id="course-name-suggestions"
+                  role="listbox"
+                >
                   {nameSuggestions.map((suggestion, index) => (
                     <button
                       id={`course-name-suggestion-${index}`}
@@ -1929,7 +2177,10 @@ export function TimetableEditorPage({
                 <select
                   value={sessionForm.weekday}
                   onChange={(event) =>
-                    updateSessionForm((current) => ({ ...current, weekday: event.target.value }))
+                    updateSessionForm((current) => ({
+                      ...current,
+                      weekday: event.target.value,
+                    }))
                   }
                 >
                   {weekdayLabels.slice(1).map((label, index) => (
@@ -1946,7 +2197,10 @@ export function TimetableEditorPage({
                     type="time"
                     value={sessionForm.startTime}
                     onChange={(event) =>
-                      updateSessionForm((current) => ({ ...current, startTime: event.target.value }))
+                      updateSessionForm((current) => ({
+                        ...current,
+                        startTime: event.target.value,
+                      }))
                     }
                   />
                 </Field>
@@ -1956,7 +2210,10 @@ export function TimetableEditorPage({
                     type="time"
                     value={sessionForm.endTime}
                     onChange={(event) =>
-                      updateSessionForm((current) => ({ ...current, endTime: event.target.value }))
+                      updateSessionForm((current) => ({
+                        ...current,
+                        endTime: event.target.value,
+                      }))
                     }
                   />
                 </Field>
@@ -1965,7 +2222,10 @@ export function TimetableEditorPage({
                 <input
                   value={sessionForm.venue}
                   onChange={(event) =>
-                    updateSessionForm((current) => ({ ...current, venue: event.target.value }))
+                    updateSessionForm((current) => ({
+                      ...current,
+                      venue: event.target.value,
+                    }))
                   }
                 />
               </Field>
@@ -1989,7 +2249,10 @@ export function TimetableEditorPage({
                 <input
                   value={sessionForm.lecturer}
                   onChange={(event) =>
-                    updateSessionForm((current) => ({ ...current, lecturer: event.target.value }))
+                    updateSessionForm((current) => ({
+                      ...current,
+                      lecturer: event.target.value,
+                    }))
                   }
                 />
               </Field>
@@ -1997,7 +2260,10 @@ export function TimetableEditorPage({
                 <input
                   value={sessionForm.sessionType}
                   onChange={(event) =>
-                    updateSessionForm((current) => ({ ...current, sessionType: event.target.value }))
+                    updateSessionForm((current) => ({
+                      ...current,
+                      sessionType: event.target.value,
+                    }))
                   }
                 />
               </Field>
@@ -2006,18 +2272,38 @@ export function TimetableEditorPage({
                   rows={3}
                   value={sessionForm.notes}
                   onChange={(event) =>
-                    updateSessionForm((current) => ({ ...current, notes: event.target.value }))
+                    updateSessionForm((current) => ({
+                      ...current,
+                      notes: event.target.value,
+                    }))
                   }
                 />
               </Field>
               <div className="session-sheet-actions">
-                <button className="secondary" disabled={savingSession} type="button" onClick={closeSessionSheet}>
+                <button
+                  className="secondary"
+                  disabled={savingSession}
+                  type="button"
+                  onClick={closeSessionSheet}
+                >
                   Cancel
                 </button>
-                <button className="secondary" disabled={savingSession} type="submit" value="add-another">
-                  {savingSession && saveFocusMode === "add-another" ? "Saving..." : "Save & add another"}
+                <button
+                  className="secondary"
+                  disabled={savingSession}
+                  type="submit"
+                  value="add-another"
+                >
+                  {savingSession && saveFocusMode === "add-another"
+                    ? "Saving..."
+                    : "Save & add another"}
                 </button>
-                <button className="primary" disabled={savingSession} type="submit" value="save">
+                <button
+                  className="primary"
+                  disabled={savingSession}
+                  type="submit"
+                  value="save"
+                >
                   <Save size={18} />
                   {savingSession && saveFocusMode === "close"
                     ? "Saving..."
@@ -2055,7 +2341,9 @@ function TimetablesPage({
 }) {
   const match = path.match(/^\/admin\/timetables\/(.+)$/);
   if (match) {
-    return <TimetableEditorPage accessToken={accessToken} timetableId={match[1]} />;
+    return (
+      <TimetableEditorPage accessToken={accessToken} timetableId={match[1]} />
+    );
   }
 
   return (
@@ -2070,7 +2358,10 @@ function TimetablesPage({
       />
       <Surface title="Recent timetables">
         {timetables.length === 0 ? (
-          <EmptyPanel title="Nothing created yet" text="New timetables will appear here after setup." />
+          <EmptyPanel
+            title="Nothing created yet"
+            text="New timetables will appear here after setup."
+          />
         ) : (
           <div className="pilot-card-list">
             {timetables.map((timetable) => (
@@ -2083,7 +2374,11 @@ function TimetablesPage({
                 <div className="pilot-card-actions">
                   <a href={`/admin/timetables/${timetable.id}`}>Open</a>
                   {timetable.currentPublishedVersionId ? (
-                    <a href={`/t/${timetable.publicSlug}`} target="_blank" rel="noreferrer">
+                    <a
+                      href={`/t/${timetable.publicSlug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Preview
                     </a>
                   ) : null}
@@ -2098,7 +2393,10 @@ function TimetablesPage({
 }
 
 export function AdminMvpScreen({ path }: { path: string }) {
-  useDocumentMetadata("CalenderZW Admin", "Create and publish class timetables.");
+  useDocumentMetadata(
+    "CalenderZW Admin",
+    "Create and publish class timetables.",
+  );
   const { status, user, accessToken, signOut } = useAdminAccess();
   const data = useAdminData(accessToken);
 
@@ -2146,7 +2444,11 @@ export function AdminMvpScreen({ path }: { path: string }) {
           <h1>CalenderZW Admin</h1>
           <p>{user?.email ?? "Administrator session active"}</p>
         </div>
-        <button className="secondary" type="button" onClick={() => void signOut()}>
+        <button
+          className="secondary"
+          type="button"
+          onClick={() => void signOut()}
+        >
           <LogOut size={18} />
           Sign out
         </button>
@@ -2157,8 +2459,12 @@ export function AdminMvpScreen({ path }: { path: string }) {
         </aside>
         <div className="pilot-admin-content">
           {data.error ? <p className="content-notice">{data.error}</p> : null}
-          {data.loading && data.timetables.length === 0 ? <p>Loading admin data...</p> : null}
-          {path === "/admin" ? <AdminOverview timetables={data.timetables} /> : null}
+          {data.loading && data.timetables.length === 0 ? (
+            <p>Loading admin data...</p>
+          ) : null}
+          {path === "/admin" ? (
+            <AdminOverview timetables={data.timetables} />
+          ) : null}
           {path === "/admin/institutions" ? (
             <InstitutionsPage
               accessToken={accessToken}
@@ -2209,7 +2515,10 @@ export function AdminMvpScreen({ path }: { path: string }) {
 }
 
 export function FinderMvpScreen() {
-  useDocumentMetadata("Find timetable | CalenderZW", "Open a published class timetable.");
+  useDocumentMetadata(
+    "Find timetable | CalenderZW",
+    "Open a published class timetable.",
+  );
   const [slug, setSlug] = useState("");
 
   return (
@@ -2218,7 +2527,10 @@ export function FinderMvpScreen() {
         <Link2 size={28} />
         <div>
           <h1>Open a published timetable</h1>
-          <p>Paste the shared class link or enter the final slug from the timetable URL.</p>
+          <p>
+            Paste the shared class link or enter the final slug from the
+            timetable URL.
+          </p>
         </div>
       </section>
       <Surface title="Shared class link">
@@ -2259,11 +2571,18 @@ export function FinderMvpScreen() {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
-  useDocumentMetadata("Timetable | CalenderZW", "View a published timetable and add it to your calendar.");
+  useDocumentMetadata(
+    "Timetable | CalenderZW",
+    "View a published timetable and add it to your calendar.",
+  );
   const [timetable, setTimetable] = useState<PublicTimetable | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [message, setMessage] = useState("");
-  const [reminderPreset, setReminderPreset] = useState<"prepared" | "on_time" | "commuter" | "custom">("prepared");
+  const [reminderPreset, setReminderPreset] = useState<
+    "prepared" | "on_time" | "commuter" | "custom"
+  >("prepared");
   const [customReminders, setCustomReminders] = useState("30");
   const [calendarResult, setCalendarResult] = useState<{
     downloadUrl?: string;
@@ -2282,7 +2601,11 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
         setStatus("ready");
       } catch (error) {
         if (!active) return;
-        setMessage(error instanceof Error ? error.message : "This timetable is unavailable.");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "This timetable is unavailable.",
+        );
         setStatus("error");
       }
     }
@@ -2303,7 +2626,9 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
     return map;
   }, [timetable]);
 
-  async function prepareCalendar(provider: "ics_download" | "webcal_subscription" | "apple_subscription") {
+  async function prepareCalendar(
+    provider: "ics_download" | "webcal_subscription" | "apple_subscription",
+  ) {
     if (!timetable) return;
     try {
       const customReminderOffsets =
@@ -2330,7 +2655,11 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
         window.location.href = result.downloadUrl;
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not prepare the calendar.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not prepare the calendar.",
+      );
     }
   }
 
@@ -2378,7 +2707,10 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
       </section>
       <div className="pilot-public-layout">
         <div className="pilot-stack">
-          <Surface title="Class timetable" subtitle={`${timetable.institution} · Published version ${timetable.versionNumber}`}>
+          <Surface
+            title="Class timetable"
+            subtitle={`${timetable.institution} · Published version ${timetable.versionNumber}`}
+          >
             <div className="pilot-day-stack">
               {Array.from({ length: 7 }, (_, index) => index + 1).map((day) => {
                 const sessions = groupedSessions.get(day) ?? [];
@@ -2390,10 +2722,14 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
                     </div>
                     <div className="pilot-session-list">
                       {sessions.map((session) => (
-                        <article key={session.stableSessionKey} className="pilot-session-card">
+                        <article
+                          key={session.stableSessionKey}
+                          className="pilot-session-card"
+                        >
                           <div>
                             <strong>
-                              {session.startTime.slice(0, 5)}-{session.endTime.slice(0, 5)}
+                              {session.startTime.slice(0, 5)}-
+                              {session.endTime.slice(0, 5)}
                             </strong>
                             <h4>{session.courseCode}</h4>
                             <p>{session.courseName}</p>
@@ -2419,7 +2755,8 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
               value={reminderPreset}
               onChange={(event) =>
                 setReminderPreset(
-                  event.target.value as "prepared" | "on_time" | "commuter" | "custom",
+                  event.target.value as
+                    "prepared" | "on_time" | "commuter" | "custom",
                 )
               }
             >
@@ -2438,7 +2775,11 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
               />
             </Field>
           ) : null}
-          <button className="primary" type="button" onClick={() => void prepareCalendar("ics_download")}>
+          <button
+            className="primary"
+            type="button"
+            onClick={() => void prepareCalendar("ics_download")}
+          >
             <Download size={18} />
             Download calendar file
           </button>
@@ -2480,9 +2821,7 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
 
 type ReminderPresetId = "prepared" | "on_time" | "commuter" | "custom";
 type PublicCalendarProvider =
-  | "apple_subscription"
-  | "webcal_subscription"
-  | "ics_download";
+  "apple_subscription" | "webcal_subscription" | "ics_download";
 
 type PublicCalendarResult = {
   provider: PublicCalendarProvider;
@@ -2522,10 +2861,15 @@ const reminderChoices: Array<{
 ];
 
 function getReminderChoice(preset: ReminderPresetId) {
-  return reminderChoices.find((choice) => choice.id === preset) ?? reminderChoices[0];
+  return (
+    reminderChoices.find((choice) => choice.id === preset) ?? reminderChoices[0]
+  );
 }
 
-function buildTimetableSharePayload(timetable: PublicTimetable, publicUrl: string) {
+function buildTimetableSharePayload(
+  timetable: PublicTimetable,
+  publicUrl: string,
+) {
   return {
     title: `${formatClassGroupLabel(timetable.classGroup)} timetable`,
     text:
@@ -2565,7 +2909,8 @@ function getCalendarMethods(device: DeviceKind) {
       {
         provider: "webcal_subscription" as const,
         title: "Copy subscription link",
-        description: "Google Calendar URL subscriptions may require desktop setup.",
+        description:
+          "Google Calendar URL subscriptions may require desktop setup.",
       },
       {
         provider: null,
@@ -2579,7 +2924,8 @@ function getCalendarMethods(device: DeviceKind) {
     {
       provider: "webcal_subscription" as const,
       title: "Subscribe using calendar URL",
-      description: "Use this in Apple Calendar, Outlook, or another calendar app.",
+      description:
+        "Use this in Apple Calendar, Outlook, or another calendar app.",
       accent: "Keeps future updates",
     },
     {
@@ -2614,18 +2960,26 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
   const metadata = timetable ? buildPublicTimetableMetadata(timetable) : null;
   useDocumentMetadata(
     metadata ? `${metadata.title} | CalenderZW` : "Timetable | CalenderZW",
-    metadata?.description ?? "View a published timetable and add it to your calendar.",
+    metadata?.description ??
+      "View a published timetable and add it to your calendar.",
   );
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [viewMode, setViewMode] = useState<"upcoming" | "week">("upcoming");
-  const [reminderPreset, setReminderPreset] = useState<ReminderPresetId>("on_time");
+  const [reminderPreset, setReminderPreset] =
+    useState<ReminderPresetId>("on_time");
   const [customReminderHours, setCustomReminderHours] = useState("1");
   const [customReminderMinutes, setCustomReminderMinutes] = useState("30");
-  const [calendarResult, setCalendarResult] = useState<PublicCalendarResult | null>(null);
+  const [calendarResult, setCalendarResult] =
+    useState<PublicCalendarResult | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [calendarError, setCalendarError] = useState("");
-  const [calendarBusy, setCalendarBusy] = useState<PublicCalendarProvider | null>(null);
-  const [shareState, setShareState] = useState<"idle" | "copied" | "manual">("idle");
+  const [calendarBusy, setCalendarBusy] =
+    useState<PublicCalendarProvider | null>(null);
+  const [shareState, setShareState] = useState<"idle" | "copied" | "manual">(
+    "idle",
+  );
   const [stickyVisible, setStickyVisible] = useState(false);
   const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
@@ -2666,7 +3020,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
   }, [timetable]);
 
   const deviceKind = useMemo(
-    () => detectDevice(window.navigator.userAgent, window.navigator.maxTouchPoints ?? 0),
+    () =>
+      detectDevice(
+        window.navigator.userAgent,
+        window.navigator.maxTouchPoints ?? 0,
+      ),
     [],
   );
   const upcoming = useMemo(
@@ -2674,8 +3032,9 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
     [timetable],
   );
   const nextClass = upcoming[0] ?? null;
-  const publicUrl =
-    timetable ? `${window.location.origin}/t/${encodeURIComponent(timetable.publicSlug)}` : "";
+  const publicUrl = timetable
+    ? `${window.location.origin}/t/${encodeURIComponent(timetable.publicSlug)}`
+    : "";
   const reminderChoice = getReminderChoice(reminderPreset);
   const calendarMethods = getCalendarMethods(deviceKind);
   const customReminderOffset = useMemo(() => {
@@ -2690,9 +3049,10 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
   useEffect(() => {
     if (!sheetOpen) return;
     const triggerElement = triggerButtonRef.current;
-    lastFocusedRef.current = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : triggerElement;
+    lastFocusedRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : triggerElement;
     const frame = window.requestAnimationFrame(() => {
       getFocusableElements(sheetRef.current)[0]?.focus();
     });
@@ -2729,7 +3089,9 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
 
   useEffect(() => {
     function onScroll() {
-      setStickyVisible(window.innerWidth <= 820 && window.scrollY > 260 && !sheetOpen);
+      setStickyVisible(
+        window.innerWidth <= 820 && window.scrollY > 260 && !sheetOpen,
+      );
     }
 
     onScroll();
@@ -2873,19 +3235,25 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
           <span className="public-kicker">Your timetable is ready</span>
           <h2>{timetable.programme}</h2>
           <p>
-            {formatClassGroupLabel(timetable.classGroup)} - {timetable.sessions.length} weekly classes
+            {formatClassGroupLabel(timetable.classGroup)} -{" "}
+            {timetable.sessions.length} weekly classes
           </p>
           <p>{reminderChoice.title} reminders</p>
         </div>
         <div className="public-success-actions">
-          {calendarResult.provider === "apple_subscription" && calendarResult.appleSubscribeUrl ? (
+          {calendarResult.provider === "apple_subscription" &&
+          calendarResult.appleSubscribeUrl ? (
             <a className="primary" href={calendarResult.appleSubscribeUrl}>
               <Link2 size={18} />
               {primaryLabel}
             </a>
           ) : null}
           {calendarResult.provider === "webcal_subscription" ? (
-            <button className="primary" type="button" onClick={() => void copySubscriptionLink()}>
+            <button
+              className="primary"
+              type="button"
+              onClick={() => void copySubscriptionLink()}
+            >
               <Copy size={18} />
               {primaryLabel}
             </button>
@@ -2904,7 +3272,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
               {primaryLabel}
             </button>
           ) : null}
-          <button className="secondary light" type="button" onClick={() => void handleShare()}>
+          <button
+            className="secondary light"
+            type="button"
+            onClick={() => void handleShare()}
+          >
             <Share2 size={18} />
             Share with classmates
           </button>
@@ -2931,7 +3303,10 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
         <article className="public-next-card">
           <span className="public-kicker">Next class</span>
           <strong>No upcoming classes</strong>
-          <p>This timetable has no more classes inside the current academic period.</p>
+          <p>
+            This timetable has no more classes inside the current academic
+            period.
+          </p>
         </article>
       );
     }
@@ -2940,7 +3315,8 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
       <article className="public-next-card">
         <span className="public-kicker">Next class</span>
         <strong>
-          {nextClass.relativeLabel} - {formatOccurrenceTime(nextClass.start, timetable.institutionTimezone)}
+          {nextClass.relativeLabel} -{" "}
+          {formatOccurrenceTime(nextClass.start, timetable.institutionTimezone)}
         </strong>
         <h2>{nextClass.session.courseName}</h2>
         <p>{nextClass.session.courseCode}</p>
@@ -2988,9 +3364,13 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
       <section className="public-hero">
         <div className="public-hero-copy">
           <span className="public-kicker">CalenderZW public timetable</span>
-          <p className="public-institution">{getInstitutionIdentity(timetable)}</p>
+          <p className="public-institution">
+            {getInstitutionIdentity(timetable)}
+          </p>
           <h1>{timetable.programme}</h1>
-          <p className="public-class-group">{formatClassGroupLabel(timetable.classGroup)}</p>
+          <p className="public-class-group">
+            {formatClassGroupLabel(timetable.classGroup)}
+          </p>
           <p className="public-academic-period">{timetable.academicPeriod}</p>
           <div className="public-trust-row">
             <span className="public-trust-badge">
@@ -2998,7 +3378,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
               Published by CalenderZW
             </span>
             <span className="public-trust-meta">
-              Updated {formatPublishedTimestamp(timetable.publishedAt, timetable.institutionTimezone)}
+              Updated{" "}
+              {formatPublishedTimestamp(
+                timetable.publishedAt,
+                timetable.institutionTimezone,
+              )}
             </span>
           </div>
           {renderNextClassCard()}
@@ -3012,15 +3396,25 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
               <CalendarCheck size={18} />
               Add timetable to my calendar
             </button>
-            <p className="public-helper">No account needed. Choose your reminders.</p>
-            <button className="secondary light" type="button" onClick={() => void handleShare()}>
+            <p className="public-helper">
+              No account needed. Choose your reminders.
+            </p>
+            <button
+              className="secondary light"
+              type="button"
+              onClick={() => void handleShare()}
+            >
               <Share2 size={18} />
               Share with classmates
             </button>
-            {shareState === "copied" ? <p className="pilot-muted">Copied</p> : null}
+            {shareState === "copied" ? (
+              <p className="pilot-muted">Copied</p>
+            ) : null}
             {shareState === "manual" ? (
               <div className="share-fallback-panel">
-                <label htmlFor="public-timetable-url">Public timetable link</label>
+                <label htmlFor="public-timetable-url">
+                  Public timetable link
+                </label>
                 <input
                   id="public-timetable-url"
                   readOnly
@@ -3041,7 +3435,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
               <span className="public-kicker">Browse timetable</span>
               <h2>Useful now, full week when you need it</h2>
             </div>
-            <div className="public-view-toggle" role="tablist" aria-label="Timetable view">
+            <div
+              className="public-view-toggle"
+              role="tablist"
+              aria-label="Timetable view"
+            >
               <button
                 type="button"
                 role="tab"
@@ -3067,17 +3465,26 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
             upcoming.length > 0 ? (
               <div className="public-upcoming-list">
                 {upcoming.map((item) => (
-                  <article key={`${item.session.stableSessionKey}-${item.dateKey}`} className="public-upcoming-card">
+                  <article
+                    key={`${item.session.stableSessionKey}-${item.dateKey}`}
+                    className="public-upcoming-card"
+                  >
                     <div>
                       <span className="public-upcoming-time">
-                        {item.relativeLabel} - {formatOccurrenceTime(item.start, timetable.institutionTimezone)}
+                        {item.relativeLabel} -{" "}
+                        {formatOccurrenceTime(
+                          item.start,
+                          timetable.institutionTimezone,
+                        )}
                       </span>
                       <h3>{item.session.courseName}</h3>
                       <p>{item.session.courseCode}</p>
                     </div>
                     <span className="public-upcoming-meta">
                       {item.session.venue || "Venue not set"}
-                      {item.session.lecturer ? ` - ${item.session.lecturer}` : ""}
+                      {item.session.lecturer
+                        ? ` - ${item.session.lecturer}`
+                        : ""}
                     </span>
                   </article>
                 ))}
@@ -3100,12 +3507,20 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
                     </div>
                     <div className="public-session-list">
                       {sessions.map((session) => (
-                        <article key={session.stableSessionKey} className="public-session-card">
-                          <strong>{session.startTime.slice(0, 5)} - {session.endTime.slice(0, 5)}</strong>
+                        <article
+                          key={session.stableSessionKey}
+                          className="public-session-card"
+                        >
+                          <strong>
+                            {session.startTime.slice(0, 5)} -{" "}
+                            {session.endTime.slice(0, 5)}
+                          </strong>
                           <h4>{session.courseCode}</h4>
                           <p>{session.courseName}</p>
                           <span>{session.venue || "Venue not set"}</span>
-                          <small>{session.lecturer || "Lecturer not set"}</small>
+                          <small>
+                            {session.lecturer || "Lecturer not set"}
+                          </small>
                         </article>
                       ))}
                     </div>
@@ -3127,7 +3542,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
       ) : null}
 
       {sheetOpen ? (
-        <div className="sheet-backdrop" role="presentation" onClick={closeSheet}>
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={closeSheet}
+        >
           <div
             ref={sheetRef}
             className="sync-sheet compact public-calendar-sheet"
@@ -3138,15 +3557,26 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
           >
             <div className="sheet-header">
               <div>
-                <span className="public-kicker">Add timetable to my calendar</span>
+                <span className="public-kicker">
+                  Add timetable to my calendar
+                </span>
                 <h2 id="calendar-sheet-title">When should we remind you?</h2>
               </div>
-              <button className="icon-button" type="button" aria-label="Close dialog" onClick={closeSheet}>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Close dialog"
+                onClick={closeSheet}
+              >
                 x
               </button>
             </div>
             <div className="step-panel">
-              <div className="public-reminder-list" role="radiogroup" aria-label="Reminder choices">
+              <div
+                className="public-reminder-list"
+                role="radiogroup"
+                aria-label="Reminder choices"
+              >
                 {reminderChoices.map((choice) => (
                   <label
                     key={choice.id}
@@ -3178,7 +3608,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
                       <input
                         inputMode="numeric"
                         value={customReminderHours}
-                        onChange={(event) => setCustomReminderHours(event.target.value.replace(/[^\d]/g, ""))}
+                        onChange={(event) =>
+                          setCustomReminderHours(
+                            event.target.value.replace(/[^\d]/g, ""),
+                          )
+                        }
                         placeholder="1"
                       />
                     </Field>
@@ -3186,12 +3620,18 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
                       <input
                         inputMode="numeric"
                         value={customReminderMinutes}
-                        onChange={(event) => setCustomReminderMinutes(event.target.value.replace(/[^\d]/g, ""))}
+                        onChange={(event) =>
+                          setCustomReminderMinutes(
+                            event.target.value.replace(/[^\d]/g, ""),
+                          )
+                        }
                         placeholder="30"
                       />
                     </Field>
                   </div>
-                  <p className="public-helper">Set a quick reminder using hours and minutes before class.</p>
+                  <p className="public-helper">
+                    Set a quick reminder using hours and minutes before class.
+                  </p>
                 </div>
               ) : null}
 
@@ -3199,8 +3639,12 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
               <div className="public-sheet-section">
                 <div>
                   <span className="public-kicker">Delivery method</span>
-                  <h3 className="public-sheet-heading">How should we deliver it?</h3>
-                  <p className="public-helper">{reminderChoice.title} reminders selected.</p>
+                  <h3 className="public-sheet-heading">
+                    How should we deliver it?
+                  </h3>
+                  <p className="public-helper">
+                    {reminderChoice.title} reminders selected.
+                  </p>
                 </div>
                 <div className="provider-list">
                   {calendarMethods.map((method) =>
@@ -3210,7 +3654,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
                         className="provider-card"
                         type="button"
                         onClick={() => void prepareCalendar(method.provider)}
-                        disabled={calendarBusy !== null || (reminderPreset === "custom" && customReminderOffset === null)}
+                        disabled={
+                          calendarBusy !== null ||
+                          (reminderPreset === "custom" &&
+                            customReminderOffset === null)
+                        }
                       >
                         <span className="provider-icon">
                           {method.provider === "ics_download" ? (
@@ -3226,7 +3674,11 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
                         {method.accent ? <em>{method.accent}</em> : null}
                       </button>
                     ) : (
-                      <div key={method.title} className="provider-card" aria-disabled="true">
+                      <div
+                        key={method.title}
+                        className="provider-card"
+                        aria-disabled="true"
+                      >
                         <span className="provider-icon">
                           <CalendarCheck size={18} />
                         </span>
@@ -3241,17 +3693,27 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
               </div>
 
               {calendarError ? (
-                <div className="public-inline-error" role="status" aria-live="polite">
+                <div
+                  className="public-inline-error"
+                  role="status"
+                  aria-live="polite"
+                >
                   <p>{calendarError}</p>
                   {calendarBusy === null ? (
-                    <button className="secondary light" type="button" onClick={() => setCalendarError("")}>
+                    <button
+                      className="secondary light"
+                      type="button"
+                      onClick={() => setCalendarError("")}
+                    >
                       Try again
                     </button>
                   ) : null}
                 </div>
               ) : null}
               {reminderPreset === "custom" && customReminderOffset === null ? (
-                <p className="public-helper">Enter at least 1 minute before class to continue.</p>
+                <p className="public-helper">
+                  Enter at least 1 minute before class to continue.
+                </p>
               ) : null}
             </div>
           </div>
