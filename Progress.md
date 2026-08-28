@@ -57,19 +57,21 @@ Apps Script structured read: VERIFIED
 - 1 document tab
 - 5 tables
 - document text successfully read
-  Remote migration: BLOCKED
-- Supabase project `jkafqgdymfiiklmozvhi` does not yet expose `public.timetable_sources`
+  Remote relay source record: VERIFIED
+- Supabase project `jkafqgdymfiiklmozvhi` exposes the configured `hit-sist-master-sem1-2026` source
   Production endpoint: BLOCKED
 - live `POST https://calender.aido.co.zw/api/internal/source-snapshots` returned `405 Method not allowed.`
 - live `GET https://calender.aido.co.zw/api/internal/source-snapshots` returned the SPA shell
   Source snapshot API: VERIFIED locally / BLOCKED for deployed relay verification
   HMAC authentication: VERIFIED locally / BLOCKED for deployed relay verification
   Server-side hash verification: VERIFIED locally / BLOCKED for deployed relay verification
-  Snapshot persistence: VERIFIED in additive schema and repository logic / BLOCKED pending remote migration application
-  Remote snapshot: BLOCKED
-  Tab count = 1: VERIFIED from protected source read / BLOCKED for remote snapshot proof
-  Table count = 5: VERIFIED from protected source read / BLOCKED for remote snapshot proof
-  Idempotent retry: VERIFIED in repository and API tests / BLOCKED pending remote database verification
+  Snapshot persistence: VERIFIED in additive schema, repository logic, and the accepted remote snapshot record
+  Remote snapshot: VERIFIED for accepted snapshot `b3220bfc-92c2-4e94-80da-435f4798da54`
+  Protected-source parser: VERIFIED locally and against the accepted live snapshot
+  Parse-run persistence: VERIFIED remotely on first parser execution
+  Tab count = 1: VERIFIED from protected source read and live parse
+  Table count = 5: VERIFIED from protected source read and live parse
+  Idempotent parser rerun: VERIFIED remotely on second parser execution (`persistence: existing`)
   Same-hash retry: BLOCKED
   Reset-checkpoint retry: BLOCKED
   Real Apps Script forceSync: BLOCKED
@@ -612,3 +614,40 @@ None for Phase 2.
   - Scroll/context preservation: BLOCKED pending live browser verification on lower weekday sections.
   - Slow-network UX: BLOCKED pending throttled live browser verification.
   - Real rapid-entry test: BLOCKED pending live three-class manual entry confirmation against Supabase.
+
+### 2026-08-28 DR-23 live parser persistence verification
+
+- current issue: `DR-23` - HIT Master Timetable Deterministic Parser.
+- current hypothesis: the old DR-23 blockers were stale and the current branch head might already satisfy the parser contract if verified against the real Supabase snapshot and parse-run persistence boundary.
+- work completed:
+  - recovered the active branch, repo state, PR state, CI state, and repository-local Finn loop skills;
+  - verified the current `DR-23-hit-master-timetable-deterministic-parser` head locally with `npm run lint`, `npm run format:check`, `npm run test`, and `npm run build`;
+  - confirmed GitHub Actions `CI` succeeded for head `987e1e6887bba230b66a8484ae020bf9877815ad` on both `push` and `pull_request` runs dated 2026-08-24;
+  - confirmed the repository already contains the canonical JSON equality fix for parse-run idempotency in `server/sourceSnapshotParseRepository.ts` plus regression coverage in `tests/sourceSnapshotParseRepository.test.ts`;
+  - ran `npm run source:parse -- hit-sist-master-sem1-2026` against the real Supabase project and observed remote parse-run creation;
+  - reran the same parser command against the same snapshot and observed remote idempotent reuse with `persistence: existing`.
+- files changed: `Progress.md`.
+- tests run:
+  - `npm run lint`
+  - `npm run format:check`
+  - `npm run test`
+  - `npm run build`
+  - `npm run source:parse -- hit-sist-master-sem1-2026` twice against the real Supabase project
+- results:
+  - local verification: green
+  - GitHub `CI` on head `987e1e6887bba230b66a8484ae020bf9877815ad`: green
+  - live source key: `hit-sist-master-sem1-2026`
+  - accepted snapshot: `b3220bfc-92c2-4e94-80da-435f4798da54`
+  - parse result counts: `169` candidates, `158` valid, `11` warning, `0` invalid, `2` ignored, `noSilentLoss: true`
+  - first live persistence result: parse run `900f51ae-1aaa-4324-b984-937039a27d4b`, `persistence: created`
+  - second live persistence result: same parse run `900f51ae-1aaa-4324-b984-937039a27d4b`, `persistence: existing`
+- known risks:
+  - this remains a high-risk change because it touches source-sync parsing and a Supabase migration boundary, so `needs-human-review` should remain until a fresh independent review is done;
+  - deployed relay endpoint verification is still not proven because the live production endpoint previously returned `405` for the protected source-snapshot route.
+- blockers:
+  - no repository-side blocker remains for DR-23's parser persistence contract;
+  - workflow state is stale: PR `#1` and Linear DR-23 still describe the older blocked condition.
+- next action:
+  - update the DR-23 PR evidence to match the current head and live parse-run proof;
+  - request a fresh `czw-review` pass on the current head;
+  - after human review, return to the next highest-priority reliability issue rather than DR-37.
