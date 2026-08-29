@@ -7,67 +7,195 @@
     <meta name="apple-mobile-web-app-title" content="CalenderZW" />
     <meta
       name="description"
-      content="How CalenderZW collects, uses, stores, shares, and protects timetable, calendar, and Google Calendar connection data."
+      content="How CalenderZW collects, uses, stores, shares, and protects timetable, calendar, and Google Calendar data."
     />
     <link rel="canonical" href="https://calender.aido.co.zw/privacy" />
     <meta property="og:site_name" content="CalenderZW" />
     <meta property="og:title" content="Privacy Policy | CalenderZW" />
     <meta property="og:url" content="https://calender.aido.co.zw/privacy" />
     <title>Privacy Policy | CalenderZW</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .legal-document h1 {
+        font-size: clamp(32px, 5vw, 48px);
+        font-weight: 690;
+        letter-spacing: -0.05em;
+        margin-bottom: 20px;
+        line-height: 1.1;
+      }
+      .legal-document h2 {
+        font-size: 20px;
+        font-weight: 650;
+        margin-top: 32px;
+        margin-bottom: 12px;
+      }
+      .legal-document p {
+        color: var(--muted);
+        line-height: 1.6;
+        margin-bottom: 16px;
+      }
+      .legal-document a {
+        color: var(--forest);
+        font-weight: 750;
+        text-decoration: underline;
+      }
+    </style>
   </head>
   <body>
-    <header data-component="GlobalHeader">
-      <a href="/" aria-label="CalenderZW home">CalenderZW</a>
-      <p>Operated by aiDo</p>
-      <nav aria-label="Main navigation">
-        <a href="/find">Find timetable</a>
-        <a href="/#how-it-works">How it works</a>
-        <a href="/#calendar-options">Calendar options</a>
-        <a href="/privacy" aria-current="page">Privacy</a>
-        <a href="/admin">Admin</a>
-      </nav>
-    </header>
-    <main>
-      <p>CalenderZW legal</p>
-      <h1>Privacy Policy</h1>
-      <p>
-        CalenderZW helps students find a verified class timetable, choose useful
-        reminders, and add lectures to Google Calendar, Apple Calendar, Outlook,
-        or another calendar application.
-      </p>
-      <p id="google-calendar-data">
-        Google Calendar connection is optional. When you choose direct Google
-        Calendar synchronisation, CalenderZW asks for permission to create and
-        manage a separate timetable calendar created by CalenderZW. It does not
-        read or modify events in your existing personal calendars.
-      </p>
-      <p>
-        Operated by aiDo. Contact
-        <a href="mailto:support@aido.co.zw">support@aido.co.zw</a> or
-        <a href="mailto:privacy@aido.co.zw">privacy@aido.co.zw</a>.
-      </p>
-    </main>
-    <footer data-component="GlobalFooter">
-      <p>CalenderZW. Student timetable and calendar synchronisation.</p>
-      <nav aria-label="Product">
-        <a href="/find">Find timetable</a
-        ><a href="/#how-it-works">How it works</a
-        ><a href="/#calendar-options">Calendar options</a
-        ><a href="/find">Published timetables</a>
-      </nav>
-      <nav aria-label="Support">
-        <a href="/support">Help centre</a
-        ><a href="/support">Report a timetable problem</a
-        ><a href="/support">Google Calendar setup</a
-        ><a href="/support">Apple Calendar setup</a>
-      </nav>
-      <nav aria-label="Legal">
-        <a href="/privacy">Privacy Policy</a
-        ><a href="/terms">Terms of Service</a
-        ><a href="/data-deletion">Data deletion</a
-        ><a href="/support">Contact</a>
-      </nav>
-      <p>&copy; 2026 aiDo. Operated by aiDo.</p>
-    </footer>
+    <div class="app-shell">
+      <header class="site-header scrolled" id="header" data-component="GlobalHeader">
+        <nav class="nav shell" aria-label="Primary navigation">
+          <a href="/" class="brand" aria-label="CalenderZW home">
+            <span class="mark" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span class="brand-name">Calender<span>ZW</span></span>
+          </a>
+          <div class="nav-links" style="display: flex;">
+            <a href="/#how">How it works</a>
+            <a href="/#options">Calendar options</a>
+            <a href="/#reps">For class reps</a>
+            <a href="/#trust">Privacy & trust</a>
+          </div>
+          <a
+            class="btn btn-primary nav-cta"
+            href="/find"
+            data-event="find_timetable_clicked"
+            >Find timetable <span aria-hidden="true">→</span></a
+          >
+        </nav>
+      </header>
+
+      <main class="legal-page">
+        <aside class="legal-toc" aria-label="Privacy sections">
+          <a href="#scope">Scope</a>
+          <a href="#information-we-collect">Information we collect</a>
+          <a href="#google-calendar-data">Google Calendar data</a>
+          <a href="#calendar-subscriptions">Calendar subscriptions</a>
+          <a href="#use-and-sharing">Use and sharing</a>
+          <a href="#retention-and-security">Retention and security</a>
+          <a href="#your-choices">Your choices</a>
+          <a href="#contact">Contact</a>
+        </aside>
+        
+        <article class="legal-document">
+          <p class="eyebrow" style="color: var(--forest); font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em;">CalenderZW legal</p>
+          <h1>Privacy Policy</h1>
+          
+          <p class="summary-card" style="background: var(--sage-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px; color: var(--forest); font-weight: 500; line-height: 1.6;">
+            CalenderZW uses the minimum access needed to create and maintain a separate Google Calendar containing the timetable you choose. We do not read or modify your existing personal calendars.
+          </p>
+
+          <section id="scope">
+            <h2>1. Scope</h2>
+            <p>
+              This policy applies to timetable pages, administrator tools, calendar feeds, Google Calendar connection, downloads, and support services for CalenderZW, operated by aiDo from https://calender.aido.co.zw.
+            </p>
+          </section>
+          
+          <section id="information-we-collect">
+            <h2>2. Information we collect</h2>
+            <p>
+              We may collect account email, institution and class selections, timetable submissions, reminder preferences, reports, support messages, and payment references when paid services are enabled. Students can view public timetables and download public calendar files without an account.
+            </p>
+          </section>
+          
+          <section id="google-calendar-data">
+            <h2>3. Google Calendar data</h2>
+            <p>
+              When you choose direct Google Calendar synchronisation, CalenderZW requests permission to create and manage a separate secondary calendar created by CalenderZW. We use it only to add selected timetable events, reminders, updates, cancellations, failure recovery, and disconnect actions for that app-created calendar.
+            </p>
+            <p>
+              CalenderZW does not use this permission to read, analyse, modify, or delete events from your pre-existing personal calendars. CalenderZW's use and transfer of information received from Google APIs adheres to the Google API Services User Data Policy, including the Limited Use requirements.
+            </p>
+          </section>
+
+          <section id="calendar-subscriptions">
+            <h2>4. Calendar subscriptions</h2>
+            <p>
+              Private feed URLs are unguessable capability links. Anyone possessing one may be able to view the timetable feed. CalenderZW stores hashed feed tokens and lets feed records be revoked.
+            </p>
+          </section>
+
+          <section id="use-and-sharing">
+            <h2>5. Use and sharing</h2>
+            <p>
+              We use data to show timetables, create calendar files/subscriptions, apply reminders, process reports, provide support, protect the service, diagnose failures, comply with law, and improve user-facing features. We do not sell personal information or Google user data, and we do not use Google user data for targeted advertising.
+            </p>
+          </section>
+
+          <section id="retention-and-security">
+            <h2>6. Retention and security</h2>
+            <p>
+              Public timetable audit history may be retained for accuracy. Google tokens are retained only while direct sync remains connected. Current safeguards include HTTPS requirements, server-side credentials, secure SameSite cookies, hashed private-feed tokens, API validation, and dependency checks.
+            </p>
+          </section>
+
+          <section id="your-choices">
+            <h2>7. Your choices</h2>
+            <p>
+              You can avoid Google Calendar, use .ics instead, disconnect Google, revoke Google access in your Google Account, request feed revocation, change reminders by creating a new subscription, and request deletion at <a href="/data-deletion">/data-deletion</a>.
+            </p>
+          </section>
+
+          <section id="contact">
+            <h2>8. Contact</h2>
+            <p>
+              aiDo<br />
+              Kariba, Zimbabwe<br />
+              Support: <a href="mailto:support@aido.co.zw">support@aido.co.zw</a><br />
+              Privacy: <a href="mailto:privacy@aido.co.zw">privacy@aido.co.zw</a>
+            </p>
+          </section>
+        </article>
+      </main>
+
+      <footer class="site-footer" data-component="GlobalFooter">
+        <div class="shell">
+          <div class="footer-grid">
+            <div class="footer-brand">
+              <a href="/" class="brand" aria-label="CalenderZW home">
+                <span class="mark" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i>
+                </span>
+                <span class="brand-name">Calender<span>ZW</span></span>
+              </a>
+              <p>
+                Operated by aiDo.<br />Built in Zimbabwe for university life.
+              </p>
+            </div>
+            <div class="footer-links">
+              <nav class="footer-col" aria-label="Product">
+                <b>Product</b>
+                <a href="/find">Find timetable</a>
+                <a href="/#how">How it works</a>
+                <a href="/#options">Calendar options</a>
+              </nav>
+              <nav class="footer-col" aria-label="Support">
+                <b>For students</b>
+                <a href="/#reps">Class reps</a>
+                <a href="/support">Support</a>
+              </nav>
+              <nav class="footer-col" aria-label="Legal">
+                <b>Legal</b>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Service</a>
+                <a href="/data-deletion">Data deletion</a>
+              </nav>
+            </div>
+          </div>
+          <div class="copyright">
+            <span>© 2026 CalenderZW. Operated by aiDo.</span>
+            <span>CalenderZW is the product. aiDo is the operator.</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>

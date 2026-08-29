@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Download,
   GraduationCap,
@@ -273,8 +273,212 @@ function FinderPage() {
   );
 }
 
+function useLandingAnimations() {
+  const didSetup = useRef(false);
+
+  useEffect(() => {
+    if (didSetup.current) return;
+    didSetup.current = true;
+
+    const prefersReducedMotion =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        : false;
+
+    // 1. Scroll header: add .scrolled class to site-header on scroll
+    const header = document.querySelector<HTMLElement>(".site-header");
+    let onScroll: (() => void) | undefined;
+    if (header) {
+      onScroll = () => {
+        header.classList.toggle("scrolled", window.scrollY > 12);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
+
+    // 2. Hero word stagger — wrap each word in the h1 for sequential fade-up
+    if (!prefersReducedMotion) {
+      const h1 = document.querySelector<HTMLElement>(".hero h1");
+      if (h1) {
+        const rawText = h1.innerHTML;
+        // Split on spaces but preserve <span> tags
+        const words = rawText.split(/(\s+)/);
+        h1.innerHTML = words
+          .map((token) => {
+            if (/^\s+$/.test(token)) return token;
+            return `<span class="hero-word-wrap"><span class="hero-word-inner">${token}</span></span>`;
+          })
+          .join("");
+        const wordInners =
+          h1.querySelectorAll<HTMLElement>(".hero-word-inner");
+        wordInners.forEach((el, i) => {
+          setTimeout(
+            () => {
+              el.classList.add("word-visible");
+            },
+            80 + i * 80,
+          );
+        });
+      }
+
+      // 3. Product scene slide-in from right
+      const scene =
+        document.querySelector<HTMLElement>(".product-scene");
+      if (scene) {
+        scene.classList.add("will-reveal");
+        setTimeout(() => {
+          scene.classList.add("scene-visible");
+        }, 320);
+      }
+    }
+
+    // 4. IntersectionObserver for .reveal-group and per-item staggered reveals
+    if (typeof IntersectionObserver === "undefined") {
+      return () => {
+        if (onScroll) {
+          window.removeEventListener("scroll", onScroll);
+        }
+      };
+    }
+
+    const threshold = 0.15;
+
+    // Generic reveal groups
+    const revealGroups =
+      document.querySelectorAll<HTMLElement>(".reveal-group");
+    revealGroups.forEach((el) => {
+      if (!prefersReducedMotion) {
+        el.classList.add("will-reveal");
+      }
+    });
+
+    const groupObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            groupObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold, rootMargin: "0px 0px -40px 0px" },
+    );
+    revealGroups.forEach((el) => groupObserver.observe(el));
+
+    // Step buttons — stagger left-to-right
+    const stepButtons =
+      document.querySelectorAll<HTMLElement>(".step-button");
+    if (!prefersReducedMotion) {
+      stepButtons.forEach((el) => el.classList.add("will-reveal"));
+    }
+    const stepObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          stepButtons.forEach((el, i) => {
+            setTimeout(
+              () => el.classList.add("visible"),
+              i * 150,
+            );
+          });
+          stepObserver.disconnect();
+        }
+      },
+      { threshold: 0.12 },
+    );
+    if (stepButtons.length > 0) stepObserver.observe(stepButtons[0]);
+
+    // Quality grid — scale in stagger
+    const qualities =
+      document.querySelectorAll<HTMLElement>(".quality");
+    if (!prefersReducedMotion) {
+      qualities.forEach((el) => el.classList.add("will-reveal"));
+    }
+    const qualityObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          qualities.forEach((el, i) => {
+            setTimeout(
+              () => el.classList.add("visible"),
+              i * 80,
+            );
+          });
+          qualityObserver.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (qualities.length > 0) qualityObserver.observe(qualities[0]);
+
+    // Benefit lines — fade in from left, stagger
+    const benefitLines =
+      document.querySelectorAll<HTMLElement>(".benefit-line");
+    if (!prefersReducedMotion) {
+      benefitLines.forEach((el) => el.classList.add("will-reveal"));
+    }
+    const benefitObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          benefitLines.forEach((el, i) => {
+            setTimeout(
+              () => el.classList.add("visible"),
+              i * 100,
+            );
+          });
+          benefitObserver.disconnect();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    if (benefitLines.length > 0) benefitObserver.observe(benefitLines[0]);
+
+    // Proof sequence — slides up from bottom
+    const sequence = document.querySelector<HTMLElement>(".sequence");
+    if (sequence) {
+      if (!prefersReducedMotion) {
+        sequence.classList.add("will-reveal");
+      }
+      const seqObserver = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            sequence.classList.add("visible");
+            seqObserver.disconnect();
+          }
+        },
+        { threshold },
+      );
+      seqObserver.observe(sequence);
+    }
+
+    // Final CTA — scale in
+    const finalCta = document.querySelector<HTMLElement>(".final-cta");
+    if (finalCta) {
+      if (!prefersReducedMotion) {
+        finalCta.classList.add("will-reveal");
+      }
+      const ctaObserver = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting) {
+            finalCta.classList.add("visible");
+            ctaObserver.disconnect();
+          }
+        },
+        { threshold: 0.08 },
+      );
+      ctaObserver.observe(finalCta);
+    }
+
+    return () => {
+      if (onScroll) {
+        window.removeEventListener("scroll", onScroll);
+      }
+      groupObserver.disconnect();
+    };
+  }, []);
+}
+
 function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
+  useLandingAnimations();
 
   usePageMetadata({
     title: "CalenderZW | Add your university timetable to your calendar",
@@ -308,7 +512,7 @@ function HomePage() {
               <div className="hero-actions">
                 <a
                   className="btn btn-primary"
-                  href="https://calender.aido.co.zw/"
+                  href="/find"
                   data-event="find_timetable_clicked"
                 >
                   Find my timetable{" "}
@@ -998,7 +1202,7 @@ function HomePage() {
             </div>
             <a
               className="btn btn-primary"
-              href="https://calender.aido.co.zw/admin/login"
+              href="/admin/login"
               data-event="class_rep_cta_clicked"
             >
               Set up my class <span aria-hidden="true">→</span>
@@ -1097,14 +1301,14 @@ function HomePage() {
             <div className="final-actions">
               <a
                 className="btn btn-primary"
-                href="https://calender.aido.co.zw/"
+                href="/find"
                 data-event="find_timetable_clicked"
               >
                 Find my timetable <span>→</span>
               </a>
               <a
                 className="btn btn-secondary"
-                href="https://calender.aido.co.zw/admin/login"
+                href="/admin/login"
                 data-event="class_rep_cta_clicked"
               >
                 Set up my class

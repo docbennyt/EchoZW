@@ -14,61 +14,177 @@
     <meta property="og:title" content="Support | CalenderZW" />
     <meta property="og:url" content="https://calender.aido.co.zw/support" />
     <title>Support | CalenderZW</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .support-page {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 48px clamp(20px, 4vw, 64px) 80px;
+      }
+      .support-page h1 {
+        font-size: clamp(32px, 5vw, 48px);
+        font-weight: 690;
+        letter-spacing: -0.05em;
+        margin-bottom: 16px;
+        line-height: 1.1;
+      }
+      .support-page h2 {
+        font-size: 16px;
+        font-weight: 660;
+        margin: 0 0 8px;
+        color: var(--forest);
+      }
+      .support-page p {
+        color: var(--muted);
+        line-height: 1.6;
+        margin: 0;
+        font-size: 13px;
+      }
+      .support-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin: 28px 0 40px;
+      }
+      .support-card {
+        background: var(--white);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 22px;
+        box-shadow: 0 2px 16px rgba(21, 61, 50, 0.05);
+      }
+      .support-contact {
+        background: var(--sage-2);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 28px;
+        text-align: center;
+      }
+      .support-contact h2 {
+        font-size: 18px;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .support-contact p {
+        font-size: 14px;
+        margin-bottom: 18px;
+      }
+      .support-contact a.email-btn {
+        display: inline-block;
+        background: var(--forest);
+        color: #fff;
+        font-weight: 750;
+        padding: 12px 24px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 14px;
+      }
+    </style>
   </head>
   <body>
-    <header data-component="GlobalHeader">
-      <a href="/" aria-label="CalenderZW home">CalenderZW</a>
-      <p>Operated by aiDo</p>
-      <nav aria-label="Main navigation">
-        <a href="/find">Find timetable</a
-        ><a href="/#how-it-works">How it works</a
-        ><a href="/#calendar-options">Calendar options</a
-        ><a href="/privacy">Privacy</a><a href="/admin">Admin</a>
-      </nav>
-    </header>
-    <main>
-      <h1>CalenderZW support</h1>
-      <p>
-        CalenderZW helps students find a verified class timetable, choose useful
-        reminders, and add lectures to Google Calendar, Apple Calendar, Outlook,
-        or another calendar application.
-      </p>
-      <p>
-        Get help with timetable setup, Google Calendar disconnect, Apple
-        Calendar subscriptions, .ics imports, and timetable problem reports.
-      </p>
-      <p>
-        Google Calendar connection is optional. When you choose direct Google
-        Calendar synchronisation, CalenderZW asks for permission to create and
-        manage a separate timetable calendar created by CalenderZW. It does not
-        read or modify events in your existing personal calendars.
-      </p>
-      <p>
-        Email <a href="mailto:support@aido.co.zw">support@aido.co.zw</a> for
-        support.
-      </p>
-    </main>
-    <footer data-component="GlobalFooter">
-      <p>CalenderZW. Student timetable and calendar synchronisation.</p>
-      <nav aria-label="Product">
-        <a href="/find">Find timetable</a
-        ><a href="/#how-it-works">How it works</a
-        ><a href="/#calendar-options">Calendar options</a
-        ><a href="/find">Published timetables</a>
-      </nav>
-      <nav aria-label="Support">
-        <a href="/support">Help centre</a
-        ><a href="/support">Report a timetable problem</a
-        ><a href="/support">Google Calendar setup</a
-        ><a href="/support">Apple Calendar setup</a>
-      </nav>
-      <nav aria-label="Legal">
-        <a href="/privacy">Privacy Policy</a
-        ><a href="/terms">Terms of Service</a
-        ><a href="/data-deletion">Data deletion</a
-        ><a href="/support">Contact</a>
-      </nav>
-      <p>&copy; 2026 aiDo. Operated by aiDo.</p>
-    </footer>
+    <div class="app-shell">
+      <header class="site-header scrolled" id="header" data-component="GlobalHeader">
+        <nav class="nav shell" aria-label="Primary navigation">
+          <a href="/" class="brand" aria-label="CalenderZW home">
+            <span class="mark" aria-hidden="true">
+              <i></i><i></i><i></i><i></i>
+            </span>
+            <span class="brand-name">Calender<span>ZW</span></span>
+          </a>
+          <div class="nav-links" style="display: flex;">
+            <a href="/#how">How it works</a>
+            <a href="/#options">Calendar options</a>
+            <a href="/#reps">For class reps</a>
+            <a href="/#trust">Privacy & trust</a>
+          </div>
+          <a
+            class="btn btn-primary nav-cta"
+            href="/find"
+            data-event="find_timetable_clicked"
+            >Find timetable <span aria-hidden="true">→</span></a
+          >
+        </nav>
+      </header>
+
+      <main class="support-page">
+        <p class="eyebrow" style="color: var(--forest); font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; margin-bottom: 12px;">CalenderZW support</p>
+        <h1>Support Center</h1>
+        <p style="color: var(--muted); line-height: 1.65; font-size: 16px; margin-bottom: 28px;">
+          CalenderZW helps students find a verified class timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.
+        </p>
+
+        <div class="support-cards">
+          <div class="support-card">
+            <h2>Calendar Setup Issues</h2>
+            <p>If a calendar does not appear immediately, check that the selected reminder preset was saved, your device calendar sync is enabled, and your calendar app has network access.</p>
+          </div>
+          <div class="support-card">
+            <h2>Disconnect Google Calendar</h2>
+            <p>Open account settings, choose Disconnect Google Calendar, and decide whether to keep or delete the CalenderZW-created calendar. You can also revoke access in your Google Account.</p>
+          </div>
+          <div class="support-card">
+            <h2>Apple Calendar Subscription</h2>
+            <p>Use the Apple Calendar subscription option from the live HTTPS site. Apple Calendar controls refresh timing and may not update immediately after timetable changes.</p>
+          </div>
+          <div class="support-card">
+            <h2>.ics Import Guidance</h2>
+            <p>Downloaded .ics files are useful for one-time imports into many calendar apps. Future timetable updates may require another download unless you use a subscription option.</p>
+          </div>
+        </div>
+
+        <div class="support-contact">
+          <h2>Still need help or want to report a timetable problem?</h2>
+          <p>Email us with the class link and the correction needed. We will resolve it as soon as possible. Contact <a href="mailto:support@aido.co.zw">support@aido.co.zw</a>.</p>
+          <a class="email-btn" href="mailto:support@aido.co.zw">Email support@aido.co.zw</a>
+        </div>
+      </main>
+
+      <footer class="site-footer" data-component="GlobalFooter">
+        <div class="shell">
+          <div class="footer-grid">
+            <div class="footer-brand">
+              <a href="/" class="brand" aria-label="CalenderZW home">
+                <span class="mark" aria-hidden="true">
+                  <i></i><i></i><i></i><i></i>
+                </span>
+                <span class="brand-name">Calender<span>ZW</span></span>
+              </a>
+              <p>
+                Operated by aiDo.<br />Built in Zimbabwe for university life.
+              </p>
+            </div>
+            <div class="footer-links">
+              <nav class="footer-col" aria-label="Product">
+                <b>Product</b>
+                <a href="/find">Find timetable</a>
+                <a href="/#how">How it works</a>
+                <a href="/#options">Calendar options</a>
+              </nav>
+              <nav class="footer-col" aria-label="Support">
+                <b>For students</b>
+                <a href="/#reps">Class reps</a>
+                <a href="/support">Support</a>
+              </nav>
+              <nav class="footer-col" aria-label="Legal">
+                <b>Legal</b>
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Service</a>
+                <a href="/data-deletion">Data deletion</a>
+              </nav>
+            </div>
+          </div>
+          <div class="copyright">
+            <span>© 2026 CalenderZW. Operated by aiDo.</span>
+            <span>CalenderZW is the product. aiDo is the operator.</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>
