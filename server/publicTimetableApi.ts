@@ -43,7 +43,10 @@ export async function handlePublicTimetableRequest(
 ) {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
 
-  if (req.method === "GET" && requestUrl.pathname === "/api/public/timetables") {
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/public/timetables"
+  ) {
     try {
       const timetables = (await listTimetables())
         .filter((timetable) => Boolean(timetable.currentPublishedVersionId))

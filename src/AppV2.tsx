@@ -14,11 +14,8 @@ import { fetchAdminSession } from "./api/adminSession";
 import { track } from "./analytics";
 import { BRAND } from "./config/brand";
 import { legalConfig } from "./config/legal";
-import {
-  AdminMvpScreen,
-  FinderMvpScreen,
-  PublicTimetableMvpScreen,
-} from "./pilotMvp";
+import { AdminMvpScreen, PublicTimetableMvpScreen } from "./pilotMvp";
+import { FinderDiscovery } from "./FinderDiscovery";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
 
 const currentPath = () => window.location.pathname;
@@ -964,7 +961,7 @@ function FinderPage() {
   usePageMetadata({
     title: "Find your timetable | CalenderZW",
     description:
-      "Open a published class timetable without creating a student account.",
+      "Choose your institution, programme and class to open a published timetable without creating a student account.",
     canonicalPath: "/find",
   });
   return (
@@ -974,14 +971,15 @@ function FinderPage() {
           <div className="czw-product-intro">
             <span className="czw-eyebrow">Find your class</span>
             <h1>Find your timetable.</h1>
-            <p>Open a published class timetable. No student account needed.</p>
+            <p>
+              Choose your institution, programme and class. No student account
+              needed.
+            </p>
             <span className="czw-trust-note">
               <Check size={14} /> Published class timetables only
             </span>
           </div>
-          <div className="czw-embedded-product">
-            <FinderMvpScreen />
-          </div>
+          <FinderDiscovery />
         </div>
       </div>
     </PublicShell>

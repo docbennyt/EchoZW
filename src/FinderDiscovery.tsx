@@ -115,7 +115,11 @@ function TimetableThumbnail() {
   );
 }
 
-function TimetableCard({ timetable }: { timetable: PublishedTimetableSummary }) {
+function TimetableCard({
+  timetable,
+}: {
+  timetable: PublishedTimetableSummary;
+}) {
   return (
     <article className="czw-discovery-card">
       <TimetableThumbnail />
@@ -256,7 +260,9 @@ export function FinderDiscovery() {
       const parsed = new URL(trimmed);
       const match = parsed.pathname.match(/^\/t\/([^/]+)$/);
       if (!match) {
-        setLinkError("That link does not look like a CalenderZW timetable link.");
+        setLinkError(
+          "That link does not look like a CalenderZW timetable link.",
+        );
         return;
       }
       slug = decodeURIComponent(match[1]);
@@ -371,9 +377,13 @@ export function FinderDiscovery() {
           </form>
         ) : null}
 
-        <div className="czw-finder-divider"><span>or open a shared class link</span></div>
+        <div className="czw-finder-divider">
+          <span>or open a shared class link</span>
+        </div>
         <form className="czw-shared-link-form" onSubmit={submitSharedLink}>
-          <label htmlFor="czw-shared-timetable-link">Timetable link or slug</label>
+          <label htmlFor="czw-shared-timetable-link">
+            Timetable link or slug
+          </label>
           <div>
             <Input
               id="czw-shared-timetable-link"
@@ -387,12 +397,19 @@ export function FinderDiscovery() {
               <span>Open</span>
             </Button>
           </div>
-          {linkError ? <p id="czw-link-error" role="alert">{linkError}</p> : null}
+          {linkError ? (
+            <p id="czw-link-error" role="alert">
+              {linkError}
+            </p>
+          ) : null}
         </form>
       </section>
 
       {status === "ready" && timetables.length > 0 ? (
-        <section className="czw-available-section" aria-labelledby="available-title">
+        <section
+          className="czw-available-section"
+          aria-labelledby="available-title"
+        >
           <div className="czw-available-heading">
             <div>
               <span className="czw-kicker">Available now</span>

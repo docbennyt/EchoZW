@@ -80,7 +80,9 @@
   font-size: 14px;
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .czw-select-trigger:hover:not([data-disabled]) {
@@ -257,14 +259,38 @@
   background: linear-gradient(90deg, #e8ede8, #f5f7f3, #e8ede8);
 }
 
-.czw-finder-loading > span:nth-child(1) { width: 52%; }
-.czw-finder-loading > span:nth-child(2) { width: 78%; }
-.czw-finder-loading > span:nth-child(3) { width: 64%; }
-.czw-finder-loading p { margin: 4px 0 0; color: var(--czw-muted); font-size: 12px; }
-.czw-finder-error { border-color: #e6c3bd; background: #fff8f6; }
-.czw-finder-error strong { color: #803d35; }
-.czw-finder-empty strong { display: block; margin-bottom: 6px; }
-.czw-finder-empty a { display: inline-flex; margin-top: 12px; color: var(--czw-forest); font-size: 12px; font-weight: 800; }
+.czw-finder-loading > span:nth-child(1) {
+  width: 52%;
+}
+.czw-finder-loading > span:nth-child(2) {
+  width: 78%;
+}
+.czw-finder-loading > span:nth-child(3) {
+  width: 64%;
+}
+.czw-finder-loading p {
+  margin: 4px 0 0;
+  color: var(--czw-muted);
+  font-size: 12px;
+}
+.czw-finder-error {
+  border-color: #e6c3bd;
+  background: #fff8f6;
+}
+.czw-finder-error strong {
+  color: #803d35;
+}
+.czw-finder-empty strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.czw-finder-empty a {
+  display: inline-flex;
+  margin-top: 12px;
+  color: var(--czw-forest);
+  font-size: 12px;
+  font-weight: 800;
+}
 
 .czw-available-section {
   padding-top: 4px;
@@ -307,7 +333,10 @@
   border: 1px solid var(--czw-line);
   border-radius: 16px;
   background: var(--czw-white);
-  transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  transition:
+    transform 160ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
 }
 
 .czw-discovery-card:hover {
@@ -339,8 +368,12 @@
   background: rgba(21, 61, 50, 0.24);
 }
 
-.czw-thumb-topline span:first-child { width: 38%; }
-.czw-thumb-topline span:last-child { width: 18%; }
+.czw-thumb-topline span:first-child {
+  width: 38%;
+}
+.czw-thumb-topline span:last-child {
+  width: 18%;
+}
 
 .czw-thumb-week {
   display: grid;
