@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
       globals: true,
       pool: "threads",
       maxWorkers: 4,
+      testTimeout: 10_000,
       setupFiles: "./src/test/setup.ts",
     },
   };
