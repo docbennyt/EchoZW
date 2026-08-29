@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Download,
   GraduationCap,
@@ -105,6 +105,55 @@ function Shell({
     </div>
   );
 }
+
+// ─── Landing animations ────────────────────────────────────────────────────
+function useLandingAnimations() {
+  useEffect(() => {
+    // 1. Scroll → solid nav header
+    const header = document.querySelector<HTMLElement>(".site-header");
+    let onScroll: (() => void) | undefined;
+    if (header) {
+      onScroll = () => {
+        header.classList.toggle("scrolled", window.scrollY > 50);
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
+
+    // 2. IntersectionObserver — reveal .reveal-group elements
+    if (typeof IntersectionObserver === "undefined") {
+      // In environments without IO (tests/SSR) just make everything visible
+      document.querySelectorAll<HTMLElement>(".reveal-group").forEach((el) => {
+        el.classList.add("visible");
+      });
+      return () => {
+        if (onScroll) window.removeEventListener("scroll", onScroll);
+      };
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("visible");
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" },
+    );
+
+    document.querySelectorAll<HTMLElement>(".reveal-group").forEach((el) => {
+      io.observe(el);
+    });
+
+    return () => {
+      io.disconnect();
+      if (onScroll) window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function GlobalHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -275,6 +324,7 @@ function FinderPage() {
 
 function HomePage() {
   const [currentStep, setCurrentStep] = useState(1);
+  useLandingAnimations();
 
   usePageMetadata({
     title: "CalenderZW | Add your university timetable to your calendar",

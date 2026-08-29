@@ -1901,18 +1901,19 @@ a {
 .site-header {
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
+  background: transparent;
   border-bottom: 1px solid transparent;
   transition:
-    background 0.25s,
-    border-color 0.25s,
-    box-shadow 0.25s;
+    background 250ms ease,
+    border-color 250ms ease,
+    box-shadow 250ms ease;
 }
 .site-header.scrolled {
-  background: rgba(247, 244, 236, 0.94);
-  border-color: rgba(21, 61, 50, 0.1);
-  box-shadow: 0 8px 30px rgba(21, 61, 50, 0.05);
-  backdrop-filter: blur(14px);
+  background: var(--cream); /* Solid, not transparent */
+  border-color: rgba(21, 61, 50, 0.08);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  backdrop-filter: none;
 }
 .nav {
   height: 72px;
