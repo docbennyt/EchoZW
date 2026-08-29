@@ -30,7 +30,7 @@ insert into timetable_source_reconciliation_bindings (
 values (
   'hit-sist-master-sem1-2026',
   'CS.1',
-  'hit-cs-1-1-august-2026',
+  'hit-ics-1-1-august-semester-2026',
   '1.1',
   'August Semester 2026'
 )

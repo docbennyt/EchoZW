@@ -29,7 +29,7 @@ describe("source reconciliation binding migration", () => {
   it("stores the explicit CS.1 binding without fuzzy runtime lookup", () => {
     expect(migration).toContain("'hit-sist-master-sem1-2026'");
     expect(migration).toContain("'CS.1'");
-    expect(migration).toContain("'hit-cs-1-1-august-2026'");
+    expect(migration).toContain("'hit-ics-1-1-august-semester-2026'");
     expect(migration).toContain("'1.1'");
     expect(migration).toContain("'August Semester 2026'");
   });

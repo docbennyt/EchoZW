@@ -12,7 +12,7 @@ const binding: ReconciliationBinding = {
   sourceKey: "hit-sist-master-sem1-2026",
   targetAcademicPeriodName: "August Semester 2026",
   targetClassGroupLabel: "1.1",
-  targetPublicSlug: "hit-cs-1-1-august-2026",
+  targetPublicSlug: "hit-ics-1-1-august-semester-2026",
 };
 
 function createSourceCandidate(
