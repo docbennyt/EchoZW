@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
 import "./styles.css";
 import "./appV2.css";
+import "./finderDiscovery.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
