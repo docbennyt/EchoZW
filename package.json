@@ -11,6 +11,7 @@
     "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
     "preview": "node dist-server/server/productionServer.js",
     "source:parse": "node --env-file-if-exists=.env.local dist-server/server/sourceSnapshotParseCli.js",
+    "source:reconcile": "node --env-file-if-exists=.env.local dist-server/server/sourceReconciliationCli.js",
     "test": "vitest run",
     "lint": "eslint .",
     "format:check": "prettier --check ."
