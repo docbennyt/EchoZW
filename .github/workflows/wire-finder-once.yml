@@ -1,0 +1,91 @@
+name: Wire Base UI finder once
+
+on:
+  push:
+    branches:
+      - Calender
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Calender
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Wire FinderDiscovery into AppV2
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path("src/AppV2.tsx")
+          text = path.read_text()
+
+          old_import = '''import {
+            AdminMvpScreen,
+            FinderMvpScreen,
+            PublicTimetableMvpScreen,
+          } from "./pilotMvp";'''
+          new_import = '''import { AdminMvpScreen, PublicTimetableMvpScreen } from "./pilotMvp";
+          import { FinderDiscovery } from "./FinderDiscovery";'''
+
+          if old_import not in text:
+            raise SystemExit("Expected pilotMvp import block was not found")
+          text = text.replace(old_import, new_import, 1)
+
+          replacement = '''function FinderPage() {
+            usePageMetadata({
+              title: "Find your timetable | CalenderZW",
+              description:
+                "Choose your institution, programme and class to open a published timetable without creating a student account.",
+              canonicalPath: "/find",
+            });
+            return (
+              <PublicShell>
+                <div className="czw-product-page czw-finder-wrap">
+                  <div className="czw-shell">
+                    <div className="czw-product-intro">
+                      <span className="czw-eyebrow">Find your class</span>
+                      <h1>Find your timetable.</h1>
+                      <p>Choose your institution, programme and class. No student account needed.</p>
+                      <span className="czw-trust-note">
+                        <Check size={14} /> Published class timetables only
+                      </span>
+                    </div>
+                    <FinderDiscovery />
+                  </div>
+                </div>
+              </PublicShell>
+            );
+          }
+
+          function PublicTimetablePage'''
+
+          text, count = re.subn(
+            r'function FinderPage\(\) \{.*?\n\}\n\nfunction PublicTimetablePage',
+            replacement,
+            text,
+            count=1,
+            flags=re.S,
+          )
+          if count != 1:
+            raise SystemExit(f"Expected one FinderPage replacement, got {count}")
+
+          path.write_text(text)
+      - name: Format changed UI files
+        run: npx prettier --write src/AppV2.tsx src/FinderDiscovery.tsx src/finderDiscovery.css src/api/publicDiscovery.ts server/publicTimetableApi.ts
+      - name: Commit finder wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/AppV2.tsx src/FinderDiscovery.tsx src/finderDiscovery.css src/api/publicDiscovery.ts server/publicTimetableApi.ts
+          git commit -m "feat: add published timetable finder"
+          git push origin HEAD:Calender
