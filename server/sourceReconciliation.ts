@@ -124,13 +124,12 @@ function normalizeCourseName(value: string | null | undefined) {
 }
 
 function normalizeTimeValue(value: string | null | undefined) {
-  const match = normalizeWhitespace(value).match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  const match = normalizeWhitespace(value).match(
+    /^(\d{2}):(\d{2})(?::(\d{2}))?$/,
+  );
   if (!match) return null;
   return `${match[1]}:${match[2]}:${match[3] ?? "00"}`;
 }
-
-
-
 
 function sourceSortKey(candidate: ReconciliationSourceCandidate) {
   return [
@@ -375,8 +374,12 @@ function buildAmbiguousItem(input: {
   currentSessions: ReconciliationCurrentSession[];
   sourceCandidates: ReconciliationSourceCandidate[];
 }) {
-  const sourceCandidates = [...input.sourceCandidates].sort(compareSourceCandidates);
-  const currentSessions = [...input.currentSessions].sort(compareCurrentSessions);
+  const sourceCandidates = [...input.sourceCandidates].sort(
+    compareSourceCandidates,
+  );
+  const currentSessions = [...input.currentSessions].sort(
+    compareCurrentSessions,
+  );
   return {
     currentSessions,
     diffs: [],
@@ -425,10 +428,16 @@ function assertConservationInvariant(
 
   for (const item of items) {
     for (const source of item.sourceCandidates) {
-      seenSourceIds.set(source.candidateId, (seenSourceIds.get(source.candidateId) ?? 0) + 1);
+      seenSourceIds.set(
+        source.candidateId,
+        (seenSourceIds.get(source.candidateId) ?? 0) + 1,
+      );
     }
     for (const current of item.currentSessions) {
-      seenCurrentIds.set(current.sessionId, (seenCurrentIds.get(current.sessionId) ?? 0) + 1);
+      seenCurrentIds.set(
+        current.sessionId,
+        (seenCurrentIds.get(current.sessionId) ?? 0) + 1,
+      );
     }
   }
 
@@ -442,8 +451,12 @@ function assertConservationInvariant(
   );
 
   const noSilentLoss =
-    sourceCandidates.every((candidate) => seenSourceIds.get(candidate.candidateId) === 1) &&
-    currentSessions.every((session) => seenCurrentIds.get(session.sessionId) === 1);
+    sourceCandidates.every(
+      (candidate) => seenSourceIds.get(candidate.candidateId) === 1,
+    ) &&
+    currentSessions.every(
+      (session) => seenCurrentIds.get(session.sessionId) === 1,
+    );
 
   if (!noSilentLoss) {
     throw new Error(
@@ -469,8 +482,12 @@ export function reconcileSourceCandidatesToPublishedTimetable(input: {
   sourceSnapshotId: string;
   timetableId: string;
 }) {
-  const sourceCandidates = [...input.sourceCandidates].sort(compareSourceCandidates);
-  const currentSessions = [...input.currentSessions].sort(compareCurrentSessions);
+  const sourceCandidates = [...input.sourceCandidates].sort(
+    compareSourceCandidates,
+  );
+  const currentSessions = [...input.currentSessions].sort(
+    compareCurrentSessions,
+  );
   const items: ReconciliationItem[] = [];
   const consumedSourceIds = new Set<string>();
   const consumedCurrentIds = new Set<string>();
@@ -491,7 +508,9 @@ export function reconcileSourceCandidatesToPublishedTimetable(input: {
       session.endTime,
     ),
   );
-  const exactKeys = [...new Set([...sourceExactGroups.keys(), ...currentExactGroups.keys()])].sort();
+  const exactKeys = [
+    ...new Set([...sourceExactGroups.keys(), ...currentExactGroups.keys()]),
+  ].sort();
 
   for (const key of exactKeys) {
     const sourceGroup = (sourceExactGroups.get(key) ?? []).filter(
@@ -522,8 +541,12 @@ export function reconcileSourceCandidatesToPublishedTimetable(input: {
           sourceCandidates: sourceGroup,
         }),
       );
-      sourceGroup.forEach((candidate) => consumedSourceIds.add(candidate.candidateId));
-      currentGroup.forEach((session) => consumedCurrentIds.add(session.sessionId));
+      sourceGroup.forEach((candidate) =>
+        consumedSourceIds.add(candidate.candidateId),
+      );
+      currentGroup.forEach((session) =>
+        consumedCurrentIds.add(session.sessionId),
+      );
       continue;
     }
 
@@ -542,7 +565,9 @@ export function reconcileSourceCandidatesToPublishedTimetable(input: {
   const currentDayGroups = groupBy(remainingCurrents, (session) =>
     createCourseDayKey(currentCourseKey(session), session.weekday),
   );
-  const dayKeys = [...new Set([...sourceDayGroups.keys(), ...currentDayGroups.keys()])].sort();
+  const dayKeys = [
+    ...new Set([...sourceDayGroups.keys(), ...currentDayGroups.keys()]),
+  ].sort();
 
   for (const key of dayKeys) {
     const sourceGroup = (sourceDayGroups.get(key) ?? []).filter(
@@ -578,8 +603,12 @@ export function reconcileSourceCandidatesToPublishedTimetable(input: {
           sourceCandidates: sourceGroup,
         }),
       );
-      sourceGroup.forEach((candidate) => consumedSourceIds.add(candidate.candidateId));
-      currentGroup.forEach((session) => consumedCurrentIds.add(session.sessionId));
+      sourceGroup.forEach((candidate) =>
+        consumedSourceIds.add(candidate.candidateId),
+      );
+      currentGroup.forEach((session) =>
+        consumedCurrentIds.add(session.sessionId),
+      );
       continue;
     }
 
@@ -618,5 +647,3 @@ export function reconcileSourceCandidatesToPublishedTimetable(input: {
     timetableId: input.timetableId,
   } satisfies SourceReconciliationResult;
 }
-
-

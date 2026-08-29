@@ -19,7 +19,9 @@ async function main() {
     sourceKey,
   });
 
-  console.log(`Binding: ${result.binding.sourceKey} ${result.binding.sourceCohortCode} -> ${result.binding.targetPublicSlug} (${result.binding.targetAcademicPeriodName})`);
+  console.log(
+    `Binding: ${result.binding.sourceKey} ${result.binding.sourceCohortCode} -> ${result.binding.targetPublicSlug} (${result.binding.targetAcademicPeriodName})`,
+  );
   console.log(`Source snapshot: ${result.sourceSnapshotId}`);
   console.log(`Parse run: ${result.parseRunId}`);
   console.log(`Published version: ${result.publishedVersionId}`);

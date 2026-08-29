@@ -212,10 +212,9 @@ describe("source reconciliation", () => {
       outcome: "ambiguous",
       sourceCandidates: [expect.objectContaining({ candidateId: "source-1" })],
     });
-    expect(result.items[0].currentSessions.map((session) => session.sessionId)).toEqual([
-      "session-a",
-      "session-b",
-    ]);
+    expect(
+      result.items[0].currentSessions.map((session) => session.sessionId),
+    ).toEqual(["session-a", "session-b"]);
   });
 
   it("marks many-to-one same-course same-day leftovers as ambiguous", () => {
@@ -241,10 +240,11 @@ describe("source reconciliation", () => {
       currentSessions: [expect.objectContaining({ sessionId: "session-1" })],
       outcome: "ambiguous",
     });
-    expect(result.items[0].sourceCandidates.map((candidate) => candidate.candidateId)).toEqual([
-      "source-a",
-      "source-b",
-    ]);
+    expect(
+      result.items[0].sourceCandidates.map(
+        (candidate) => candidate.candidateId,
+      ),
+    ).toEqual(["source-a", "source-b"]);
   });
 
   it("keeps duplicate evidence visible instead of silently pairing one duplicate away", () => {
@@ -257,10 +257,11 @@ describe("source reconciliation", () => {
 
     expect(result.summary.ambiguous).toBe(1);
     expect(result.summary.matched).toBe(0);
-    expect(result.items[0].sourceCandidates.map((candidate) => candidate.candidateId)).toEqual([
-      "source-a",
-      "source-b",
-    ]);
+    expect(
+      result.items[0].sourceCandidates.map(
+        (candidate) => candidate.candidateId,
+      ),
+    ).toEqual(["source-a", "source-b"]);
   });
 
   it("produces deterministic ordering and ids for identical inputs", () => {
@@ -314,7 +315,10 @@ describe("source reconciliation", () => {
 
     expect(first).toEqual(second);
     expect(first.items.map((item) => item.id)).toEqual(
-      first.items.map((item) => item.id).slice().sort(),
+      first.items
+        .map((item) => item.id)
+        .slice()
+        .sort(),
     );
   });
 

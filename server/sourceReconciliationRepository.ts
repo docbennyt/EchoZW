@@ -109,7 +109,9 @@ function canonicalizeJsonValue(value: unknown): unknown {
     return Object.keys(value as Record<string, unknown>)
       .sort()
       .reduce<Record<string, unknown>>((result, key) => {
-        result[key] = canonicalizeJsonValue((value as Record<string, unknown>)[key]);
+        result[key] = canonicalizeJsonValue(
+          (value as Record<string, unknown>)[key],
+        );
         return result;
       }, {});
   }
@@ -299,8 +301,9 @@ export async function loadLatestSuccessfulSourceParse(
     );
   }
 
-  const parserResult = ((selectedParseRun.result_payload as JsonRecord | null) ??
-    {}) as unknown as HitParserResult;
+  const parserResult =
+    ((selectedParseRun.result_payload as JsonRecord | null) ??
+      {}) as unknown as HitParserResult;
   const sourceCandidates = (parserResult.sessionCandidates ?? [])
     .filter(
       (candidate) =>
@@ -356,7 +359,10 @@ export async function loadPublishedTimetableForBinding(
   const academicPeriod = asSingle(
     timetableRow.academic_periods as JsonRecord | JsonRecord[] | null,
   );
-  if ((cohort?.label ? String(cohort.label) : "") !== binding.targetClassGroupLabel) {
+  if (
+    (cohort?.label ? String(cohort.label) : "") !==
+    binding.targetClassGroupLabel
+  ) {
     throw new SourceReconciliationRepositoryError(
       "SOURCE_RECONCILIATION_BINDING_MISMATCH",
       409,
@@ -490,9 +496,10 @@ export async function captureCompareOnlyState(
     calendarSubscriptionIds: (subscriptions ?? []).map((row: unknown) =>
       String((row as JsonRecord).id),
     ),
-    currentPublishedVersionId: timetable && (timetable as JsonRecord).current_published_version_id
-      ? String((timetable as JsonRecord).current_published_version_id)
-      : null,
+    currentPublishedVersionId:
+      timetable && (timetable as JsonRecord).current_published_version_id
+        ? String((timetable as JsonRecord).current_published_version_id)
+        : null,
     feedTokenIds: (feedTokens ?? []).map((row: unknown) =>
       String((row as JsonRecord).id),
     ),
@@ -510,12 +517,10 @@ export async function captureCompareOnlyState(
 }
 
 export type SourceReconciliationRepository = {
-  captureCompareOnlyState: (
-    input: {
-      publishedVersionId: string;
-      timetableId: string;
-    },
-  ) => Promise<CompareOnlyStateSnapshot>;
+  captureCompareOnlyState: (input: {
+    publishedVersionId: string;
+    timetableId: string;
+  }) => Promise<CompareOnlyStateSnapshot>;
   loadBinding: (input: {
     sourceCohortCode: string;
     sourceKey: string;
@@ -534,8 +539,10 @@ export function createSourceReconciliationRepository(
   return {
     captureCompareOnlyState: (input) => captureCompareOnlyState(input, env),
     loadBinding: (input) => loadSourceReconciliationBinding(input, env),
-    loadLatestSuccessfulParse: (binding) => loadLatestSuccessfulSourceParse(binding, env),
-    loadPublishedTimetable: (binding) => loadPublishedTimetableForBinding(binding, env),
+    loadLatestSuccessfulParse: (binding) =>
+      loadLatestSuccessfulSourceParse(binding, env),
+    loadPublishedTimetable: (binding) =>
+      loadPublishedTimetableForBinding(binding, env),
   };
 }
 
@@ -578,7 +585,8 @@ export async function runSourceReconciliation(
     zeroMutationProof: {
       after,
       before,
-      noMutationsObserved: canonicalJsonString(before) === canonicalJsonString(after),
+      noMutationsObserved:
+        canonicalJsonString(before) === canonicalJsonString(after),
     },
   };
 }
