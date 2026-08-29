@@ -83,7 +83,9 @@ describe("CalenderZW brand consistency", () => {
   });
 
   it("keeps public production output free of ambiguous principal app names", () => {
-    const nonHomepageFiles = publicFiles.filter((file) => file !== "index.html");
+    const nonHomepageFiles = publicFiles.filter(
+      (file) => file !== "index.html",
+    );
     for (const file of publicFiles) {
       const text = readFileSync(file, "utf8");
       expect(text).not.toContain("CalenderZW by aiDo");

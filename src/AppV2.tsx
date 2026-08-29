@@ -1,3 +1,5 @@
+import { Button as BaseButton } from "@base-ui/react/button";
+import { Input as BaseInput } from "@base-ui/react/input";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -1068,7 +1070,7 @@ function AdminLoginPage() {
           <form onSubmit={signIn}>
             <label>
               <span>Email</span>
-              <input
+              <BaseInput
                 autoComplete="email"
                 inputMode="email"
                 name="email"
@@ -1080,7 +1082,7 @@ function AdminLoginPage() {
             </label>
             <label>
               <span>Password</span>
-              <input
+              <BaseInput
                 autoComplete="current-password"
                 name="password"
                 required
@@ -1089,14 +1091,14 @@ function AdminLoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
-            <button
+            <BaseButton
               className="czw-button czw-button-primary"
               disabled={status === "loading"}
               type="submit"
             >
               <Lock size={17} />
               {status === "loading" ? "Signing in…" : "Sign in"}
-            </button>
+            </BaseButton>
           </form>
           {message ? (
             <p
