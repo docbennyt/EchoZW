@@ -1,0 +1,277 @@
+name: Harden calendar sync retry
+
+on:
+  push:
+    branches:
+      - Calender
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Calender
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm install timezones-ical-library@2.3.1 --save
+      - name: Apply calendar hardening
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          p = Path('server/publishedCalendar.ts')
+          text = p.read_text()
+          tz_import = 'import { tzlib_get_ical_block } from "timezones-ical-library";\n'
+          import_anchor = 'import type { PublicTimetable } from "../src/api/pilotTypes.js";\n'
+          if tz_import not in text:
+              if import_anchor not in text:
+                  raise SystemExit('calendar import anchor missing')
+              text = text.replace(import_anchor, import_anchor + tz_import, 1)
+
+          if 'function vtimezoneLines(' not in text:
+              helper_anchor = 'function alarmDescription(courseName: string, minutes: number) {'
+              helper = '''function vtimezoneLines(timezone: string) {
+            const timezoneResult = tzlib_get_ical_block(timezone);
+            const block = Array.isArray(timezoneResult)
+              ? timezoneResult[0]
+              : timezoneResult;
+            if (typeof block !== "string" || !block.includes("BEGIN:VTIMEZONE")) {
+              throw new Error(`Unsupported institution timezone: ${timezone}`);
+            }
+            return block.split(/\\r?\\n/).filter(Boolean);
+          }
+
+          '''
+              if helper_anchor not in text:
+                  raise SystemExit('calendar helper anchor missing')
+              text = text.replace(helper_anchor, helper + helper_anchor, 1)
+
+          lines_anchor = '''    `X-WR-TIMEZONE:${timetable.institutionTimezone}`,
+          ];
+
+          for (const session of timetable.sessions) {'''.replace('          ];', '  ];').replace('          for', '  for')
+          lines_replacement = '''    `X-WR-TIMEZONE:${timetable.institutionTimezone}`,
+          ];
+          lines.push(...vtimezoneLines(timetable.institutionTimezone));
+
+          for (const session of timetable.sessions) {'''.replace('          ];', '  ];').replace('          lines', '  lines').replace('          for', '  for')
+          if 'lines.push(...vtimezoneLines(timetable.institutionTimezone));' not in text:
+              if lines_anchor not in text:
+                  raise SystemExit('calendar lines anchor missing')
+              text = text.replace(lines_anchor, lines_replacement, 1)
+          p.write_text(text)
+
+          p = Path('tests/publishedCalendar.test.ts')
+          text = p.read_text()
+          anchor = '''    expect(ics).toContain("BEGIN:VEVENT");
+              expect(ics).toContain("UID:stable-session-1@calender.aido.co.zw");'''.replace('              expect', '    expect')
+          replacement = '''    expect(ics).toContain("BEGIN:VTIMEZONE");
+              expect(ics).toContain("TZID:Africa/Harare");
+              expect(ics).toContain("TZOFFSETTO:+0200");
+              expect(ics).toContain("BEGIN:VEVENT");
+              expect(ics).toContain("UID:stable-session-1@calender.aido.co.zw");
+              expect(ics).toContain("DTSTART;TZID=Africa/Harare:20260811T140000");
+              expect(ics).toContain("DTEND;TZID=Africa/Harare:20260811T160000");'''.replace('              expect', '    expect')
+          if 'expect(ics).toContain("BEGIN:VTIMEZONE")' not in text:
+              if anchor not in text:
+                  raise SystemExit('calendar test anchor missing')
+              text = text.replace(anchor, replacement, 1)
+          p.write_text(text)
+
+          p = Path('src/pilotMvp.tsx')
+          text = p.read_text()
+          replacement = '''function getCalendarMethods(device: DeviceKind) {
+            if (device === "ios") {
+              return [
+                {
+                  provider: "apple_subscription" as const,
+                  title: "Subscribe in Apple Calendar",
+                  description:
+                    "Keeps future CalenderZW publications connected to this timetable.",
+                  accent: "Keeps updates",
+                },
+                {
+                  provider: "ics_download" as const,
+                  title: "Download one-time .ics",
+                  description:
+                    "Imports the timetable once. Future published changes will not update automatically.",
+                },
+              ];
+            }
+
+            if (device === "android") {
+              return [
+                {
+                  provider: "webcal_subscription" as const,
+                  title: "Subscribe with calendar URL",
+                  description:
+                    "Keeps future CalenderZW publications in sync. Google Calendar may require adding the URL on desktop.",
+                  accent: "Keeps updates",
+                },
+                {
+                  provider: "ics_download" as const,
+                  title: "Download one-time .ics",
+                  description:
+                    "Imports the current timetable once. It will not receive future timetable changes.",
+                },
+                {
+                  provider: null,
+                  title: "Google Calendar direct sync",
+                  description: "Coming soon",
+                },
+              ];
+            }
+
+            return [
+              {
+                provider: "webcal_subscription" as const,
+                title: "Subscribe using calendar URL",
+                description:
+                  "Use this in Apple Calendar, Outlook, or another calendar client to keep future publications connected.",
+                accent: "Keeps updates",
+              },
+              {
+                provider: "ics_download" as const,
+                title: "Download one-time .ics",
+                description:
+                  "Imports the current timetable once. Future changes will not update automatically.",
+              },
+            ];
+          }
+
+          function triggerCalendarDownload'''
+          text, count = re.subn(
+              r'function getCalendarMethods\(device: DeviceKind\) \{.*?\n\}\n\nfunction triggerCalendarDownload',
+              replacement,
+              text,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f'calendar methods replacement count={count}')
+          text = text.replace('Add timetable to my calendar', 'Subscribe to calendar')
+          text = text.replace('Add to calendar', 'Subscribe to calendar')
+          text = text.replace(
+              'No account needed. Choose your reminders.',
+              'No account needed. Subscriptions follow future CalenderZW publications; .ics downloads are one-time.',
+          )
+          sheet_anchor = '''            <div className="step-panel">
+              <div
+                className="public-reminder-list"'''
+          if 'className="public-timezone-note"' not in text:
+              if sheet_anchor not in text:
+                  raise SystemExit('calendar sheet anchor missing')
+              text = text.replace(
+                  sheet_anchor,
+                  '''            <div className="step-panel">
+              <div className="public-timezone-note" role="note">
+                <strong>Lecture times: {timetable.institutionTimezone}</strong>
+                <span>
+                  Reminder choices only control notifications. They never move a
+                  lecture's start or end time.
+                </span>
+              </div>
+              <div
+                className="public-reminder-list"''',
+                  1,
+              )
+          p.write_text(text)
+
+          p = Path('src/appV2.css')
+          text = p.read_text()
+          if '/* Public timetable sync hardening */' not in text:
+              text += '''
+
+          /* Public timetable sync hardening */
+          .czw-public-timetable-wrap .public-timezone-note {
+            display: grid;
+            gap: 4px;
+            padding: 12px 14px;
+            border: 1px solid var(--czw-line);
+            border-radius: 10px;
+            background: var(--czw-sage-soft);
+            color: var(--czw-forest);
+            font-size: 12px;
+            line-height: 1.5;
+          }
+          .czw-public-timetable-wrap .public-timezone-note span { color: var(--czw-muted); }
+
+          @media (max-width: 820px) {
+            .czw-public-timetable-wrap {
+              padding-inline: 14px;
+              padding-bottom: calc(96px + env(safe-area-inset-bottom));
+            }
+            .czw-public-timetable-wrap .public-timetable-page,
+            .czw-public-timetable-wrap .public-hero,
+            .czw-public-timetable-wrap .public-schedule-layout {
+              width: 100%;
+              min-width: 0;
+              max-width: 100%;
+            }
+            .czw-public-timetable-wrap .public-hero {
+              grid-template-columns: minmax(0, 1fr);
+            }
+            .czw-public-timetable-wrap .public-hero-copy,
+            .czw-public-timetable-wrap .public-hero-side,
+            .czw-public-timetable-wrap .public-success-card,
+            .czw-public-timetable-wrap .public-schedule-surface {
+              min-width: 0;
+              width: 100%;
+              max-width: 100%;
+            }
+            .czw-public-timetable-wrap .public-hero-side:empty { display: none; }
+            .czw-public-timetable-wrap .public-sticky-action {
+              display: block;
+              left: 12px;
+              right: 12px;
+              bottom: max(10px, env(safe-area-inset-bottom));
+              width: auto;
+              padding: 7px;
+              border: 1px solid rgba(21, 61, 50, 0.14);
+              border-radius: 14px;
+              background: rgba(255, 254, 250, 0.94);
+              box-shadow: 0 14px 36px rgba(15, 47, 39, 0.2);
+              backdrop-filter: blur(14px);
+            }
+            .czw-public-timetable-wrap .public-sticky-action .primary {
+              min-height: 54px;
+              border-radius: 10px;
+              background: var(--czw-forest);
+              color: #fff;
+            }
+            .czw-public-timetable-wrap .public-calendar-sheet {
+              max-height: min(88dvh, 48rem);
+              padding-bottom: max(16px, env(safe-area-inset-bottom));
+            }
+          }
+          @media (max-width: 360px) {
+            .czw-public-timetable-wrap { padding-inline: 10px; }
+            .czw-public-timetable-wrap .public-hero-copy,
+            .czw-public-timetable-wrap .public-success-card,
+            .czw-public-timetable-wrap .public-schedule-surface { padding-inline: 12px; }
+          }
+          '''
+          p.write_text(text)
+      - run: npx prettier --write package.json package-lock.json server/publishedCalendar.ts tests/publishedCalendar.test.ts src/pilotMvp.tsx src/appV2.css
+      - name: Verify
+        run: |
+          npm run lint
+          npm run format:check
+          npm run test
+          npm run build
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json server/publishedCalendar.ts tests/publishedCalendar.test.ts src/pilotMvp.tsx src/appV2.css
+          git commit -m "fix: preserve timetable wall-clock times in calendar sync"
+          git push origin HEAD:Calender
