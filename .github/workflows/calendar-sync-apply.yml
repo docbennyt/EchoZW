@@ -40,14 +40,15 @@ jobs:
               text = text.replace(
                   'function alarmDescription(courseName: string, minutes: number) {',
                   '''function vtimezoneLines(timezone: string) {
-            const timezoneResult = tzlib_get_ical_block(timezone);
-            const block = Array.isArray(timezoneResult)
-              ? timezoneResult[0]
-              : timezoneResult;
-            if (typeof block !== "string" || !block.includes("BEGIN:VTIMEZONE")) {
+            const timezoneResult: unknown = tzlib_get_ical_block(timezone);
+            if (
+              !Array.isArray(timezoneResult) ||
+              typeof timezoneResult[0] !== "string" ||
+              !timezoneResult[0].includes("BEGIN:VTIMEZONE")
+            ) {
               throw new Error(`Unsupported institution timezone: ${timezone}`);
             }
-            return block.split(/\\r?\\n/).filter(Boolean);
+            return timezoneResult[0].split(/\\r?\\n/).filter(Boolean);
           }
 
           function alarmDescription(courseName: string, minutes: number) {''',
