@@ -149,83 +149,129 @@ export async function handlePilotAdminApi(
   const requestUrl = parseUrl(req);
 
   try {
-    if (req.method === "GET" && requestUrl.pathname === "/api/admin/institutions") {
+    if (
+      req.method === "GET" &&
+      requestUrl.pathname === "/api/admin/institutions"
+    ) {
       sendJson(res, 200, { institutions: await listInstitutions() });
       return true;
     }
 
-    if (req.method === "POST" && requestUrl.pathname === "/api/admin/institutions") {
+    if (
+      req.method === "POST" &&
+      requestUrl.pathname === "/api/admin/institutions"
+    ) {
       const parsed = institutionSchema.parse(await readJson(req));
       sendJson(res, 201, { institution: await createInstitution(parsed) });
       return true;
     }
 
-    const institutionMatch = requestUrl.pathname.match(/^\/api\/admin\/institutions\/([^/]+)$/);
+    const institutionMatch = requestUrl.pathname.match(
+      /^\/api\/admin\/institutions\/([^/]+)$/,
+    );
     if (req.method === "PATCH" && institutionMatch) {
       const parsed = institutionSchema.partial().parse(await readJson(req));
       sendJson(res, 200, {
-        institution: await updateInstitution(decodeURIComponent(institutionMatch[1]), parsed),
+        institution: await updateInstitution(
+          decodeURIComponent(institutionMatch[1]),
+          parsed,
+        ),
       });
       return true;
     }
 
-    if (req.method === "GET" && requestUrl.pathname === "/api/admin/programmes") {
-      const institutionId = requestUrl.searchParams.get("institutionId") ?? undefined;
+    if (
+      req.method === "GET" &&
+      requestUrl.pathname === "/api/admin/programmes"
+    ) {
+      const institutionId =
+        requestUrl.searchParams.get("institutionId") ?? undefined;
       sendJson(res, 200, { programmes: await listProgrammes(institutionId) });
       return true;
     }
 
-    if (req.method === "POST" && requestUrl.pathname === "/api/admin/programmes") {
+    if (
+      req.method === "POST" &&
+      requestUrl.pathname === "/api/admin/programmes"
+    ) {
       const parsed = programmeSchema.parse(await readJson(req));
       sendJson(res, 201, { programme: await createProgramme(parsed) });
       return true;
     }
 
-    const programmeMatch = requestUrl.pathname.match(/^\/api\/admin\/programmes\/([^/]+)$/);
+    const programmeMatch = requestUrl.pathname.match(
+      /^\/api\/admin\/programmes\/([^/]+)$/,
+    );
     if (req.method === "PATCH" && programmeMatch) {
       const parsed = programmeSchema.partial().parse(await readJson(req));
       sendJson(res, 200, {
-        programme: await updateProgramme(decodeURIComponent(programmeMatch[1]), parsed),
+        programme: await updateProgramme(
+          decodeURIComponent(programmeMatch[1]),
+          parsed,
+        ),
       });
       return true;
     }
 
-    if (req.method === "GET" && requestUrl.pathname === "/api/admin/class-groups") {
-      const programmeId = requestUrl.searchParams.get("programmeId") ?? undefined;
+    if (
+      req.method === "GET" &&
+      requestUrl.pathname === "/api/admin/class-groups"
+    ) {
+      const programmeId =
+        requestUrl.searchParams.get("programmeId") ?? undefined;
       sendJson(res, 200, { classGroups: await listClassGroups(programmeId) });
       return true;
     }
 
-    if (req.method === "POST" && requestUrl.pathname === "/api/admin/class-groups") {
+    if (
+      req.method === "POST" &&
+      requestUrl.pathname === "/api/admin/class-groups"
+    ) {
       const parsed = classGroupSchema.parse(await readJson(req));
       sendJson(res, 201, { classGroup: await createClassGroup(parsed) });
       return true;
     }
 
-    const classGroupMatch = requestUrl.pathname.match(/^\/api\/admin\/class-groups\/([^/]+)$/);
+    const classGroupMatch = requestUrl.pathname.match(
+      /^\/api\/admin\/class-groups\/([^/]+)$/,
+    );
     if (req.method === "PATCH" && classGroupMatch) {
       const parsed = classGroupSchema.partial().parse(await readJson(req));
       sendJson(res, 200, {
-        classGroup: await updateClassGroup(decodeURIComponent(classGroupMatch[1]), parsed),
+        classGroup: await updateClassGroup(
+          decodeURIComponent(classGroupMatch[1]),
+          parsed,
+        ),
       });
       return true;
     }
 
-    if (req.method === "GET" && requestUrl.pathname === "/api/admin/academic-periods") {
-      const institutionId = requestUrl.searchParams.get("institutionId") ?? undefined;
+    if (
+      req.method === "GET" &&
+      requestUrl.pathname === "/api/admin/academic-periods"
+    ) {
+      const institutionId =
+        requestUrl.searchParams.get("institutionId") ?? undefined;
       sendJson(res, 200, {
         academicPeriods: await listAcademicPeriods(institutionId),
       });
       return true;
     }
 
-    if (req.method === "POST" && requestUrl.pathname === "/api/admin/academic-periods") {
+    if (
+      req.method === "POST" &&
+      requestUrl.pathname === "/api/admin/academic-periods"
+    ) {
       const parsed = academicPeriodSchema.parse(await readJson(req));
-      sendJson(res, 201, { academicPeriod: await createAcademicPeriod(parsed) });
+      sendJson(res, 201, {
+        academicPeriod: await createAcademicPeriod(parsed),
+      });
       return true;
     }
 
-    const academicPeriodMatch = requestUrl.pathname.match(/^\/api\/admin\/academic-periods\/([^/]+)$/);
+    const academicPeriodMatch = requestUrl.pathname.match(
+      /^\/api\/admin\/academic-periods\/([^/]+)$/,
+    );
     if (req.method === "PATCH" && academicPeriodMatch) {
       const parsed = academicPeriodSchema.partial().parse(await readJson(req));
       sendJson(res, 200, {
@@ -237,14 +283,23 @@ export async function handlePilotAdminApi(
       return true;
     }
 
-    if (req.method === "GET" && requestUrl.pathname === "/api/admin/timetables") {
+    if (
+      req.method === "GET" &&
+      requestUrl.pathname === "/api/admin/timetables"
+    ) {
       sendJson(res, 200, { timetables: await listTimetables() });
       return true;
     }
 
-    if (req.method === "POST" && requestUrl.pathname === "/api/admin/timetables") {
+    if (
+      req.method === "POST" &&
+      requestUrl.pathname === "/api/admin/timetables"
+    ) {
       const parsed = timetableCreateSchema.parse(await readJson(req));
-      const editor = await createTimetable({ ...parsed, createdBy: getUserId(user) });
+      const editor = await createTimetable({
+        ...parsed,
+        createdBy: getUserId(user),
+      });
       sendJson(res, 201, {
         timetable: editor,
         draftVersion: editor.activeVersion,
@@ -252,7 +307,9 @@ export async function handlePilotAdminApi(
       return true;
     }
 
-    const timetableMatch = requestUrl.pathname.match(/^\/api\/admin\/timetables\/([^/]+)$/);
+    const timetableMatch = requestUrl.pathname.match(
+      /^\/api\/admin\/timetables\/([^/]+)$/,
+    );
     if (req.method === "GET" && timetableMatch) {
       const editor = await getTimetableEditor(
         decodeURIComponent(timetableMatch[1]),

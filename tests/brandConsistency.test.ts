@@ -39,9 +39,10 @@ describe("CalenderZW brand consistency", () => {
       "public/site.webmanifest",
       "public/manifest.webmanifest",
     ]) {
-      const manifest = JSON.parse(
-        readFileSync(manifestPath, "utf8"),
-      ) as { name: string; short_name: string };
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+        name: string;
+        short_name: string;
+      };
       expect(manifest.name).toBe("CalenderZW");
       expect(manifest.short_name).toBe("CalenderZW");
     }
@@ -51,14 +52,22 @@ describe("CalenderZW brand consistency", () => {
     const html = readFileSync("index.html", "utf8");
     const normalized = html.replace(/\s+/g, " ");
 
-    expect(html).toContain('<span class="brand-name">Calender<span>ZW</span></span>');
+    expect(html).toContain(
+      '<span class="brand-name">Calender<span>ZW</span></span>',
+    );
     // expect(html).toContain('Student timetable and calendar synchronisation'); // Removed as copy changed
-    expect(html).toContain("Your university timetable, <span>already in your calendar.</span>");
-    expect(html).toContain("CalenderZW helps students find a published class timetable");
+    expect(normalized).toContain(
+      "Your university timetable, <span>already in your calendar.</span>",
+    );
+    expect(normalized).toContain(
+      "CalenderZW helps students find a published class timetable",
+    );
     expect(normalized).toContain("choose useful reminders");
     expect(html).toContain("Google Calendar");
     // The prerendered VPS page describes Google Calendar truthfully without the old access section
-    expect(normalized).toContain("CalenderZW helps students find a published class timetable");
+    expect(normalized).toContain(
+      "CalenderZW helps students find a published class timetable",
+    );
     expect(html).toContain('href="/privacy"');
     expect(html).toContain('href="/terms"');
     expect(html).toContain('href="/data-deletion"');

@@ -25,20 +25,22 @@ vi.mock("../src/api/pilotAdmin", async () => {
 
 import { TimetableEditorPage } from "../src/pilotMvp";
 
-function makeSession(overrides: Partial<{
-  id: string;
-  timetableVersionId: string;
-  stableSessionKey: string;
-  courseCode: string;
-  courseName: string;
-  weekday: number;
-  startTime: string;
-  endTime: string;
-  venue: string | null;
-  lecturer: string | null;
-  sessionType: string | null;
-  notes: string | null;
-}> = {}) {
+function makeSession(
+  overrides: Partial<{
+    id: string;
+    timetableVersionId: string;
+    stableSessionKey: string;
+    courseCode: string;
+    courseName: string;
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    venue: string | null;
+    lecturer: string | null;
+    sessionType: string | null;
+    notes: string | null;
+  }> = {},
+) {
   return {
     id: "session-1",
     timetableVersionId: "version-1",
@@ -105,15 +107,19 @@ function deferred<T>() {
 }
 
 async function openTuesdayForm() {
-  fireEvent.click(await screen.findByRole("button", { name: /Add Tuesday class/i }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: /Add Tuesday class/i }),
+  );
 }
 
-async function fillNewSessionForm(overrides?: Partial<{
-  courseCode: string;
-  courseName: string;
-  start: string;
-  end: string;
-}>) {
+async function fillNewSessionForm(
+  overrides?: Partial<{
+    courseCode: string;
+    courseName: string;
+    start: string;
+    end: string;
+  }>,
+) {
   fireEvent.change(screen.getByLabelText("Course code"), {
     target: { value: overrides?.courseCode ?? "ICS1102" },
   });
@@ -141,7 +147,9 @@ describe("timetable editor manual entry flow", () => {
   });
 
   it("shows the initial loading skeleton only before the first editor payload arrives", async () => {
-    const initialLoad = deferred<{ timetable: ReturnType<typeof editorFixture> }>();
+    const initialLoad = deferred<{
+      timetable: ReturnType<typeof editorFixture>;
+    }>();
     apiMocks.getTimetable.mockReturnValueOnce(initialLoad.promise);
 
     render(<TimetableEditorPage accessToken="token" timetableId="tt-1" />);
@@ -234,7 +242,9 @@ describe("timetable editor manual entry flow", () => {
   });
 
   it("keeps the editor mounted and add buttons usable during background refresh after save", async () => {
-    const backgroundRefresh = deferred<{ timetable: ReturnType<typeof editorFixture> }>();
+    const backgroundRefresh = deferred<{
+      timetable: ReturnType<typeof editorFixture>;
+    }>();
     apiMocks.getTimetable
       .mockResolvedValueOnce({ timetable: editorFixture() })
       .mockReturnValueOnce(backgroundRefresh.promise);
@@ -261,7 +271,9 @@ describe("timetable editor manual entry flow", () => {
     expect(await screen.findByText("ICS1102")).toBeInTheDocument();
     expect(screen.queryByLabelText("Loading timetable")).toBeNull();
     expect(screen.getByText("Syncing...")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Add Monday class/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /Add Monday class/i }),
+    ).toBeEnabled();
 
     backgroundRefresh.resolve({
       timetable: editorFixture([
@@ -284,7 +296,9 @@ describe("timetable editor manual entry flow", () => {
   });
 
   it("removes only the deleted session without showing the initial loading state", async () => {
-    const backgroundRefresh = deferred<{ timetable: ReturnType<typeof editorFixture> }>();
+    const backgroundRefresh = deferred<{
+      timetable: ReturnType<typeof editorFixture>;
+    }>();
     apiMocks.getTimetable
       .mockResolvedValueOnce({ timetable: editorFixture() })
       .mockReturnValueOnce(backgroundRefresh.promise);
@@ -303,15 +317,21 @@ describe("timetable editor manual entry flow", () => {
       ).toBeNull(),
     );
     expect(screen.queryByLabelText("Loading timetable")).toBeNull();
-    expect(screen.getByRole("button", { name: /Add Tuesday class/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /Add Tuesday class/i }),
+    ).toBeEnabled();
 
     backgroundRefresh.resolve({ timetable: editorFixture([]) });
     await waitFor(() => expect(screen.queryByText("Syncing...")).toBeNull());
   });
 
   it("keeps newer session state when an older background refresh resolves last", async () => {
-    const firstRefresh = deferred<{ timetable: ReturnType<typeof editorFixture> }>();
-    const secondRefresh = deferred<{ timetable: ReturnType<typeof editorFixture> }>();
+    const firstRefresh = deferred<{
+      timetable: ReturnType<typeof editorFixture>;
+    }>();
+    const secondRefresh = deferred<{
+      timetable: ReturnType<typeof editorFixture>;
+    }>();
     apiMocks.getTimetable
       .mockResolvedValueOnce({ timetable: editorFixture() })
       .mockReturnValueOnce(firstRefresh.promise)
@@ -348,7 +368,9 @@ describe("timetable editor manual entry flow", () => {
 
     await openTuesdayForm();
     await fillNewSessionForm();
-    fireEvent.click(screen.getByRole("button", { name: /Save & add another/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Save & add another/i }),
+    );
 
     expect(await screen.findByText("ICS1102")).toBeInTheDocument();
     expect(screen.getByLabelText("Course code")).toHaveFocus();
@@ -359,7 +381,9 @@ describe("timetable editor manual entry flow", () => {
       start: "12:30",
       end: "14:00",
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save & add another/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Save & add another/i }),
+    );
 
     expect(await screen.findByText("ICS1103")).toBeInTheDocument();
 
@@ -407,7 +431,9 @@ describe("timetable editor manual entry flow", () => {
       ]),
     });
 
-    await waitFor(() => expect(screen.getByText("ICS1103")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText("ICS1103")).toBeInTheDocument(),
+    );
     expect(screen.queryByLabelText("Loading timetable")).toBeNull();
   });
 });

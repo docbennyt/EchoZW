@@ -4,9 +4,10 @@ export async function fetchPublicTimetable(publicSlug: string) {
   const response = await fetch(
     `/api/public/timetables/${encodeURIComponent(publicSlug)}`,
   );
-  const body = (await response.json().catch(() => null)) as
-    | { timetable?: PublicTimetable; error?: { message?: string; code?: string } }
-    | null;
+  const body = (await response.json().catch(() => null)) as {
+    timetable?: PublicTimetable;
+    error?: { message?: string; code?: string };
+  } | null;
 
   if (!response.ok || !body?.timetable) {
     const error = new Error(

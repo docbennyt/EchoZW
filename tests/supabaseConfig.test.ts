@@ -37,8 +37,6 @@ describe("Supabase configuration", () => {
   });
 
   it("fails clearly when public Supabase config is missing", () => {
-    expect(() => getSupabaseConfig(env({}))).toThrow(
-      /VITE_SUPABASE_URL/,
-    );
+    expect(() => getSupabaseConfig(env({}))).toThrow(/VITE_SUPABASE_URL/);
   });
 });

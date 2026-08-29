@@ -41,7 +41,9 @@ export async function handlePublicTimetableRequest(
   res: ServerResponse,
 ) {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
-  const timetableMatch = requestUrl.pathname.match(/^\/api\/public\/timetables\/([^/]+)$/);
+  const timetableMatch = requestUrl.pathname.match(
+    /^\/api\/public\/timetables\/([^/]+)$/,
+  );
   if (req.method === "GET" && timetableMatch) {
     try {
       sendJson(res, 200, {

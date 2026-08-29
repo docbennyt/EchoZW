@@ -5,7 +5,6 @@ import {
   History,
   Lock,
   Menu,
-  Search,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -15,7 +14,6 @@ import { legalConfig } from "./config/legal";
 import { fetchAdminSession } from "./api/adminSession";
 import { track } from "./analytics";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
-import type { Timetable } from "./domain/types";
 import {
   AdminMvpScreen,
   FinderMvpScreen,
@@ -69,14 +67,8 @@ function setPageMetadata(input: {
 }
 
 function usePageMetadata(input: Parameters<typeof setPageMetadata>[0]) {
-  const {
-    title,
-    description,
-    canonicalPath,
-    ogTitle,
-    ogDescription,
-    robots,
-  } = input;
+  const { title, description, canonicalPath, ogTitle, ogDescription, robots } =
+    input;
   useEffect(() => {
     setPageMetadata({
       title,
@@ -88,7 +80,6 @@ function usePageMetadata(input: Parameters<typeof setPageMetadata>[0]) {
     });
   }, [title, description, canonicalPath, ogTitle, ogDescription, robots]);
 }
-
 
 const navigationLinks = [
   { label: "Find timetable", href: "/find" },
@@ -124,7 +115,10 @@ function GlobalHeader() {
       <nav className="nav shell" aria-label="Primary navigation">
         <a href="/#top" className="brand" aria-label="CalenderZW home">
           <span className="mark" aria-hidden="true">
-            <i></i><i></i><i></i><i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
           </span>
           <span className="brand-name">
             Calender<span>ZW</span>
@@ -139,7 +133,9 @@ function GlobalHeader() {
         <button
           className="menu-trigger menu"
           type="button"
-          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            menuOpen ? "Close navigation menu" : "Open navigation menu"
+          }
           aria-expanded={menuOpen}
           aria-controls="global-navigation"
           onClick={() => setMenuOpen((open) => !open)}
@@ -167,7 +163,11 @@ function GlobalHeader() {
             </a>
           ))}
         </div>
-        <a className="btn btn-primary nav-cta" href="/find" data-event="find_timetable_clicked">
+        <a
+          className="btn btn-primary nav-cta"
+          href="/find"
+          data-event="find_timetable_clicked"
+        >
           Find timetable <span aria-hidden="true">→</span>
         </a>
       </nav>
@@ -190,7 +190,10 @@ function GlobalFooter() {
           <div className="footer-brand">
             <a href="/#top" className="brand" aria-label="CalenderZW home">
               <span className="mark" aria-hidden="true">
-                <i></i><i></i><i></i><i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
               </span>
               <span className="brand-name">
                 Calender<span>ZW</span>
@@ -222,30 +225,17 @@ function GlobalFooter() {
           </div>
         </div>
         <div className="copyright">
-          <span>© {currentYear} {appConfig.productName}. Operated by {appConfig.companyName}.</span>
-          <span>{appConfig.productName} is the product. {appConfig.companyName} is the operator.</span>
+          <span>
+            © {currentYear} {appConfig.productName}. Operated by{" "}
+            {appConfig.companyName}.
+          </span>
+          <span>
+            {appConfig.productName} is the product. {appConfig.companyName} is
+            the operator.
+          </span>
         </div>
       </div>
     </footer>
-  );
-}
-
-function VerificationBadge({
-  status,
-}: {
-  status: Timetable["verificationStatus"];
-}) {
-  const label =
-    status === "official"
-      ? "Official"
-      : status === "community_verified"
-        ? "Community verified"
-        : "Draft";
-  return (
-    <span className={`badge ${status}`}>
-      <ShieldCheck size={16} aria-hidden="true" />
-      {label}
-    </span>
   );
 }
 
@@ -259,7 +249,10 @@ function PublicTimetablePage() {
 
 function CompactFooter() {
   return (
-    <footer className="site-footer compact-site-footer" data-component="CompactFooter">
+    <footer
+      className="site-footer compact-site-footer"
+      data-component="CompactFooter"
+    >
       <div className="compact-footer-inner">
         <strong>CalenderZW · Operated by aiDo</strong>
         <nav aria-label="Timetable footer">
@@ -295,54 +288,831 @@ function HomePage() {
   return (
     <div className="app-shell">
       <GlobalHeader />
-      <a href="#main" className="skip">Skip to content</a>
+      <a href="#main" className="skip">
+        Skip to content
+      </a>
       <main id="main">
-        <a href="#main" className="skip">Skip to content</a>
-  
-  <main id="main">
-    <section className="hero" id="top">
-      <div className="hero-grid shell">
-        <div>
-          <span className="eyebrow">Your timetable, already organised</span>
-          <h1>Your university timetable, <span>already in your calendar.</span></h1>
-          <p className="hero-copy">CalenderZW helps students find a published class timetable, choose useful reminders, and add lectures to the calendar they already use.</p>
-          <div className="hero-actions"><a className="btn btn-primary" href="https://calender.aido.co.zw/" data-event="find_timetable_clicked">Find my timetable <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a className="btn btn-secondary" href="#how" data-event="how_it_works_clicked">See how it works <span aria-hidden="true">↓</span></a></div>
-          <p className="micro"><span>No app required</span><i></i><span>No student account needed</span></p>
-        </div>
-        <div className="product-scene" aria-label="A CalenderZW timetable being prepared and added to a calendar">
-          <div className="scene-halo"></div><div className="path"></div>
-          <div className="flow-card reminder"><div className="flow-title"><i>◷</i><span>Reminder preset</span></div><small>Prepared</small><div className="chips"><span>24h</span><span>30m</span></div></div>
-          <div className="phone"><div className="phone-screen"><div className="phone-top"><i></i></div><div className="phone-head"><span><small>CS 1.1 · WEEK 4</small><b>Monday</b></span><span className="verified">Published</span></div><div className="schedule"><div className="lecture"><time>08:00</time><span><b>Operating Systems</b><small>N110 · 1h 30m</small></span></div><div className="lecture"><time>10:15</time><span><b>Discrete Mathematics</b><small>E/HALL · 1h 30m</small></span></div><div className="lecture"><time>14:00</time><span><b>Technopreneurship I</b><small>N109 · 1h</small></span></div></div><div className="add-bar"><span>Add timetable to calendar</span><span aria-hidden="true">→</span></div></div></div>
-          <div className="flow-card result"><div className="flow-title"><i>✓</i><span>Added to calendar</span></div><small>3 lectures · reminders ready</small></div>
-        </div>
-      </div>
-    </section>
-    <section className="trust-strip" aria-label="Product principles"><div className="trust-inner shell"><span><b>Built in Zimbabwe</b> for university life</span><i></i><span>One class link</span><i></i><span>The calendar you already use</span></div></section>
+        <section className="hero" id="top">
+          <div className="hero-grid shell">
+            <div>
+              <span className="eyebrow">Your timetable, already organised</span>
+              <h1>
+                Your university timetable,{" "}
+                <span>already in your calendar.</span>
+              </h1>
+              <p className="hero-copy">
+                CalenderZW helps students find a published class timetable,
+                choose useful reminders, and add lectures to the calendar they
+                already use.
+              </p>
+              <div className="hero-actions">
+                <a
+                  className="btn btn-primary"
+                  href="https://calender.aido.co.zw/"
+                  data-event="find_timetable_clicked"
+                >
+                  Find my timetable{" "}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </a>
+                <a
+                  className="btn btn-secondary"
+                  href="#how"
+                  data-event="how_it_works_clicked"
+                >
+                  See how it works <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+              <p className="micro">
+                <span>No app required</span>
+                <i></i>
+                <span>No student account needed</span>
+              </p>
+            </div>
+            <div
+              className="product-scene"
+              aria-label="A CalenderZW timetable being prepared and added to a calendar"
+            >
+              <div className="scene-halo"></div>
+              <div className="path"></div>
+              <div className="flow-card reminder">
+                <div className="flow-title">
+                  <i>◷</i>
+                  <span>Reminder preset</span>
+                </div>
+                <small>Prepared</small>
+                <div className="chips">
+                  <span>24h</span>
+                  <span>30m</span>
+                </div>
+              </div>
+              <div className="phone">
+                <div className="phone-screen">
+                  <div className="phone-top">
+                    <i></i>
+                  </div>
+                  <div className="phone-head">
+                    <span>
+                      <small>CS 1.1 · WEEK 4</small>
+                      <b>Monday</b>
+                    </span>
+                    <span className="verified">Published</span>
+                  </div>
+                  <div className="schedule">
+                    <div className="lecture">
+                      <time>08:00</time>
+                      <span>
+                        <b>Operating Systems</b>
+                        <small>N110 · 1h 30m</small>
+                      </span>
+                    </div>
+                    <div className="lecture">
+                      <time>10:15</time>
+                      <span>
+                        <b>Discrete Mathematics</b>
+                        <small>E/HALL · 1h 30m</small>
+                      </span>
+                    </div>
+                    <div className="lecture">
+                      <time>14:00</time>
+                      <span>
+                        <b>Technopreneurship I</b>
+                        <small>N109 · 1h</small>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="add-bar">
+                    <span>Add timetable to calendar</span>
+                    <span aria-hidden="true">→</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flow-card result">
+                <div className="flow-title">
+                  <i>✓</i>
+                  <span>Added to calendar</span>
+                </div>
+                <small>3 lectures · reminders ready</small>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section className="trust-strip" aria-label="Product principles">
+          <div className="trust-inner shell">
+            <span>
+              <b>Built in Zimbabwe</b> for university life
+            </span>
+            <i></i>
+            <span>One class link</span>
+            <i></i>
+            <span>The calendar you already use</span>
+          </div>
+        </section>
 
-    <section className="section stage" aria-labelledby="problem-title"><div className="recognition shell reveal-group"><div className="clutter" aria-label="Common ways students receive timetable information"><div className="message m1">“Does anyone know where tomorrow’s lecture is?”<small>Class group · 19:42</small></div><div className="message m2">“Timetable updated again 👆”<small>Class rep · 20:08</small></div><div className="message m3">“Please resend the PDF.”<small>3 unread replies</small></div><div className="pdf"><b>LECTURE TIMETABLE</b><i></i><i></i><i></i><i></i><i></i></div></div><div className="clean-note"><span className="kicker">Keep the conversation. Lose the searching.</span><h2 id="problem-title">Keep WhatsApp for conversation. <strong>Let your calendar remember the timetable.</strong></h2><p className="small-note">CalenderZW turns a published class schedule into something your phone already knows how to use.</p></div></div></section>
+        <section className="section stage" aria-labelledby="problem-title">
+          <div className="recognition shell reveal-group">
+            <div
+              className="clutter"
+              aria-label="Common ways students receive timetable information"
+            >
+              <div className="message m1">
+                “Does anyone know where tomorrow’s lecture is?”
+                <small>Class group · 19:42</small>
+              </div>
+              <div className="message m2">
+                “Timetable updated again 👆”<small>Class rep · 20:08</small>
+              </div>
+              <div className="message m3">
+                “Please resend the PDF.”<small>3 unread replies</small>
+              </div>
+              <div className="pdf">
+                <b>LECTURE TIMETABLE</b>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+              </div>
+            </div>
+            <div className="clean-note">
+              <span className="kicker">
+                Keep the conversation. Lose the searching.
+              </span>
+              <h2 id="problem-title">
+                Keep WhatsApp for conversation.{" "}
+                <strong>Let your calendar remember the timetable.</strong>
+              </h2>
+              <p className="small-note">
+                CalenderZW turns a published class schedule into something your
+                phone already knows how to use.
+              </p>
+            </div>
+          </div>
+        </section>
 
-    <section className="section" id="how" aria-labelledby="how-title"><div className="shell"><div className="section-head reveal-group"><span className="kicker">Three clear steps</span><h2 id="how-title">From class link to calendar in minutes.</h2><p>No account maze. No new daily habit. Just find, prepare and add.</p></div><div className="steps-shell reveal-group"><div className="step-list" role="tablist" aria-label="How CalenderZW works"><button className="step-button" role="tab" aria-selected={currentStep === 1} aria-controls="demo-1" id="step-1" onClick={() => setCurrentStep(1)}><span className="num">01</span><span><b>Find your class</b><small>Open a shared class link or search by institution, programme and group.</small></span></button><button className="step-button" role="tab" aria-selected={currentStep === 2} aria-controls="demo-2" id="step-2" onClick={() => setCurrentStep(2)}><span className="num">02</span><span><b>Choose your reminders</b><small>Pick Prepared, On time, Commuter or a timing that suits you.</small></span></button><button className="step-button" role="tab" aria-selected={currentStep === 3} aria-controls="demo-3" id="step-3" onClick={() => setCurrentStep(3)}><span className="num">03</span><span><b>Add it to your calendar</b><small>Use the supported option that works best on your phone.</small></span></button></div><div className="demo-panel"><div className={`demo ${currentStep === 1 ? "active" : ""}`} id="demo-1" role="tabpanel" aria-labelledby="step-1"><div className="finder"><span className="mock-label">Institution</span><div className="field"><span>Choose your university</span><b>⌄</b></div><span className="mock-label">Programme & class group</span><div className="field"><span>Computer Science · 1.1</span><b>⌄</b></div><div className="add-bar"><span>View published timetable</span><span>→</span></div></div></div><div className={`demo ${currentStep === 2 ? "active" : ""}`} id="demo-2" role="tabpanel" aria-labelledby="step-2"><div className="finder"><span className="mock-label">Reminder preset</span><div className="presets"><div className="preset active"><span><b>Prepared</b><br /><small>24 hours + 30 minutes</small></span><i>✓</i></div><div className="preset"><span><b>On time</b><br /><small>30 minutes</small></span><i></i></div><div className="preset"><span><b>Commuter</b><br /><small>2 hours + 30 minutes</small></span><i></i></div></div></div></div><div className={`demo ${currentStep === 3 ? "active" : ""}`} id="demo-3" role="tabpanel" aria-labelledby="step-3"><div className="cal-result"><span className="result-date">MONDAY · 08:00</span><div className="result-event"><time>Lecture · 1h 30m</time><b>Operating Systems</b><small>Venue N110 · Reminder 30m before</small></div><div className="ready"><i>✓</i><span>Calendar event ready</span></div></div></div></div></div></div></section>
+        <section className="section" id="how" aria-labelledby="how-title">
+          <div className="shell">
+            <div className="section-head reveal-group">
+              <span className="kicker">Three clear steps</span>
+              <h2 id="how-title">From class link to calendar in minutes.</h2>
+              <p>
+                No account maze. No new daily habit. Just find, prepare and add.
+              </p>
+            </div>
+            <div className="steps-shell reveal-group">
+              <div
+                className="step-list"
+                role="tablist"
+                aria-label="How CalenderZW works"
+              >
+                <button
+                  className="step-button"
+                  role="tab"
+                  aria-selected={currentStep === 1}
+                  aria-controls="demo-1"
+                  id="step-1"
+                  onClick={() => setCurrentStep(1)}
+                >
+                  <span className="num">01</span>
+                  <span>
+                    <b>Find your class</b>
+                    <small>
+                      Open a shared class link or search by institution,
+                      programme and group.
+                    </small>
+                  </span>
+                </button>
+                <button
+                  className="step-button"
+                  role="tab"
+                  aria-selected={currentStep === 2}
+                  aria-controls="demo-2"
+                  id="step-2"
+                  onClick={() => setCurrentStep(2)}
+                >
+                  <span className="num">02</span>
+                  <span>
+                    <b>Choose your reminders</b>
+                    <small>
+                      Pick Prepared, On time, Commuter or a timing that suits
+                      you.
+                    </small>
+                  </span>
+                </button>
+                <button
+                  className="step-button"
+                  role="tab"
+                  aria-selected={currentStep === 3}
+                  aria-controls="demo-3"
+                  id="step-3"
+                  onClick={() => setCurrentStep(3)}
+                >
+                  <span className="num">03</span>
+                  <span>
+                    <b>Add it to your calendar</b>
+                    <small>
+                      Use the supported option that works best on your phone.
+                    </small>
+                  </span>
+                </button>
+              </div>
+              <div className="demo-panel">
+                <div
+                  className={`demo ${currentStep === 1 ? "active" : ""}`}
+                  id="demo-1"
+                  role="tabpanel"
+                  aria-labelledby="step-1"
+                >
+                  <div className="finder">
+                    <span className="mock-label">Institution</span>
+                    <div className="field">
+                      <span>Choose your university</span>
+                      <b>⌄</b>
+                    </div>
+                    <span className="mock-label">Programme & class group</span>
+                    <div className="field">
+                      <span>Computer Science · 1.1</span>
+                      <b>⌄</b>
+                    </div>
+                    <div className="add-bar">
+                      <span>View published timetable</span>
+                      <span>→</span>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`demo ${currentStep === 2 ? "active" : ""}`}
+                  id="demo-2"
+                  role="tabpanel"
+                  aria-labelledby="step-2"
+                >
+                  <div className="finder">
+                    <span className="mock-label">Reminder preset</span>
+                    <div className="presets">
+                      <div className="preset active">
+                        <span>
+                          <b>Prepared</b>
+                          <br />
+                          <small>24 hours + 30 minutes</small>
+                        </span>
+                        <i>✓</i>
+                      </div>
+                      <div className="preset">
+                        <span>
+                          <b>On time</b>
+                          <br />
+                          <small>30 minutes</small>
+                        </span>
+                        <i></i>
+                      </div>
+                      <div className="preset">
+                        <span>
+                          <b>Commuter</b>
+                          <br />
+                          <small>2 hours + 30 minutes</small>
+                        </span>
+                        <i></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  className={`demo ${currentStep === 3 ? "active" : ""}`}
+                  id="demo-3"
+                  role="tabpanel"
+                  aria-labelledby="step-3"
+                >
+                  <div className="cal-result">
+                    <span className="result-date">MONDAY · 08:00</span>
+                    <div className="result-event">
+                      <time>Lecture · 1h 30m</time>
+                      <b>Operating Systems</b>
+                      <small>Venue N110 · Reminder 30m before</small>
+                    </div>
+                    <div className="ready">
+                      <i>✓</i>
+                      <span>Calendar event ready</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <section className="proof-stage" aria-labelledby="proof-title"><div className="proof-grid shell reveal-group"><div className="proof-copy"><span className="kicker">Set it once</span><h2 id="proof-title">Let your calendar do the remembering.</h2><p>A published timetable becomes readable events with the reminders you chose. The timetable stays the source; your calendar becomes the memory.</p></div><div className="sequence"><div className="sequence-head"><small>Published timetable · Week 4</small><span className="status">Ready</span></div><div className="event-row"><time>MON<br />08:00</time><span><b>Technopreneurship I</b><small>E/HALL</small></span><span className="remind"><i>24h</i><i>30m</i></span></div><div className="event-row"><time>TUE<br />14:00</time><span><b>Operating Systems</b><small>N109</small></span><span className="remind"><i>24h</i><i>30m</i></span></div><div className="event-row"><time>WED<br />10:15</time><span><b>Discrete Mathematics</b><small>N110</small></span><span className="remind"><i>24h</i><i>30m</i></span></div><div className="sequence-foot"><span>3 events prepared</span><span>✓ Timetable ready</span></div></div></div></section>
+        <section className="proof-stage" aria-labelledby="proof-title">
+          <div className="proof-grid shell reveal-group">
+            <div className="proof-copy">
+              <span className="kicker">Set it once</span>
+              <h2 id="proof-title">Let your calendar do the remembering.</h2>
+              <p>
+                A published timetable becomes readable events with the reminders
+                you chose. The timetable stays the source; your calendar becomes
+                the memory.
+              </p>
+            </div>
+            <div className="sequence">
+              <div className="sequence-head">
+                <small>Published timetable · Week 4</small>
+                <span className="status">Ready</span>
+              </div>
+              <div className="event-row">
+                <time>
+                  MON
+                  <br />
+                  08:00
+                </time>
+                <span>
+                  <b>Technopreneurship I</b>
+                  <small>E/HALL</small>
+                </span>
+                <span className="remind">
+                  <i>24h</i>
+                  <i>30m</i>
+                </span>
+              </div>
+              <div className="event-row">
+                <time>
+                  TUE
+                  <br />
+                  14:00
+                </time>
+                <span>
+                  <b>Operating Systems</b>
+                  <small>N109</small>
+                </span>
+                <span className="remind">
+                  <i>24h</i>
+                  <i>30m</i>
+                </span>
+              </div>
+              <div className="event-row">
+                <time>
+                  WED
+                  <br />
+                  10:15
+                </time>
+                <span>
+                  <b>Discrete Mathematics</b>
+                  <small>N110</small>
+                </span>
+                <span className="remind">
+                  <i>24h</i>
+                  <i>30m</i>
+                </span>
+              </div>
+              <div className="sequence-foot">
+                <span>3 events prepared</span>
+                <span>✓ Timetable ready</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <section className="section" aria-labelledby="habit-title"><div className="habit shell reveal-group"><div className="habit-copy"><span className="kicker">Why not another app?</span><h2 className="quote" id="habit-title">Your timetable shouldn’t need <em>another daily habit.</em></h2><p>CalenderZW works with the calendar already built into your routine.</p></div><div className="benefit-lines"><div className="benefit-line"><i>01</i><span><b>No app install for the core flow</b><small>Open it from a browser or class link.</small></span></div><div className="benefit-line"><i>02</i><span><b>No new student account</b><small>Basic timetable access stays low-friction.</small></span></div><div className="benefit-line"><i>03</i><span><b>One link for the class</b><small>A rep can share the same published schedule with everyone.</small></span></div><div className="benefit-line"><i>04</i><span><b>Calendar-native reminders</b><small>Your existing calendar handles the alert.</small></span></div></div></div></section>
+        <section className="section" aria-labelledby="habit-title">
+          <div className="habit shell reveal-group">
+            <div className="habit-copy">
+              <span className="kicker">Why not another app?</span>
+              <h2 className="quote" id="habit-title">
+                Your timetable shouldn’t need <em>another daily habit.</em>
+              </h2>
+              <p>
+                CalenderZW works with the calendar already built into your
+                routine.
+              </p>
+            </div>
+            <div className="benefit-lines">
+              <div className="benefit-line">
+                <i>01</i>
+                <span>
+                  <b>No app install for the core flow</b>
+                  <small>Open it from a browser or class link.</small>
+                </span>
+              </div>
+              <div className="benefit-line">
+                <i>02</i>
+                <span>
+                  <b>No new student account</b>
+                  <small>Basic timetable access stays low-friction.</small>
+                </span>
+              </div>
+              <div className="benefit-line">
+                <i>03</i>
+                <span>
+                  <b>One link for the class</b>
+                  <small>
+                    A rep can share the same published schedule with everyone.
+                  </small>
+                </span>
+              </div>
+              <div className="benefit-line">
+                <i>04</i>
+                <span>
+                  <b>Calendar-native reminders</b>
+                  <small>Your existing calendar handles the alert.</small>
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <section className="section stage" id="options" aria-labelledby="options-title"><div className="shell"><div className="section-head reveal-group"><span className="kicker">Calendar options</span><h2 id="options-title">Use the method your device understands.</h2><p>CalenderZW presents supported choices in plain language and keeps technical setup out of the way.</p></div><div className="options-wrap reveal-group"><article className="option"><span className="option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg></span><span><b>Apple Calendar</b><p>Subscription-friendly where supported by your device and timetable.</p></span></article><article className="option"><span className="option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></span><span><b>Calendar file (.ics)</b><p>Compatible with many calendar apps and useful for a straightforward import.</p></span></article><article className="option"><span className="option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span><span><b>Subscription link</b><p>Stay connected to published timetable changes where subscriptions are supported.</p></span></article><article className="option"><span className="option-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16"/></svg></span><span><b>Google Calendar</b><p>Direct CalenderZW connection is not presented as ready yet.</p><span className="coming">Coming later</span></span></article></div></div></section>
+        <section
+          className="section stage"
+          id="options"
+          aria-labelledby="options-title"
+        >
+          <div className="shell">
+            <div className="section-head reveal-group">
+              <span className="kicker">Calendar options</span>
+              <h2 id="options-title">
+                Use the method your device understands.
+              </h2>
+              <p>
+                CalenderZW presents supported choices in plain language and
+                keeps technical setup out of the way.
+              </p>
+            </div>
+            <div className="options-wrap reveal-group">
+              <article className="option">
+                <span className="option-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 10h18" />
+                  </svg>
+                </span>
+                <span>
+                  <b>Apple Calendar</b>
+                  <p>
+                    Subscription-friendly where supported by your device and
+                    timetable.
+                  </p>
+                </span>
+              </article>
+              <article className="option">
+                <span className="option-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <path d="M14 2v6h6M8 13h8M8 17h6" />
+                  </svg>
+                </span>
+                <span>
+                  <b>Calendar file (.ics)</b>
+                  <p>
+                    Compatible with many calendar apps and useful for a
+                    straightforward import.
+                  </p>
+                </span>
+              </article>
+              <article className="option">
+                <span className="option-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+                    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+                  </svg>
+                </span>
+                <span>
+                  <b>Subscription link</b>
+                  <p>
+                    Stay connected to published timetable changes where
+                    subscriptions are supported.
+                  </p>
+                </span>
+              </article>
+              <article className="option">
+                <span className="option-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 5h16v14H4zM8 3v4M16 3v4M4 9h16" />
+                  </svg>
+                </span>
+                <span>
+                  <b>Google Calendar</b>
+                  <p>
+                    Direct CalenderZW connection is not presented as ready yet.
+                  </p>
+                  <span className="coming">Coming later</span>
+                </span>
+              </article>
+            </div>
+          </div>
+        </section>
 
-    <section className="section" id="trust" aria-labelledby="trust-title"><div className="trust-layout shell reveal-group"><div><div className="section-head"><span className="kicker">Know what you’re looking at</span><h2 id="trust-title">Clear timetable context, without invented trust.</h2><p>Students should be able to see when a timetable was published, when it changed, and where to report a problem. Verification labels appear only when the product can support them.</p></div><div className="trust-points"><div className="trust-point"><i>✓</i><span><b>Visible status</b><p>Published status is shown clearly on the timetable.</p></span></div><div className="trust-point"><i>↻</i><span><b>Useful update context</b><p>Changes can be surfaced with an updated time where available.</p></span></div><div className="trust-point"><i>!</i><span><b>A path to correct errors</b><p>Support remains visible when timetable details need attention.</p></span></div></div></div><div className="trust-card"><div className="trust-card-head"><span><small>CLASS TIMETABLE</small><b>BTech Computer Science · 1.1</b></span><span className="trust-state">Published</span></div><div className="update"><span className="kicker">Latest change</span><div className="change"><span><b>Operating Systems</b><small>Tuesday · 14:00</small></span><span><span className="venue-old">N109</span> <span aria-hidden="true">→</span> <span className="venue-new">N205</span></span></div></div><div className="trust-meta"><span>Updated recently</span><a href="https://calender.aido.co.zw/support">Report a problem ↗</a></div></div></div></section>
+        <section className="section" id="trust" aria-labelledby="trust-title">
+          <div className="trust-layout shell reveal-group">
+            <div>
+              <div className="section-head">
+                <span className="kicker">Know what you’re looking at</span>
+                <h2 id="trust-title">
+                  Clear timetable context, without invented trust.
+                </h2>
+                <p>
+                  Students should be able to see when a timetable was published,
+                  when it changed, and where to report a problem. Verification
+                  labels appear only when the product can support them.
+                </p>
+              </div>
+              <div className="trust-points">
+                <div className="trust-point">
+                  <i>✓</i>
+                  <span>
+                    <b>Visible status</b>
+                    <p>Published status is shown clearly on the timetable.</p>
+                  </span>
+                </div>
+                <div className="trust-point">
+                  <i>↻</i>
+                  <span>
+                    <b>Useful update context</b>
+                    <p>
+                      Changes can be surfaced with an updated time where
+                      available.
+                    </p>
+                  </span>
+                </div>
+                <div className="trust-point">
+                  <i>!</i>
+                  <span>
+                    <b>A path to correct errors</b>
+                    <p>
+                      Support remains visible when timetable details need
+                      attention.
+                    </p>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="trust-card">
+              <div className="trust-card-head">
+                <span>
+                  <small>CLASS TIMETABLE</small>
+                  <b>BTech Computer Science · 1.1</b>
+                </span>
+                <span className="trust-state">Published</span>
+              </div>
+              <div className="update">
+                <span className="kicker">Latest change</span>
+                <div className="change">
+                  <span>
+                    <b>Operating Systems</b>
+                    <small>Tuesday · 14:00</small>
+                  </span>
+                  <span>
+                    <span className="venue-old">N109</span>{" "}
+                    <span aria-hidden="true">→</span>{" "}
+                    <span className="venue-new">N205</span>
+                  </span>
+                </div>
+              </div>
+              <div className="trust-meta">
+                <span>Updated recently</span>
+                <a href="https://calender.aido.co.zw/support">
+                  Report a problem ↗
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <section className="section conditions" aria-labelledby="quality-title"><div className="shell"><div className="section-head center reveal-group"><span className="kicker">Built for real student conditions</span><h2 id="quality-title">Product quality that holds up on an ordinary phone.</h2></div><div className="quality-grid reveal-group"><article className="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg><b>Fast on mobile data</b><small>No giant video or heavy image dependency.</small></article><article className="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 18h4"/></svg><b>Small-screen readable</b><small>Clear type and deliberate 20px gutters.</small></article><article className="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M19 8l2 2-4 4"/></svg><b>No basic-flow account</b><small>Find and view before being asked for commitment.</small></article><article className="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 17l6-6 4 4 6-8"/><path d="M20 7h-6"/></svg><b>Keyboard friendly</b><small>Visible focus and semantic controls.</small></article><article className="quality"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/></svg><b>Reduced motion</b><small>The final product state remains understandable.</small></article></div></div></section>
+        <section className="section conditions" aria-labelledby="quality-title">
+          <div className="shell">
+            <div className="section-head center reveal-group">
+              <span className="kicker">Built for real student conditions</span>
+              <h2 id="quality-title">
+                Product quality that holds up on an ordinary phone.
+              </h2>
+            </div>
+            <div className="quality-grid reveal-group">
+              <article className="quality">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9z" />
+                </svg>
+                <b>Fast on mobile data</b>
+                <small>No giant video or heavy image dependency.</small>
+              </article>
+              <article className="quality">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <rect x="6" y="2" width="12" height="20" rx="2" />
+                  <path d="M10 18h4" />
+                </svg>
+                <b>Small-screen readable</b>
+                <small>Clear type and deliberate 20px gutters.</small>
+              </article>
+              <article className="quality">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                  <path d="M19 8l2 2-4 4" />
+                </svg>
+                <b>No basic-flow account</b>
+                <small>Find and view before being asked for commitment.</small>
+              </article>
+              <article className="quality">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path d="M4 17l6-6 4 4 6-8" />
+                  <path d="M20 7h-6" />
+                </svg>
+                <b>Keyboard friendly</b>
+                <small>Visible focus and semantic controls.</small>
+              </article>
+              <article className="quality">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <path d="M12 3a9 9 0 1 0 9 9" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+                <b>Reduced motion</b>
+                <small>The final product state remains understandable.</small>
+              </article>
+            </div>
+          </div>
+        </section>
 
-    <section className="rep-section" id="reps"><div className="rep-card shell reveal-group"><div><span className="kicker">For class representatives</span><h2>Your class doesn’t have a timetable here yet?</h2><p>Class representatives can help keep one class schedule accurate, published and easy to share.</p></div><a className="btn btn-primary" href="https://calender.aido.co.zw/admin/login" data-event="class_rep_cta_clicked">Set up my class <span aria-hidden="true">→</span></a></div></section>
+        <section className="rep-section" id="reps">
+          <div className="rep-card shell reveal-group">
+            <div>
+              <span className="kicker">For class representatives</span>
+              <h2>Your class doesn’t have a timetable here yet?</h2>
+              <p>
+                Class representatives can help keep one class schedule accurate,
+                published and easy to share.
+              </p>
+            </div>
+            <a
+              className="btn btn-primary"
+              href="https://calender.aido.co.zw/admin/login"
+              data-event="class_rep_cta_clicked"
+            >
+              Set up my class <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </section>
 
-    <section className="share" aria-labelledby="share-title"><div className="share-grid shell reveal-group"><div className="whatsapp"><div className="wa-head"><span className="wa-avatar">CS</span><span><b>Computer Science 1.1</b><small>Class group</small></span></div><div className="wa-msg">CS 1.1 timetable is live ✅<br /><br />View your timetable and add it to your calendar:<a href="https://calender.aido.co.zw/">calender.aido.co.zw/t/...</a><small>No app needed · 10:42</small></div></div><div className="share-copy"><span className="kicker">Made to move through the class</span><h2 id="share-title">One useful link. Everyone keeps their own calendar.</h2><p>WhatsApp remains the distribution channel. CalenderZW gives the timetable a cleaner place to live.</p><div className="distribution"><span>Class rep</span><i>→</i><span>WhatsApp group</span><i>→</i><span>Classmates’ calendars</span></div></div></div></section>
+        <section className="share" aria-labelledby="share-title">
+          <div className="share-grid shell reveal-group">
+            <div className="whatsapp">
+              <div className="wa-head">
+                <span className="wa-avatar">CS</span>
+                <span>
+                  <b>Computer Science 1.1</b>
+                  <small>Class group</small>
+                </span>
+              </div>
+              <div className="wa-msg">
+                CS 1.1 timetable is live ✅<br />
+                <br />
+                View your timetable and add it to your calendar:
+                <a href="https://calender.aido.co.zw/">
+                  calender.aido.co.zw/t/...
+                </a>
+                <small>No app needed · 10:42</small>
+              </div>
+            </div>
+            <div className="share-copy">
+              <span className="kicker">Made to move through the class</span>
+              <h2 id="share-title">
+                One useful link. Everyone keeps their own calendar.
+              </h2>
+              <p>
+                WhatsApp remains the distribution channel. CalenderZW gives the
+                timetable a cleaner place to live.
+              </p>
+              <div className="distribution">
+                <span>Class rep</span>
+                <i>→</i>
+                <span>WhatsApp group</span>
+                <i>→</i>
+                <span>Classmates’ calendars</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
-    <section className="section future" aria-labelledby="future-title"><div className="shell reveal-group"><span className="kicker">Focused now, useful later</span><h2 id="future-title">Timetables today.<br />More of your academic schedule tomorrow.</h2><p className="section-copy" style={{ marginInline: "auto" }}>Future ideas stay separate from what CalenderZW can do now.</p><div className="future-chips"><span>Assignments</span><span>Tests</span><span>Exams</span><span>Academic reminders</span></div></div></section>
+        <section className="section future" aria-labelledby="future-title">
+          <div className="shell reveal-group">
+            <span className="kicker">Focused now, useful later</span>
+            <h2 id="future-title">
+              Timetables today.
+              <br />
+              More of your academic schedule tomorrow.
+            </h2>
+            <p className="section-copy" style={{ marginInline: "auto" }}>
+              Future ideas stay separate from what CalenderZW can do now.
+            </p>
+            <div className="future-chips">
+              <span>Assignments</span>
+              <span>Tests</span>
+              <span>Exams</span>
+              <span>Academic reminders</span>
+            </div>
+          </div>
+        </section>
 
-    <section className="privacy-band" aria-label="Privacy and control"><div className="privacy-inner shell"><div className="privacy-copy"><b>Privacy stays understandable.</b><p>No student account is required for core timetable access. Calendar connections are optional.</p></div><nav className="legal-links" aria-label="Legal and support"><a href="https://calender.aido.co.zw/privacy">Privacy</a><a href="https://calender.aido.co.zw/terms">Terms</a><a href="https://calender.aido.co.zw/data-deletion">Data deletion</a><a href="https://calender.aido.co.zw/support">Support</a></nav></div></section>
+        <section className="privacy-band" aria-label="Privacy and control">
+          <div className="privacy-inner shell">
+            <div className="privacy-copy">
+              <b>Privacy stays understandable.</b>
+              <p>
+                No student account is required for core timetable access.
+                Calendar connections are optional.
+              </p>
+            </div>
+            <nav className="legal-links" aria-label="Legal and support">
+              <a href="https://calender.aido.co.zw/privacy">Privacy</a>
+              <a href="https://calender.aido.co.zw/terms">Terms</a>
+              <a href="https://calender.aido.co.zw/data-deletion">
+                Data deletion
+              </a>
+              <a href="https://calender.aido.co.zw/support">Support</a>
+            </nav>
+          </div>
+        </section>
 
-    <section className="final-cta section" aria-labelledby="final-title"><div className="shell reveal-group"><span className="kicker">Find your class</span><h2 id="final-title">Let your calendar handle the rest.</h2><p>Your timetable is probably the last thing you should have to remember.</p><div className="final-actions"><a className="btn btn-primary" href="https://calender.aido.co.zw/" data-event="find_timetable_clicked">Find my timetable <span>→</span></a><a className="btn btn-secondary" href="https://calender.aido.co.zw/admin/login" data-event="class_rep_cta_clicked">Set up my class</a></div><small className="free">Free for students.</small></div></section>
-  </main>
+        <section className="final-cta section" aria-labelledby="final-title">
+          <div className="shell reveal-group">
+            <span className="kicker">Find your class</span>
+            <h2 id="final-title">Let your calendar handle the rest.</h2>
+            <p>
+              Your timetable is probably the last thing you should have to
+              remember.
+            </p>
+            <div className="final-actions">
+              <a
+                className="btn btn-primary"
+                href="https://calender.aido.co.zw/"
+                data-event="find_timetable_clicked"
+              >
+                Find my timetable <span>→</span>
+              </a>
+              <a
+                className="btn btn-secondary"
+                href="https://calender.aido.co.zw/admin/login"
+                data-event="class_rep_cta_clicked"
+              >
+                Set up my class
+              </a>
+            </div>
+            <small className="free">Free for students.</small>
+          </div>
+        </section>
       </main>
       <GlobalFooter />
     </div>
@@ -460,9 +1230,9 @@ function PrivacyContent() {
         <h2>1. Scope</h2>
         <p>
           This policy applies to timetable pages, administrator tools, calendar
-          feeds, Google Calendar connection, downloads, and support services
-          for {legalConfig.tradingName}, operated by{" "}
-          {legalConfig.operatorName} from {legalConfig.publicAppUrl}.
+          feeds, Google Calendar connection, downloads, and support services for{" "}
+          {legalConfig.tradingName}, operated by {legalConfig.operatorName} from{" "}
+          {legalConfig.publicAppUrl}.
         </p>
       </section>
       <section id="information-we-collect">
@@ -721,8 +1491,8 @@ function SupportPage() {
             <h2>Notification delivery</h2>
             <p>
               CalenderZW creates calendar reminders, but final notification
-              delivery depends on the calendar provider, phone settings,
-              battery mode, connectivity, and notification permissions.
+              delivery depends on the calendar provider, phone settings, battery
+              mode, connectivity, and notification permissions.
             </p>
           </article>
           <article className="action-panel">
@@ -769,7 +1539,10 @@ function GoogleVerificationReadinessPage() {
     ["External OAuth logo match", "requires manual confirmation"],
     ["Homepage URL", `${BRAND.origin}/`],
     ["Homepage status", "Expected direct 200 after production smoke test"],
-    ["Homepage title", "CalenderZW | Add your university timetable to your calendar"],
+    [
+      "Homepage title",
+      "CalenderZW | Add your university timetable to your calendar",
+    ],
     ["Homepage H1", "Add your university timetable to your calendar"],
     ["Privacy URL", `${BRAND.origin}/privacy`],
     ["Terms URL", `${BRAND.origin}/terms`],
@@ -777,10 +1550,7 @@ function GoogleVerificationReadinessPage() {
     ["Support URL", `${BRAND.origin}/support`],
     ["Canonical host", BRAND.domain],
     ["OAuth scope", "https://www.googleapis.com/auth/calendar.app.created"],
-    [
-      "Redirect URI",
-      `${BRAND.origin}/api/calendar/google/callback`,
-    ],
+    ["Redirect URI", `${BRAND.origin}/api/calendar/google/callback`],
     ["No-JavaScript purpose-content check", "Present in raw index.html"],
     ["Service-worker version", "No local service worker source found"],
     ["Production logo asset", BRAND.squareIconPath],
@@ -946,7 +1716,11 @@ function AdminLoginPage() {
           {message && (
             <p
               className="content-notice"
-              role={status === "error" || status === "forbidden" ? "alert" : "status"}
+              role={
+                status === "error" || status === "forbidden"
+                  ? "alert"
+                  : "status"
+              }
             >
               {message}
             </p>

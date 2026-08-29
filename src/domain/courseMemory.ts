@@ -22,7 +22,11 @@ function compareStrings(left: string, right: string) {
 }
 
 function uniqueSorted(values: Array<string | null | undefined>) {
-  return [...new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])].sort(compareStrings);
+  return [
+    ...new Set(
+      values.map((value) => value?.trim()).filter(Boolean) as string[],
+    ),
+  ].sort(compareStrings);
 }
 
 export function buildCourseMemoryEntries(
@@ -50,7 +54,9 @@ export function buildCourseMemoryEntries(
     current.courseName = current.courseName || entry.courseName.trim();
     current.lecturerSuggestions = uniqueSorted([
       ...current.lecturerSuggestions,
-      "lecturerSuggestions" in entry ? entry.lecturerSuggestions[0] : entry.lecturer,
+      "lecturerSuggestions" in entry
+        ? entry.lecturerSuggestions[0]
+        : entry.lecturer,
       ...("lecturerSuggestions" in entry ? entry.lecturerSuggestions : []),
     ]);
     current.venueSuggestions = uniqueSorted([
@@ -63,7 +69,9 @@ export function buildCourseMemoryEntries(
       "sessionTypeSuggestions" in entry
         ? entry.sessionTypeSuggestions[0]
         : entry.sessionType,
-      ...("sessionTypeSuggestions" in entry ? entry.sessionTypeSuggestions : []),
+      ...("sessionTypeSuggestions" in entry
+        ? entry.sessionTypeSuggestions
+        : []),
     ]);
 
     byCode.set(courseCode, current);
@@ -97,7 +105,9 @@ export function findCourseSuggestions(
     )
     .sort((left, right) => {
       const leftPrimary =
-        field === "code" ? left.courseCode.toLowerCase() : left.courseName.toLowerCase();
+        field === "code"
+          ? left.courseCode.toLowerCase()
+          : left.courseName.toLowerCase();
       const rightPrimary =
         field === "code"
           ? right.courseCode.toLowerCase()
@@ -119,10 +129,12 @@ export function applyCourseSuggestion(
     ...form,
     courseCode: suggestion.courseCode,
     courseName: suggestion.courseName,
-    lecturer: form.lecturer.trim() ? form.lecturer : suggestion.lecturerSuggestions[0] ?? "",
+    lecturer: form.lecturer.trim()
+      ? form.lecturer
+      : (suggestion.lecturerSuggestions[0] ?? ""),
     sessionType: form.sessionType.trim()
       ? form.sessionType
-      : suggestion.sessionTypeSuggestions[0] ?? "",
+      : (suggestion.sessionTypeSuggestions[0] ?? ""),
   };
 }
 

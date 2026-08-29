@@ -14,11 +14,7 @@ function escapeHtml(value: string) {
     .replaceAll(">", "&gt;");
 }
 
-function replaceTag(
-  html: string,
-  pattern: RegExp,
-  replacement: string,
-) {
+function replaceTag(html: string, pattern: RegExp, replacement: string) {
   return pattern.test(html) ? html.replace(pattern, replacement) : html;
 }
 
@@ -27,7 +23,9 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   const title = escapeHtml(metadata.title);
   const description = escapeHtml(metadata.description);
   const ogTitle = escapeHtml(metadata.ogTitle ?? metadata.title);
-  const ogDescription = escapeHtml(metadata.ogDescription ?? metadata.description);
+  const ogDescription = escapeHtml(
+    metadata.ogDescription ?? metadata.description,
+  );
 
   let next = html;
   next = replaceTag(next, /<title>.*?<\/title>/, `<title>${title}</title>`);

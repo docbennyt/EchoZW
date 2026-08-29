@@ -45,7 +45,8 @@ async function adminFetch<T>(path: string, options: ApiOptions): Promise<T> {
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
-  const body = (await response.json().catch(() => null)) as T | ApiErrorBody | null;
+  const body = (await response.json().catch(() => null)) as
+    T | ApiErrorBody | null;
   if (!response.ok) {
     const errorBody = body as ApiErrorBody | null;
     throw new PilotClientError(
@@ -60,9 +61,12 @@ async function adminFetch<T>(path: string, options: ApiOptions): Promise<T> {
 }
 
 export function listInstitutions(accessToken: string) {
-  return adminFetch<{ institutions: AdminInstitution[] }>("/api/admin/institutions", {
-    accessToken,
-  });
+  return adminFetch<{ institutions: AdminInstitution[] }>(
+    "/api/admin/institutions",
+    {
+      accessToken,
+    },
+  );
 }
 
 export function createInstitution(
@@ -75,11 +79,14 @@ export function createInstitution(
     active?: boolean;
   },
 ) {
-  return adminFetch<{ institution: AdminInstitution }>("/api/admin/institutions", {
-    method: "POST",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ institution: AdminInstitution }>(
+    "/api/admin/institutions",
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
 export function updateInstitution(
@@ -93,11 +100,14 @@ export function updateInstitution(
     active: boolean;
   }>,
 ) {
-  return adminFetch<{ institution: AdminInstitution }>(`/api/admin/institutions/${id}`, {
-    method: "PATCH",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ institution: AdminInstitution }>(
+    `/api/admin/institutions/${id}`,
+    {
+      method: "PATCH",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
 export function listProgrammes(accessToken: string, institutionId?: string) {
@@ -135,11 +145,14 @@ export function updateProgramme(
     active: boolean;
   }>,
 ) {
-  return adminFetch<{ programme: AdminProgramme }>(`/api/admin/programmes/${id}`, {
-    method: "PATCH",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ programme: AdminProgramme }>(
+    `/api/admin/programmes/${id}`,
+    {
+      method: "PATCH",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
 export function listClassGroups(accessToken: string, programmeId?: string) {
@@ -161,11 +174,14 @@ export function createClassGroup(
     active?: boolean;
   },
 ) {
-  return adminFetch<{ classGroup: AdminClassGroup }>("/api/admin/class-groups", {
-    method: "POST",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ classGroup: AdminClassGroup }>(
+    "/api/admin/class-groups",
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
 export function updateClassGroup(
@@ -181,18 +197,26 @@ export function updateClassGroup(
     active: boolean;
   }>,
 ) {
-  return adminFetch<{ classGroup: AdminClassGroup }>(`/api/admin/class-groups/${id}`, {
-    method: "PATCH",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ classGroup: AdminClassGroup }>(
+    `/api/admin/class-groups/${id}`,
+    {
+      method: "PATCH",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
-export function listAcademicPeriods(accessToken: string, institutionId?: string) {
+export function listAcademicPeriods(
+  accessToken: string,
+  institutionId?: string,
+) {
   const url = institutionId
     ? `/api/admin/academic-periods?institutionId=${encodeURIComponent(institutionId)}`
     : "/api/admin/academic-periods";
-  return adminFetch<{ academicPeriods: AdminAcademicPeriod[] }>(url, { accessToken });
+  return adminFetch<{ academicPeriods: AdminAcademicPeriod[] }>(url, {
+    accessToken,
+  });
 }
 
 export function createAcademicPeriod(
@@ -205,11 +229,14 @@ export function createAcademicPeriod(
     active?: boolean;
   },
 ) {
-  return adminFetch<{ academicPeriod: AdminAcademicPeriod }>("/api/admin/academic-periods", {
-    method: "POST",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ academicPeriod: AdminAcademicPeriod }>(
+    "/api/admin/academic-periods",
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
 export function updateAcademicPeriod(
@@ -234,9 +261,12 @@ export function updateAcademicPeriod(
 }
 
 export function listTimetables(accessToken: string) {
-  return adminFetch<{ timetables: AdminTimetableSummary[] }>("/api/admin/timetables", {
-    accessToken,
-  });
+  return adminFetch<{ timetables: AdminTimetableSummary[] }>(
+    "/api/admin/timetables",
+    {
+      accessToken,
+    },
+  );
 }
 
 export function createTimetable(
@@ -248,17 +278,23 @@ export function createTimetable(
     academicPeriodId: string;
   },
 ) {
-  return adminFetch<{ timetable: AdminTimetableEditor }>("/api/admin/timetables", {
-    method: "POST",
-    accessToken,
-    body: input,
-  });
+  return adminFetch<{ timetable: AdminTimetableEditor }>(
+    "/api/admin/timetables",
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
 }
 
 export function getTimetable(accessToken: string, id: string) {
-  return adminFetch<{ timetable: AdminTimetableEditor }>(`/api/admin/timetables/${id}`, {
-    accessToken,
-  });
+  return adminFetch<{ timetable: AdminTimetableEditor }>(
+    `/api/admin/timetables/${id}`,
+    {
+      accessToken,
+    },
+  );
 }
 
 export function createTimetableSession(
