@@ -1,0 +1,35 @@
+name: Install Base UI once
+
+on:
+  push:
+    branches:
+      - Calender
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Calender
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install current Base UI
+        run: npm install @base-ui/react@1.7.0 --save
+      - name: Commit dependency files
+        run: |
+          if git diff --quiet package.json package-lock.json; then
+            echo "Base UI already installed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: add Base UI"
+          git push origin HEAD:Calender
