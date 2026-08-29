@@ -264,7 +264,9 @@ export function FinderDiscovery() {
   const [period, setPeriod] = useState<string | null>(null);
 
   // Directory browsing state. It is deliberately independent from the exact finder.
-  const [browseInstitution, setBrowseInstitution] = useState<string | null>(null);
+  const [browseInstitution, setBrowseInstitution] = useState<string | null>(
+    null,
+  );
   const [browseProgramme, setBrowseProgramme] = useState<string | null>(null);
   const [browseClass, setBrowseClass] = useState<string | null>(null);
   const [browsePeriod, setBrowsePeriod] = useState<string | null>(null);
@@ -358,8 +360,7 @@ export function FinderDiscovery() {
         timetables
           .filter(
             (item) =>
-              !browseInstitution ||
-              item.institutionName === browseInstitution,
+              !browseInstitution || item.institutionName === browseInstitution,
           )
           .map((item) => item.programmeName),
       ),
@@ -400,15 +401,14 @@ export function FinderDiscovery() {
   const filteredTimetables = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
     const filtered = timetables.filter((item) => {
-      if (
-        browseInstitution &&
-        item.institutionName !== browseInstitution
-      ) {
+      if (browseInstitution && item.institutionName !== browseInstitution) {
         return false;
       }
-      if (browseProgramme && item.programmeName !== browseProgramme) return false;
+      if (browseProgramme && item.programmeName !== browseProgramme)
+        return false;
       if (browseClass && item.classGroupLabel !== browseClass) return false;
-      if (browsePeriod && item.academicPeriodName !== browsePeriod) return false;
+      if (browsePeriod && item.academicPeriodName !== browsePeriod)
+        return false;
       if (!normalizedQuery) return true;
       const searchable = [
         item.institutionName,
@@ -452,7 +452,11 @@ export function FinderDiscovery() {
   ]);
 
   const hasBrowseFilters = Boolean(
-    browseInstitution || browseProgramme || browseClass || browsePeriod || query,
+    browseInstitution ||
+    browseProgramme ||
+    browseClass ||
+    browsePeriod ||
+    query,
   );
 
   function submitFinder(event: React.FormEvent<HTMLFormElement>) {
@@ -692,7 +696,9 @@ export function FinderDiscovery() {
 
                   <div className="czw-directory-shared-link">
                     <strong>Have a class link?</strong>
-                    <p>Open a direct timetable without changing your filters.</p>
+                    <p>
+                      Open a direct timetable without changing your filters.
+                    </p>
                     <SharedLinkForm
                       compact
                       sharedLink={sharedLink}
@@ -709,7 +715,8 @@ export function FinderDiscovery() {
                       <span className="czw-kicker">Published directory</span>
                       <h2 id="directory-title">Published timetables</h2>
                       <p>
-                        Showing {filteredTimetables.length} of {timetables.length}
+                        Showing {filteredTimetables.length} of{" "}
+                        {timetables.length}
                         {timetables.length === 1 ? " timetable" : " timetables"}
                       </p>
                     </div>
@@ -769,7 +776,9 @@ export function FinderDiscovery() {
                   ) : (
                     <div className="czw-directory-no-results" role="status">
                       <Search size={22} aria-hidden="true" />
-                      <strong>No published timetables match those filters.</strong>
+                      <strong>
+                        No published timetables match those filters.
+                      </strong>
                       <p>
                         Clear one or more filters, or search using a programme,
                         class or period name.
@@ -891,7 +900,10 @@ export function FinderDiscovery() {
             <span>{filteredTimetables.length} available</span>
           </div>
 
-          <div className="czw-mobile-browse-rail" aria-label="Browse institutions">
+          <div
+            className="czw-mobile-browse-rail"
+            aria-label="Browse institutions"
+          >
             <QuickFilterButton
               label="All"
               active={!browseInstitution}
@@ -931,7 +943,10 @@ export function FinderDiscovery() {
           {filteredTimetables.length > 0 ? (
             <div className="czw-discovery-grid">
               {filteredTimetables.map((timetable) => (
-                <TimetableCard key={timetable.publicSlug} timetable={timetable} />
+                <TimetableCard
+                  key={timetable.publicSlug}
+                  timetable={timetable}
+                />
               ))}
             </div>
           ) : (

@@ -887,16 +887,23 @@
   gap: 11px;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="grid"] .czw-timetable-thumbnail {
+.czw-directory-results
+  .czw-discovery-card[data-view="grid"]
+  .czw-timetable-thumbnail {
   min-height: 122px;
   padding: 14px;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="grid"] .czw-thumb-week > div {
+.czw-directory-results
+  .czw-discovery-card[data-view="grid"]
+  .czw-thumb-week
+  > div {
   min-height: 64px;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="grid"] .czw-discovery-card-body {
+.czw-directory-results
+  .czw-discovery-card[data-view="grid"]
+  .czw-discovery-card-body {
   padding: 15px;
 }
 
@@ -914,13 +921,17 @@
   transform: none;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-timetable-thumbnail {
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-timetable-thumbnail {
   min-height: 176px;
   padding: 16px;
   border-right: 1px solid var(--czw-line);
 }
 
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-discovery-card-body {
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-discovery-card-body {
   padding: 17px 20px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -929,18 +940,29 @@
   align-items: start;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-discovery-card-meta,
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-discovery-card-body > p,
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-discovery-card-meta,
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-discovery-card-body
+  > p,
 .czw-directory-results .czw-discovery-card[data-view="list"] h3,
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-discovery-details {
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-discovery-details {
   grid-column: 1;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-discovery-card-meta {
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-discovery-card-meta {
   margin-bottom: 9px;
 }
 
-.czw-directory-results .czw-discovery-card[data-view="list"] .czw-discovery-details {
+.czw-directory-results
+  .czw-discovery-card[data-view="list"]
+  .czw-discovery-details {
   margin: 13px 0 0;
 }
 
