@@ -1,12 +1,45 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
+import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
+import "./publicTimetableReliability.css";
+
+function currentPath() {
+  return window.location.pathname;
+}
+
+function timetableSlug(path: string) {
+  const match = path.match(/^\/(?:t|sync)\/([^/]+)\/?$/);
+  if (!match) return null;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
+function RootApp() {
+  const [path, setPath] = useState(currentPath);
+
+  useEffect(() => {
+    const handleNavigation = () => setPath(currentPath());
+    window.addEventListener("popstate", handleNavigation);
+    return () => window.removeEventListener("popstate", handleNavigation);
+  }, []);
+
+  const slug = timetableSlug(path);
+  if (slug) {
+    return <PublicTimetableReliability slug={slug} />;
+  }
+
+  return <AppV2 />;
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <AppV2 />
+    <RootApp />
   </React.StrictMode>,
 );
