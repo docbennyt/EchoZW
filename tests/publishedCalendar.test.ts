@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { generatePublishedTimetableIcs } from "../server/publishedCalendar";
 import type { PublicTimetable } from "../src/api/pilotTypes";
+import { projectPublishedTimetable } from "../src/domain/publishedCalendarProjection";
+import {
+  foldIcsLineUtf8,
+  zonedDateTimeToUtc,
+} from "../src/domain/timezone";
 
 function makeTimetable(
   overrides: Partial<PublicTimetable> = {},
@@ -21,13 +26,13 @@ function makeTimetable(
     sessions: [
       {
         stableSessionKey: "stable-session-1",
-        courseCode: "ICS1102",
-        courseName: "Operating Systems",
-        weekday: 2,
-        startTime: "14:00:00",
-        endTime: "16:00:00",
-        venue: "N109",
-        lecturer: "Mr Mashoko",
+        courseCode: "HIT1101",
+        courseName: "Technopreneurship I",
+        weekday: 1,
+        startTime: "08:00:00",
+        endTime: "10:00:00",
+        venue: "Engineering Hall",
+        lecturer: "TDC",
         sessionType: "Lecture",
         notes: null,
       },
@@ -37,24 +42,85 @@ function makeTimetable(
 }
 
 describe("published timetable ICS generation", () => {
-  it("generates recurring weekly events with prepared reminders", () => {
+  it("preserves 08:00 Africa/Harare wall-clock time while mapping the instant to 06:00Z", () => {
+    const timetable = makeTimetable();
+    const projection = projectPublishedTimetable({
+      timetable,
+      reminderOffsetsMinutes: [30],
+      publicOrigin: "https://calender.aido.co.zw",
+    });
+    const event = projection.events[0];
     const ics = generatePublishedTimetableIcs({
-      timetable: makeTimetable(),
-      reminderOffsetsMinutes: [1440, 30],
+      timetable,
+      reminderOffsetsMinutes: [30],
+      publicOrigin: "https://calender.aido.co.zw",
     });
 
-    expect(ics).toContain("BEGIN:VEVENT");
-    expect(ics).toContain("UID:stable-session-1@calender.aido.co.zw");
-    expect(ics).toContain("SUMMARY:ICS1102");
-    expect(ics).toContain("LOCATION:N109");
-    expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261210T235959Z");
-    expect(ics).toContain("SEQUENCE:1");
-    expect(ics.match(/BEGIN:VALARM/g)).toHaveLength(2);
-    expect(ics).toContain("TRIGGER:-PT1440M");
-    expect(ics).toContain("TRIGGER:-PT30M");
+    expect(event.startTime).toBe("08:00:00");
+    expect(event.firstStartUtc).toBe("2026-08-10T06:00:00.000Z");
+    expect(
+      zonedDateTimeToUtc(
+        "2026-08-10",
+        "08:00:00",
+        "Africa/Harare",
+      ).toISOString(),
+    ).toBe("2026-08-10T06:00:00.000Z");
+    expect(ics).toContain("DTSTART;TZID=Africa/Harare:20260810T080000");
+    expect(ics).toContain("DTEND;TZID=Africa/Harare:20260810T100000");
+    expect(ics).not.toContain("DTSTART;TZID=Africa/Harare:20260810T060000");
+    expect(ics).not.toContain("DTSTART:20260810T080000Z");
   });
 
-  it("keeps UID stable and increments sequence when a published session is republished", () => {
+  it("embeds standards-useful timezone data for the institution IANA zone", () => {
+    const ics = generatePublishedTimetableIcs({
+      timetable: makeTimetable(),
+      reminderOffsetsMinutes: [30],
+    });
+
+    expect(ics).toContain("BEGIN:VTIMEZONE\r\n");
+    expect(ics).toContain("TZID:Africa/Harare\r\n");
+    expect(ics).toContain("X-LIC-LOCATION:Africa/Harare\r\n");
+    expect(ics).toContain("TZOFFSETFROM:+0200\r\n");
+    expect(ics).toContain("TZOFFSETTO:+0200\r\n");
+    expect(ics).toContain("END:VTIMEZONE\r\n");
+    expect(ics.match(/BEGIN:VTIMEZONE/g)).toHaveLength(1);
+  });
+
+  it("keeps reminders in VALARM without moving lecture DTSTART or DTEND", () => {
+    const timetable = makeTimetable();
+    const cases = [
+      [30],
+      [1440, 30],
+      [60, 15],
+      [125],
+    ];
+
+    for (const reminders of cases) {
+      const ics = generatePublishedTimetableIcs({
+        timetable,
+        reminderOffsetsMinutes: reminders,
+      });
+      expect(ics).toContain("DTSTART;TZID=Africa/Harare:20260810T080000");
+      expect(ics).toContain("DTEND;TZID=Africa/Harare:20260810T100000");
+      for (const minutes of reminders) {
+        expect(ics).toContain(`TRIGGER:-PT${minutes}M`);
+      }
+    }
+  });
+
+  it("converts the academic-period recurrence boundary from local end-of-day to UTC", () => {
+    const ics = generatePublishedTimetableIcs({
+      timetable: makeTimetable(),
+      reminderOffsetsMinutes: [30],
+    });
+
+    expect(ics).toContain(
+      "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261210T215959Z",
+    );
+    expect(ics).not.toContain("UNTIL=20261210T235959Z");
+  });
+
+  it("keeps UID stable and increments sequence when venue changes on the same logical session", () => {
     const first = generatePublishedTimetableIcs({
       timetable: makeTimetable(),
       reminderOffsetsMinutes: [30],
@@ -65,16 +131,8 @@ describe("published timetable ICS generation", () => {
         publishedAt: "2026-08-10T08:00:00.000Z",
         sessions: [
           {
-            stableSessionKey: "stable-session-1",
-            courseCode: "ICS1102",
-            courseName: "Operating Systems",
-            weekday: 2,
-            startTime: "14:00:00",
-            endTime: "16:00:00",
+            ...makeTimetable().sessions[0],
             venue: "N205",
-            lecturer: "Mr Mashoko",
-            sessionType: "Lecture",
-            notes: null,
           },
         ],
       }),
@@ -83,18 +141,124 @@ describe("published timetable ICS generation", () => {
 
     expect(first).toContain("UID:stable-session-1@calender.aido.co.zw");
     expect(republished).toContain("UID:stable-session-1@calender.aido.co.zw");
-    expect(first).toContain("LOCATION:N109");
+    expect(first).toContain("LOCATION:Engineering Hall");
     expect(republished).toContain("LOCATION:N205");
     expect(first).toContain("SEQUENCE:1");
     expect(republished).toContain("SEQUENCE:2");
+    expect(republished).toContain("LAST-MODIFIED:20260810T080000Z");
   });
 
-  it("rejects published timetables without academic period dates", () => {
+  it("keeps UID stable when a trusted republish changes local time", () => {
+    const republished = generatePublishedTimetableIcs({
+      timetable: makeTimetable({
+        versionNumber: 2,
+        publishedAt: "2026-08-10T08:00:00.000Z",
+        sessions: [
+          {
+            ...makeTimetable().sessions[0],
+            startTime: "09:00:00",
+            endTime: "11:00:00",
+          },
+        ],
+      }),
+      reminderOffsetsMinutes: [30],
+    });
+
+    expect(republished).toContain("UID:stable-session-1@calender.aido.co.zw");
+    expect(republished).toContain("DTSTART;TZID=Africa/Harare:20260810T090000");
+    expect(republished).toContain("DTEND;TZID=Africa/Harare:20260810T110000");
+    expect(republished).toContain("SEQUENCE:2");
+  });
+
+  it("projects public timetable fields and feed fields from the same session data", () => {
+    const timetable = makeTimetable();
+    const projection = projectPublishedTimetable({ timetable });
+    const event = projection.events[0];
+    const session = timetable.sessions[0];
+
+    expect(event.stableSessionKey).toBe(session.stableSessionKey);
+    expect(event.weekday).toBe(session.weekday);
+    expect(event.startTime).toBe(session.startTime);
+    expect(event.endTime).toBe(session.endTime);
+    expect(event.courseCode).toBe(session.courseCode);
+    expect(event.venue).toBe(session.venue);
+  });
+
+  it("puts only the public timetable URL in event descriptions, never a private feed URL", () => {
+    const ics = generatePublishedTimetableIcs({
+      timetable: makeTimetable(),
+      reminderOffsetsMinutes: [30],
+      publicOrigin: "https://calender.aido.co.zw",
+    });
+
+    expect(ics).toContain(
+      "CalenderZW timetable: https://calender.aido.co.zw/t/hit-cs-1-1-august-2026",
+    );
+    expect(ics).not.toContain("/calendar/feed/");
+  });
+
+  it("uses CRLF and folds physical lines by UTF-8 octets", () => {
+    const timetable = makeTimetable({
+      sessions: [
+        {
+          ...makeTimetable().sessions[0],
+          notes: "Campus update ".repeat(12) + "📚📚📚",
+        },
+      ],
+    });
+    const ics = generatePublishedTimetableIcs({
+      timetable,
+      reminderOffsetsMinutes: [30],
+    });
+
+    expect(ics.endsWith("\r\n")).toBe(true);
+    expect(ics.replace(/\r\n/g, "")).not.toContain("\n");
+    for (const line of ics.split("\r\n").filter(Boolean)) {
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+    }
+
+    const folded = foldIcsLineUtf8(`DESCRIPTION:${"📚".repeat(30)}`);
+    expect(folded).toContain("\r\n ");
+    for (const line of folded.split("\r\n")) {
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+    }
+  });
+
+  it("rejects missing publication dates, missing period dates, invalid zones, and invalid time ranges", () => {
     expect(() =>
       generatePublishedTimetableIcs({
         timetable: makeTimetable({ startsOn: null }),
         reminderOffsetsMinutes: [30],
       }),
     ).toThrow("Published timetable is missing academic period dates.");
+
+    expect(() =>
+      generatePublishedTimetableIcs({
+        timetable: makeTimetable({ publishedAt: null }),
+        reminderOffsetsMinutes: [30],
+      }),
+    ).toThrow("Published timetable is missing publication timestamp.");
+
+    expect(() =>
+      generatePublishedTimetableIcs({
+        timetable: makeTimetable({ institutionTimezone: "Mars/Olympus" }),
+        reminderOffsetsMinutes: [30],
+      }),
+    ).toThrow("Unsupported institution timezone");
+
+    expect(() =>
+      generatePublishedTimetableIcs({
+        timetable: makeTimetable({
+          sessions: [
+            {
+              ...makeTimetable().sessions[0],
+              startTime: "10:00:00",
+              endTime: "08:00:00",
+            },
+          ],
+        }),
+        reminderOffsetsMinutes: [30],
+      }),
+    ).toThrow("must end after it starts");
   });
 });
