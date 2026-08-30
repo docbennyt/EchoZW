@@ -1,0 +1,70 @@
+name: DR-42 format helper
+
+on:
+  push:
+    branches:
+      - DR-42-apple-subscription-calendar-reliability
+
+permissions:
+  contents: read
+
+jobs:
+  format-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Format DR-42 files
+        run: |
+          npx prettier --write \
+            eslint.config.js \
+            package.json \
+            scripts/diagnose-calendar-feed.mjs \
+            server/pilotCalendarApi.ts \
+            server/publishedCalendar.ts \
+            src/main.tsx \
+            src/PublicTimetableReliability.tsx \
+            src/publicTimetableReliability.css \
+            src/domain/calendar.ts \
+            src/domain/publishedCalendarProjection.ts \
+            src/domain/subscriptions.ts \
+            src/domain/timezone.ts \
+            tests/PublicTimetableReliability.test.tsx \
+            tests/dr42Timezone.test.ts \
+            tests/pilotCalendarApiReliability.test.ts \
+            tests/publishedCalendar.test.ts \
+            docs/APPLE_CALENDAR_SETUP.md \
+            docs/CALENDAR_PERSONALISATION.md \
+            docs/CALENDAR_SYNC.md
+      - name: Bundle formatted files
+        run: |
+          tar -czf dr42-formatted.tgz \
+            eslint.config.js \
+            package.json \
+            scripts/diagnose-calendar-feed.mjs \
+            server/pilotCalendarApi.ts \
+            server/publishedCalendar.ts \
+            src/main.tsx \
+            src/PublicTimetableReliability.tsx \
+            src/publicTimetableReliability.css \
+            src/domain/calendar.ts \
+            src/domain/publishedCalendarProjection.ts \
+            src/domain/subscriptions.ts \
+            src/domain/timezone.ts \
+            tests/PublicTimetableReliability.test.tsx \
+            tests/dr42Timezone.test.ts \
+            tests/pilotCalendarApiReliability.test.ts \
+            tests/publishedCalendar.test.ts \
+            docs/APPLE_CALENDAR_SETUP.md \
+            docs/CALENDAR_PERSONALISATION.md \
+            docs/CALENDAR_SYNC.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dr42-formatted
+          path: dr42-formatted.tgz
+          if-no-files-found: error
+          retention-days: 1
