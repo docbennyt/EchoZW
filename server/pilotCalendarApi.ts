@@ -141,7 +141,7 @@ function writeIcsResponse(
     requestHasEtag(req, etag) ||
     requestNotModifiedSince(req, lastModified)
   ) {
-    const notModifiedHeaders = { ...headers };
+    const notModifiedHeaders: Record<string, string> = { ...headers };
     delete notModifiedHeaders["Content-Length"];
     res.writeHead(304, notModifiedHeaders);
     res.end();
