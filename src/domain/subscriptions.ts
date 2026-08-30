@@ -5,7 +5,11 @@ import { validateReminderMinutes } from "./reminders.js";
 import type { ReminderPresetId, Timetable } from "./types.js";
 
 export type SubscriptionStatus =
-  "pending" | "active" | "disconnected" | "revoked" | "failed";
+  | "pending"
+  | "active"
+  | "disconnected"
+  | "revoked"
+  | "failed";
 
 export type CalendarSubscription = {
   id: string;
@@ -53,7 +57,11 @@ export type CreateSubscriptionResponse = {
   subscriptionId: string;
   provider: CalendarProvider;
   calendarName: string;
+  /** Canonical private subscription URL. Always HTTPS in a public production deployment. */
   feedUrl?: string;
+  /** Optional Apple convenience deep link derived from feedUrl. The HTTPS feed remains canonical. */
+  appleDeepLinkUrl?: string;
+  /** Backwards-compatible alias while older UI code is removed. */
   appleSubscribeUrl?: string;
   downloadUrl?: string;
   googleConnectUrl?: string;
@@ -103,14 +111,19 @@ export function createSubscriptionRecord(input: {
   } satisfies CalendarSubscription;
 }
 
-export function toWebcalUrl(feedUrl: string) {
+export function toAppleDeepLinkUrl(feedUrl: string) {
   const url = new URL(feedUrl);
   if (url.protocol !== "https:") {
     throw new Error(
-      "Apple subscription URLs must derive from HTTPS feed URLs.",
+      "Apple subscription URLs must derive from canonical HTTPS feed URLs.",
     );
   }
   return `webcal://${url.host}${url.pathname}${url.search}`;
+}
+
+/** @deprecated Use toAppleDeepLinkUrl; the HTTPS feed URL is the canonical subscription identity. */
+export function toWebcalUrl(feedUrl: string) {
+  return toAppleDeepLinkUrl(feedUrl);
 }
 
 export function buildSubscriptionResponse(input: {
@@ -133,14 +146,18 @@ export function buildSubscriptionResponse(input: {
     : [
         "This development URL is not externally fetchable. Use a public HTTPS tunnel or preview deployment for Apple, Google, or Outlook subscriptions.",
       ];
+  const appleDeepLinkUrl =
+    feedUrl && input.externallyFetchable
+      ? toAppleDeepLinkUrl(feedUrl)
+      : undefined;
 
   return {
     subscriptionId: input.subscription.id,
     provider: input.subscription.provider,
     calendarName: input.subscription.calendarName,
     feedUrl,
-    appleSubscribeUrl:
-      feedUrl && input.externallyFetchable ? toWebcalUrl(feedUrl) : undefined,
+    appleDeepLinkUrl,
+    appleSubscribeUrl: appleDeepLinkUrl,
     downloadUrl,
     googleConnectUrl,
     expiresAt: null,
