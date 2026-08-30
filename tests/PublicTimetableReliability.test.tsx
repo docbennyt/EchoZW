@@ -52,6 +52,7 @@ let observerCallback: IntersectionObserverCallback | null = null;
 class MockIntersectionObserver implements IntersectionObserver {
   readonly root = null;
   readonly rootMargin = "0px";
+  readonly scrollMargin = "0px";
   readonly thresholds = [0.15];
   constructor(callback: IntersectionObserverCallback) {
     observerCallback = callback;
@@ -192,7 +193,7 @@ describe("DR-42 public timetable reliability UX", () => {
   });
 
   it("shares only the public class URL and never the private feed URL", async () => {
-    const share = vi.fn(async () => undefined);
+    const share = vi.fn(async (_data: ShareData) => undefined);
     Object.defineProperty(window.navigator, "share", {
       configurable: true,
       value: share,
@@ -208,12 +209,13 @@ describe("DR-42 public timetable reliability UX", () => {
       await screen.findByRole("button", { name: "Share with classmates" }),
     );
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
-    const payload = share.mock.calls[0][0] as { url: string };
-    expect(payload.url).toBe(
+    const payload = share.mock.calls[0]?.[0];
+    expect(payload).toBeDefined();
+    expect(payload?.url).toBe(
       `http://localhost:3000/t/${timetable.publicSlug}`,
     );
-    expect(payload.url).not.toContain("/calendar/feed/");
-    expect(payload.url).not.toContain("private-token");
+    expect(payload?.url).not.toContain("/calendar/feed/");
+    expect(payload?.url).not.toContain("private-token");
   });
 
   it("shows the mobile sticky CTA only after the primary CTA leaves view and hides it while the dialog is open", async () => {
