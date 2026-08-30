@@ -7,6 +7,10 @@ import {
   zonedDateTimeToUtc,
 } from "../src/domain/timezone";
 
+function unfoldIcs(value: string) {
+  return value.replace(/\r\n[ \t]/g, "");
+}
+
 function makeTimetable(
   overrides: Partial<PublicTimetable> = {},
 ): PublicTimetable {
@@ -88,12 +92,7 @@ describe("published timetable ICS generation", () => {
 
   it("keeps reminders in VALARM without moving lecture DTSTART or DTEND", () => {
     const timetable = makeTimetable();
-    const cases = [
-      [30],
-      [1440, 30],
-      [60, 15],
-      [125],
-    ];
+    const cases = [[30], [1440, 30], [60, 15], [125]];
 
     for (const reminders of cases) {
       const ics = generatePublishedTimetableIcs({
@@ -106,6 +105,19 @@ describe("published timetable ICS generation", () => {
         expect(ics).toContain(`TRIGGER:-PT${minutes}M`);
       }
     }
+  });
+
+  it("deduplicates reminder offsets without changing the event wall-clock time", () => {
+    const ics = generatePublishedTimetableIcs({
+      timetable: makeTimetable(),
+      reminderOffsetsMinutes: [30, 30, 60, 15, 15],
+    });
+
+    expect(ics).toContain("DTSTART;TZID=Africa/Harare:20260810T080000");
+    expect(ics).toContain("DTEND;TZID=Africa/Harare:20260810T100000");
+    expect(ics.match(/TRIGGER:-PT30M/g)).toHaveLength(1);
+    expect(ics.match(/TRIGGER:-PT60M/g)).toHaveLength(1);
+    expect(ics.match(/TRIGGER:-PT15M/g)).toHaveLength(1);
   });
 
   it("converts the academic-period recurrence boundary from local end-of-day to UTC", () => {
@@ -190,14 +202,16 @@ describe("published timetable ICS generation", () => {
       reminderOffsetsMinutes: [30],
       publicOrigin: "https://calender.aido.co.zw",
     });
+    const logicalIcs = unfoldIcs(ics);
 
-    expect(ics).toContain(
+    expect(logicalIcs).toContain(
       "CalenderZW timetable: https://calender.aido.co.zw/t/hit-cs-1-1-august-2026",
     );
-    expect(ics).not.toContain("/calendar/feed/");
+    expect(logicalIcs).not.toContain("/calendar/feed/");
+    expect(logicalIcs).not.toContain("private-test-token");
   });
 
-  it("uses CRLF and folds physical lines by UTF-8 octets", () => {
+  it("uses CRLF and folds physical lines by UTF-8 octets without changing logical content", () => {
     const timetable = makeTimetable({
       sessions: [
         {
@@ -217,11 +231,14 @@ describe("published timetable ICS generation", () => {
       expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
     }
 
-    const folded = foldIcsLineUtf8(`DESCRIPTION:${"📚".repeat(30)}`);
+    const logicalLine =
+      "DESCRIPTION:Zimbabwe ❤️ timetable café 📚 Mañana ".repeat(5);
+    const folded = foldIcsLineUtf8(logicalLine);
     expect(folded).toContain("\r\n ");
     for (const line of folded.split("\r\n")) {
       expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
     }
+    expect(unfoldIcs(folded)).toBe(logicalLine);
   });
 
   it("rejects missing publication dates, missing period dates, invalid zones, and invalid time ranges", () => {
