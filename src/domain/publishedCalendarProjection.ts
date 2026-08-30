@@ -30,6 +30,8 @@ export type CanonicalPublishedCalendarEvent = {
   weekday: number;
   recurrenceDay: string;
   firstDate: string;
+  startTime: string;
+  endTime: string;
   localStart: string;
   localEnd: string;
   firstStartUtc: string;
@@ -216,6 +218,8 @@ export function projectPublishedTimetable(input: {
       weekday: session.weekday,
       recurrenceDay: weekdayMap[session.weekday],
       firstDate,
+      startTime: session.startTime,
+      endTime: session.endTime,
       localStart: formatIcsLocalDateTime(firstDate, session.startTime),
       localEnd: formatIcsLocalDateTime(firstDate, session.endTime),
       firstStartUtc: firstStartUtc.toISOString(),
