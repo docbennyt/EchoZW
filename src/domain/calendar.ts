@@ -1,4 +1,10 @@
 import type { AcademicCalendarEvent, Timetable } from "./types.js";
+import {
+  buildVTimezoneLines,
+  foldIcsLineUtf8,
+  formatIcsUtc,
+  zonedDateTimeToUtc,
+} from "./timezone.js";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -22,14 +28,7 @@ export function escapeIcsText(value = "") {
 }
 
 export function foldIcsLine(line: string) {
-  const chunks: string[] = [];
-  let remaining = line;
-  while (remaining.length > 75) {
-    chunks.push(remaining.slice(0, 75));
-    remaining = ` ${remaining.slice(75)}`;
-  }
-  chunks.push(remaining);
-  return chunks.join("\r\n");
+  return foldIcsLineUtf8(line);
 }
 
 function localIcsDate(value: string) {
@@ -97,11 +96,34 @@ function alarmDescription(event: AcademicCalendarEvent, minutes: number) {
   return `${event.title} starts in ${minutes} minutes`;
 }
 
+function calendarDateRange(timetable: Timetable) {
+  const starts = timetable.events
+    .map((event) => event.startsAtLocal.slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  const ends = timetable.events
+    .map((event) => event.recurrence?.until ?? event.endsAtLocal.slice(0, 10))
+    .filter(Boolean)
+    .sort();
+  const fallback = new Date().toISOString().slice(0, 10);
+  return {
+    startsOn: starts[0] ?? fallback,
+    endsOn: ends.at(-1) ?? starts.at(-1) ?? fallback,
+  };
+}
+
 export function generateIcsFromPersonalizedCalendar(
   calendar: PersonalizedAcademicCalendar,
 ) {
   const now = toCalendarDate(new Date().toISOString());
   const timetable = calendar.timetable;
+  const { startsOn, endsOn } = calendarDateRange(timetable);
+  const timezones = [
+    ...new Set([
+      calendar.timezone,
+      ...timetable.events.map((event) => event.timezone),
+    ]),
+  ];
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -111,6 +133,10 @@ export function generateIcsFromPersonalizedCalendar(
     `X-WR-CALNAME:${escapeIcsText(calendar.calendarName)}`,
     `X-WR-TIMEZONE:${calendar.timezone}`,
   ];
+
+  for (const timezone of timezones) {
+    lines.push(...buildVTimezoneLines(timezone, startsOn, endsOn));
+  }
 
   for (const event of timetable.events) {
     lines.push("BEGIN:VEVENT");
@@ -133,8 +159,11 @@ export function generateIcsFromPersonalizedCalendar(
     lines.push(`LAST-MODIFIED:${toCalendarDate(event.lastModified)}`);
     lines.push(`SEQUENCE:${event.sequence}`);
     if (event.recurrence) {
+      const recurrenceUntilUtc = formatIcsUtc(
+        zonedDateTimeToUtc(event.recurrence.until, "23:59:59", event.timezone),
+      );
       lines.push(
-        `RRULE:FREQ=WEEKLY;INTERVAL=${event.recurrence.interval};BYDAY=${event.recurrence.weekdays.join(",")};UNTIL=${toCalendarDate(`${event.recurrence.until}T21:59:59+02:00`)}`,
+        `RRULE:FREQ=WEEKLY;INTERVAL=${event.recurrence.interval};BYDAY=${event.recurrence.weekdays.join(",")};UNTIL=${recurrenceUntilUtc}`,
       );
     }
     if (event.exclusions?.length) {
@@ -154,7 +183,7 @@ export function generateIcsFromPersonalizedCalendar(
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");
-  return `${lines.map(foldIcsLine).join("\r\n")}\r\n`;
+  return `${lines.map((line) => foldIcsLineUtf8(line)).join("\r\n")}\r\n`;
 }
 
 export function generateIcs(timetable: Timetable, reminders = [1440, 30]) {

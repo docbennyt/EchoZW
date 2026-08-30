@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { buildFeedUrl } from "../src/domain/calendar.js";
 import {
@@ -12,6 +13,7 @@ import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 import {
   getReminderOffsets,
   subscriptionRequestSchema,
+  toAppleDeepLinkUrl,
 } from "../src/domain/subscriptions.js";
 import {
   getPublicAppUrlFromHeaders,
@@ -26,6 +28,7 @@ function sendJson(
 ) {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
     ...headers,
   });
   res.end(JSON.stringify(body));
@@ -79,30 +82,72 @@ async function readBody(req: IncomingMessage) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
+function makeFeedEtag(ics: string) {
+  return `"${createHash("sha256").update(ics, "utf8").digest("base64url")}"`;
+}
+
+function requestHasEtag(req: IncomingMessage, etag: string) {
+  const header = req.headers["if-none-match"];
+  if (!header) return false;
+  const values = (Array.isArray(header) ? header.join(",") : header)
+    .split(",")
+    .map((value) => value.trim());
+  return values.includes("*") || values.includes(etag);
+}
+
+function requestNotModifiedSince(req: IncomingMessage, lastModified: Date) {
+  if (req.headers["if-none-match"]) return false;
+  const header = req.headers["if-modified-since"];
+  if (!header || Array.isArray(header)) return false;
+  const parsed = Date.parse(header);
+  if (Number.isNaN(parsed)) return false;
+  return Math.floor(lastModified.getTime() / 1000) <= Math.floor(parsed / 1000);
+}
+
+function feedHeaders(input: {
+  calendarName: string;
+  ics: string;
+  etag: string;
+  lastModified: Date;
+}) {
+  return {
+    "Content-Type": "text/calendar; charset=utf-8",
+    "Content-Disposition": `inline; filename="${safeCalendarFileName(input.calendarName)}.ics"`,
+    "Content-Length": String(Buffer.byteLength(input.ics)),
+    "Cache-Control": "private, no-cache, max-age=0, must-revalidate",
+    "Referrer-Policy": "no-referrer",
+    "X-Robots-Tag": "noindex, nofollow",
+    Vary: "Accept-Encoding",
+    ETag: input.etag,
+    "Last-Modified": input.lastModified.toUTCString(),
+  };
+}
+
 function writeIcsResponse(
   req: IncomingMessage,
   res: ServerResponse,
   calendarName: string,
   ics: string,
-  etagSeed: string,
-  lastModified: string,
+  lastModifiedValue: string,
 ) {
-  const etag = `"${Buffer.from(etagSeed).toString("base64url").slice(0, 48)}"`;
-  if (req.headers["if-none-match"] === etag) {
-    res.writeHead(304);
+  const etag = makeFeedEtag(ics);
+  const lastModified = new Date(lastModifiedValue);
+  if (Number.isNaN(lastModified.getTime())) {
+    throw new Error(
+      "Published timetable has an invalid publication timestamp.",
+    );
+  }
+  const headers = feedHeaders({ calendarName, ics, etag, lastModified });
+
+  if (requestHasEtag(req, etag) || requestNotModifiedSince(req, lastModified)) {
+    const notModifiedHeaders: Record<string, string> = { ...headers };
+    delete notModifiedHeaders["Content-Length"];
+    res.writeHead(304, notModifiedHeaders);
     res.end();
     return;
   }
 
-  res.writeHead(200, {
-    "Content-Type": "text/calendar; charset=utf-8",
-    "Content-Disposition": `inline; filename="${safeCalendarFileName(calendarName)}.ics"`,
-    "Cache-Control": "private, max-age=60",
-    "Referrer-Policy": "no-referrer",
-    "X-Robots-Tag": "noindex, nofollow",
-    ETag: etag,
-    "Last-Modified": new Date(lastModified).toUTCString(),
-  });
+  res.writeHead(200, headers);
   if (req.method === "HEAD") {
     res.end();
     return;
@@ -170,6 +215,12 @@ export async function handlePilotCalendarRequest(
       const feedUrl = rawToken
         ? buildFeedUrl(publicOrigin, rawToken)
         : undefined;
+      const externallyFetchable = isExternallyFetchableUrl(publicOrigin);
+      const appleDeepLinkUrl =
+        feedUrl && externallyFetchable
+          ? toAppleDeepLinkUrl(feedUrl)
+          : undefined;
+
       sendJson(
         res,
         201,
@@ -178,12 +229,11 @@ export async function handlePilotCalendarRequest(
           provider: parsed.data.provider,
           calendarName: String(subscription.calendar_name),
           feedUrl,
-          appleSubscribeUrl:
-            feedUrl && isExternallyFetchableUrl(publicOrigin)
-              ? `webcal://${new URL(feedUrl).host}${new URL(feedUrl).pathname}${new URL(feedUrl).search}`
-              : undefined,
+          appleDeepLinkUrl,
+          appleSubscribeUrl: appleDeepLinkUrl,
           downloadUrl: `${publicOrigin}/calendar/download/${encodeURIComponent(String(subscription.id))}.ics`,
-          warnings: isExternallyFetchableUrl(publicOrigin)
+          expiresAt: null,
+          warnings: externallyFetchable
             ? []
             : [
                 "This development URL is not externally fetchable. Use a public HTTPS tunnel or preview deployment for device subscriptions.",
@@ -225,14 +275,21 @@ export async function handlePilotCalendarRequest(
       const ics = generatePublishedTimetableIcs({
         timetable,
         reminderOffsetsMinutes: reminders,
+        publicOrigin,
       });
+      if (!timetable.publishedAt) {
+        throw new PilotApiError(
+          "TIMETABLE_NOT_PUBLISHED",
+          "This timetable does not have a published calendar yet.",
+          404,
+        );
+      }
       writeIcsResponse(
         req,
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
-        `${String((subscription as Record<string, unknown>).id)}:${timetable.versionNumber}:${timetable.publicSlug}`,
-        timetable.publishedAt ?? new Date().toISOString(),
+        timetable.publishedAt,
       );
     } catch (error) {
       sendError(res, error);
@@ -262,14 +319,21 @@ export async function handlePilotCalendarRequest(
       const ics = generatePublishedTimetableIcs({
         timetable,
         reminderOffsetsMinutes: reminders,
+        publicOrigin,
       });
+      if (!timetable.publishedAt) {
+        throw new PilotApiError(
+          "TIMETABLE_NOT_PUBLISHED",
+          "This timetable does not have a published calendar yet.",
+          404,
+        );
+      }
       writeIcsResponse(
         req,
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
-        `${String((subscription as Record<string, unknown>).id)}:${timetable.versionNumber}:${timetable.publicSlug}`,
-        timetable.publishedAt ?? new Date().toISOString(),
+        timetable.publishedAt,
       );
     } catch (error) {
       sendError(res, error);
