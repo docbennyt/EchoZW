@@ -82,8 +82,8 @@ async function readBody(req: IncomingMessage) {
   return Buffer.concat(chunks).toString("utf8");
 }
 
-function makeFeedEtag(seed: string) {
-  return `"${createHash("sha256").update(seed).digest("base64url")}"`;
+function makeFeedEtag(ics: string) {
+  return `"${createHash("sha256").update(ics, "utf8").digest("base64url")}"`;
 }
 
 function requestHasEtag(req: IncomingMessage, etag: string) {
@@ -128,10 +128,9 @@ function writeIcsResponse(
   res: ServerResponse,
   calendarName: string,
   ics: string,
-  etagSeed: string,
   lastModifiedValue: string,
 ) {
-  const etag = makeFeedEtag(etagSeed);
+  const etag = makeFeedEtag(ics);
   const lastModified = new Date(lastModifiedValue);
   if (Number.isNaN(lastModified.getTime())) {
     throw new Error("Published timetable has an invalid publication timestamp.");
@@ -142,7 +141,8 @@ function writeIcsResponse(
     requestHasEtag(req, etag) ||
     requestNotModifiedSince(req, lastModified)
   ) {
-    const { "Content-Length": _contentLength, ...notModifiedHeaders } = headers;
+    const notModifiedHeaders = { ...headers };
+    delete notModifiedHeaders["Content-Length"];
     res.writeHead(304, notModifiedHeaders);
     res.end();
     return;
@@ -290,7 +290,6 @@ export async function handlePilotCalendarRequest(
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
-        `${String((subscription as Record<string, unknown>).id)}:${timetable.versionNumber}:${timetable.publicSlug}`,
         timetable.publishedAt,
       );
     } catch (error) {
@@ -335,7 +334,6 @@ export async function handlePilotCalendarRequest(
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
-        `${String((subscription as Record<string, unknown>).id)}:${timetable.versionNumber}:${timetable.publicSlug}`,
         timetable.publishedAt,
       );
     } catch (error) {
