@@ -155,7 +155,9 @@ describe("private published calendar feed reliability", () => {
     expect(result.headers["content-type"]).toBe(
       "text/calendar; charset=utf-8",
     );
-    expect(result.headers["cache-control"]).toContain("must-revalidate");
+    expect(result.headers["cache-control"]).toBe(
+      "private, no-cache, max-age=0, must-revalidate",
+    );
     expect(result.headers["referrer-policy"]).toBe("no-referrer");
     expect(result.headers["x-robots-tag"]).toBe("noindex, nofollow");
     expect(result.headers.etag).toMatch(/^"[A-Za-z0-9_-]+"$/);
@@ -179,14 +181,24 @@ describe("private published calendar feed reliability", () => {
     expect(Number(head.headers["content-length"])).toBeGreaterThan(0);
   });
 
-  it("returns 304 for the current ETag and changes ETag/body on a newer publication", async () => {
+  it("returns 304 for current ETag and If-Modified-Since validators", async () => {
     const first = await runFeed({});
-    const notModified = await runFeed({
+    const etagResult = await runFeed({
       headers: { "if-none-match": first.headers.etag },
     });
+    const modifiedSinceResult = await runFeed({
+      headers: { "if-modified-since": first.headers["last-modified"] },
+    });
 
-    expect(notModified.statusCode).toBe(304);
-    expect(notModified.body).toBe("");
+    expect(etagResult.statusCode).toBe(304);
+    expect(etagResult.body).toBe("");
+    expect(etagResult.headers["content-length"]).toBeUndefined();
+    expect(modifiedSinceResult.statusCode).toBe(304);
+    expect(modifiedSinceResult.body).toBe("");
+  });
+
+  it("changes ETag and feed content on a newer publication", async () => {
+    const first = await runFeed({});
 
     repositoryMocks.getPublishedTimetableById.mockResolvedValue(
       makeTimetable({
@@ -212,6 +224,26 @@ describe("private published calendar feed reliability", () => {
     expect(first.body).toContain("UID:stable-hit1101@calender.aido.co.zw");
     expect(first.body).toContain("LOCATION:Engineering Hall");
     expect(first.body).toContain("SEQUENCE:1");
+  });
+
+  it("uses the serialized representation as the ETag source, including reminder personalization", async () => {
+    const first = await runFeed({});
+    const unchanged = await runFeed({});
+
+    expect(unchanged.headers.etag).toBe(first.headers.etag);
+    expect(unchanged.body).toBe(first.body);
+
+    repositoryMocks.getCalendarSubscriptionByTokenHash.mockResolvedValue({
+      ...subscription,
+      reminder_offsets_minutes: [60, 15],
+    });
+    const personalized = await runFeed({});
+
+    expect(personalized.statusCode).toBe(200);
+    expect(personalized.headers.etag).not.toBe(first.headers.etag);
+    expect(personalized.body).toContain("TRIGGER:-PT60M");
+    expect(personalized.body).toContain("TRIGGER:-PT15M");
+    expect(personalized.body).not.toContain("TRIGGER:-PT30M");
   });
 
   it("returns a safe 404 for an invalid feed token without echoing it", async () => {
