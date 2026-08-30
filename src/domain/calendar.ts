@@ -185,7 +185,7 @@ export function generateIcsFromPersonalizedCalendar(
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");
-  return `${lines.map(foldIcsLineUtf8).join("\r\n")}\r\n`;
+  return `${lines.map((line) => foldIcsLineUtf8(line)).join("\r\n")}\r\n`;
 }
 
 export function generateIcs(timetable: Timetable, reminders = [1440, 30]) {
