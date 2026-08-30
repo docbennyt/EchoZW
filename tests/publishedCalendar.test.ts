@@ -2,10 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generatePublishedTimetableIcs } from "../server/publishedCalendar";
 import type { PublicTimetable } from "../src/api/pilotTypes";
 import { projectPublishedTimetable } from "../src/domain/publishedCalendarProjection";
-import {
-  foldIcsLineUtf8,
-  zonedDateTimeToUtc,
-} from "../src/domain/timezone";
+import { foldIcsLineUtf8, zonedDateTimeToUtc } from "../src/domain/timezone";
 
 function unfoldIcs(value: string) {
   return value.replace(/\r\n[ \t]/g, "");
@@ -126,9 +123,7 @@ describe("published timetable ICS generation", () => {
       reminderOffsetsMinutes: [30],
     });
 
-    expect(ics).toContain(
-      "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261210T215959Z",
-    );
+    expect(ics).toContain("RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261210T215959Z");
     expect(ics).not.toContain("UNTIL=20261210T235959Z");
   });
 

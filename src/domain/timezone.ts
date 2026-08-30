@@ -135,7 +135,11 @@ type OffsetTransition = {
   nameAfter: string;
 };
 
-function findOffsetTransitions(timeZone: string, startYear: number, endYear: number) {
+function findOffsetTransitions(
+  timeZone: string,
+  startYear: number,
+  endYear: number,
+) {
   const scanStart = Date.UTC(startYear - 1, 0, 1, 0, 0, 0);
   const scanEnd = Date.UTC(endYear + 1, 11, 31, 23, 59, 0);
   const transitions: OffsetTransition[] = [];
@@ -162,8 +166,7 @@ function findOffsetTransitions(timeZone: string, startYear: number, endYear: num
       const offsetBefore = previousOffset;
 
       while (high - low > MINUTE_MS) {
-        const midpoint =
-          Math.floor((low + high) / 2 / MINUTE_MS) * MINUTE_MS;
+        const midpoint = Math.floor((low + high) / 2 / MINUTE_MS) * MINUTE_MS;
         if (midpoint <= low) break;
         const midpointOffset = getTimeZoneOffsetMinutes(
           new Date(midpoint),

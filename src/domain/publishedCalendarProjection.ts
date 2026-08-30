@@ -163,7 +163,10 @@ export function projectPublishedTimetable(input: {
   if (!timetable.publishedAt) {
     throw new Error("Published timetable is missing publication timestamp.");
   }
-  if (!Number.isInteger(timetable.versionNumber) || timetable.versionNumber < 1) {
+  if (
+    !Number.isInteger(timetable.versionNumber) ||
+    timetable.versionNumber < 1
+  ) {
     throw new Error("Published timetable version number is invalid.");
   }
 
@@ -186,7 +189,9 @@ export function projectPublishedTimetable(input: {
 
   const events = timetable.sessions.map((session) => {
     if (!session.stableSessionKey.trim()) {
-      throw new Error("Published timetable session is missing stable identity.");
+      throw new Error(
+        "Published timetable session is missing stable identity.",
+      );
     }
     if (!weekdayMap[session.weekday]) {
       throw new Error(`Invalid timetable weekday: ${session.weekday}`);

@@ -100,9 +100,7 @@ describe("DR-42 IANA timezone and reminder invariants", () => {
     expect(event.localStart).toBe("20260810T080000");
     expect(event.localEnd).toBe("20260810T100000");
     expect(event.alarms.map((alarm) => alarm.minutesBefore)).toEqual([
-      60,
-      30,
-      15,
+      60, 30, 15,
     ]);
   });
 });

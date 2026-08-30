@@ -5,11 +5,7 @@ import { validateReminderMinutes } from "./reminders.js";
 import type { ReminderPresetId, Timetable } from "./types.js";
 
 export type SubscriptionStatus =
-  | "pending"
-  | "active"
-  | "disconnected"
-  | "revoked"
-  | "failed";
+  "pending" | "active" | "disconnected" | "revoked" | "failed";
 
 export type CalendarSubscription = {
   id: string;

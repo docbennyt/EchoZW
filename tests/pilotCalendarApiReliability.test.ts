@@ -101,7 +101,8 @@ function makeResponse() {
       return response;
     },
     end(chunk?: string | Buffer) {
-      if (chunk) capture.body += Buffer.isBuffer(chunk) ? chunk.toString() : chunk;
+      if (chunk)
+        capture.body += Buffer.isBuffer(chunk) ? chunk.toString() : chunk;
       return response;
     },
   } as unknown as ServerResponse;
@@ -141,7 +142,9 @@ describe("private published calendar feed reliability", () => {
     repositoryMocks.getCalendarSubscriptionByTokenHash.mockResolvedValue(
       subscription,
     );
-    repositoryMocks.getPublishedTimetableById.mockResolvedValue(makeTimetable());
+    repositoryMocks.getPublishedTimetableById.mockResolvedValue(
+      makeTimetable(),
+    );
     repositoryMocks.createCalendarSubscriptionRecord.mockResolvedValue({
       id: "sub-created",
       calendar_name: "Class 1.1 · CalenderZW",
@@ -152,9 +155,7 @@ describe("private published calendar feed reliability", () => {
     const result = await runFeed({});
 
     expect(result.statusCode).toBe(200);
-    expect(result.headers["content-type"]).toBe(
-      "text/calendar; charset=utf-8",
-    );
+    expect(result.headers["content-type"]).toBe("text/calendar; charset=utf-8");
     expect(result.headers["cache-control"]).toBe(
       "private, no-cache, max-age=0, must-revalidate",
     );
@@ -163,9 +164,7 @@ describe("private published calendar feed reliability", () => {
     expect(result.headers.etag).toMatch(/^"[A-Za-z0-9_-]+"$/);
     expect(result.headers["last-modified"]).toBeTruthy();
     expect(result.body).toContain("BEGIN:VCALENDAR\r\n");
-    expect(result.body).toContain(
-      "DTSTART;TZID=Africa/Harare:20260810T080000",
-    );
+    expect(result.body).toContain("DTSTART;TZID=Africa/Harare:20260810T080000");
     expect(result.body).not.toContain("private-test-token");
   });
 
@@ -218,7 +217,9 @@ describe("private published calendar feed reliability", () => {
 
     expect(republished.statusCode).toBe(200);
     expect(republished.headers.etag).not.toBe(first.headers.etag);
-    expect(republished.body).toContain("UID:stable-hit1101@calender.aido.co.zw");
+    expect(republished.body).toContain(
+      "UID:stable-hit1101@calender.aido.co.zw",
+    );
     expect(republished.body).toContain("LOCATION:N205");
     expect(republished.body).toContain("SEQUENCE:2");
     expect(first.body).toContain("UID:stable-hit1101@calender.aido.co.zw");

@@ -23,7 +23,11 @@
   min-height: 100dvh;
   overflow-x: clip;
   background:
-    radial-gradient(circle at 86% 0%, rgba(216, 168, 48, 0.12), transparent 25rem),
+    radial-gradient(
+      circle at 86% 0%,
+      rgba(216, 168, 48, 0.12),
+      transparent 25rem
+    ),
     linear-gradient(180deg, rgba(223, 233, 221, 0.62), transparent 20rem),
     var(--pt-cream);
   color: var(--pt-ink);
@@ -232,8 +236,11 @@
   padding: 20px;
   border: 1px solid rgba(21, 61, 50, 0.12);
   border-radius: var(--pt-radius-md);
-  background:
-    linear-gradient(135deg, rgba(238, 243, 235, 0.92), rgba(255, 254, 250, 0.96));
+  background: linear-gradient(
+    135deg,
+    rgba(238, 243, 235, 0.92),
+    rgba(255, 254, 250, 0.96)
+  );
 }
 
 .pt-next-time {

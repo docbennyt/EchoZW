@@ -145,7 +145,9 @@ export function generateIcsFromPersonalizedCalendar(
     lines.push(
       `DTSTART;TZID=${event.timezone}:${localIcsDate(event.startsAtLocal)}`,
     );
-    lines.push(`DTEND;TZID=${event.timezone}:${localIcsDate(event.endsAtLocal)}`);
+    lines.push(
+      `DTEND;TZID=${event.timezone}:${localIcsDate(event.endsAtLocal)}`,
+    );
     lines.push(
       `SUMMARY:${escapeIcsText(`${event.courseCode} · ${event.title}`)}`,
     );
@@ -158,11 +160,7 @@ export function generateIcsFromPersonalizedCalendar(
     lines.push(`SEQUENCE:${event.sequence}`);
     if (event.recurrence) {
       const recurrenceUntilUtc = formatIcsUtc(
-        zonedDateTimeToUtc(
-          event.recurrence.until,
-          "23:59:59",
-          event.timezone,
-        ),
+        zonedDateTimeToUtc(event.recurrence.until, "23:59:59", event.timezone),
       );
       lines.push(
         `RRULE:FREQ=WEEKLY;INTERVAL=${event.recurrence.interval};BYDAY=${event.recurrence.weekdays.join(",")};UNTIL=${recurrenceUntilUtc}`,

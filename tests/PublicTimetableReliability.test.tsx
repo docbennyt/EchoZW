@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicTimetable } from "../src/api/pilotTypes";
 
@@ -90,14 +97,12 @@ beforeEach(() => {
     subscriptionId: "sub-42",
     provider: "apple_subscription",
     calendarName: "Class 1.1 · CalenderZW",
-    feedUrl:
-      "https://calender.aido.co.zw/calendar/feed/private-token.ics",
+    feedUrl: "https://calender.aido.co.zw/calendar/feed/private-token.ics",
     appleDeepLinkUrl:
       "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
     appleSubscribeUrl:
       "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
-    downloadUrl:
-      "https://calender.aido.co.zw/calendar/download/sub-42.ics",
+    downloadUrl: "https://calender.aido.co.zw/calendar/download/sub-42.ics",
     expiresAt: null,
     warnings: [],
   });
@@ -126,15 +131,23 @@ describe("DR-42 public timetable reliability UX", () => {
         name: "BTech Computer Science",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Harare Institute of Technology")).toBeInTheDocument();
+    expect(
+      screen.getByText("Harare Institute of Technology"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Class 1.1")).toBeInTheDocument();
-    expect(screen.getByText(/Times shown in Harare time \(CAT\)/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Times shown in Harare time \(CAT\)/i),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Subscribe to calendar" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Share with classmates" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Share with classmates" }),
+    ).toBeInTheDocument();
     expect(container.querySelector(".pt-success-card")).toBeNull();
-    expect(container.querySelector(".pt-hero")?.classList.contains("has-result")).toBe(false);
+    expect(
+      container.querySelector(".pt-hero")?.classList.contains("has-result"),
+    ).toBe(false);
   });
 
   it("offers Apple first on iPhone, keeps one-time ICS distinct, and has accessible dialog dismissal", async () => {
@@ -150,12 +163,18 @@ describe("DR-42 public timetable reliability UX", () => {
       name: "Choose your reminders",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    const apple = within(dialog).getByRole("button", { name: /Apple Calendar/i });
+    const apple = within(dialog).getByRole("button", {
+      name: /Apple Calendar/i,
+    });
     const oneTime = within(dialog).getByRole("button", {
       name: /Download one-time \.ics/i,
     });
-    expect(apple.compareDocumentPosition(oneTime) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
-    expect(within(dialog).queryByText(/Google Calendar direct sync/i)).toBeNull();
+    expect(
+      apple.compareDocumentPosition(oneTime) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect(
+      within(dialog).queryByText(/Google Calendar direct sync/i),
+    ).toBeNull();
 
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -172,7 +191,9 @@ describe("DR-42 public timetable reliability UX", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /Apple Calendar/i }));
 
-    await waitFor(() => expect(mocks.createCalendarSubscription).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(mocks.createCalendarSubscription).toHaveBeenCalledTimes(1),
+    );
     expect(mocks.createCalendarSubscription).toHaveBeenCalledWith(
       expect.objectContaining({
         timetableId: "tt-hit-cs1",
@@ -181,8 +202,12 @@ describe("DR-42 public timetable reliability UX", () => {
         timezone: "Africa/Harare",
       }),
     );
-    expect(await screen.findByText(/secure HTTPS subscription is ready/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open Apple Calendar/i })).toHaveAttribute(
+    expect(
+      await screen.findByText(/secure HTTPS subscription is ready/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Open Apple Calendar/i }),
+    ).toHaveAttribute(
       "href",
       "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
     );
@@ -198,11 +223,7 @@ describe("DR-42 public timetable reliability UX", () => {
       configurable: true,
       value: share,
     });
-    window.history.replaceState(
-      {},
-      "",
-      `/t/${timetable.publicSlug}`,
-    );
+    window.history.replaceState({}, "", `/t/${timetable.publicSlug}`);
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
 
     fireEvent.click(

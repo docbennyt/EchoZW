@@ -133,14 +133,13 @@ function writeIcsResponse(
   const etag = makeFeedEtag(ics);
   const lastModified = new Date(lastModifiedValue);
   if (Number.isNaN(lastModified.getTime())) {
-    throw new Error("Published timetable has an invalid publication timestamp.");
+    throw new Error(
+      "Published timetable has an invalid publication timestamp.",
+    );
   }
   const headers = feedHeaders({ calendarName, ics, etag, lastModified });
 
-  if (
-    requestHasEtag(req, etag) ||
-    requestNotModifiedSince(req, lastModified)
-  ) {
+  if (requestHasEtag(req, etag) || requestNotModifiedSince(req, lastModified)) {
     const notModifiedHeaders: Record<string, string> = { ...headers };
     delete notModifiedHeaders["Content-Length"];
     res.writeHead(304, notModifiedHeaders);

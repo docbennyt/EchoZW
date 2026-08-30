@@ -38,7 +38,10 @@ function redact(value) {
   return String(value)
     .split(rawToken)
     .join("<redacted-token>")
-    .replace(/\/calendar\/feed\/[^/?#\s]+\.ics/g, "/calendar/feed/<redacted-token>.ics");
+    .replace(
+      /\/calendar\/feed\/[^/?#\s]+\.ics/g,
+      "/calendar/feed/<redacted-token>.ics",
+    );
 }
 
 function report(label, value) {
@@ -54,7 +57,9 @@ async function inspectTls(url) {
   const addresses = await dns.lookup(url.hostname, { all: true });
   report(
     "DNS",
-    addresses.map((entry) => `${entry.address} (IPv${entry.family})`).join(", "),
+    addresses
+      .map((entry) => `${entry.address} (IPv${entry.family})`)
+      .join(", "),
   );
 
   return new Promise((resolve, reject) => {
@@ -125,14 +130,28 @@ try {
   report("TLS authorized", tlsResult.authorized);
   report("TLS protocol", tlsResult.protocol ?? "unknown");
   report("Cipher", tlsResult.cipher?.name ?? "unknown");
-  report("Certificate subject", JSON.stringify(tlsResult.certificate?.subject ?? {}));
-  report("Certificate issuer", JSON.stringify(tlsResult.certificate?.issuer ?? {}));
-  report("Certificate valid from", tlsResult.certificate?.valid_from ?? "unknown");
+  report(
+    "Certificate subject",
+    JSON.stringify(tlsResult.certificate?.subject ?? {}),
+  );
+  report(
+    "Certificate issuer",
+    JSON.stringify(tlsResult.certificate?.issuer ?? {}),
+  );
+  report(
+    "Certificate valid from",
+    tlsResult.certificate?.valid_from ?? "unknown",
+  );
   report("Certificate valid to", tlsResult.certificate?.valid_to ?? "unknown");
   report("Certificate SAN", tlsResult.certificate?.subjectaltname ?? "unknown");
-  report("Certificate fingerprint", tlsResult.certificate?.fingerprint256 ?? "unknown");
+  report(
+    "Certificate fingerprint",
+    tlsResult.certificate?.fingerprint256 ?? "unknown",
+  );
   if (!tlsResult.authorized) {
-    fail(`TLS certificate is not trusted: ${tlsResult.authorizationError ?? "unknown"}`);
+    fail(
+      `TLS certificate is not trusted: ${tlsResult.authorizationError ?? "unknown"}`,
+    );
   }
   if (!tlsResult.certificate?.subjectaltname?.includes(REQUIRED_HOST)) {
     fail("Certificate SAN does not contain the production feed hostname.");
@@ -142,22 +161,43 @@ try {
   report("HEAD status", head.response.status);
   report("HEAD final URL", head.current.toString());
   report("HEAD redirects", JSON.stringify(head.redirects));
-  report("HEAD Content-Type", head.response.headers.get("content-type") ?? "missing");
+  report(
+    "HEAD Content-Type",
+    head.response.headers.get("content-type") ?? "missing",
+  );
   report("HEAD ETag", head.response.headers.get("etag") ?? "missing");
-  report("HEAD Last-Modified", head.response.headers.get("last-modified") ?? "missing");
-  if (head.response.status !== 200) fail(`HEAD returned ${head.response.status}, expected 200.`);
+  report(
+    "HEAD Last-Modified",
+    head.response.headers.get("last-modified") ?? "missing",
+  );
+  if (head.response.status !== 200)
+    fail(`HEAD returned ${head.response.status}, expected 200.`);
 
   const get = await fetchFollowingRedirects(feedUrl, "GET");
   const body = await get.response.text();
   report("GET status", get.response.status);
   report("GET final URL", get.current.toString());
   report("GET redirects", JSON.stringify(get.redirects));
-  report("GET Content-Type", get.response.headers.get("content-type") ?? "missing");
-  report("GET Cache-Control", get.response.headers.get("cache-control") ?? "missing");
-  report("GET X-Robots-Tag", get.response.headers.get("x-robots-tag") ?? "missing");
+  report(
+    "GET Content-Type",
+    get.response.headers.get("content-type") ?? "missing",
+  );
+  report(
+    "GET Cache-Control",
+    get.response.headers.get("cache-control") ?? "missing",
+  );
+  report(
+    "GET X-Robots-Tag",
+    get.response.headers.get("x-robots-tag") ?? "missing",
+  );
 
-  if (get.response.status !== 200) fail(`GET returned ${get.response.status}, expected 200.`);
-  if (!/^text\/calendar(?:;|$)/i.test(get.response.headers.get("content-type") ?? "")) {
+  if (get.response.status !== 200)
+    fail(`GET returned ${get.response.status}, expected 200.`);
+  if (
+    !/^text\/calendar(?:;|$)/i.test(
+      get.response.headers.get("content-type") ?? "",
+    )
+  ) {
     fail("GET Content-Type is not text/calendar.");
   }
   if (!body.startsWith("BEGIN:VCALENDAR\r\n")) {
@@ -193,7 +233,8 @@ try {
   }
 
   const invalidUrl = new URL(feedUrl);
-  invalidUrl.pathname = "/calendar/feed/calenderzw-diagnostic-invalid-token.ics";
+  invalidUrl.pathname =
+    "/calendar/feed/calenderzw-diagnostic-invalid-token.ics";
   const invalid = await fetch(invalidUrl, { redirect: "manual" });
   report("Invalid token status", invalid.status);
   if (invalid.status !== 404) {

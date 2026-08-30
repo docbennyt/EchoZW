@@ -10,13 +10,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
@@ -47,9 +41,7 @@ const weekdayLabels = [
 
 type ReminderPresetId = "on_time" | "prepared" | "commuter" | "custom";
 type PublicCalendarProvider =
-  | "apple_subscription"
-  | "webcal_subscription"
-  | "ics_download";
+  "apple_subscription" | "webcal_subscription" | "ics_download";
 
 type CalendarMethod = {
   provider: PublicCalendarProvider | null;
@@ -233,7 +225,10 @@ function ErrorPage() {
       <main className="pt-shell pt-state-page">
         <CalendarCheck size={30} />
         <h1>Timetable unavailable</h1>
-        <p>This class timetable is not currently available as a published version.</p>
+        <p>
+          This class timetable is not currently available as a published
+          version.
+        </p>
         <a className="pt-button pt-button-primary" href="/find">
           Find another timetable
         </a>
@@ -310,7 +305,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       map.get(event.weekday)?.push(event);
     }
     for (const events of map.values()) {
-      events.sort((left, right) => left.startTime.localeCompare(right.startTime));
+      events.sort((left, right) =>
+        left.startTime.localeCompare(right.startTime),
+      );
     }
     return map;
   }, [projection]);
@@ -557,7 +554,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 Published by CalenderZW
               </span>
               <span>
-                Updated {formatPublishedTimestamp(
+                Updated{" "}
+                {formatPublishedTimestamp(
                   timetable.publishedAt,
                   timetable.institutionTimezone,
                 )}
@@ -569,7 +567,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               {nextClass ? (
                 <>
                   <strong className="pt-next-time">
-                    {nextClass.relativeLabel} · {formatOccurrenceTime(
+                    {nextClass.relativeLabel} ·{" "}
+                    {formatOccurrenceTime(
                       nextClass.start,
                       timetable.institutionTimezone,
                     )}
@@ -587,7 +586,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               ) : (
                 <>
                   <strong>No upcoming classes</strong>
-                  <p>No more published sessions fall inside this academic period.</p>
+                  <p>
+                    No more published sessions fall inside this academic period.
+                  </p>
                 </>
               )}
             </article>
@@ -598,8 +599,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 <strong>{timezoneCopy(timetable.institutionTimezone)}</strong>
                 {browserTimeZone !== timetable.institutionTimezone ? (
                   <span>
-                    Your calendar is configured for {browserTimeZone}; it may show the
-                    equivalent instant in that timezone.
+                    Your calendar is configured for {browserTimeZone}; it may
+                    show the equivalent instant in that timezone.
                   </span>
                 ) : null}
               </div>
@@ -625,8 +626,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               </button>
             </div>
             <p className="pt-helper">
-              No account needed. Subscriptions follow future CalenderZW timetable
-              publications; one-time .ics imports do not.
+              No account needed. Subscriptions follow future CalenderZW
+              timetable publications; one-time .ics imports do not.
             </p>
             {shareStatus ? (
               <p className="pt-status-message" role="status">
@@ -642,11 +643,14 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               {calendarDelivery.provider === "apple_subscription" ? (
                 <>
                   <p>
-                    Your secure HTTPS subscription is ready for Apple Calendar. The
-                    subscription URL is private to you.
+                    Your secure HTTPS subscription is ready for Apple Calendar.
+                    The subscription URL is private to you.
                   </p>
                   {appleDeepLink ? (
-                    <a className="pt-button pt-button-primary" href={appleDeepLink}>
+                    <a
+                      className="pt-button pt-button-primary"
+                      href={appleDeepLink}
+                    >
                       <ExternalLink size={18} aria-hidden="true" />
                       Open Apple Calendar
                     </a>
@@ -665,8 +669,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               {calendarDelivery.provider === "webcal_subscription" ? (
                 <>
                   <p>
-                    Copy this private HTTPS feed into a calendar client that supports
-                    subscribed calendars.
+                    Copy this private HTTPS feed into a calendar client that
+                    supports subscribed calendars.
                   </p>
                   <button
                     type="button"
@@ -682,8 +686,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               {calendarDelivery.provider === "ics_download" ? (
                 <>
                   <p>
-                    This is a one-time snapshot of the current publication. It will not
-                    update itself later.
+                    This is a one-time snapshot of the current publication. It
+                    will not update itself later.
                   </p>
                   {calendarDelivery.response.downloadUrl ? (
                     <button
@@ -708,13 +712,21 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                   {calendarDelivery.provider === "apple_subscription" ? (
                     <ol>
                       <li>Open Calendar on your iPhone.</li>
-                      <li>Tap Calendars → Add Calendar → Add Subscription Calendar.</li>
+                      <li>
+                        Tap Calendars → Add Calendar → Add Subscription
+                        Calendar.
+                      </li>
                       <li>Paste the secure CalenderZW URL and tap Find.</li>
                     </ol>
                   ) : (
-                    <p>Paste the secure URL into your calendar app's subscription field.</p>
+                    <p>
+                      Paste the secure URL into your calendar app's subscription
+                      field.
+                    </p>
                   )}
-                  <label htmlFor="pt-private-feed">Private subscription URL</label>
+                  <label htmlFor="pt-private-feed">
+                    Private subscription URL
+                  </label>
                   <input
                     id="pt-private-feed"
                     readOnly
@@ -757,32 +769,38 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           </div>
 
           <div className="pt-week-list">
-            {Array.from({ length: 7 }, (_, index) => index + 1).map((weekday) => {
-              const events = groupedEvents.get(weekday) ?? [];
-              if (events.length === 0) return null;
-              return (
-                <section className="pt-day" key={weekday}>
-                  <h3>{weekdayLabels[weekday]}</h3>
-                  <div className="pt-day-events">
-                    {events.map((event) => (
-                      <article className="pt-session" key={event.stableSessionKey}>
-                        <time>
-                          {localTimeLabel(event.startTime)}–{localTimeLabel(event.endTime)}
-                        </time>
-                        <div className="pt-session-copy">
-                          <strong>{event.courseCode}</strong>
-                          <h4>{event.courseName}</h4>
-                          <span>
-                            {event.venue || "Venue not set"}
-                            {event.lecturer ? ` · ${event.lecturer}` : ""}
-                          </span>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
+            {Array.from({ length: 7 }, (_, index) => index + 1).map(
+              (weekday) => {
+                const events = groupedEvents.get(weekday) ?? [];
+                if (events.length === 0) return null;
+                return (
+                  <section className="pt-day" key={weekday}>
+                    <h3>{weekdayLabels[weekday]}</h3>
+                    <div className="pt-day-events">
+                      {events.map((event) => (
+                        <article
+                          className="pt-session"
+                          key={event.stableSessionKey}
+                        >
+                          <time>
+                            {localTimeLabel(event.startTime)}–
+                            {localTimeLabel(event.endTime)}
+                          </time>
+                          <div className="pt-session-copy">
+                            <strong>{event.courseCode}</strong>
+                            <h4>{event.courseName}</h4>
+                            <span>
+                              {event.venue || "Venue not set"}
+                              {event.lecturer ? ` · ${event.lecturer}` : ""}
+                            </span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                );
+              },
+            )}
           </div>
         </section>
       </main>
@@ -890,7 +908,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                       inputMode="numeric"
                       value={customMinutes}
                       onChange={(event) =>
-                        setCustomMinutes(event.target.value.replace(/[^\d]/g, ""))
+                        setCustomMinutes(
+                          event.target.value.replace(/[^\d]/g, ""),
+                        )
                       }
                     />
                   </label>
@@ -900,8 +920,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               <div className="pt-dialog-timezone" role="note">
                 <Clock3 size={16} aria-hidden="true" />
                 <span>
-                  Lecture times stay in {timetable.institutionTimezone}. Reminders only
-                  control notifications; they never move a class start or end time.
+                  Lecture times stay in {timetable.institutionTimezone}.
+                  Reminders only control notifications; they never move a class
+                  start or end time.
                 </span>
               </div>
 
