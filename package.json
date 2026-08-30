@@ -12,6 +12,7 @@
     "preview": "node dist-server/server/productionServer.js",
     "source:parse": "node --env-file-if-exists=.env.local dist-server/server/sourceSnapshotParseCli.js",
     "source:reconcile": "node --env-file-if-exists=.env.local dist-server/server/sourceReconciliationCli.js",
+    "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
     "format:check": "prettier --check ."
