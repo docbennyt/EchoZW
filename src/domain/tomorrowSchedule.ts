@@ -82,10 +82,13 @@ export function getTomorrowSchedule(
     institutionDateTomorrow,
     timeZone,
   );
+  const startsBeforeTomorrow =
+    !timetable.startsOn || institutionDateTomorrow >= timetable.startsOn;
+  const endsAfterTomorrow =
+    !timetable.endsOn || institutionDateTomorrow <= timetable.endsOn;
 
   const sessions =
-    institutionDateTomorrow < timetable.startsOn ||
-    institutionDateTomorrow > timetable.endsOn
+    !startsBeforeTomorrow || !endsAfterTomorrow
       ? []
       : timetable.sessions
           .filter((session) => session.weekday === tomorrowWeekday)
