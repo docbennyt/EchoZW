@@ -12,6 +12,23 @@ import type { PublicTimetable } from "../src/api/pilotTypes";
 
 const createSupabaseClient = vi.fn();
 
+const superadminSession = {
+  authenticated: true,
+  admin: true,
+  user: { id: "admin-1", email: "admin@example.test" },
+  staff: { id: "staff-1", role: "superadmin" },
+  permissions: {
+    canManageStaff: true,
+    canManageInstitutions: true,
+    canManageProgrammes: true,
+    canManageClassGroups: true,
+    canManageAllTimetables: true,
+    canEditAssignedTimetables: true,
+    canPublishAssignedTimetables: true,
+  },
+  assignments: [],
+};
+
 const publishedTimetable: PublicTimetable = {
   timetableId: "tt-hit-1",
   publicSlug: "hit-ics-1-1-august-semester-2026",
@@ -603,14 +620,10 @@ describe("public student flow", () => {
       "fetch",
       vi.fn(
         async () =>
-          new Response(
-            JSON.stringify({
-              authenticated: true,
-              admin: true,
-              user: { id: "admin-1", email: "admin@example.test" },
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
+          new Response(JSON.stringify(superadminSession), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
       ),
     );
 
@@ -642,14 +655,10 @@ describe("public student flow", () => {
       "fetch",
       vi.fn(
         async () =>
-          new Response(
-            JSON.stringify({
-              authenticated: true,
-              admin: true,
-              user: { id: "admin-1", email: "admin@example.test" },
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
-          ),
+          new Response(JSON.stringify(superadminSession), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }),
       ),
     );
 

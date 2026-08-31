@@ -1,7 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   AdminAuthError,
-  requireAdmin,
+  requireStaffUser,
+  requireSuperadmin,
   sendAdminAuthError,
   type AuthDependencies,
 } from "./supabase/auth.js";
@@ -35,11 +36,14 @@ export async function handleAdminRequest(
 
   if (req.method === "GET" && requestUrl.pathname === "/api/admin/session") {
     try {
-      const user = await requireAdmin(req, deps);
+      const context = await requireStaffUser(req, deps);
       sendJson(res, 200, {
         authenticated: true,
         admin: true,
-        user,
+        user: context.user,
+        staff: context.staff,
+        permissions: context.permissions,
+        assignments: context.assignments,
       });
     } catch (error) {
       logAdminFailure("session", error);
@@ -50,7 +54,7 @@ export async function handleAdminRequest(
 
   if (requestUrl.pathname.startsWith("/api/admin/")) {
     try {
-      const user = await requireAdmin(req, deps);
+      const { user } = await requireSuperadmin(req, deps);
       if (await handlePilotAdminApi(req, res, user)) return true;
       sendJson(res, 501, {
         error: {
