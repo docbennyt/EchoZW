@@ -1,3 +1,7 @@
+.pt-app {
+  font-family: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
 .pt-tomorrow {
   margin-top: 18px;
   padding: clamp(20px, 3vw, 28px);
@@ -234,13 +238,6 @@
 .tone-orange {
   --course-accent: #a96f35;
   --course-bg: #fbf0e5;
-}
-
-/* The public timetable now uses the same czw site chrome. Keep its typography and
-   navigation rules authoritative even though the timetable content remains namespaced. */
-.pt-app .czw-header,
-.pt-app .czw-footer {
-  font-family: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 @media (max-width: 899px) {
