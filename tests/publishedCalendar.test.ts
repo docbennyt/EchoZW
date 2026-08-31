@@ -191,6 +191,79 @@ describe("published timetable ICS generation", () => {
     expect(event.venue).toBe(session.venue);
   });
 
+  it("includes one-off extra classes without a weekly recurrence rule", () => {
+    const ics = generatePublishedTimetableIcs({
+      timetable: makeTimetable({
+        exceptions: [
+          {
+            id: "extra-1",
+            stableSessionKey: null,
+            exceptionDate: "2026-09-01",
+            exceptionType: "extra",
+            replacementStartsAt: null,
+            replacementEndsAt: null,
+            courseCode: "ICS1103",
+            courseName: "Extra lecture",
+            startTime: "08:00:00",
+            endTime: "10:00:00",
+            venue: "N111",
+            lecturer: null,
+            sessionType: "Lecture",
+            notes: "One-off class",
+            reason: "Catch-up lecture",
+            provenance: "Class rep",
+            active: true,
+            createdAt: "2026-08-31T08:00:00.000Z",
+          },
+        ],
+      }),
+      reminderOffsetsMinutes: [30],
+      publicOrigin: "https://calender.aido.co.zw",
+    });
+    const logicalIcs = unfoldIcs(ics);
+
+    expect(logicalIcs).toContain("SUMMARY:ICS1103 Â· Extra lecture");
+    expect(logicalIcs).toContain("DTSTART;TZID=Africa/Harare:20260901T080000");
+    expect(logicalIcs).toContain("DTEND;TZID=Africa/Harare:20260901T100000");
+    expect(logicalIcs).not.toContain(
+      "RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261210T215959Z",
+    );
+  });
+
+  it("excludes cancelled occurrences from recurring calendar events", () => {
+    const ics = generatePublishedTimetableIcs({
+      timetable: makeTimetable({
+        exceptions: [
+          {
+            id: "cancel-1",
+            stableSessionKey: "stable-session-1",
+            exceptionDate: "2026-08-17",
+            exceptionType: "cancelled",
+            replacementStartsAt: null,
+            replacementEndsAt: null,
+            courseCode: null,
+            courseName: null,
+            startTime: null,
+            endTime: null,
+            venue: null,
+            lecturer: null,
+            sessionType: null,
+            notes: "Public holiday",
+            reason: "Holiday",
+            provenance: "Class rep",
+            active: true,
+            createdAt: "2026-08-12T08:00:00.000Z",
+          },
+        ],
+      }),
+      reminderOffsetsMinutes: [30],
+    });
+
+    expect(unfoldIcs(ics)).toContain(
+      "EXDATE;TZID=Africa/Harare:20260817T080000",
+    );
+  });
+
   it("puts only the public timetable URL in event descriptions, never a private feed URL", () => {
     const ics = generatePublishedTimetableIcs({
       timetable: makeTimetable(),

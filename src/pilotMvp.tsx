@@ -15,8 +15,15 @@ import {
   Trash2,
 } from "lucide-react";
 import { track } from "./analytics";
-import { fetchAdminSession, type AdminSessionUser } from "./api/adminSession";
 import {
+  fetchAdminSession,
+  type AdminSessionResponse,
+  type AdminSessionUser,
+} from "./api/adminSession";
+import {
+  assignClassRep,
+  createRecurringCorrection,
+  createTimetableException,
   createAcademicPeriod,
   createClassGroup,
   createInstitution,
@@ -25,11 +32,16 @@ import {
   createTimetableSession,
   deleteTimetableSession,
   getTimetable,
+  inviteClassRep,
   listAcademicPeriods,
   listClassGroups,
   listInstitutions,
+  listStaff,
   listProgrammes,
   listTimetables,
+  resendClassRepInvite,
+  revokeClassRepAssignment,
+  setStaffActive,
   publishTimetable,
   updateAcademicPeriod,
   updateClassGroup,
@@ -45,6 +57,7 @@ import type {
   AdminTimetableEditor,
   AdminTimetableSession,
   AdminTimetableSummary,
+  StaffMember,
 } from "./api/pilotTypes";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import { fetchPublicTimetable } from "./api/publicTimetable";
@@ -66,6 +79,7 @@ import {
   getInstitutionIdentity,
   getUpcomingOccurrences,
 } from "./domain/publicTimetable";
+import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 
 const weekdayLabels = [
   "",
@@ -134,6 +148,7 @@ function useAdminAccess() {
     "checking" | "authorized" | "forbidden" | "login" | "error"
   >("checking");
   const [user, setUser] = useState<AdminSessionUser | null>(null);
+  const [session, setSession] = useState<AdminSessionResponse | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -160,6 +175,7 @@ function useAdminAccess() {
         if (!active) return;
         setAccessToken(token);
         setUser(session.user);
+        setSession(session);
         setStatus("authorized");
       } catch (error) {
         if (!active) return;
@@ -183,10 +199,10 @@ function useAdminAccess() {
     navigate("/admin/login", true);
   }
 
-  return { status, user, accessToken, signOut };
+  return { status, user, session, accessToken, signOut };
 }
 
-function useAdminData(accessToken: string | null) {
+function useAdminData(accessToken: string | null, enabled = true) {
   const [institutions, setInstitutions] = useState<AdminInstitution[]>([]);
   const [programmes, setProgrammes] = useState<AdminProgramme[]>([]);
   const [classGroups, setClassGroups] = useState<AdminClassGroup[]>([]);
@@ -198,7 +214,10 @@ function useAdminData(accessToken: string | null) {
   const [error, setError] = useState("");
 
   const refreshAll = useCallback(async () => {
-    if (!accessToken) return;
+    if (!accessToken || !enabled) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -227,7 +246,7 @@ function useAdminData(accessToken: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
+  }, [accessToken, enabled]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -303,6 +322,7 @@ function EmptyPanel({ title, text }: { title: string; text: string }) {
 function AdminNav({ path }: { path: string }) {
   const items = [
     { href: "/admin", label: "Overview" },
+    { href: "/admin/team", label: "Team" },
     { href: "/admin/institutions", label: "Institutions" },
     { href: "/admin/programmes", label: "Programmes" },
     { href: "/admin/class-groups", label: "Class groups" },
@@ -398,6 +418,258 @@ function AdminOverview({
           <a href="/admin/programmes">Programmes</a>
           <a href="/admin/class-groups">Class groups</a>
           <a href="/admin/academic-periods">Academic periods</a>
+        </div>
+      </Surface>
+    </div>
+  );
+}
+
+function TeamPage({
+  accessToken,
+  timetables,
+}: {
+  accessToken: string;
+  timetables: AdminTimetableSummary[];
+}) {
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [form, setForm] = useState({
+    email: "",
+    displayName: "",
+    timetableId: timetables[0]?.id ?? "",
+  });
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await listStaff(accessToken);
+      setStaff(result.staff);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not load staff.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [refresh]);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    try {
+      await inviteClassRep(accessToken, {
+        ...form,
+        timetableId: form.timetableId || timetables[0]?.id || "",
+      });
+      setForm({
+        email: "",
+        displayName: "",
+        timetableId: timetables[0]?.id ?? "",
+      });
+      await refresh();
+      setMessage(
+        "Class rep invitation sent. Existing users can sign in normally.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not invite class rep.",
+      );
+    }
+  }
+
+  async function updateAssignment(staffUserId: string, timetableId: string) {
+    setMessage("");
+    try {
+      await assignClassRep(accessToken, staffUserId, timetableId);
+      await refresh();
+      setMessage("Class rep assignment updated.");
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not update assignment.",
+      );
+    }
+  }
+
+  async function action(task: () => Promise<unknown>, success: string) {
+    setMessage("");
+    try {
+      await task();
+      await refresh();
+      setMessage(success);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Request failed.");
+    }
+  }
+
+  return (
+    <div className="pilot-stack">
+      <Surface
+        title="Class Representatives"
+        subtitle="Invite trusted class reps and scope each one to a single timetable."
+      >
+        <form className="pilot-form" onSubmit={submit}>
+          <Field label="Class rep email">
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  email: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Class rep name">
+            <input
+              required
+              value={form.displayName}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  displayName: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Assigned class timetable">
+            <select
+              required
+              value={form.timetableId || timetables[0]?.id || ""}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  timetableId: event.target.value,
+                }))
+              }
+            >
+              {timetables.map((timetable) => (
+                <option key={timetable.id} value={timetable.id}>
+                  {timetable.classGroupLabel} - {timetable.programmeName}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <button
+            className="primary"
+            type="submit"
+            disabled={timetables.length === 0}
+          >
+            <Plus size={18} />
+            Invite Class Rep
+          </button>
+        </form>
+        {message ? <p className="content-notice">{message}</p> : null}
+      </Surface>
+
+      <Surface
+        title="Current team"
+        subtitle="Resend, reassign, revoke, disable, or reactivate access."
+      >
+        {loading ? <p>Loading team...</p> : null}
+        <div className="pilot-card-list">
+          {staff.map((member) => (
+            <article key={member.id} className="pilot-card">
+              <div className="pilot-card-meta">
+                <strong>
+                  {member.displayName || member.email || member.userId}
+                </strong>
+                <span>
+                  {member.role === "superadmin" ? "Superadmin" : "Class Rep"}
+                </span>
+                <span>{member.active ? "Active" : "Disabled"}</span>
+                {member.assignments.find((assignment) => assignment.active) ? (
+                  <span>
+                    Assigned to{" "}
+                    {
+                      member.assignments.find((assignment) => assignment.active)
+                        ?.classGroupLabel
+                    }
+                  </span>
+                ) : null}
+              </div>
+              {member.role === "class_rep" ? (
+                <div className="pilot-inline-actions">
+                  <select
+                    aria-label={`Assignment for ${member.displayName || member.email}`}
+                    defaultValue={
+                      member.assignments.find((assignment) => assignment.active)
+                        ?.timetableId ?? ""
+                    }
+                    onChange={(event) =>
+                      void updateAssignment(member.id, event.target.value)
+                    }
+                  >
+                    <option value="">Choose timetable</option>
+                    {timetables.map((timetable) => (
+                      <option key={timetable.id} value={timetable.id}>
+                        {timetable.classGroupLabel} - {timetable.programmeName}
+                      </option>
+                    ))}
+                  </select>
+                  {member.assignments
+                    .filter((assignment) => assignment.active)
+                    .map((assignment) => (
+                      <button
+                        key={assignment.id}
+                        className="secondary"
+                        type="button"
+                        onClick={() =>
+                          void action(
+                            () =>
+                              revokeClassRepAssignment(
+                                accessToken,
+                                assignment.id,
+                              ),
+                            "Assignment revoked.",
+                          )
+                        }
+                      >
+                        Revoke assignment
+                      </button>
+                    ))}
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={() =>
+                      void action(
+                        () => resendClassRepInvite(accessToken, member.id),
+                        "Invitation resent.",
+                      )
+                    }
+                  >
+                    Resend invitation
+                  </button>
+                </div>
+              ) : null}
+              <div className="pilot-card-actions">
+                <button
+                  className="secondary"
+                  type="button"
+                  onClick={() =>
+                    void action(
+                      () =>
+                        setStaffActive(accessToken, member.id, !member.active),
+                      member.active
+                        ? "Staff member disabled."
+                        : "Staff member reactivated.",
+                    )
+                  }
+                >
+                  {member.active ? "Disable" : "Reactivate"}
+                </button>
+              </div>
+            </article>
+          ))}
         </div>
       </Surface>
     </div>
@@ -2392,13 +2664,549 @@ function TimetablesPage({
   );
 }
 
+function ClassRepDashboard({
+  accessToken,
+  session,
+}: {
+  accessToken: string;
+  session: AdminSessionResponse;
+}) {
+  const assignment = session.assignments[0] ?? null;
+  const [timetable, setTimetable] = useState<PublicTimetable | null>(null);
+  const [message, setMessage] = useState("");
+  const [extraForm, setExtraForm] = useState({
+    exceptionDate: "2026-09-01",
+    courseCode: "",
+    courseName: "",
+    startTime: "08:00",
+    endTime: "10:00",
+    venue: "",
+    lecturer: "",
+    reason: "",
+    provenance: "",
+  });
+  const [correctionForm, setCorrectionForm] = useState({
+    stableSessionKey: "",
+    action: "modify" as "add" | "modify" | "remove",
+    sourceMayReplace: true,
+    courseCode: "",
+    courseName: "",
+    weekday: 2,
+    startTime: "08:00",
+    endTime: "10:00",
+    venue: "",
+    lecturer: "",
+    reason: "",
+    provenance: "",
+  });
+
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      if (!assignment?.publicSlug) return;
+      try {
+        const result = await fetchPublicTimetable(assignment.publicSlug);
+        if (active) setTimetable(result);
+      } catch (error) {
+        if (active) {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Could not load your class timetable.",
+          );
+        }
+      }
+    }
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [assignment?.publicSlug]);
+
+  async function submitExtra(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!assignment) return;
+    setMessage("");
+    try {
+      await createTimetableException(accessToken, assignment.timetableId, {
+        ...extraForm,
+        exceptionType: "extra",
+        sessionType: "Lecture",
+      });
+      setMessage("Extra class added. Students will see it for that date only.");
+      if (assignment.publicSlug) {
+        const result = await fetchPublicTimetable(assignment.publicSlug);
+        setTimetable(result);
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not add extra class.",
+      );
+    }
+  }
+
+  async function submitCorrection(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!assignment) return;
+    setMessage("");
+    try {
+      await createRecurringCorrection(accessToken, assignment.timetableId, {
+        ...correctionForm,
+        stableSessionKey: correctionForm.stableSessionKey || null,
+        sessionType: "Lecture",
+      });
+      setMessage("Timetable correction saved.");
+      if (assignment.publicSlug) {
+        const result = await fetchPublicTimetable(assignment.publicSlug);
+        setTimetable(result);
+      }
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not save timetable correction.",
+      );
+    }
+  }
+
+  if (!assignment) {
+    return (
+      <div className="pilot-stack">
+        <Surface title="Your Class">
+          <EmptyPanel
+            title="No class assigned yet"
+            text="Ask a superadmin to assign your class timetable."
+          />
+        </Surface>
+      </div>
+    );
+  }
+
+  const tomorrow = timetable ? getTomorrowSchedule(timetable) : null;
+  const nextClass = timetable
+    ? getUpcomingOccurrences(timetable, new Date(), 1)[0]
+    : null;
+
+  return (
+    <div className="pilot-stack">
+      <Surface
+        title="Your Class"
+        subtitle={`${assignment.classGroupLabel} - ${assignment.programmeName}`}
+        actions={
+          assignment.publicSlug ? (
+            <a
+              className="secondary"
+              href={`/t/${assignment.publicSlug}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Public timetable
+            </a>
+          ) : null
+        }
+      >
+        {message ? <p className="content-notice">{message}</p> : null}
+        <div className="pilot-manage-grid">
+          <span>Tomorrow</span>
+          <span>Next Class</span>
+          <span>Current Schedule</span>
+          <span>Recent Updates</span>
+        </div>
+      </Surface>
+
+      <Surface title="Tomorrow" subtitle={tomorrow?.tomorrowLabel}>
+        {tomorrow && tomorrow.sessions.length > 0 ? (
+          <div className="pilot-card-list">
+            {tomorrow.sessions.map((item) => (
+              <article
+                key={item.session.stableSessionKey}
+                className="pilot-card"
+              >
+                <strong>{item.session.courseCode}</strong>
+                <span>{item.session.courseName}</span>
+                <span>
+                  {item.session.startTime.slice(0, 5)} -{" "}
+                  {item.session.endTime.slice(0, 5)}
+                </span>
+                <span>{item.session.venue || "Venue not set"}</span>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel
+            title="No classes tomorrow"
+            text="Resolved schedule has no class tomorrow."
+          />
+        )}
+      </Surface>
+
+      <Surface title="Next Class">
+        {nextClass ? (
+          <article className="pilot-card">
+            <strong>{nextClass.session.courseCode}</strong>
+            <span>{nextClass.session.courseName}</span>
+            <span>
+              {formatOccurrenceTime(
+                nextClass.start,
+                timetable?.institutionTimezone || "Africa/Harare",
+              )}
+            </span>
+          </article>
+        ) : (
+          <EmptyPanel
+            title="No upcoming class"
+            text="No upcoming class is currently resolved."
+          />
+        )}
+      </Surface>
+
+      <Surface title="Current Schedule">
+        <div className="pilot-day-stack">
+          {timetable?.sessions.map((sessionItem) => (
+            <article
+              key={sessionItem.stableSessionKey}
+              className="pilot-session-card"
+            >
+              <strong>
+                {weekdayLabels[sessionItem.weekday]}{" "}
+                {sessionItem.startTime.slice(0, 5)}
+              </strong>
+              <span>{sessionItem.courseCode}</span>
+              <span>{sessionItem.courseName}</span>
+              <small>{sessionItem.venue || "Venue not set"}</small>
+            </article>
+          ))}
+        </div>
+      </Surface>
+
+      <Surface
+        title="Add Extra Class"
+        subtitle="Adds one occurrence only. It will not repeat next week."
+      >
+        <form className="pilot-form" onSubmit={submitExtra}>
+          <Field label="Date">
+            <input
+              required
+              type="date"
+              value={extraForm.exceptionDate}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  exceptionDate: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Course code">
+            <input
+              required
+              value={extraForm.courseCode}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  courseCode: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Course name">
+            <input
+              required
+              value={extraForm.courseName}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  courseName: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Start time">
+            <input
+              required
+              type="time"
+              value={extraForm.startTime}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  startTime: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="End time">
+            <input
+              required
+              type="time"
+              value={extraForm.endTime}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  endTime: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Venue">
+            <input
+              value={extraForm.venue}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  venue: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Reason">
+            <textarea
+              required
+              value={extraForm.reason}
+              onChange={(event) =>
+                setExtraForm((current) => ({
+                  ...current,
+                  reason: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <button className="primary" type="submit">
+            Add Extra Class
+          </button>
+        </form>
+      </Surface>
+
+      <Surface
+        title="Update Timetable"
+        subtitle="Create a recurring correction for your assigned class."
+      >
+        <form className="pilot-form" onSubmit={submitCorrection}>
+          <Field label="Existing class to update">
+            <select
+              value={correctionForm.stableSessionKey}
+              onChange={(event) => {
+                const selected = timetable?.sessions.find(
+                  (item) => item.stableSessionKey === event.target.value,
+                );
+                setCorrectionForm((current) => ({
+                  ...current,
+                  stableSessionKey: event.target.value,
+                  action: event.target.value ? "modify" : "add",
+                  courseCode: selected?.courseCode ?? current.courseCode,
+                  courseName: selected?.courseName ?? current.courseName,
+                  weekday: selected?.weekday ?? current.weekday,
+                  startTime:
+                    selected?.startTime.slice(0, 5) ?? current.startTime,
+                  endTime: selected?.endTime.slice(0, 5) ?? current.endTime,
+                  venue: selected?.venue ?? current.venue,
+                  lecturer: selected?.lecturer ?? current.lecturer,
+                }));
+              }}
+            >
+              <option value="">Add new recurring class</option>
+              {timetable?.sessions.map((sessionItem) => (
+                <option
+                  key={sessionItem.stableSessionKey}
+                  value={sessionItem.stableSessionKey}
+                >
+                  {sessionItem.courseCode} -{" "}
+                  {weekdayLabels[sessionItem.weekday]}{" "}
+                  {sessionItem.startTime.slice(0, 5)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Correction type">
+            <select
+              value={correctionForm.action}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  action: event.target.value as "add" | "modify" | "remove",
+                }))
+              }
+            >
+              <option value="modify">Update class</option>
+              <option value="add">Add recurring class</option>
+              <option value="remove">Remove recurring class</option>
+            </select>
+          </Field>
+          <Field label="Course code">
+            <input
+              value={correctionForm.courseCode}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  courseCode: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Course name">
+            <input
+              value={correctionForm.courseName}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  courseName: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Weekday">
+            <select
+              value={correctionForm.weekday}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  weekday: Number(event.target.value),
+                }))
+              }
+            >
+              {weekdayLabels.slice(1).map((label, index) => (
+                <option key={label} value={index + 1}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Start time">
+            <input
+              type="time"
+              value={correctionForm.startTime}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  startTime: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="End time">
+            <input
+              type="time"
+              value={correctionForm.endTime}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  endTime: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Venue">
+            <input
+              value={correctionForm.venue}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  venue: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <Field label="Reason">
+            <textarea
+              required
+              value={correctionForm.reason}
+              onChange={(event) =>
+                setCorrectionForm((current) => ({
+                  ...current,
+                  reason: event.target.value,
+                }))
+              }
+            />
+          </Field>
+          <fieldset className="pilot-field">
+            <legend>
+              Can a future official timetable update replace this correction?
+            </legend>
+            <label className="pilot-checkbox">
+              <input
+                type="radio"
+                name="source-may-replace"
+                checked={correctionForm.sourceMayReplace}
+                onChange={() =>
+                  setCorrectionForm((current) => ({
+                    ...current,
+                    sourceMayReplace: true,
+                  }))
+                }
+              />
+              Yes - use newer official information when available
+            </label>
+            <label className="pilot-checkbox">
+              <input
+                type="radio"
+                name="source-may-replace"
+                checked={!correctionForm.sourceMayReplace}
+                onChange={() =>
+                  setCorrectionForm((current) => ({
+                    ...current,
+                    sourceMayReplace: false,
+                  }))
+                }
+              />
+              No - keep this correction until manually removed
+            </label>
+          </fieldset>
+          <button className="primary" type="submit">
+            Save correction
+          </button>
+        </form>
+      </Surface>
+
+      <Surface
+        title="Source Differences"
+        subtitle="Pinned corrections stay active until someone explicitly accepts newer official information."
+      >
+        <p className="pilot-muted">
+          Official source reconciliation remains evidence-only here; ambiguous
+          differences do not overwrite class-rep corrections.
+        </p>
+      </Surface>
+
+      <Surface title="Recent Updates">
+        {timetable?.corrections?.length || timetable?.exceptions?.length ? (
+          <div className="pilot-card-list">
+            {timetable?.corrections?.map((correction) => (
+              <article key={correction.id} className="pilot-card">
+                <strong>{correction.action} correction</strong>
+                <span>{correction.reason}</span>
+                <small>
+                  {correction.sourceMayReplace
+                    ? "Future official updates may replace it."
+                    : "Kept until manually removed."}
+                </small>
+              </article>
+            ))}
+            {timetable?.exceptions?.map((exception) => (
+              <article key={exception.id} className="pilot-card">
+                <strong>{exception.exceptionType} exception</strong>
+                <span>{exception.reason}</span>
+                <small>{exception.exceptionDate}</small>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel
+            title="No updates yet"
+            text="Corrections and extra classes will appear here."
+          />
+        )}
+      </Surface>
+    </div>
+  );
+}
+
 export function AdminMvpScreen({ path }: { path: string }) {
   useDocumentMetadata(
     "CalenderZW Admin",
     "Create and publish class timetables.",
   );
-  const { status, user, accessToken, signOut } = useAdminAccess();
-  const data = useAdminData(accessToken);
+  const { status, user, session, accessToken, signOut } = useAdminAccess();
+  const isSuperadmin = session?.staff.role === "superadmin";
+  const data = useAdminData(accessToken, isSuperadmin);
 
   if (status === "forbidden") {
     return (
@@ -2436,6 +3244,33 @@ export function AdminMvpScreen({ path }: { path: string }) {
     );
   }
 
+  if (session?.staff.role === "class_rep") {
+    return (
+      <main className="page admin-page">
+        <section className="pilot-page-hero">
+          <ShieldCheck size={28} />
+          <div>
+            <h1>Class Rep Dashboard</h1>
+            <p>
+              {session.staff.displayName ||
+                user?.email ||
+                "Class rep session active"}
+            </p>
+          </div>
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => void signOut()}
+          >
+            <LogOut size={18} />
+            Sign out
+          </button>
+        </section>
+        <ClassRepDashboard accessToken={accessToken} session={session} />
+      </main>
+    );
+  }
+
   return (
     <main className="page admin-page">
       <section className="pilot-page-hero">
@@ -2464,6 +3299,9 @@ export function AdminMvpScreen({ path }: { path: string }) {
           ) : null}
           {path === "/admin" ? (
             <AdminOverview timetables={data.timetables} />
+          ) : null}
+          {path === "/admin/team" ? (
+            <TeamPage accessToken={accessToken} timetables={data.timetables} />
           ) : null}
           {path === "/admin/institutions" ? (
             <InstitutionsPage

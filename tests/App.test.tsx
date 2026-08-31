@@ -16,7 +16,12 @@ const superadminSession = {
   authenticated: true,
   admin: true,
   user: { id: "admin-1", email: "admin@example.test" },
-  staff: { id: "staff-1", role: "superadmin" },
+  staff: {
+    id: "staff-1",
+    role: "superadmin",
+    displayName: null,
+    email: "admin@example.test",
+  },
   permissions: {
     canManageStaff: true,
     canManageInstitutions: true,

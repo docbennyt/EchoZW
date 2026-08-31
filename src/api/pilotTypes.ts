@@ -96,6 +96,32 @@ export type AdminCourseMemoryEntry = {
   sessionTypeSuggestions: string[];
 };
 
+export type StaffAssignmentSummary = {
+  id: string;
+  timetableId: string;
+  active: boolean;
+  revokedAt: string | null;
+  publicSlug: string;
+  institutionName: string;
+  programmeName: string;
+  classGroupLabel: string;
+  academicPeriodName: string;
+};
+
+export type StaffMember = {
+  id: string;
+  userId: string;
+  email: string | null;
+  displayName: string | null;
+  role: "superadmin" | "class_rep";
+  active: boolean;
+  invitedAt: string | null;
+  lastInvitedAt: string | null;
+  acceptedAt: string | null;
+  disabledAt: string | null;
+  assignments: StaffAssignmentSummary[];
+};
+
 export type AdminTimetableEditor = {
   timetable: {
     id: string;
@@ -131,6 +157,49 @@ export type PublicTimetableSession = {
   notes: string | null;
 };
 
+export type TimetableCorrectionDirective = {
+  id: string;
+  stableSessionKey: string | null;
+  action: "add" | "modify" | "remove";
+  sourceMayReplace: boolean;
+  pinned: boolean;
+  courseCode: string | null;
+  courseName: string | null;
+  weekday: number | null;
+  startTime: string | null;
+  endTime: string | null;
+  venue: string | null;
+  lecturer: string | null;
+  sessionType: string | null;
+  notes: string | null;
+  reason: string;
+  provenance: string | null;
+  creatorRole: "superadmin" | "class_rep";
+  active: boolean;
+  createdAt: string;
+};
+
+export type TimetableSessionException = {
+  id: string;
+  stableSessionKey: string | null;
+  exceptionDate: string;
+  exceptionType: "cancelled" | "moved" | "extra";
+  replacementStartsAt: string | null;
+  replacementEndsAt: string | null;
+  courseCode: string | null;
+  courseName: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  venue: string | null;
+  lecturer: string | null;
+  sessionType: string | null;
+  notes: string | null;
+  reason: string | null;
+  provenance: string | null;
+  active: boolean;
+  createdAt: string;
+};
+
 export type PublicTimetable = {
   timetableId: string;
   publicSlug: string;
@@ -145,6 +214,8 @@ export type PublicTimetable = {
   publishedAt: string | null;
   versionNumber: number;
   sessions: PublicTimetableSession[];
+  corrections?: TimetableCorrectionDirective[];
+  exceptions?: TimetableSessionException[];
 };
 
 export type PublishTimetableResponse = {

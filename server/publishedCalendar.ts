@@ -42,9 +42,16 @@ export function generatePublishedTimetableIcs(input: {
     lines.push(`SUMMARY:${escapeIcsText(event.summary)}`);
     lines.push(`DESCRIPTION:${escapeIcsText(event.description)}`);
     lines.push(`LOCATION:${escapeIcsText(event.venue)}`);
-    lines.push(
-      `RRULE:FREQ=WEEKLY;BYDAY=${event.recurrenceDay};UNTIL=${event.recurrenceUntilUtc}`,
-    );
+    if (event.recurring) {
+      lines.push(
+        `RRULE:FREQ=WEEKLY;BYDAY=${event.recurrenceDay};UNTIL=${event.recurrenceUntilUtc}`,
+      );
+      for (const dateKey of event.exDates) {
+        lines.push(
+          `EXDATE;TZID=${calendar.timezone}:${dateKey.replaceAll("-", "")}T${event.startTime.replaceAll(":", "")}`,
+        );
+      }
+    }
     lines.push(`LAST-MODIFIED:${event.lastModifiedUtc}`);
     lines.push(`SEQUENCE:${event.sequence}`);
     for (const alarm of event.alarms) {

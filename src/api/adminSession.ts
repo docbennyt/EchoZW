@@ -8,6 +8,18 @@ export type StaffRole = "superadmin" | "class_rep";
 export type AdminSessionStaff = {
   id: string;
   role: StaffRole;
+  displayName: string | null;
+  email: string | null;
+};
+
+export type AdminSessionAssignment = {
+  id: string;
+  timetableId: string;
+  publicSlug: string;
+  institutionName: string;
+  programmeName: string;
+  classGroupLabel: string;
+  academicPeriodName: string;
 };
 
 export type AdminSessionPermissions = {
@@ -26,7 +38,7 @@ export type AdminSessionResponse = {
   user: AdminSessionUser;
   staff: AdminSessionStaff;
   permissions: AdminSessionPermissions;
-  assignments: [];
+  assignments: AdminSessionAssignment[];
 };
 
 function isAdminSessionStaff(value: unknown): value is AdminSessionStaff {
@@ -34,7 +46,10 @@ function isAdminSessionStaff(value: unknown): value is AdminSessionStaff {
   const candidate = value as Partial<AdminSessionStaff>;
   return (
     typeof candidate.id === "string" &&
-    (candidate.role === "superadmin" || candidate.role === "class_rep")
+    (candidate.role === "superadmin" || candidate.role === "class_rep") &&
+    (typeof candidate.displayName === "string" ||
+      candidate.displayName === null) &&
+    (typeof candidate.email === "string" || candidate.email === null)
   );
 }
 
@@ -54,6 +69,28 @@ function isAdminSessionPermissions(
   );
 }
 
+function isAdminSessionAssignment(
+  value: unknown,
+): value is AdminSessionAssignment {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<AdminSessionAssignment>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.timetableId === "string" &&
+    typeof candidate.publicSlug === "string" &&
+    typeof candidate.institutionName === "string" &&
+    typeof candidate.programmeName === "string" &&
+    typeof candidate.classGroupLabel === "string" &&
+    typeof candidate.academicPeriodName === "string"
+  );
+}
+
+function isAdminSessionAssignments(
+  value: unknown,
+): value is AdminSessionAssignment[] {
+  return Array.isArray(value) && value.every(isAdminSessionAssignment);
+}
+
 function isAdminSessionResponse(value: unknown): value is AdminSessionResponse {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<AdminSessionResponse>;
@@ -66,7 +103,7 @@ function isAdminSessionResponse(value: unknown): value is AdminSessionResponse {
       candidate.user?.email === null) &&
     isAdminSessionStaff(candidate.staff) &&
     isAdminSessionPermissions(candidate.permissions) &&
-    Array.isArray(candidate.assignments)
+    isAdminSessionAssignments(candidate.assignments)
   );
 }
 

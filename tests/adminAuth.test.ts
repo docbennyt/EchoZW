@@ -243,6 +243,8 @@ describe("admin API routes", () => {
       staff: {
         id: "admin-1",
         role: "superadmin",
+        displayName: null,
+        email: "admin@example.test",
       },
       permissions: {
         canManageStaff: true,

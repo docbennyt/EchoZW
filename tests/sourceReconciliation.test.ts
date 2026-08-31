@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  decideHumanCorrectionReplacement,
   reconcileSourceCandidatesToPublishedTimetable,
   type ReconciliationBinding,
   type ReconciliationCurrentSession,
@@ -368,5 +369,66 @@ describe("source reconciliation", () => {
       stableSessionKey: "ics1101__2__10:15:00__12:15:00__session",
       timetableId: "timetable-1",
     });
+  });
+});
+
+describe("human correction replacement safety", () => {
+  it("keeps pinned OS corrections effective despite later source disagreement", () => {
+    const decision = decideHumanCorrectionReplacement({
+      correction: {
+        correctionId: "pinned-os",
+        sourceMayReplace: false,
+      },
+      item: {
+        id: "diff-1",
+        outcome: "changed",
+        matchStrategy: "exact_course_day_time",
+        diffs: [{ field: "venue", current: "N110", source: "N109" }],
+        currentSessions: [
+          createCurrentSession({
+            courseCode: "ICS1102",
+            courseName: "Operating Systems",
+            stableSessionKey: "ics1102-tue-1400",
+            venue: "N110",
+          }),
+        ],
+        sourceCandidates: [
+          createSourceCandidate({
+            courseCode: "ICS1102",
+            courseName: "Operating Systems",
+            venue: "N109",
+          }),
+        ],
+      },
+    });
+
+    expect(decision).toEqual({
+      correctionId: "pinned-os",
+      maySupersede: false,
+      reason: "PINNED",
+    });
+  });
+
+  it("does not let ambiguous source output silently overwrite human corrections", () => {
+    const decision = decideHumanCorrectionReplacement({
+      correction: {
+        correctionId: "replaceable-but-ambiguous",
+        sourceMayReplace: true,
+      },
+      item: {
+        id: "ambiguous-1",
+        outcome: "ambiguous",
+        matchStrategy: "ambiguous_group",
+        diffs: [],
+        currentSessions: [createCurrentSession()],
+        sourceCandidates: [
+          createSourceCandidate(),
+          createSourceCandidate({ candidateId: "source-2" }),
+        ],
+      },
+    });
+
+    expect(decision.maySupersede).toBe(false);
+    expect(decision.reason).toBe("AMBIGUOUS_SOURCE");
   });
 });

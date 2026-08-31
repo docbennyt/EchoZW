@@ -40,13 +40,25 @@ export type StaffPermissions = {
 export type StaffUser = {
   id: string;
   role: StaffRole;
+  displayName: string | null;
+  email: string | null;
+};
+
+export type StaffAssignment = {
+  id: string;
+  timetableId: string;
+  publicSlug: string;
+  institutionName: string;
+  programmeName: string;
+  classGroupLabel: string;
+  academicPeriodName: string;
 };
 
 export type StaffAuthContext = {
   user: AuthenticatedUser;
   staff: StaffUser;
   permissions: StaffPermissions;
-  assignments: [];
+  assignments: StaffAssignment[];
 };
 
 type SupabaseUserShape = {
@@ -64,15 +76,21 @@ type UserLookupClient = {
 };
 
 type AdminLookupClient = {
-  from: (table: "admin_users" | "staff_users" | "class_rep_assignments") => {
+  from: (table: string) => {
     select: (columns: string) => {
       eq: (column: string, value: string | boolean) => QueryEqBuilder;
+      in?: (column: string, values: string[]) => QueryEqBuilder;
+      order?: (
+        column: string,
+        options?: { ascending?: boolean },
+      ) => QueryEqBuilder;
     };
   };
 };
 
 type QueryEqBuilder = {
   eq: (column: string, value: string | boolean) => QueryEqBuilder;
+  order?: (column: string, options?: { ascending?: boolean }) => QueryEqBuilder;
   maybeSingle: () => Promise<{
     data: AdminLookupRow | null;
     error: unknown;
@@ -89,14 +107,19 @@ type StaffUserRow = {
   user_id?: string;
   role?: StaffRole;
   active?: boolean;
+  display_name?: string | null;
+  email?: string | null;
 };
 
 type ClassRepAssignmentRow = {
   id?: string;
   active?: boolean;
+  timetable_id?: string;
+  timetables?: JsonRecord | JsonRecord[] | null;
 };
 
 type AdminLookupRow = AdminUserRow | StaffUserRow | ClassRepAssignmentRow;
+type JsonRecord = Record<string, unknown>;
 
 function isStaffUserRow(
   value: AdminLookupRow | null,
@@ -132,13 +155,74 @@ function permissionsForRole(role: StaffRole): StaffPermissions {
 function staffContext(
   user: AuthenticatedUser,
   staff: StaffUser,
+  assignments: StaffAssignment[] = [],
 ): StaffAuthContext {
   return {
     user,
     staff,
     permissions: permissionsForRole(staff.role),
-    assignments: [],
+    assignments,
   };
+}
+
+function asSingle<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? (value[0] ?? null) : value;
+}
+
+function mapAssignment(row: AdminLookupRow): StaffAssignment | null {
+  const assignment = row as ClassRepAssignmentRow;
+  if (!assignment.id || !assignment.timetable_id) return null;
+  const timetable = asSingle(assignment.timetables);
+  if (!timetable) return null;
+  const institution = asSingle(
+    timetable.institutions as JsonRecord | JsonRecord[] | null,
+  );
+  const programme = asSingle(
+    timetable.programmes as JsonRecord | JsonRecord[] | null,
+  );
+  const cohort = asSingle(
+    timetable.cohorts as JsonRecord | JsonRecord[] | null,
+  );
+  const period = asSingle(
+    timetable.academic_periods as JsonRecord | JsonRecord[] | null,
+  );
+  return {
+    id: assignment.id,
+    timetableId: assignment.timetable_id,
+    publicSlug: timetable.public_slug ? String(timetable.public_slug) : "",
+    institutionName: institution?.name ? String(institution.name) : "",
+    programmeName: programme?.name ? String(programme.name) : "",
+    classGroupLabel: cohort?.label ? String(cohort.label) : "",
+    academicPeriodName: period?.name ? String(period.name) : "",
+  };
+}
+
+async function listActiveAssignments(
+  staffId: string,
+  adminClient: AdminLookupClient,
+) {
+  const query = adminClient
+    .from("class_rep_assignments")
+    .select(
+      "id, timetable_id, active, timetables(id, public_slug, institutions(name), programmes(name), cohorts(label), academic_periods(name))",
+    )
+    .eq("staff_user_id", staffId)
+    .eq("active", true);
+  const { data, error } = await (query as unknown as Promise<{
+    data: AdminLookupRow[] | null;
+    error: unknown;
+  }>);
+  if (error) {
+    throw new AdminAuthError(
+      "DATABASE_UNAVAILABLE",
+      "CalenderZW staff assignments are temporarily unavailable.",
+      503,
+    );
+  }
+  return (data ?? [])
+    .map((row) => mapAssignment(row))
+    .filter((row): row is StaffAssignment => Boolean(row));
 }
 
 function createAdminLookupClient(deps: AuthDependencies): AdminLookupClient {
@@ -259,7 +343,7 @@ export async function requireStaffUser(
 
   const { data, error } = await adminClient
     .from("staff_users")
-    .select("id, user_id, role, active")
+    .select("id, user_id, role, active, display_name, email")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -279,16 +363,24 @@ export async function requireStaffUser(
         403,
       );
     }
-    return staffContext(user, {
-      id: data.id,
-      role: data.role,
-    });
+    return staffContext(
+      user,
+      {
+        id: data.id,
+        role: data.role,
+        displayName: data.display_name ?? null,
+        email: data.email ?? user.email,
+      },
+      await listActiveAssignments(data.id, adminClient),
+    );
   }
 
   if (await lookupActiveLegacyAdmin(user, adminClient)) {
     return staffContext(user, {
       id: user.id,
       role: "superadmin",
+      displayName: null,
+      email: user.email,
     });
   }
 
