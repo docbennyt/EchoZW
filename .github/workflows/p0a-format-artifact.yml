@@ -1,0 +1,42 @@
+name: P0-A formatting artifact
+
+on:
+  push:
+    branches:
+      - p0-a-public-timetable-tomorrow-trust
+    paths:
+      - .github/workflows/p0a-format-artifact.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Format P0-A files
+        run: |
+          npx prettier --write \
+            src/components/site/SiteChrome.tsx \
+            src/domain/tomorrowSchedule.ts \
+            src/PublicTimetableReliability.tsx \
+            tests/PublicTimetableReliability.test.tsx
+      - name: Verify formatting
+        run: npx prettier --check src/components/site/SiteChrome.tsx src/domain/tomorrowSchedule.ts src/PublicTimetableReliability.tsx tests/PublicTimetableReliability.test.tsx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: p0a-formatted-files
+          path: |
+            src/components/site/SiteChrome.tsx
+            src/domain/tomorrowSchedule.ts
+            src/PublicTimetableReliability.tsx
+            tests/PublicTimetableReliability.test.tsx
+          if-no-files-found: error
+          retention-days: 1
