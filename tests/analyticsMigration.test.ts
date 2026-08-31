@@ -27,7 +27,9 @@ describe("first-party analytics migration", () => {
   });
 
   it("keeps analytics tables private from browser database roles", () => {
-    expect(migration).toContain("alter table analytics_events enable row level security;");
+    expect(migration).toContain(
+      "alter table analytics_events enable row level security;",
+    );
     expect(migration).toContain(
       "revoke all on table analytics_events from anon, authenticated;",
     );

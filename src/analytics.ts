@@ -74,11 +74,7 @@ export function getAnalyticsIdentity(): {
     ANONYMOUS_STORAGE_KEY,
     memoryAnonymousId,
   );
-  const sessionId = readOrCreate(
-    session,
-    SESSION_STORAGE_KEY,
-    memorySessionId,
-  );
+  const sessionId = readOrCreate(session, SESSION_STORAGE_KEY, memorySessionId);
   memoryAnonymousId = anonymousId;
   memorySessionId = sessionId;
 

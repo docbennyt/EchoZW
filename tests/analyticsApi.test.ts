@@ -82,7 +82,9 @@ describe("analytics API", () => {
     const { res, body } = createResponse();
 
     await handleAnalyticsRequest(
-      createRequest(JSON.stringify(payload({ provider: "webcal_subscription" }))),
+      createRequest(
+        JSON.stringify(payload({ provider: "webcal_subscription" })),
+      ),
       res,
       { NODE_ENV: "production" },
       { persistEvents },

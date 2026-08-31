@@ -53,7 +53,9 @@ function headerValue(value: string | string[] | undefined) {
 
 function requestIp(req: IncomingMessage) {
   const forwarded = headerValue(req.headers["x-forwarded-for"]);
-  return forwarded?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+  return (
+    forwarded?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown"
+  );
 }
 
 function consumeRateLimit(key: string, now = Date.now()) {
@@ -111,7 +113,10 @@ export function parseAnalyticsPayload(input: unknown): ParsedAnalyticsPayload {
   if (payload.productKey !== PRODUCT_KEY) {
     throw new Error("Unsupported analytics product key.");
   }
-  if (!isAnalyticsUuid(payload.anonymousId) || !isAnalyticsUuid(payload.sessionId)) {
+  if (
+    !isAnalyticsUuid(payload.anonymousId) ||
+    !isAnalyticsUuid(payload.sessionId)
+  ) {
     throw new Error("Analytics identity is invalid.");
   }
   if (!Array.isArray(payload.events) || payload.events.length < 1) {
@@ -141,7 +146,9 @@ export function parseAnalyticsPayload(input: unknown): ParsedAnalyticsPayload {
         timestamp > now + 10 * 60_000 ||
         timestamp < now - 7 * 24 * 60 * 60_000
       ) {
-        throw new Error("Analytics event timestamp is outside the accepted window.");
+        throw new Error(
+          "Analytics event timestamp is outside the accepted window.",
+        );
       }
       clientTimestamp = new Date(timestamp).toISOString();
     }
@@ -195,7 +202,10 @@ export async function handleAnalyticsRequest(
     const rateKey = `${requestIp(req)}:${payload.anonymousId}`;
     if (!consumeRateLimit(rateKey)) {
       sendJson(res, 429, {
-        error: { code: "RATE_LIMITED", message: "Too many analytics requests." },
+        error: {
+          code: "RATE_LIMITED",
+          message: "Too many analytics requests.",
+        },
       });
       return true;
     }
@@ -237,7 +247,8 @@ export async function handleAnalyticsRequest(
       },
     );
   } catch (error) {
-    const tooLarge = error instanceof Error && error.name === "PAYLOAD_TOO_LARGE";
+    const tooLarge =
+      error instanceof Error && error.name === "PAYLOAD_TOO_LARGE";
     sendJson(res, tooLarge ? 413 : 422, {
       error: {
         code: tooLarge ? "PAYLOAD_TOO_LARGE" : "VALIDATION_ERROR",

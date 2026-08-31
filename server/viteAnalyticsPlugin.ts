@@ -19,7 +19,11 @@ export function analyticsMvpPlugin(
           if (await handleAnalyticsRequest(req, res, env)) return;
           next();
         } catch (error) {
-          next(error instanceof Error ? error : new Error("Analytics middleware failed."));
+          next(
+            error instanceof Error
+              ? error
+              : new Error("Analytics middleware failed."),
+          );
         }
       });
     },

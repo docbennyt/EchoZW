@@ -59,7 +59,9 @@ const propertyKeySet = new Set<string>(ANALYTICS_PROPERTY_KEYS);
 const sensitiveKeyPattern =
   /(token|secret|credential|authorization|password|phone|email|push|endpoint|vapid)/i;
 
-export function isAnalyticsEventName(value: unknown): value is AnalyticsEventName {
+export function isAnalyticsEventName(
+  value: unknown,
+): value is AnalyticsEventName {
   return typeof value === "string" && eventNameSet.has(value);
 }
 
@@ -101,7 +103,9 @@ export type CoarseClient = {
   osFamily: "android" | "ios" | "windows" | "macos" | "linux" | "other";
 };
 
-export function classifyAnalyticsClient(userAgent: string | undefined): CoarseClient {
+export function classifyAnalyticsClient(
+  userAgent: string | undefined,
+): CoarseClient {
   const ua = userAgent ?? "";
   const isTablet = /iPad|Tablet|Nexus 7|Nexus 9|SM-T|Tab/i.test(ua);
   const isMobile = /Mobile|Android|iPhone|iPod/i.test(ua) && !isTablet;
