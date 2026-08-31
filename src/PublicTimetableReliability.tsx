@@ -15,6 +15,7 @@ import { track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
+import { PublicShell } from "./components/site/SiteChrome";
 import { detectDevice, type DeviceKind } from "./domain/device";
 import {
   formatClassGroupLabel,
@@ -27,6 +28,7 @@ import {
   type CanonicalPublishedCalendarEvent,
 } from "./domain/publishedCalendarProjection";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
+import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 
 const weekdayLabels = [
   "",
@@ -37,6 +39,16 @@ const weekdayLabels = [
   "Friday",
   "Saturday",
   "Sunday",
+] as const;
+
+const courseToneClasses = [
+  "tone-sage",
+  "tone-gold",
+  "tone-blue",
+  "tone-coral",
+  "tone-lavender",
+  "tone-teal",
+  "tone-orange",
 ] as const;
 
 type ReminderPresetId = "on_time" | "prepared" | "commuter" | "custom";
@@ -131,7 +143,7 @@ function calendarMethodsForDevice(device: DeviceKind): CalendarMethod[] {
       provider: "webcal_subscription",
       title: "Subscribe using calendar URL",
       description:
-        "Copy a private HTTPS feed for Apple Calendar, Outlook, or another compatible calendar client.",
+        "Copy a private HTTPS feed for Apple Calendar, Outlook, Google Calendar, or another compatible calendar client.",
       accent: "Keeps published updates",
     },
     {
@@ -197,43 +209,63 @@ function sharePayload(timetable: PublicTimetable, publicUrl: string) {
   };
 }
 
+export function courseToneClass(courseCode: string) {
+  let hash = 0;
+  for (const character of courseCode.trim().toUpperCase()) {
+    hash = (hash * 31 + character.codePointAt(0)!) >>> 0;
+  }
+  return courseToneClasses[hash % courseToneClasses.length];
+}
+
 function LoadingPage() {
   return (
-    <div className="pt-app">
-      <header className="pt-header">
-        <a href="/" className="pt-brand">
-          Calender<span>ZW</span>
-        </a>
-      </header>
-      <main className="pt-shell pt-state-page" aria-live="polite">
-        <CalendarCheck size={30} />
-        <h1>Loading timetable</h1>
-        <p>Fetching the current published version.</p>
+    <PublicShell compactFooter className="pt-app">
+      <main className="pt-shell pt-main">
+        <section className="pt-state-page" aria-live="polite">
+          <CalendarCheck size={30} />
+          <h1>Loading timetable</h1>
+          <p>Fetching the current published version.</p>
+        </section>
       </main>
-    </div>
+    </PublicShell>
   );
 }
 
 function ErrorPage() {
   return (
-    <div className="pt-app">
-      <header className="pt-header">
-        <a href="/" className="pt-brand">
-          Calender<span>ZW</span>
-        </a>
-      </header>
-      <main className="pt-shell pt-state-page">
-        <CalendarCheck size={30} />
-        <h1>Timetable unavailable</h1>
-        <p>
-          This class timetable is not currently available as a published
-          version.
-        </p>
-        <a className="pt-button pt-button-primary" href="/find">
-          Find another timetable
-        </a>
+    <PublicShell compactFooter className="pt-app">
+      <main className="pt-shell pt-main">
+        <section className="pt-state-page">
+          <CalendarCheck size={30} />
+          <h1>Timetable unavailable</h1>
+          <p>
+            This class timetable is not currently available as a published
+            version.
+          </p>
+          <a className="pt-button pt-button-primary" href="/find">
+            Find another timetable
+          </a>
+        </section>
       </main>
-    </div>
+    </PublicShell>
+  );
+}
+
+function SessionCard({ event }: { event: CanonicalPublishedCalendarEvent }) {
+  return (
+    <article className={`pt-session ${courseToneClass(event.courseCode)}`}>
+      <time>
+        {localTimeLabel(event.startTime)}–{localTimeLabel(event.endTime)}
+      </time>
+      <div className="pt-session-copy">
+        <strong>{event.courseCode}</strong>
+        <h4>{event.courseName}</h4>
+        <span>
+          {event.venue || "Venue not set"}
+          {event.lecturer ? ` · ${event.lecturer}` : ""}
+        </span>
+      </div>
+    </article>
   );
 }
 
@@ -312,11 +344,31 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     return map;
   }, [projection]);
 
+  const activeWeekdays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) => index + 1).filter(
+        (weekday) => (groupedEvents.get(weekday)?.length ?? 0) > 0,
+      ),
+    [groupedEvents],
+  );
+
+  const matrixStartTimes = useMemo(
+    () =>
+      Array.from(
+        new Set((projection?.events ?? []).map((event) => event.startTime)),
+      ).sort((left, right) => left.localeCompare(right)),
+    [projection],
+  );
+
   const upcoming = useMemo(
     () => (timetable ? getUpcomingOccurrences(timetable, new Date(), 3) : []),
     [timetable],
   );
   const nextClass = upcoming[0] ?? null;
+  const tomorrow = useMemo(
+    () => (timetable ? getTomorrowSchedule(timetable, new Date()) : null),
+    [timetable],
+  );
   const deviceKind = useMemo(
     () =>
       detectDevice(
@@ -512,7 +564,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   }
 
   if (status === "loading") return <LoadingPage />;
-  if (status === "error" || !timetable || !projection) return <ErrorPage />;
+  if (status === "error" || !timetable || !projection || !tomorrow) {
+    return <ErrorPage />;
+  }
 
   const appleDeepLink =
     calendarDelivery?.response.appleDeepLinkUrl ??
@@ -520,18 +574,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const stickyVisible = isMobile && !isPrimaryVisible && !dialogOpen;
 
   return (
-    <div className="pt-app">
-      <header className="pt-header">
-        <div className="pt-shell pt-header-inner">
-          <a href="/" className="pt-brand" aria-label="CalenderZW home">
-            Calender<span>ZW</span>
-          </a>
-          <a href="/find" className="pt-header-link">
-            Find another timetable
-          </a>
-        </div>
-      </header>
-
+    <PublicShell compactFooter className="pt-app">
       <main className="pt-shell pt-main">
         <section
           className={`pt-hero${calendarDelivery ? " has-result" : ""}`}
@@ -720,8 +763,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     </ol>
                   ) : (
                     <p>
-                      Paste the secure URL into your calendar app's subscription
-                      field.
+                      Paste the secure URL into your calendar app&apos;s
+                      subscription field.
                     </p>
                   )}
                   <label htmlFor="pt-private-feed">
@@ -759,62 +802,135 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           ) : null}
         </section>
 
+        <section
+          className="pt-tomorrow"
+          id="tomorrow"
+          aria-labelledby="pt-tomorrow-title"
+        >
+          <div className="pt-section-heading">
+            <div>
+              <span className="pt-kicker">Tomorrow</span>
+              <h2 id="pt-tomorrow-title">{tomorrow.tomorrowLabel}</h2>
+            </div>
+            <p>
+              {tomorrow.sessions.length === 1
+                ? "1 published class"
+                : `${tomorrow.sessions.length} published classes`}
+            </p>
+          </div>
+          {tomorrow.sessions.length === 0 ? (
+            <div className="pt-tomorrow-empty">
+              No published classes tomorrow.
+            </div>
+          ) : (
+            <div className="pt-tomorrow-grid">
+              {tomorrow.sessions.map(({ session }) => (
+                <article
+                  key={session.stableSessionKey}
+                  className={`pt-tomorrow-session ${courseToneClass(session.courseCode)}`}
+                >
+                  <time>
+                    {localTimeLabel(session.startTime)}–
+                    {localTimeLabel(session.endTime)}
+                  </time>
+                  <strong>{session.courseCode}</strong>
+                  <h3>{session.courseName}</h3>
+                  <span>
+                    {session.venue || "Venue not set"}
+                    {session.lecturer ? ` · ${session.lecturer}` : ""}
+                  </span>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section className="pt-schedule" aria-labelledby="pt-week-title">
           <div className="pt-section-heading">
             <div>
-              <span className="pt-kicker">Live page view</span>
+              <span className="pt-kicker">Current published week</span>
               <h2 id="pt-week-title">Weekly timetable</h2>
             </div>
             <p>{projection.events.length} published weekly sessions</p>
           </div>
 
-          <div className="pt-week-list">
-            {Array.from({ length: 7 }, (_, index) => index + 1).map(
-              (weekday) => {
-                const events = groupedEvents.get(weekday) ?? [];
-                if (events.length === 0) return null;
-                return (
-                  <section className="pt-day" key={weekday}>
-                    <h3>{weekdayLabels[weekday]}</h3>
-                    <div className="pt-day-events">
-                      {events.map((event) => (
-                        <article
-                          className="pt-session"
-                          key={event.stableSessionKey}
-                        >
-                          <time>
-                            {localTimeLabel(event.startTime)}–
-                            {localTimeLabel(event.endTime)}
-                          </time>
-                          <div className="pt-session-copy">
-                            <strong>{event.courseCode}</strong>
-                            <h4>{event.courseName}</h4>
-                            <span>
-                              {event.venue || "Venue not set"}
-                              {event.lecturer ? ` · ${event.lecturer}` : ""}
-                            </span>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </section>
-                );
-              },
-            )}
+          <div className="pt-desktop-week">
+            <div
+              className="pt-table-scroll"
+              tabIndex={0}
+              aria-label="Weekly timetable table"
+            >
+              <table className="pt-week-table">
+                <caption>
+                  {timetable.programme}{" "}
+                  {formatClassGroupLabel(timetable.classGroup)} weekly timetable
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Time</th>
+                    {activeWeekdays.map((weekday) => (
+                      <th scope="col" key={weekday}>
+                        {weekdayLabels[weekday]}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrixStartTimes.map((startTime) => (
+                    <tr key={startTime}>
+                      <th scope="row">{localTimeLabel(startTime)}</th>
+                      {activeWeekdays.map((weekday) => {
+                        const events = (
+                          groupedEvents.get(weekday) ?? []
+                        ).filter((event) => event.startTime === startTime);
+                        return (
+                          <td key={`${weekday}-${startTime}`}>
+                            {events.map((event) => (
+                              <article
+                                className={`pt-table-session ${courseToneClass(event.courseCode)}`}
+                                key={event.stableSessionKey}
+                              >
+                                <strong>{event.courseCode}</strong>
+                                <span className="pt-table-course">
+                                  {event.courseName}
+                                </span>
+                                <time>
+                                  {localTimeLabel(event.startTime)}–
+                                  {localTimeLabel(event.endTime)}
+                                </time>
+                                <small>{event.venue || "Venue not set"}</small>
+                                {event.lecturer ? (
+                                  <small>{event.lecturer}</small>
+                                ) : null}
+                              </article>
+                            ))}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="pt-week-list pt-mobile-week">
+            {activeWeekdays.map((weekday) => {
+              const events = groupedEvents.get(weekday) ?? [];
+              return (
+                <section className="pt-day" key={weekday}>
+                  <h3>{weekdayLabels[weekday]}</h3>
+                  <div className="pt-day-events">
+                    {events.map((event) => (
+                      <SessionCard event={event} key={event.stableSessionKey} />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </section>
       </main>
-
-      <footer className="pt-footer">
-        <div className="pt-shell pt-footer-inner">
-          <span>CalenderZW · operated by aiDo</span>
-          <nav aria-label="Public timetable footer">
-            <a href="/privacy">Privacy</a>
-            <a href="/support">Report a problem</a>
-            <a href="/find">Find timetable</a>
-          </nav>
-        </div>
-      </footer>
 
       {stickyVisible ? (
         <div className="pt-sticky-cta">
@@ -986,6 +1102,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           </div>
         </div>
       ) : null}
-    </div>
+    </PublicShell>
   );
 }
