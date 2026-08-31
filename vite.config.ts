@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { analyticsMvpPlugin } from "./server/viteAnalyticsPlugin.js";
 import { calendarMvpPlugin } from "./server/viteCalendarPlugin.js";
 
 export default defineConfig(({ mode }) => {
@@ -13,7 +14,11 @@ export default defineConfig(({ mode }) => {
   ];
 
   return {
-    plugins: [react(), calendarMvpPlugin({ serverEnv: loadedEnv })],
+    plugins: [
+      react(),
+      analyticsMvpPlugin({ serverEnv: loadedEnv }),
+      calendarMvpPlugin({ serverEnv: loadedEnv }),
+    ],
     server: {
       allowedHosts,
     },
