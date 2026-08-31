@@ -6,6 +6,7 @@ import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
 import "./publicTimetableReliability.css";
+import "./publicTimetableMatrix.css";
 
 function currentPath() {
   return window.location.pathname;
