@@ -1,0 +1,393 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - navigation "Primary navigation" [ref=e4]:
+      - link "CalenderZW home" [ref=e5] [cursor=pointer]:
+        - /url: "#top"
+        - generic [ref=e11]: CalenderZW
+      - generic [ref=e12]:
+        - link "How it works" [ref=e13] [cursor=pointer]:
+          - /url: "#how"
+        - link "Calendar options" [ref=e14] [cursor=pointer]:
+          - /url: "#options"
+        - link "For class reps" [ref=e15] [cursor=pointer]:
+          - /url: "#reps"
+        - link "Privacy & trust" [ref=e16] [cursor=pointer]:
+          - /url: "#trust"
+      - link "Find timetable" [ref=e17] [cursor=pointer]:
+        - /url: https://calender.aido.co.zw/
+        - text: Find timetable
+        - generic [ref=e18]: →
+  - main [ref=e19]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: Your timetable, already organised
+        - heading "Your university timetable, already in your calendar." [level=1] [ref=e24]
+        - paragraph [ref=e25]: CalenderZW helps students find a published class timetable, choose useful reminders, and add lectures to the calendar they already use.
+        - generic [ref=e26]:
+          - link "Find my timetable" [ref=e27] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/
+          - link "See how it works" [ref=e30] [cursor=pointer]:
+            - /url: "#how"
+            - text: See how it works
+            - generic [ref=e31]: ↓
+        - paragraph [ref=e32]:
+          - generic [ref=e33]: No app required
+          - generic [ref=e35]: No student account needed
+      - generic "A CalenderZW timetable being prepared and added to a calendar" [ref=e36]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: ◷
+            - generic [ref=e42]: Reminder preset
+          - generic [ref=e43]: Prepared
+          - generic [ref=e44]:
+            - generic [ref=e45]: 24h
+            - generic [ref=e46]: 30m
+        - generic [ref=e48]:
+          - generic [ref=e51]:
+            - generic [ref=e52]:
+              - generic [ref=e53]: CS 1.1 · WEEK 4
+              - generic [ref=e54]: Monday
+            - generic [ref=e55]: ✓ Published
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - time [ref=e58]: 08:00
+              - generic [ref=e59]:
+                - generic [ref=e60]: Operating Systems
+                - generic [ref=e61]: N110 · 1h 30m
+            - generic [ref=e62]:
+              - time [ref=e63]: 10:15
+              - generic [ref=e64]:
+                - generic [ref=e65]: Discrete Mathematics
+                - generic [ref=e66]: E/HALL · 1h 30m
+            - generic [ref=e67]:
+              - time [ref=e68]: 14:00
+              - generic [ref=e69]:
+                - generic [ref=e70]: Technopreneurship I
+                - generic [ref=e71]: N109 · 1h
+          - generic [ref=e72]:
+            - generic [ref=e73]: Add timetable to calendar
+            - generic [ref=e74]: →
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - generic [ref=e77]: ✓
+            - generic [ref=e78]: Added to calendar
+          - generic [ref=e79]: 3 lectures · reminders ready
+    - region "Product principles" [ref=e80]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]: Built in Zimbabwe
+          - text: for university life
+        - generic [ref=e85]: One class link
+        - generic [ref=e87]: The calendar you already use
+    - region [ref=e88]:
+      - generic [ref=e89]:
+        - generic "Common ways students receive timetable information" [ref=e90]:
+          - generic [ref=e91]:
+            - text: “Does anyone know where tomorrow’s lecture is?”
+            - generic [ref=e92]: Class group · 19:42
+          - generic [ref=e93]:
+            - text: “Timetable updated again 👆”
+            - generic [ref=e94]: Class rep · 20:08
+          - generic [ref=e95]:
+            - text: “Please resend the PDF.”
+            - generic [ref=e96]: 3 unread replies
+          - generic [ref=e97]: LECTURE TIMETABLE
+        - generic [ref=e104]:
+          - generic [ref=e105]: Keep the conversation. Lose the searching.
+          - heading [level=2] [ref=e106]:
+            - text: Keep WhatsApp for conversation.
+            - strong [ref=e107]: Let your calendar remember the timetable.
+          - paragraph [ref=e108]: CalenderZW turns a published class schedule into something your phone already knows how to use.
+    - region [ref=e109]:
+      - generic [ref=e110]:
+        - generic [ref=e111]:
+          - generic [ref=e112]: Three clear steps
+          - heading "From class link to calendar in minutes." [level=2] [ref=e113]
+          - paragraph [ref=e114]: No account maze. No new daily habit. Just find, prepare and add.
+        - generic [ref=e115]:
+          - tablist "How CalenderZW works" [ref=e116]:
+            - tab "01 Find your class Open a shared class link or search by institution, programme and group." [selected] [ref=e117] [cursor=pointer]:
+              - generic [ref=e118]: "01"
+              - generic [ref=e119]:
+                - generic [ref=e120]: Find your class
+                - generic [ref=e121]: Open a shared class link or search by institution, programme and group.
+            - tab "02 Choose your reminders Pick Prepared, On time, Commuter or a timing that suits you." [ref=e122] [cursor=pointer]:
+              - generic [ref=e123]: "02"
+              - generic [ref=e124]:
+                - generic [ref=e125]: Choose your reminders
+                - generic [ref=e126]: Pick Prepared, On time, Commuter or a timing that suits you.
+            - tab "03 Add it to your calendar Use the supported option that works best on your phone." [ref=e127] [cursor=pointer]:
+              - generic [ref=e128]: "03"
+              - generic [ref=e129]:
+                - generic [ref=e130]: Add it to your calendar
+                - generic [ref=e131]: Use the supported option that works best on your phone.
+          - tabpanel "01 Find your class Open a shared class link or search by institution, programme and group." [ref=e133]:
+            - generic [ref=e134]:
+              - generic [ref=e135]: Institution
+              - generic [ref=e136]:
+                - generic [ref=e137]: Choose your university
+                - generic [ref=e138]: ⌄
+              - generic [ref=e139]: Programme & class group
+              - generic [ref=e140]:
+                - generic [ref=e141]: Computer Science · 1.1
+                - generic [ref=e142]: ⌄
+              - generic [ref=e143]:
+                - generic [ref=e144]: View published timetable
+                - generic [ref=e145]: →
+    - region [ref=e146]:
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - generic [ref=e149]: Set it once
+          - heading "Let your calendar do the remembering." [level=2] [ref=e150]
+          - paragraph [ref=e151]: A published timetable becomes readable events with the reminders you chose. The timetable stays the source; your calendar becomes the memory.
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e154]: Published timetable · Week 4
+            - generic [ref=e155]: Ready
+          - generic [ref=e156]:
+            - time [ref=e157]: MON08:00
+            - generic [ref=e158]:
+              - generic [ref=e159]: Technopreneurship I
+              - generic [ref=e160]: E/HALL
+            - generic [ref=e161]:
+              - generic [ref=e162]: 24h
+              - generic [ref=e163]: 30m
+          - generic [ref=e164]:
+            - time [ref=e165]: TUE14:00
+            - generic [ref=e166]:
+              - generic [ref=e167]: Operating Systems
+              - generic [ref=e168]: N109
+            - generic [ref=e169]:
+              - generic [ref=e170]: 24h
+              - generic [ref=e171]: 30m
+          - generic [ref=e172]:
+            - time [ref=e173]: WED10:15
+            - generic [ref=e174]:
+              - generic [ref=e175]: Discrete Mathematics
+              - generic [ref=e176]: N110
+            - generic [ref=e177]:
+              - generic [ref=e178]: 24h
+              - generic [ref=e179]: 30m
+          - generic [ref=e180]:
+            - generic [ref=e181]: 3 events prepared
+            - generic [ref=e182]: ✓ Timetable ready
+    - region [ref=e183]:
+      - generic [ref=e184]:
+        - generic [ref=e185]:
+          - generic [ref=e186]: Why not another app?
+          - heading [level=2] [ref=e187]:
+            - text: Your timetable shouldn’t need
+            - emphasis [ref=e188]: another daily habit.
+          - paragraph [ref=e189]: CalenderZW works with the calendar already built into your routine.
+        - generic [ref=e190]:
+          - generic [ref=e191]:
+            - generic [ref=e192]: "01"
+            - generic [ref=e193]:
+              - text: No app install for the core flow
+              - generic [ref=e194]: Open it from a browser or class link.
+          - generic [ref=e195]:
+            - generic [ref=e196]: "02"
+            - generic [ref=e197]:
+              - text: No new student account
+              - generic [ref=e198]: Basic timetable access stays low-friction.
+          - generic [ref=e199]:
+            - generic [ref=e200]: "03"
+            - generic [ref=e201]:
+              - text: One link for the class
+              - generic [ref=e202]: A rep can share the same published schedule with everyone.
+          - generic [ref=e203]:
+            - generic [ref=e204]: "04"
+            - generic [ref=e205]:
+              - text: Calendar-native reminders
+              - generic [ref=e206]: Your existing calendar handles the alert.
+    - region [ref=e207]:
+      - generic [ref=e208]:
+        - generic [ref=e209]:
+          - generic [ref=e210]: Calendar options
+          - heading "Use the method your device understands." [level=2] [ref=e211]
+          - paragraph [ref=e212]: CalenderZW presents supported choices in plain language and keeps technical setup out of the way.
+        - generic [ref=e213]:
+          - article [ref=e214]:
+            - generic [ref=e219]:
+              - generic [ref=e220]: Apple Calendar
+              - paragraph [ref=e221]: Subscription-friendly where supported by your device and timetable.
+          - article [ref=e222]:
+            - generic [ref=e227]:
+              - generic [ref=e228]: Calendar file (.ics)
+              - paragraph [ref=e229]: Compatible with many calendar apps and useful for a straightforward import.
+          - article [ref=e230]:
+            - generic [ref=e235]:
+              - generic [ref=e236]: Subscription link
+              - paragraph [ref=e237]: Stay connected to published timetable changes where subscriptions are supported.
+          - article [ref=e238]:
+            - generic [ref=e242]:
+              - generic [ref=e243]: Google Calendar
+              - paragraph [ref=e244]: Direct CalenderZW connection is not presented as ready yet.
+              - generic [ref=e245]: Coming later
+    - region [ref=e246]:
+      - generic [ref=e247]:
+        - generic [ref=e248]:
+          - generic [ref=e249]:
+            - generic [ref=e250]: Know what you’re looking at
+            - heading "Clear timetable context, without invented trust." [level=2] [ref=e251]
+            - paragraph [ref=e252]: Students should be able to see when a timetable was published, when it changed, and where to report a problem. Verification labels appear only when the product can support them.
+          - generic [ref=e253]:
+            - generic [ref=e254]:
+              - generic [ref=e255]: ✓
+              - generic [ref=e256]:
+                - text: Visible status
+                - paragraph [ref=e257]: Published status is shown clearly on the timetable.
+            - generic [ref=e258]:
+              - generic [ref=e259]: ↻
+              - generic [ref=e260]:
+                - text: Useful update context
+                - paragraph [ref=e261]: Changes can be surfaced with an updated time where available.
+            - generic [ref=e262]:
+              - generic [ref=e263]: "!"
+              - generic [ref=e264]:
+                - text: A path to correct errors
+                - paragraph [ref=e265]: Support remains visible when timetable details need attention.
+        - generic [ref=e266]:
+          - generic [ref=e267]:
+            - generic [ref=e268]:
+              - generic [ref=e269]: CLASS TIMETABLE
+              - generic [ref=e270]: BTech Computer Science · 1.1
+            - generic [ref=e271]: Published
+          - generic [ref=e272]:
+            - generic [ref=e273]: Latest change
+            - generic [ref=e274]:
+              - generic [ref=e275]:
+                - generic [ref=e276]: Operating Systems
+                - generic [ref=e277]: Tuesday · 14:00
+              - generic [ref=e278]: N109 → N205
+          - generic [ref=e279]:
+            - generic [ref=e280]: Updated recently
+            - link "Report a problem ↗" [ref=e281] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/support
+    - region [ref=e282]:
+      - generic [ref=e283]:
+        - generic [ref=e284]:
+          - generic [ref=e285]: Built for real student conditions
+          - heading "Product quality that holds up on an ordinary phone." [level=2] [ref=e286]
+        - generic [ref=e287]:
+          - article [ref=e288]:
+            - generic [ref=e291]: Fast on mobile data
+            - generic [ref=e292]: No giant video or heavy image dependency.
+          - article [ref=e293]:
+            - generic [ref=e296]: Small-screen readable
+            - generic [ref=e297]: Clear type and deliberate 20px gutters.
+          - article [ref=e298]:
+            - generic [ref=e303]: No basic-flow account
+            - generic [ref=e304]: Find and view before being asked for commitment.
+          - article [ref=e305]:
+            - generic [ref=e308]: Keyboard friendly
+            - generic [ref=e309]: Visible focus and semantic controls.
+          - article [ref=e310]:
+            - generic [ref=e314]: Reduced motion
+            - generic [ref=e315]: The final product state remains understandable.
+    - generic [ref=e317]:
+      - generic [ref=e318]:
+        - generic [ref=e319]: For class representatives
+        - heading "Your class doesn’t have a timetable here yet?" [level=2] [ref=e320]
+        - paragraph [ref=e321]: Class representatives can help keep one class schedule accurate, published and easy to share.
+      - link "Set up my class" [ref=e322] [cursor=pointer]:
+        - /url: https://calender.aido.co.zw/admin/login
+        - text: Set up my class
+        - generic [ref=e323]: →
+      - text: 11:10
+    - region [ref=e324]:
+      - generic [ref=e325]:
+        - generic [ref=e326]:
+          - generic [ref=e327]:
+            - generic [ref=e328]: CS
+            - generic [ref=e329]:
+              - generic [ref=e330]: Computer Science 1.1
+              - generic [ref=e331]: Class group
+          - generic [ref=e332]:
+            - text: "CS 1.1 timetable is live ✅View your timetable and add it to your calendar:"
+            - link "calender.aido.co.zw/t/..." [ref=e333] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/
+            - generic [ref=e334]: No app needed · 10:42
+        - generic [ref=e335]:
+          - generic [ref=e336]: Made to move through the class
+          - heading "One useful link. Everyone keeps their own calendar." [level=2] [ref=e337]
+          - paragraph [ref=e338]: WhatsApp remains the distribution channel. CalenderZW gives the timetable a cleaner place to live.
+          - generic [ref=e339]:
+            - generic [ref=e340]: Class rep
+            - generic [ref=e341]: →
+            - generic [ref=e342]: WhatsApp group
+            - generic [ref=e343]: →
+            - generic [ref=e344]: Classmates’ calendars
+    - region [ref=e345]:
+      - generic [ref=e346]:
+        - generic [ref=e347]: Focused now, useful later
+        - heading "Timetables today. More of your academic schedule tomorrow." [level=2] [ref=e348]: Timetables today.More of your academic schedule tomorrow.
+        - paragraph [ref=e349]: Future ideas stay separate from what CalenderZW can do now.
+        - generic [ref=e350]:
+          - generic [ref=e351]: AssignmentsLater
+          - generic [ref=e352]: TestsLater
+          - generic [ref=e353]: ExamsLater
+          - generic [ref=e354]: Academic remindersLater
+    - region "Privacy and control" [ref=e355]:
+      - generic [ref=e356]:
+        - generic [ref=e357]:
+          - generic [ref=e358]: Privacy stays understandable.
+          - paragraph [ref=e359]: No student account is required for core timetable access. Calendar connections are optional.
+        - navigation "Legal and support" [ref=e360]:
+          - link "Privacy" [ref=e361] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/privacy
+          - link "Terms" [ref=e362] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/terms
+          - link "Data deletion" [ref=e363] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/data-deletion
+          - link "Support" [ref=e364] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/support
+    - region [ref=e365]:
+      - generic [ref=e366]:
+        - generic [ref=e367]: Find your class
+        - heading "Let your calendar handle the rest." [level=2] [ref=e368]
+        - paragraph [ref=e369]: Your timetable is probably the last thing you should have to remember.
+        - generic [ref=e370]:
+          - link "Find my timetable →" [ref=e371] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/
+            - text: Find my timetable
+            - generic [ref=e372]: →
+          - link "Set up my class" [ref=e373] [cursor=pointer]:
+            - /url: https://calender.aido.co.zw/admin/login
+        - generic [ref=e374]: Free for students.
+  - contentinfo [ref=e375]:
+    - generic [ref=e376]:
+      - generic [ref=e377]:
+        - generic [ref=e378]:
+          - link "CalenderZW home" [ref=e379] [cursor=pointer]:
+            - /url: "#top"
+            - generic [ref=e385]: CalenderZW
+          - paragraph [ref=e386]: Operated by aiDo.Built in Zimbabwe for university life.
+        - generic [ref=e387]:
+          - generic [ref=e388]:
+            - generic [ref=e389]: Product
+            - link "Find timetable" [ref=e390] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/
+            - link "How it works" [ref=e391] [cursor=pointer]:
+              - /url: "#how"
+            - link "Calendar options" [ref=e392] [cursor=pointer]:
+              - /url: "#options"
+          - generic [ref=e393]:
+            - generic [ref=e394]: For students
+            - link "Class reps" [ref=e395] [cursor=pointer]:
+              - /url: "#reps"
+            - link "Support" [ref=e396] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/support
+          - generic [ref=e397]:
+            - generic [ref=e398]: Legal
+            - link "Privacy" [ref=e399] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/privacy
+            - link "Terms" [ref=e400] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/terms
+            - link "Data deletion" [ref=e401] [cursor=pointer]:
+              - /url: https://calender.aido.co.zw/data-deletion
+      - generic [ref=e402]:
+        - generic [ref=e403]: © 2026 CalenderZW. Operated by aiDo.
+        - generic [ref=e404]: CalenderZW is the product. aiDo is the operator.
