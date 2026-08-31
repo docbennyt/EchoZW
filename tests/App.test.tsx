@@ -7,6 +7,7 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../src/App";
+import { PASSWORD_RESET_SENT_MESSAGE } from "../src/authRecovery";
 import type { PublicTimetable } from "../src/api/pilotTypes";
 
 const createSupabaseClient = vi.fn();
@@ -106,6 +107,7 @@ vi.mock("../src/utils/supabase/client", () => ({
 }));
 
 beforeEach(() => {
+  createSupabaseClient.mockReset();
   createSupabaseClient.mockImplementation(() => {
     throw new Error("Supabase test config missing");
   });
@@ -692,6 +694,181 @@ describe("public student flow", () => {
     expect(
       await screen.findByText("Email or password is incorrect."),
     ).toBeInTheDocument();
+  });
+
+  it("requests an admin password reset with the account update redirect", async () => {
+    const resetPasswordForEmail = vi.fn(async () => ({
+      data: {},
+      error: null,
+    }));
+    createSupabaseClient.mockReturnValue({
+      auth: {
+        resetPasswordForEmail,
+      },
+    });
+
+    window.history.pushState({}, "", "/admin/login");
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/^Email$/i), {
+      target: { value: "admin@example.test" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Forgot password/i }));
+
+    await waitFor(() =>
+      expect(resetPasswordForEmail).toHaveBeenCalledWith("admin@example.test", {
+        redirectTo: `${window.location.origin}/account/update-password`,
+      }),
+    );
+    expect(
+      await screen.findByText(PASSWORD_RESET_SENT_MESSAGE),
+    ).toHaveAttribute("role", "status");
+    expect(PASSWORD_RESET_SENT_MESSAGE).not.toMatch(
+      /registered|found|missing/i,
+    );
+  });
+
+  it("renders the production password update route and rejects mismatched passwords", async () => {
+    const updateUser = vi.fn(async () => ({ data: {}, error: null }));
+    createSupabaseClient.mockReturnValue({
+      auth: {
+        getSession: vi.fn(async () => ({
+          data: { session: { access_token: "recovery-session" } },
+          error: null,
+        })),
+        onAuthStateChange: vi.fn(() => ({
+          data: { subscription: { unsubscribe: vi.fn() } },
+        })),
+        updateUser,
+      },
+    });
+
+    window.history.pushState(
+      {},
+      "",
+      "/account/update-password#access_token=secret&type=recovery",
+    );
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: /Update password/i }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/^New password$/i), {
+      target: { value: "new-secure-password" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Confirm new password$/i), {
+      target: { value: "different-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Update password/i }));
+
+    expect(
+      await screen.findByText("The passwords do not match."),
+    ).toHaveAttribute("role", "alert");
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it("updates the password through Supabase after a recovery session is restored", async () => {
+    const updateUser = vi.fn(async () => ({ data: {}, error: null }));
+    createSupabaseClient.mockReturnValue({
+      auth: {
+        getSession: vi.fn(async () => ({
+          data: { session: { access_token: "recovery-session" } },
+          error: null,
+        })),
+        onAuthStateChange: vi.fn(() => ({
+          data: { subscription: { unsubscribe: vi.fn() } },
+        })),
+        updateUser,
+      },
+    });
+
+    window.history.pushState({}, "", "/account/update-password");
+    render(<App />);
+
+    fireEvent.change(await screen.findByLabelText(/^New password$/i), {
+      target: { value: "new-secure-password" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Confirm new password$/i), {
+      target: { value: "new-secure-password" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Update password/i }));
+
+    await waitFor(() =>
+      expect(updateUser).toHaveBeenCalledWith({
+        password: "new-secure-password",
+      }),
+    );
+    expect(
+      await screen.findByRole("link", { name: /Continue to admin/i }),
+    ).toHaveAttribute("href", "/admin");
+  });
+
+  it("shows a new reset path for invalid or expired recovery links", async () => {
+    createSupabaseClient.mockReturnValue({
+      auth: {
+        getSession: vi.fn(async () => ({
+          data: { session: null },
+          error: new Error("expired"),
+        })),
+        onAuthStateChange: vi.fn(() => ({
+          data: { subscription: { unsubscribe: vi.fn() } },
+        })),
+      },
+    });
+
+    window.history.pushState({}, "", "/account/update-password");
+    render(<App />);
+
+    expect(
+      await screen.findByText(
+        "This password reset link is invalid or has expired. Request a new one.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Request another reset/i }),
+    ).toHaveAttribute("href", "/admin/login");
+  });
+
+  it("completes auth callback processing without granting admin client-side", async () => {
+    const exchangeCodeForSession = vi.fn(async () => ({
+      data: {},
+      error: null,
+    }));
+    createSupabaseClient.mockReturnValue({
+      auth: {
+        exchangeCodeForSession,
+        getSession: vi.fn(async () => ({
+          data: { session: { access_token: "valid-non-admin" } },
+          error: null,
+        })),
+      },
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: "FORBIDDEN",
+                message: "This account does not have administrator access.",
+              },
+            }),
+            { status: 403, headers: { "Content-Type": "application/json" } },
+          ),
+      ),
+    );
+
+    window.history.pushState({}, "", "/auth/callback?code=secret-auth-code");
+    render(<App />);
+
+    await waitFor(() =>
+      expect(exchangeCodeForSession).toHaveBeenCalledWith("secret-auth-code"),
+    );
+    await waitFor(() =>
+      expect(window.location.pathname).toBe("/account/settings"),
+    );
+    expect(window.location.search).toBe("");
   });
 
   it("rejects login for authenticated users without admin authorization", async () => {

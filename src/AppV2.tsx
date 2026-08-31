@@ -1,6 +1,6 @@
 import { Button as BaseButton } from "@base-ui/react/button";
 import { Input as BaseInput } from "@base-ui/react/input";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarCheck,
@@ -19,6 +19,17 @@ import { legalConfig } from "./config/legal";
 import { AdminMvpScreen, PublicTimetableMvpScreen } from "./pilotMvp";
 import { FinderDiscovery } from "./FinderDiscovery";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
+import {
+  AUTH_CALLBACK_PATH,
+  getPasswordResetRedirect,
+  hasAuthRedirectParameters,
+  isValidEmail,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_RESET_INVALID_MESSAGE,
+  PASSWORD_RESET_PATH,
+  PASSWORD_RESET_SENT_MESSAGE,
+  validateNewPassword,
+} from "./authRecovery";
 
 const currentPath = () => window.location.pathname;
 const currentYear = new Date().getFullYear();
@@ -1005,9 +1016,10 @@ function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<
-    "idle" | "loading" | "forbidden" | "error"
+    "idle" | "loading" | "resetting" | "forbidden" | "error" | "success"
   >("idle");
   const [message, setMessage] = useState("");
+  const messageRef = useRef<HTMLParagraphElement>(null);
 
   usePageMetadata({
     title: "Admin login | CalenderZW",
@@ -1015,6 +1027,10 @@ function AdminLoginPage() {
     canonicalPath: "/admin/login",
     robots: "noindex, nofollow",
   });
+
+  useEffect(() => {
+    if (message) messageRef.current?.focus();
+  }, [message]);
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1057,6 +1073,40 @@ function AdminLoginPage() {
     }
   }
 
+  async function requestPasswordReset() {
+    const trimmedEmail = email.trim();
+    setMessage("");
+    if (!isValidEmail(trimmedEmail)) {
+      setStatus("error");
+      setMessage("Enter your admin email address first.");
+      return;
+    }
+
+    setStatus("resetting");
+    let supabase;
+    try {
+      supabase = createSupabaseBrowserClient();
+    } catch {
+      setStatus("error");
+      setMessage("Password reset is temporarily unavailable.");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: getPasswordResetRedirect(),
+    });
+    if (error) {
+      setStatus("error");
+      setMessage("Password reset is temporarily unavailable.");
+      return;
+    }
+
+    setStatus("success");
+    setMessage(PASSWORD_RESET_SENT_MESSAGE);
+  }
+
+  const pending = status === "loading" || status === "resetting";
+
   return (
     <PublicShell>
       <main className="czw-auth-page">
@@ -1093,21 +1143,33 @@ function AdminLoginPage() {
             </label>
             <BaseButton
               className="czw-button czw-button-primary"
-              disabled={status === "loading"}
+              disabled={pending}
               type="submit"
             >
               <Lock size={17} />
               {status === "loading" ? "Signing in…" : "Sign in"}
             </BaseButton>
+            <BaseButton
+              className="czw-auth-link-button"
+              disabled={pending}
+              type="button"
+              onClick={() => void requestPasswordReset()}
+            >
+              {status === "resetting"
+                ? "Sending reset link..."
+                : "Forgot password?"}
+            </BaseButton>
           </form>
           {message ? (
             <p
               className="czw-auth-message"
+              ref={messageRef}
               role={
                 status === "error" || status === "forbidden"
                   ? "alert"
                   : "status"
               }
+              tabIndex={-1}
             >
               {message}
             </p>
@@ -1115,6 +1177,297 @@ function AdminLoginPage() {
           <a className="czw-auth-back" href="/">
             ← Back to CalenderZW
           </a>
+        </section>
+      </main>
+    </PublicShell>
+  );
+}
+
+function UpdatePasswordPage() {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [status, setStatus] = useState<
+    "checking" | "ready" | "updating" | "success" | "invalid" | "error"
+  >("checking");
+  const [message, setMessage] = useState("");
+  const messageRef = useRef<HTMLParagraphElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const supabaseRef = useRef<ReturnType<
+    typeof createSupabaseBrowserClient
+  > | null>(null);
+
+  usePageMetadata({
+    title: "Update password | CalenderZW",
+    description: "Set a new CalenderZW account password.",
+    canonicalPath: PASSWORD_RESET_PATH,
+    robots: "noindex, nofollow",
+  });
+
+  useEffect(() => {
+    if (message) messageRef.current?.focus();
+  }, [message]);
+
+  useEffect(() => {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+
+    async function restoreRecoverySession() {
+      let supabase;
+      try {
+        supabase = createSupabaseBrowserClient();
+        supabaseRef.current = supabase;
+      } catch {
+        if (!active) return;
+        setStatus("error");
+        setMessage("Password recovery is temporarily unavailable.");
+        return;
+      }
+
+      const urlHadAuthState = hasAuthRedirectParameters(
+        new URL(window.location.href),
+      );
+      const subscriptionResult = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (!active || event !== "PASSWORD_RECOVERY") return;
+          if (!session) return;
+          setStatus("ready");
+          setMessage("");
+          window.history.replaceState({}, "", PASSWORD_RESET_PATH);
+          passwordRef.current?.focus();
+        },
+      );
+      unsubscribe = () => subscriptionResult.data.subscription.unsubscribe();
+
+      const { data, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (error || !data.session) {
+        setStatus("invalid");
+        setMessage(PASSWORD_RESET_INVALID_MESSAGE);
+        if (urlHadAuthState) {
+          window.history.replaceState({}, "", PASSWORD_RESET_PATH);
+        }
+        return;
+      }
+
+      setStatus("ready");
+      setMessage("");
+      if (urlHadAuthState) {
+        window.history.replaceState({}, "", PASSWORD_RESET_PATH);
+      }
+    }
+
+    void restoreRecoverySession();
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, []);
+
+  async function submitPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const validationMessage = validateNewPassword(password, confirmation);
+    if (validationMessage) {
+      setStatus("ready");
+      setMessage(validationMessage);
+      return;
+    }
+
+    const supabase = supabaseRef.current;
+    if (!supabase) {
+      setStatus("error");
+      setMessage("Password recovery is temporarily unavailable.");
+      return;
+    }
+
+    setStatus("updating");
+    setMessage("");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      setStatus("error");
+      setMessage("We could not update the password. Request a new reset link.");
+      return;
+    }
+
+    setPassword("");
+    setConfirmation("");
+    setStatus("success");
+    setMessage("Password updated. You can now continue to admin.");
+  }
+
+  return (
+    <PublicShell>
+      <main className="czw-auth-page">
+        <section
+          className="czw-auth-card"
+          aria-labelledby="password-reset-title"
+        >
+          <div className="czw-auth-icon">
+            <Lock size={22} />
+          </div>
+          <span className="czw-eyebrow">Account recovery</span>
+          <h1 id="password-reset-title">Update password.</h1>
+          <p>Set a new password for your CalenderZW account.</p>
+          {status === "checking" ? (
+            <p className="czw-auth-message" role="status">
+              Checking password reset link...
+            </p>
+          ) : null}
+          {status === "invalid" ? (
+            <>
+              <p
+                className="czw-auth-message"
+                ref={messageRef}
+                role="alert"
+                tabIndex={-1}
+              >
+                {message}
+              </p>
+              <a className="czw-button czw-button-primary" href="/admin/login">
+                Request another reset
+              </a>
+            </>
+          ) : null}
+          {status !== "checking" && status !== "invalid" ? (
+            <>
+              <form onSubmit={submitPassword}>
+                <label>
+                  <span>New password</span>
+                  <BaseInput
+                    autoComplete="new-password"
+                    minLength={MIN_PASSWORD_LENGTH}
+                    name="new-password"
+                    ref={passwordRef}
+                    required
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>Confirm new password</span>
+                  <BaseInput
+                    autoComplete="new-password"
+                    minLength={MIN_PASSWORD_LENGTH}
+                    name="confirm-password"
+                    required
+                    type="password"
+                    value={confirmation}
+                    onChange={(event) => setConfirmation(event.target.value)}
+                  />
+                </label>
+                <BaseButton
+                  className="czw-button czw-button-primary"
+                  disabled={status === "updating" || status === "success"}
+                  type="submit"
+                >
+                  <Lock size={17} />
+                  {status === "updating" ? "Updating..." : "Update password"}
+                </BaseButton>
+              </form>
+              {message ? (
+                <p
+                  className="czw-auth-message"
+                  ref={messageRef}
+                  role={status === "success" ? "status" : "alert"}
+                  tabIndex={-1}
+                >
+                  {message}
+                </p>
+              ) : null}
+              {status === "success" ? (
+                <a className="czw-button czw-button-primary" href="/admin">
+                  Continue to admin
+                </a>
+              ) : null}
+            </>
+          ) : null}
+          <a className="czw-auth-back" href="/admin/login">
+            Back to admin login
+          </a>
+        </section>
+      </main>
+    </PublicShell>
+  );
+}
+
+function AuthCallbackPage() {
+  const [message, setMessage] = useState("Completing sign-in...");
+
+  usePageMetadata({
+    title: "Completing sign-in | CalenderZW",
+    description: "Completing CalenderZW account sign-in.",
+    canonicalPath: AUTH_CALLBACK_PATH,
+    robots: "noindex, nofollow",
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function completeRedirect() {
+      let supabase;
+      try {
+        supabase = createSupabaseBrowserClient();
+      } catch {
+        if (active) setMessage("Sign-in is temporarily unavailable.");
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const urlHadAuthState = hasAuthRedirectParameters(url);
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!active) return;
+        if (urlHadAuthState) {
+          window.history.replaceState({}, "", AUTH_CALLBACK_PATH);
+        }
+        if (error) {
+          setMessage("This sign-in link is invalid or has expired.");
+          return;
+        }
+      }
+
+      const { data, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (urlHadAuthState) {
+        window.history.replaceState({}, "", AUTH_CALLBACK_PATH);
+      }
+      if (error || !data.session?.access_token) {
+        setMessage("This sign-in link is invalid or has expired.");
+        return;
+      }
+
+      try {
+        await fetchAdminSession(data.session.access_token);
+        window.history.replaceState({}, "", "/admin");
+      } catch {
+        window.history.replaceState({}, "", "/account/settings");
+      }
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+
+    void completeRedirect();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <PublicShell>
+      <main className="czw-auth-page">
+        <section
+          className="czw-auth-card"
+          aria-labelledby="auth-callback-title"
+        >
+          <div className="czw-auth-icon">
+            <Lock size={22} />
+          </div>
+          <span className="czw-eyebrow">Account</span>
+          <h1 id="auth-callback-title">Completing sign-in.</h1>
+          <p className="czw-auth-message" role="status">
+            {message}
+          </p>
         </section>
       </main>
     </PublicShell>
@@ -1279,6 +1632,8 @@ export function AppV2() {
   if (path === "/data-deletion") return <LegalDocumentPage type="data" />;
   if (path === "/support") return <SupportPage />;
   if (path === "/account/settings") return <AccountSettingsPage />;
+  if (path === PASSWORD_RESET_PATH) return <UpdatePasswordPage />;
+  if (path === AUTH_CALLBACK_PATH) return <AuthCallbackPage />;
   if (path === "/admin/google-verification-readiness")
     return <GoogleVerificationReadinessPage />;
   if (path === "/admin/login") return <AdminLoginPage />;

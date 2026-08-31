@@ -119,6 +119,8 @@ async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
     "/data-deletion",
     "/support",
     "/account/settings",
+    "/account/update-password",
+    "/auth/callback",
   ]);
   const canonicalPath =
     requestUrl.pathname.startsWith("/t/") ||

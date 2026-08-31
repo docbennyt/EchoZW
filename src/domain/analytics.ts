@@ -42,7 +42,6 @@ export const ANALYTICS_PROPERTY_KEYS = [
   "status",
   "result",
   "reason",
-  "code",
   "path",
   "mode",
   "timetableId",
@@ -57,7 +56,7 @@ export const ANALYTICS_PROPERTY_KEYS = [
 const eventNameSet = new Set<string>(ANALYTICS_EVENT_NAMES);
 const propertyKeySet = new Set<string>(ANALYTICS_PROPERTY_KEYS);
 const sensitiveKeyPattern =
-  /(token|secret|credential|authorization|password|phone|email|push|endpoint|vapid)/i;
+  /(^code$|token|secret|credential|authorization|password|phone|email|push|endpoint|vapid|recovery)/i;
 
 export function isAnalyticsEventName(
   value: unknown,

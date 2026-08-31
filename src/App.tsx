@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Download,
   GraduationCap,
@@ -19,6 +19,17 @@ import {
   FinderMvpScreen,
   PublicTimetableMvpScreen,
 } from "./pilotMvp";
+import {
+  AUTH_CALLBACK_PATH,
+  getPasswordResetRedirect,
+  hasAuthRedirectParameters,
+  isValidEmail,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_RESET_INVALID_MESSAGE,
+  PASSWORD_RESET_PATH,
+  PASSWORD_RESET_SENT_MESSAGE,
+  validateNewPassword,
+} from "./authRecovery";
 
 const currentPath = () => window.location.pathname;
 const currentYear = new Date().getFullYear();
@@ -1675,9 +1686,14 @@ function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<
-    "idle" | "loading" | "forbidden" | "error"
+    "idle" | "loading" | "resetting" | "forbidden" | "error" | "success"
   >("idle");
   const [message, setMessage] = useState("");
+  const messageRef = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (message) messageRef.current?.focus();
+  }, [message]);
 
   async function signIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1724,6 +1740,40 @@ function AdminLoginPage() {
     }
   }
 
+  async function requestPasswordReset() {
+    const trimmedEmail = email.trim();
+    setMessage("");
+    if (!isValidEmail(trimmedEmail)) {
+      setStatus("error");
+      setMessage("Enter your admin email address first.");
+      return;
+    }
+
+    setStatus("resetting");
+    let supabase;
+    try {
+      supabase = createSupabaseBrowserClient();
+    } catch {
+      setStatus("error");
+      setMessage("Password reset is temporarily unavailable.");
+      return;
+    }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+      redirectTo: getPasswordResetRedirect(),
+    });
+    if (error) {
+      setStatus("error");
+      setMessage("Password reset is temporarily unavailable.");
+      return;
+    }
+
+    setStatus("success");
+    setMessage(PASSWORD_RESET_SENT_MESSAGE);
+  }
+
+  const pending = status === "loading" || status === "resetting";
+
   return (
     <Shell>
       <main className="page admin-page">
@@ -1758,25 +1808,305 @@ function AdminLoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
-            <button className="primary" disabled={status === "loading"}>
+            <button className="primary" disabled={pending}>
               <Lock size={18} />
               {status === "loading" ? "Signing in" : "Sign in"}
+            </button>
+            <button
+              className="auth-link-button"
+              disabled={pending}
+              type="button"
+              onClick={() => void requestPasswordReset()}
+            >
+              {status === "resetting"
+                ? "Sending reset link..."
+                : "Forgot password?"}
             </button>
           </form>
           {message && (
             <p
               className="content-notice"
+              ref={messageRef}
               role={
                 status === "error" || status === "forbidden"
                   ? "alert"
                   : "status"
               }
+              tabIndex={-1}
             >
               {message}
             </p>
           )}
           <a href="/">Back to CalenderZW home</a>
         </section>
+      </main>
+    </Shell>
+  );
+}
+
+function UpdatePasswordPage() {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [status, setStatus] = useState<
+    "checking" | "ready" | "updating" | "success" | "invalid" | "error"
+  >("checking");
+  const [message, setMessage] = useState("");
+  const messageRef = useRef<HTMLParagraphElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const supabaseRef = useRef<ReturnType<
+    typeof createSupabaseBrowserClient
+  > | null>(null);
+
+  useEffect(() => {
+    if (message) messageRef.current?.focus();
+  }, [message]);
+
+  useEffect(() => {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+
+    async function restoreRecoverySession() {
+      let supabase;
+      try {
+        supabase = createSupabaseBrowserClient();
+        supabaseRef.current = supabase;
+      } catch {
+        if (!active) return;
+        setStatus("error");
+        setMessage("Password recovery is temporarily unavailable.");
+        return;
+      }
+
+      const urlHadAuthState = hasAuthRedirectParameters(
+        new URL(window.location.href),
+      );
+      const subscriptionResult = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (!active || event !== "PASSWORD_RECOVERY" || !session) return;
+          setStatus("ready");
+          setMessage("");
+          window.history.replaceState({}, "", PASSWORD_RESET_PATH);
+          passwordRef.current?.focus();
+        },
+      );
+      unsubscribe = () => subscriptionResult.data.subscription.unsubscribe();
+
+      const { data, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (error || !data.session) {
+        setStatus("invalid");
+        setMessage(PASSWORD_RESET_INVALID_MESSAGE);
+        if (urlHadAuthState) {
+          window.history.replaceState({}, "", PASSWORD_RESET_PATH);
+        }
+        return;
+      }
+
+      setStatus("ready");
+      setMessage("");
+      if (urlHadAuthState) {
+        window.history.replaceState({}, "", PASSWORD_RESET_PATH);
+      }
+    }
+
+    void restoreRecoverySession();
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, []);
+
+  async function submitPassword(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const validationMessage = validateNewPassword(password, confirmation);
+    if (validationMessage) {
+      setStatus("ready");
+      setMessage(validationMessage);
+      return;
+    }
+
+    const supabase = supabaseRef.current;
+    if (!supabase) {
+      setStatus("error");
+      setMessage("Password recovery is temporarily unavailable.");
+      return;
+    }
+
+    setStatus("updating");
+    setMessage("");
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      setStatus("error");
+      setMessage("We could not update the password. Request a new reset link.");
+      return;
+    }
+
+    setPassword("");
+    setConfirmation("");
+    setStatus("success");
+    setMessage("Password updated. You can now continue to admin.");
+  }
+
+  return (
+    <Shell>
+      <main className="page admin-page">
+        <PageHeader
+          icon={<Lock />}
+          title="Update password"
+          text="Set a new password for your CalenderZW account."
+        />
+        <section
+          className="action-panel"
+          aria-labelledby="password-reset-title"
+        >
+          <h2 id="password-reset-title">Account recovery</h2>
+          {status === "checking" ? (
+            <p className="content-notice" role="status">
+              Checking password reset link...
+            </p>
+          ) : null}
+          {status === "invalid" ? (
+            <>
+              <p
+                className="content-notice"
+                ref={messageRef}
+                role="alert"
+                tabIndex={-1}
+              >
+                {message}
+              </p>
+              <a className="primary" href="/admin/login">
+                Request another reset
+              </a>
+            </>
+          ) : null}
+          {status !== "checking" && status !== "invalid" ? (
+            <>
+              <form className="admin-form" onSubmit={submitPassword}>
+                <label>
+                  New password
+                  <input
+                    autoComplete="new-password"
+                    minLength={MIN_PASSWORD_LENGTH}
+                    name="new-password"
+                    ref={passwordRef}
+                    required
+                    type="password"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                  />
+                </label>
+                <label>
+                  Confirm new password
+                  <input
+                    autoComplete="new-password"
+                    minLength={MIN_PASSWORD_LENGTH}
+                    name="confirm-password"
+                    required
+                    type="password"
+                    value={confirmation}
+                    onChange={(event) => setConfirmation(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="primary"
+                  disabled={status === "updating" || status === "success"}
+                >
+                  <Lock size={18} />
+                  {status === "updating" ? "Updating..." : "Update password"}
+                </button>
+              </form>
+              {message ? (
+                <p
+                  className="content-notice"
+                  ref={messageRef}
+                  role={status === "success" ? "status" : "alert"}
+                  tabIndex={-1}
+                >
+                  {message}
+                </p>
+              ) : null}
+              {status === "success" ? (
+                <a className="primary" href="/admin">
+                  Continue to admin
+                </a>
+              ) : null}
+            </>
+          ) : null}
+          <a href="/admin/login">Back to admin login</a>
+        </section>
+      </main>
+    </Shell>
+  );
+}
+
+function AuthCallbackPage() {
+  const [message, setMessage] = useState("Completing sign-in...");
+
+  useEffect(() => {
+    let active = true;
+
+    async function completeRedirect() {
+      let supabase;
+      try {
+        supabase = createSupabaseBrowserClient();
+      } catch {
+        if (active) setMessage("Sign-in is temporarily unavailable.");
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+      const urlHadAuthState = hasAuthRedirectParameters(url);
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (!active) return;
+        if (urlHadAuthState) {
+          window.history.replaceState({}, "", AUTH_CALLBACK_PATH);
+        }
+        if (error) {
+          setMessage("This sign-in link is invalid or has expired.");
+          return;
+        }
+      }
+
+      const { data, error } = await supabase.auth.getSession();
+      if (!active) return;
+      if (urlHadAuthState) {
+        window.history.replaceState({}, "", AUTH_CALLBACK_PATH);
+      }
+      if (error || !data.session?.access_token) {
+        setMessage("This sign-in link is invalid or has expired.");
+        return;
+      }
+
+      try {
+        await fetchAdminSession(data.session.access_token);
+        window.history.replaceState({}, "", "/admin");
+      } catch {
+        window.history.replaceState({}, "", "/account/settings");
+      }
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+
+    void completeRedirect();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <Shell>
+      <main className="page admin-page">
+        <PageHeader
+          icon={<Lock />}
+          title="Completing sign-in"
+          text="Completing CalenderZW account sign-in."
+        />
+        <p className="content-notice" role="status">
+          {message}
+        </p>
       </main>
     </Shell>
   );
@@ -1818,6 +2148,8 @@ export function App() {
   if (path === "/data-deletion") return <LegalDocumentPage type="data" />;
   if (path === "/support") return <SupportPage />;
   if (path === "/account/settings") return <AccountSettingsPage />;
+  if (path === PASSWORD_RESET_PATH) return <UpdatePasswordPage />;
+  if (path === AUTH_CALLBACK_PATH) return <AuthCallbackPage />;
   if (path === "/find" || path === "/institutions") return <FinderPage />;
   if (path === "/admin/google-verification-readiness")
     return <GoogleVerificationReadinessPage />;

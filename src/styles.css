@@ -340,6 +340,16 @@ main {
   color: #1e2118;
 }
 
+.auth-link-button {
+  background: transparent;
+  border: 0;
+  color: var(--green);
+  min-height: auto;
+  padding: 0.25rem 0;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+
 .secondary {
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(255, 255, 255, 0.42);

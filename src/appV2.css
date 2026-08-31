@@ -1500,6 +1500,22 @@ body {
   width: 100%;
   margin-top: 4px;
 }
+.czw-auth-card .czw-auth-link-button {
+  min-height: auto;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--czw-forest);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.czw-auth-card .czw-auth-link-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 .czw-auth-message {
   margin: 16px 0 0;
   padding: 12px 14px;
