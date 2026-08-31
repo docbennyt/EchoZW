@@ -1,8 +1,8 @@
 import type {
   PublicTimetable,
   PublicTimetableSession,
-} from "../api/pilotTypes";
-import { zonedDateTimeToUtc } from "./timezone";
+} from "../api/pilotTypes.js";
+import { zonedDateTimeToUtc } from "./timezone.js";
 
 const weekdayShortToTimetable: Record<string, number> = {
   Sun: 7,
