@@ -27,7 +27,11 @@ export function BrandLockup() {
   );
 }
 
-export function GlobalHeader({ transparent = false }: { transparent?: boolean }) {
+export function GlobalHeader({
+  transparent = false,
+}: {
+  transparent?: boolean;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -81,12 +85,18 @@ export function GlobalHeader({ transparent = false }: { transparent?: boolean })
         <button
           className="czw-menu-button"
           type="button"
-          aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-label={
+            menuOpen ? "Close navigation menu" : "Open navigation menu"
+          }
           aria-expanded={menuOpen}
           aria-controls="czw-public-navigation"
           onClick={() => setMenuOpen((value) => !value)}
         >
-          {menuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
+          {menuOpen ? (
+            <X size={22} aria-hidden="true" />
+          ) : (
+            <Menu size={22} aria-hidden="true" />
+          )}
         </button>
       </div>
     </header>
@@ -111,8 +121,8 @@ export function GlobalFooter({ compact = false }: { compact?: boolean }) {
                 <BrandLockup />
               </a>
               <p>
-                Student timetable and calendar synchronisation, built for university life
-                in Zimbabwe.
+                Student timetable and calendar synchronisation, built for
+                university life in Zimbabwe.
               </p>
             </div>
             <div className="czw-footer-links">
