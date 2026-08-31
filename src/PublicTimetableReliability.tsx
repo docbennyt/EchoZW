@@ -53,9 +53,7 @@ const courseToneClasses = [
 
 type ReminderPresetId = "on_time" | "prepared" | "commuter" | "custom";
 type PublicCalendarProvider =
-  | "apple_subscription"
-  | "webcal_subscription"
-  | "ics_download";
+  "apple_subscription" | "webcal_subscription" | "ics_download";
 
 type CalendarMethod = {
   provider: PublicCalendarProvider | null;
@@ -804,7 +802,11 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           ) : null}
         </section>
 
-        <section className="pt-tomorrow" id="tomorrow" aria-labelledby="pt-tomorrow-title">
+        <section
+          className="pt-tomorrow"
+          id="tomorrow"
+          aria-labelledby="pt-tomorrow-title"
+        >
           <div className="pt-section-heading">
             <div>
               <span className="pt-kicker">Tomorrow</span>
@@ -817,7 +819,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             </p>
           </div>
           {tomorrow.sessions.length === 0 ? (
-            <div className="pt-tomorrow-empty">No published classes tomorrow.</div>
+            <div className="pt-tomorrow-empty">
+              No published classes tomorrow.
+            </div>
           ) : (
             <div className="pt-tomorrow-grid">
               {tomorrow.sessions.map(({ session }) => (
@@ -826,7 +830,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                   className={`pt-tomorrow-session ${courseToneClass(session.courseCode)}`}
                 >
                   <time>
-                    {localTimeLabel(session.startTime)}–{localTimeLabel(session.endTime)}
+                    {localTimeLabel(session.startTime)}–
+                    {localTimeLabel(session.endTime)}
                   </time>
                   <strong>{session.courseCode}</strong>
                   <h3>{session.courseName}</h3>
@@ -850,10 +855,15 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           </div>
 
           <div className="pt-desktop-week">
-            <div className="pt-table-scroll" tabIndex={0} aria-label="Weekly timetable table">
+            <div
+              className="pt-table-scroll"
+              tabIndex={0}
+              aria-label="Weekly timetable table"
+            >
               <table className="pt-week-table">
                 <caption>
-                  {timetable.programme} {formatClassGroupLabel(timetable.classGroup)} weekly timetable
+                  {timetable.programme}{" "}
+                  {formatClassGroupLabel(timetable.classGroup)} weekly timetable
                 </caption>
                 <thead>
                   <tr>
@@ -870,9 +880,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     <tr key={startTime}>
                       <th scope="row">{localTimeLabel(startTime)}</th>
                       {activeWeekdays.map((weekday) => {
-                        const events = (groupedEvents.get(weekday) ?? []).filter(
-                          (event) => event.startTime === startTime,
-                        );
+                        const events = (
+                          groupedEvents.get(weekday) ?? []
+                        ).filter((event) => event.startTime === startTime);
                         return (
                           <td key={`${weekday}-${startTime}`}>
                             {events.map((event) => (
@@ -881,12 +891,17 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                                 key={event.stableSessionKey}
                               >
                                 <strong>{event.courseCode}</strong>
-                                <span className="pt-table-course">{event.courseName}</span>
+                                <span className="pt-table-course">
+                                  {event.courseName}
+                                </span>
                                 <time>
-                                  {localTimeLabel(event.startTime)}–{localTimeLabel(event.endTime)}
+                                  {localTimeLabel(event.startTime)}–
+                                  {localTimeLabel(event.endTime)}
                                 </time>
                                 <small>{event.venue || "Venue not set"}</small>
-                                {event.lecturer ? <small>{event.lecturer}</small> : null}
+                                {event.lecturer ? (
+                                  <small>{event.lecturer}</small>
+                                ) : null}
                               </article>
                             ))}
                           </td>

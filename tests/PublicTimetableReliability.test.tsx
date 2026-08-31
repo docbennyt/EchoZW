@@ -144,8 +144,12 @@ describe("public timetable reliability UX", () => {
       level: 1,
       name: "BTech Computer Science",
     });
-    expect(container.querySelector('[data-component="GlobalHeader"]')).not.toBeNull();
-    expect(container.querySelector('[data-component="GlobalFooter"]')).not.toBeNull();
+    expect(
+      container.querySelector('[data-component="GlobalHeader"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-component="GlobalFooter"]'),
+    ).not.toBeNull();
     expect(screen.getByRole("link", { name: "Dr BennyT" })).toHaveAttribute(
       "href",
       "https://docbennyt.github.io",
@@ -193,10 +197,18 @@ describe("public timetable reliability UX", () => {
     const table = screen.getByRole("table", {
       name: /BTech Computer Science Class 1\.1 weekly timetable/i,
     });
-    expect(within(table).getByRole("columnheader", { name: "Monday" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Tuesday" })).toBeInTheDocument();
-    expect(within(table).getByRole("rowheader", { name: "08:00" })).toBeInTheDocument();
-    expect(within(table).getByRole("rowheader", { name: "10:15" })).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Monday" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Tuesday" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "08:00" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "10:15" }),
+    ).toBeInTheDocument();
     expect(within(table).getByText("HIT1101")).toBeInTheDocument();
     expect(within(table).getByText("ICS1101")).toBeInTheDocument();
   });
