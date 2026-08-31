@@ -87,4 +87,15 @@ describe("getTomorrowSchedule", () => {
     expect(result.institutionDateTomorrow).toBe("2026-09-01");
     expect(result.sessions).toEqual([]);
   });
+
+  it("supports published timetables with an open academic-period boundary", () => {
+    const result = getTomorrowSchedule(
+      timetable({ startsOn: null, endsOn: null }),
+      new Date("2026-08-31T12:00:00.000Z"),
+    );
+
+    expect(result.institutionDateTomorrow).toBe("2026-09-01");
+    expect(result.sessions).toHaveLength(1);
+    expect(result.sessions[0]?.session.courseCode).toBe("ICS1101");
+  });
 });
