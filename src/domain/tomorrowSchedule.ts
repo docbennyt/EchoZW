@@ -47,7 +47,9 @@ function zonedDateParts(instant: Date, timeZone: string) {
     day: "2-digit",
     weekday: "short",
   }).formatToParts(instant);
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
   return {
     dateKey: `${values.year}-${values.month}-${values.day}`,
     weekday: weekdayShortToTimetable[values.weekday] ?? 7,
@@ -76,7 +78,10 @@ export function getTomorrowSchedule(
   const timeZone = timetable.institutionTimezone || "Africa/Harare";
   const institutionDateToday = zonedDateParts(now, timeZone).dateKey;
   const institutionDateTomorrow = addDays(institutionDateToday, 1);
-  const tomorrowWeekday = weekdayForLocalDate(institutionDateTomorrow, timeZone);
+  const tomorrowWeekday = weekdayForLocalDate(
+    institutionDateTomorrow,
+    timeZone,
+  );
 
   const sessions =
     institutionDateTomorrow < timetable.startsOn ||
