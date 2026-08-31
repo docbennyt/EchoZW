@@ -1,3 +1,4 @@
+import { getAnalyticsIdentity } from "../analytics";
 import type {
   CreateSubscriptionInput,
   CreateSubscriptionResponse,
@@ -6,10 +7,13 @@ import type {
 export async function createCalendarSubscription(
   input: CreateSubscriptionInput,
 ) {
+  const identity = getAnalyticsIdentity();
   const response = await fetch("/api/calendar/subscriptions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "X-CalenderZW-Anonymous-Id": identity.anonymousId,
+      "X-CalenderZW-Session-Id": identity.sessionId,
     },
     body: JSON.stringify(input),
   });
