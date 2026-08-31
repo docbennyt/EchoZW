@@ -19,6 +19,20 @@ describe("fetchAdminSession", () => {
                 id: "admin-1",
                 email: "admin@example.test",
               },
+              staff: {
+                id: "staff-1",
+                role: "superadmin",
+              },
+              permissions: {
+                canManageStaff: true,
+                canManageInstitutions: true,
+                canManageProgrammes: true,
+                canManageClassGroups: true,
+                canManageAllTimetables: true,
+                canEditAssignedTimetables: true,
+                canPublishAssignedTimetables: true,
+              },
+              assignments: [],
             }),
             { status: 200, headers: { "Content-Type": "application/json" } },
           ),
@@ -32,6 +46,20 @@ describe("fetchAdminSession", () => {
         id: "admin-1",
         email: "admin@example.test",
       },
+      staff: {
+        id: "staff-1",
+        role: "superadmin",
+      },
+      permissions: {
+        canManageStaff: true,
+        canManageInstitutions: true,
+        canManageProgrammes: true,
+        canManageClassGroups: true,
+        canManageAllTimetables: true,
+        canEditAssignedTimetables: true,
+        canPublishAssignedTimetables: true,
+      },
+      assignments: [],
     });
   });
 

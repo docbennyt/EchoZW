@@ -30,12 +30,44 @@ function adminClient(
   data: { user_id?: string; active?: boolean } | null,
   error?: Error,
 ) {
+  const eqBuilder = {
+    eq: vi.fn(() => eqBuilder),
+    maybeSingle: vi.fn(async () => ({ data, error })),
+  };
   return {
     from: vi.fn(() => ({
       select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          maybeSingle: vi.fn(async () => ({ data, error })),
-        })),
+        eq: vi.fn(() => eqBuilder),
+      })),
+    })),
+  };
+}
+
+function staffClient(data: {
+  staff?: {
+    id: string;
+    user_id: string;
+    role: "superadmin" | "class_rep";
+    active: boolean;
+  } | null;
+  legacyAdmin?: { user_id?: string; active?: boolean } | null;
+}) {
+  return {
+    from: vi.fn((table: string) => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => {
+          const eqBuilder = {
+            eq: vi.fn(() => eqBuilder),
+            maybeSingle: vi.fn(async () => ({
+              data:
+                table === "staff_users"
+                  ? (data.staff ?? null)
+                  : (data.legacyAdmin ?? null),
+              error: null,
+            })),
+          };
+          return eqBuilder;
+        }),
       })),
     })),
   };
@@ -61,6 +93,14 @@ function response() {
     res,
     body: () => JSON.parse(chunks.join("")),
   };
+}
+
+function routeRequest(path: string, authorization = "Bearer valid") {
+  return {
+    headers: { authorization },
+    method: "GET",
+    url: path,
+  } as IncomingMessage;
 }
 
 describe("admin authentication helpers", () => {
@@ -157,7 +197,7 @@ describe("admin authentication helpers", () => {
       }),
     ).rejects.toMatchObject({
       code: "AUTH_CONFIGURATION_ERROR",
-      message: "Administrator authentication is temporarily unavailable.",
+      message: "CalenderZW staff authorization is temporarily unavailable.",
       status: 500,
     });
   });
@@ -200,8 +240,42 @@ describe("admin API routes", () => {
         id: "admin-1",
         email: "admin@example.test",
       },
+      staff: {
+        id: "admin-1",
+        role: "superadmin",
+      },
+      permissions: {
+        canManageStaff: true,
+        canManageInstitutions: true,
+        canManageProgrammes: true,
+        canManageClassGroups: true,
+        canManageAllTimetables: true,
+        canEditAssignedTimetables: true,
+        canPublishAssignedTimetables: true,
+      },
+      assignments: [],
     });
     expect(JSON.stringify(body())).not.toMatch(/token|password|service/i);
+  });
+
+  it("returns 403 when a class rep calls a global admin API route", async () => {
+    const { res, body } = response();
+    await handleAdminRequest(routeRequest("/api/admin/institutions"), res, {
+      createUserClient: () =>
+        userClient({ id: "rep-user", email: "rep@example.test" }),
+      createAdminClient: () =>
+        staffClient({
+          staff: {
+            id: "staff-rep",
+            user_id: "rep-user",
+            role: "class_rep",
+            active: true,
+          },
+        }),
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(body().error.code).toBe("SUPERADMIN_REQUIRED");
   });
 
   it("returns a safe 500 response when privileged config is missing", async () => {
@@ -218,7 +292,7 @@ describe("admin API routes", () => {
     expect(body()).toEqual({
       error: {
         code: "AUTH_CONFIGURATION_ERROR",
-        message: "Administrator authentication is temporarily unavailable.",
+        message: "CalenderZW staff authorization is temporarily unavailable.",
       },
     });
   });
