@@ -34,6 +34,7 @@ create index if not exists analytics_events_subscription_created_idx
 
 alter table analytics_events enable row level security;
 revoke all on table analytics_events from anon, authenticated;
+grant all on table analytics_events to service_role;
 
 create index if not exists calendar_subscriptions_anonymous_session_idx
   on calendar_subscriptions (anonymous_session_id)
@@ -57,6 +58,7 @@ create index if not exists calendar_feed_activity_daily_date_idx
 
 alter table calendar_feed_activity_daily enable row level security;
 revoke all on table calendar_feed_activity_daily from anon, authenticated;
+grant all on table calendar_feed_activity_daily to service_role;
 
 create or replace function public.record_calendar_feed_activity(
   p_subscription_id uuid,
