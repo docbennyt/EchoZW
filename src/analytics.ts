@@ -26,12 +26,22 @@ let flushTimer: number | undefined;
 let lifecycleBound = false;
 
 function makeId() {
-  return globalThis.crypto?.randomUUID?.() ??
-    `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}-4${Math.random()
-      .toString(16)
-      .slice(2, 5)}-8${Math.random().toString(16).slice(2, 5)}-${Math.random()
-      .toString(16)
-      .slice(2, 14)}`;
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+
+  const bytes = new Uint8Array(16);
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+    .slice(6, 8)
+    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
 function readOrCreate(
@@ -51,26 +61,28 @@ function readOrCreate(
   }
 }
 
-export function getAnalyticsIdentity() {
+export function getAnalyticsIdentity(): {
+  anonymousId: string;
+  sessionId: string;
+} {
   const local = typeof window !== "undefined" ? window.localStorage : undefined;
   const session =
     typeof window !== "undefined" ? window.sessionStorage : undefined;
 
-  memoryAnonymousId = readOrCreate(
+  const anonymousId = readOrCreate(
     local,
     ANONYMOUS_STORAGE_KEY,
     memoryAnonymousId,
   );
-  memorySessionId = readOrCreate(
+  const sessionId = readOrCreate(
     session,
     SESSION_STORAGE_KEY,
     memorySessionId,
   );
+  memoryAnonymousId = anonymousId;
+  memorySessionId = sessionId;
 
-  return {
-    anonymousId: memoryAnonymousId,
-    sessionId: memorySessionId,
-  };
+  return { anonymousId, sessionId };
 }
 
 function payloadFor(events: QueuedAnalyticsEvent[]) {
