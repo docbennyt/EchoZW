@@ -1,12 +1,13 @@
 import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   handleAnalyticsRequest,
   parseAnalyticsPayload,
   resetAnalyticsRateLimitsForTests,
 } from "../server/analyticsApi";
+import type { AnalyticsEventInsert } from "../server/analyticsRepository";
 
 const anonymousId = "4b3f08c9-78b7-4af5-9a2b-dc859fabcf63";
 const sessionId = "a9f5cf94-9509-4120-b07a-69a1b9ba7811";
@@ -66,16 +67,18 @@ function createResponse() {
 
 describe("analytics API", () => {
   it("rejects unsupported or sensitive properties", () => {
-    expect(() => parseAnalyticsPayload(payload({ token: "private-feed-token" }))).toThrow(
-      "unsupported properties",
-    );
+    expect(() =>
+      parseAnalyticsPayload(payload({ token: "private-feed-token" })),
+    ).toThrow("unsupported properties");
   });
 
   it("accepts valid anonymous events even when persistence is unavailable", async () => {
     resetAnalyticsRateLimitsForTests();
-    const persistEvents = vi.fn(async () => {
+    const capturedBatches: AnalyticsEventInsert[][] = [];
+    const persistEvents = async (events: AnalyticsEventInsert[]) => {
+      capturedBatches.push(events);
       throw new Error("database unavailable");
-    });
+    };
     const { res, body } = createResponse();
 
     await handleAnalyticsRequest(
@@ -87,10 +90,12 @@ describe("analytics API", () => {
 
     expect(res.statusCode).toBe(202);
     expect(body()).toEqual({ accepted: 1, persisted: false });
-    expect(res.headers?.["Set-Cookie"]).toContain(`calenderzw_anon_session=${anonymousId}`);
+    expect(res.headers?.["Set-Cookie"]).toContain(
+      `calenderzw_anon_session=${anonymousId}`,
+    );
     expect(res.headers?.["Set-Cookie"]).toContain("Secure");
-    expect(persistEvents).toHaveBeenCalledTimes(1);
-    expect(persistEvents.mock.calls[0]?.[0]?.[0]).toMatchObject({
+    expect(capturedBatches).toHaveLength(1);
+    expect(capturedBatches[0]?.[0]).toMatchObject({
       eventName: "timetable_viewed",
       anonymousId,
       sessionId,
