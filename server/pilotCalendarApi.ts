@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { buildFeedUrl } from "../src/domain/calendar.js";
 import {
+  classifyAnalyticsClient,
+  isAnalyticsUuid,
+} from "../src/domain/analytics.js";
+import {
   createCalendarSubscriptionRecord,
   getCalendarSubscriptionById,
   getCalendarSubscriptionByTokenHash,
@@ -19,6 +23,7 @@ import {
   getPublicAppUrlFromHeaders,
   isExternallyFetchableUrl,
 } from "../src/domain/publicUrl.js";
+import { recordCalendarFeedActivity } from "./analyticsRepository.js";
 
 function sendJson(
   res: ServerResponse,
@@ -61,6 +66,10 @@ function safeCalendarFileName(value: string) {
     .slice(0, 80);
 }
 
+function headerValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 function getCookie(req: IncomingMessage, name: string) {
   const cookie = req.headers.cookie ?? "";
   return cookie
@@ -71,7 +80,11 @@ function getCookie(req: IncomingMessage, name: string) {
 }
 
 function getOrCreateAnonymousSession(req: IncomingMessage) {
-  return getCookie(req, "calenderzw_anon_session") ?? crypto.randomUUID();
+  const headerId = headerValue(req.headers["x-calenderzw-anonymous-id"]);
+  if (isAnalyticsUuid(headerId)) return headerId;
+  const cookieId = getCookie(req, "calenderzw_anon_session");
+  if (isAnalyticsUuid(cookieId)) return cookieId;
+  return crypto.randomUUID();
 }
 
 async function readBody(req: IncomingMessage) {
@@ -129,7 +142,7 @@ function writeIcsResponse(
   calendarName: string,
   ics: string,
   lastModifiedValue: string,
-) {
+): 200 | 304 {
   const etag = makeFeedEtag(ics);
   const lastModified = new Date(lastModifiedValue);
   if (Number.isNaN(lastModified.getTime())) {
@@ -144,15 +157,16 @@ function writeIcsResponse(
     delete notModifiedHeaders["Content-Length"];
     res.writeHead(304, notModifiedHeaders);
     res.end();
-    return;
+    return 304;
   }
 
   res.writeHead(200, headers);
   if (req.method === "HEAD") {
     res.end();
-    return;
+    return 200;
   }
   res.end(ics);
+  return 200;
 }
 
 export async function handlePilotCalendarRequest(
@@ -220,6 +234,7 @@ export async function handlePilotCalendarRequest(
         feedUrl && externallyFetchable
           ? toAppleDeepLinkUrl(feedUrl)
           : undefined;
+      const secureCookie = mode === "production" ? "; Secure" : "";
 
       sendJson(
         res,
@@ -240,7 +255,7 @@ export async function handlePilotCalendarRequest(
               ],
         },
         {
-          "Set-Cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000`,
+          "Set-Cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${secureCookie}`,
         },
       );
     } catch (error) {
@@ -328,13 +343,29 @@ export async function handlePilotCalendarRequest(
           404,
         );
       }
-      writeIcsResponse(
+      const statusCode = writeIcsResponse(
         req,
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
         timetable.publishedAt,
       );
+      const subscriptionId = String(
+        (subscription as Record<string, unknown>).id,
+      );
+      const client = classifyAnalyticsClient(
+        headerValue(req.headers["user-agent"]),
+      );
+      void recordCalendarFeedActivity(
+        { subscriptionId, statusCode, client },
+        env,
+      ).catch((error) => {
+        console.warn("calendar feed activity unavailable", {
+          subscriptionId,
+          statusCode,
+          error: error instanceof Error ? error.message : "unknown",
+        });
+      });
     } catch (error) {
       sendError(res, error);
     }

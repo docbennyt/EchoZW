@@ -23,7 +23,10 @@ vi.mock("../src/api/calendarSubscriptions", () => ({
 }));
 vi.mock("../src/analytics", () => ({ track: mocks.track }));
 
-import { PublicTimetableReliability } from "../src/PublicTimetableReliability";
+import {
+  courseToneClass,
+  PublicTimetableReliability,
+} from "../src/PublicTimetableReliability";
 
 const timetable: PublicTimetable = {
   timetableId: "tt-hit-cs1",
@@ -48,6 +51,18 @@ const timetable: PublicTimetable = {
       endTime: "10:00:00",
       venue: "Engineering Hall",
       lecturer: "TDC",
+      sessionType: "Lecture",
+      notes: null,
+    },
+    {
+      stableSessionKey: "ics1101-tue-1015",
+      courseCode: "ICS1101",
+      courseName: "Principles of Programming Languages",
+      weekday: 2,
+      startTime: "10:15:00",
+      endTime: "12:15:00",
+      venue: "N205",
+      lecturer: "ABC",
       sessionType: "Lecture",
       notes: null,
     },
@@ -119,7 +134,29 @@ beforeEach(() => {
   });
 });
 
-describe("DR-42 public timetable reliability UX", () => {
+describe("public timetable reliability UX", () => {
+  it("uses the site-wide chrome and keeps the approved footer attribution", async () => {
+    const { container } = render(
+      <PublicTimetableReliability slug={timetable.publicSlug} />,
+    );
+
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "BTech Computer Science",
+    });
+    expect(
+      container.querySelector('[data-component="GlobalHeader"]'),
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-component="GlobalFooter"]'),
+    ).not.toBeNull();
+    expect(screen.getByRole("link", { name: "Dr BennyT" })).toHaveAttribute(
+      "href",
+      "https://docbennyt.github.io",
+    );
+    expect(screen.queryByText(/CalenderZW · operated by aiDo/i)).toBeNull();
+  });
+
   it("renders a single useful timetable hero before calendar delivery without a blank success panel", async () => {
     const { container } = render(
       <PublicTimetableReliability slug={timetable.publicSlug} />,
@@ -148,6 +185,37 @@ describe("DR-42 public timetable reliability UX", () => {
     expect(
       container.querySelector(".pt-hero")?.classList.contains("has-result"),
     ).toBe(false);
+  });
+
+  it("renders a semantic desktop timetable matrix from the same published events", async () => {
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "BTech Computer Science",
+    });
+
+    const table = screen.getByRole("table", {
+      name: /BTech Computer Science Class 1\.1 weekly timetable/i,
+    });
+    expect(
+      within(table).getByRole("columnheader", { name: "Monday" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("columnheader", { name: "Tuesday" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "08:00" }),
+    ).toBeInTheDocument();
+    expect(
+      within(table).getByRole("rowheader", { name: "10:15" }),
+    ).toBeInTheDocument();
+    expect(within(table).getByText("HIT1101")).toBeInTheDocument();
+    expect(within(table).getByText("ICS1101")).toBeInTheDocument();
+  });
+
+  it("uses deterministic course tones so repeated sessions remain visually stable", () => {
+    expect(courseToneClass("HIT1101")).toBe(courseToneClass("hit1101"));
+    expect(courseToneClass("ICS1101")).toMatch(/^tone-/);
   });
 
   it("offers Apple first on iPhone, keeps one-time ICS distinct, and has accessible dialog dismissal", async () => {

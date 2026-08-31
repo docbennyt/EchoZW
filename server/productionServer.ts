@@ -14,6 +14,7 @@ import {
 import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
 import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
 import { handleAdminRequest } from "./adminApi.js";
+import { handleAnalyticsRequest } from "./analyticsApi.js";
 import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
 import { getPublishedTimetableBySlug } from "./pilotRepository.js";
@@ -198,6 +199,7 @@ const server = createServer(async (req, res) => {
   applySecurityHeaders(res);
   try {
     if (await handleAdminRequest(req, res)) return;
+    if (await handleAnalyticsRequest(req, res, process.env)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
     if (await handleSourceSnapshotRequest(req, res, process.env)) return;
     if (await handlePilotCalendarRequest(req, res, process.env, "production"))
