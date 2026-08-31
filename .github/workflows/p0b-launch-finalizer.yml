@@ -1,0 +1,56 @@
+name: P0-B launch finalizer
+
+on:
+  push:
+    branches:
+      - launch-p0b-analytics
+    paths:
+      - .github/workflows/p0b-launch-finalizer.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: launch-p0b-analytics
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Format launch files
+        run: |
+          npx prettier --write \
+            server/analyticsApi.ts \
+            server/analyticsRepository.ts \
+            server/pilotCalendarApi.ts \
+            server/productionServer.ts \
+            server/viteAnalyticsPlugin.ts \
+            src/analytics.ts \
+            src/api/calendarSubscriptions.ts \
+            src/domain/analytics.ts \
+            tests/analyticsApi.test.ts \
+            tests/analyticsDomain.test.ts \
+            tests/analyticsMigration.test.ts \
+            vite.config.ts
+      - name: Verify full launch gate
+        run: |
+          npm run lint
+          npm run format:check
+          npm run test
+          npm run build
+      - name: Commit formatting and remove finalizer
+        run: |
+          rm .github/workflows/p0b-launch-finalizer.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "style(P0-B): finalize launch analytics gate"
+            git push origin HEAD:launch-p0b-analytics
+          fi
