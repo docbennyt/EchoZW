@@ -1,10 +1,20 @@
 export const ANALYTICS_EVENT_NAMES = [
   "timetable_viewed",
   "calendar_cta_clicked",
+  "onboarding_opened",
+  "onboarding_step_viewed",
+  "onboarding_step_completed",
+  "provider_selected",
+  "phone_step_completed",
   "reminder_selected",
   "calendar_method_selected",
   "ics_downloaded",
   "subscription_created",
+  "subscription_url_copied",
+  "apple_calendar_opened",
+  "onboarding_completed",
+  "onboarding_abandoned",
+  "share_prompt_viewed",
   "calendar_drawer_opened",
   "reminder_preset_selected",
   "calendar_provider_selected",
@@ -51,6 +61,8 @@ export const ANALYTICS_PROPERTY_KEYS = [
   "customMinutes",
   "offsetMinutes",
   "shareTarget",
+  "step",
+  "country",
 ] as const;
 
 const eventNameSet = new Set<string>(ANALYTICS_EVENT_NAMES);

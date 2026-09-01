@@ -27,6 +27,12 @@ import {
   projectPublishedTimetable,
   type CanonicalPublishedCalendarEvent,
 } from "./domain/publishedCalendarProjection";
+import {
+  normalizeSubscriberPhone,
+  subscriberCountryOptions,
+  type SubscriberContactInput,
+  type SubscriberCountryCode,
+} from "./domain/subscriberContact";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 
@@ -65,7 +71,16 @@ type CalendarMethod = {
 type CalendarDelivery = {
   provider: PublicCalendarProvider;
   response: CreateSubscriptionResponse;
+  contactSaved: boolean;
 };
+
+type OnboardingStep =
+  | "reminders"
+  | "provider"
+  | "contact_optional"
+  | "preparing"
+  | "provider_result"
+  | "success";
 
 const reminderChoices: Array<{
   id: ReminderPresetId;
@@ -105,6 +120,13 @@ function calendarMethodsForDevice(device: DeviceKind): CalendarMethod[] {
         description:
           "Subscribe to this private feed so future CalenderZW publications can reach the same calendar.",
         accent: "Recommended on iPhone",
+      },
+      {
+        provider: "webcal_subscription",
+        title: "Google/other subscription URL",
+        description:
+          "Copy the private HTTPS URL for Google Calendar or another calendar that supports subscriptions.",
+        accent: "Keeps published updates",
       },
       {
         provider: "ics_download",
@@ -284,6 +306,14 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const [calendarError, setCalendarError] = useState("");
   const [calendarDelivery, setCalendarDelivery] =
     useState<CalendarDelivery | null>(null);
+  const [onboardingStep, setOnboardingStep] =
+    useState<OnboardingStep>("reminders");
+  const [selectedProvider, setSelectedProvider] =
+    useState<PublicCalendarProvider | null>(null);
+  const [contactCountry, setContactCountry] =
+    useState<SubscriberCountryCode>("ZW");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactSkipped, setContactSkipped] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
   const [shareStatus, setShareStatus] = useState("");
   const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
@@ -469,22 +499,89 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     };
   }, [dialogOpen]);
 
+  useEffect(() => {
+    if (!dialogOpen || !timetable) return;
+    track("onboarding_step_viewed", {
+      step: onboardingStep,
+      publicSlug: timetable.publicSlug,
+    });
+  }, [dialogOpen, onboardingStep, timetable]);
+
+  const closeDialog = useCallback(() => {
+    if (
+      dialogOpen &&
+      timetable &&
+      onboardingStep !== "success" &&
+      onboardingStep !== "provider_result"
+    ) {
+      track("onboarding_abandoned", {
+        step: onboardingStep,
+        publicSlug: timetable.publicSlug,
+      });
+    }
+    setDialogOpen(false);
+  }, [dialogOpen, onboardingStep, timetable]);
+
   const openDialog = useCallback(() => {
     setCalendarError("");
     setCopyStatus("");
+    setCalendarDelivery(null);
+    setSelectedProvider(null);
+    setContactSkipped(false);
+    setContactPhone("");
+    setContactCountry("ZW");
+    setOnboardingStep("reminders");
     setDialogOpen(true);
     track("calendar_cta_clicked", { publicSlug: timetable?.publicSlug });
+    track("onboarding_opened", { publicSlug: timetable?.publicSlug });
   }, [timetable?.publicSlug]);
 
-  async function prepareCalendar(provider: PublicCalendarProvider) {
+  function continueFromReminders() {
     if (!timetable) return;
     if (reminderPreset === "custom" && customReminderOffset === null) {
       setCalendarError("Enter at least one minute before class to continue.");
       return;
     }
+    setCalendarError("");
+    track("onboarding_step_completed", {
+      step: "reminders",
+      publicSlug: timetable.publicSlug,
+      reminderPreset,
+      customMinutes:
+        reminderPreset === "custom" ? (customReminderOffset ?? 0) : null,
+    });
+    setOnboardingStep("provider");
+  }
+
+  function selectProvider(provider: PublicCalendarProvider) {
+    if (!timetable) return;
+    setSelectedProvider(provider);
+    setCalendarError("");
+    track("provider_selected", {
+      publicSlug: timetable.publicSlug,
+      provider,
+    });
+    track("onboarding_step_completed", {
+      step: "provider",
+      publicSlug: timetable.publicSlug,
+      provider,
+    });
+    if (provider === "ics_download") {
+      void prepareCalendar(provider);
+      return;
+    }
+    setOnboardingStep("contact_optional");
+  }
+
+  async function prepareCalendar(
+    provider: PublicCalendarProvider,
+    subscriberContact?: SubscriberContactInput,
+  ) {
+    if (!timetable) return;
 
     setCalendarBusy(provider);
     setCalendarError("");
+    setOnboardingStep("preparing");
     try {
       const response = await createCalendarSubscription({
         timetableId: timetable.timetableId,
@@ -495,28 +592,82 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             ? [customReminderOffset]
             : [],
         timezone: timetable.institutionTimezone,
+        subscriberContact,
       });
-      setCalendarDelivery({ provider, response });
-      setDialogOpen(false);
+      setCalendarDelivery({
+        provider,
+        response,
+        contactSaved: Boolean(subscriberContact) && response.contact.saved,
+      });
       setCopyStatus("");
       track("subscription_created", {
         publicSlug: timetable.publicSlug,
         provider,
         reminderPreset,
+        subscriptionId: response.subscriptionId,
       });
       if (provider === "ics_download" && response.downloadUrl) {
+        track("ics_download_started", { publicSlug: timetable.publicSlug });
         triggerCalendarDownload(response.downloadUrl);
-        track("ics_downloaded", { publicSlug: timetable.publicSlug });
+        track("ics_download_completed", { publicSlug: timetable.publicSlug });
       }
+      setOnboardingStep("provider_result");
     } catch (error) {
       setCalendarError(
         error instanceof Error
           ? error.message
           : "We could not prepare your calendar just now.",
       );
+      setOnboardingStep(
+        provider === "ics_download" ? "provider" : "contact_optional",
+      );
     } finally {
       setCalendarBusy(null);
     }
+  }
+
+  function saveContactAndContinue() {
+    if (!selectedProvider) return;
+    const contact: SubscriberContactInput = {
+      countryCode: contactCountry,
+      phone: contactPhone,
+      consentUpdates: true,
+      consentSource: "calendar_onboarding",
+    };
+    try {
+      normalizeSubscriberPhone(contact);
+    } catch (error) {
+      setCalendarError(
+        error instanceof Error
+          ? error.message
+          : "Enter a valid phone number or skip this step.",
+      );
+      return;
+    }
+    setContactSkipped(false);
+    track("phone_step_completed", {
+      country: contactCountry,
+      publicSlug: timetable?.publicSlug,
+    });
+    track("onboarding_step_completed", {
+      step: "contact_optional",
+      status: "saved",
+      country: contactCountry,
+      publicSlug: timetable?.publicSlug,
+    });
+    void prepareCalendar(selectedProvider, contact);
+  }
+
+  function skipContactAndContinue() {
+    if (!selectedProvider) return;
+    setContactSkipped(true);
+    setCalendarError("");
+    track("onboarding_step_completed", {
+      step: "contact_optional",
+      status: "skipped",
+      publicSlug: timetable?.publicSlug,
+    });
+    void prepareCalendar(selectedProvider);
   }
 
   async function copySubscriptionUrl() {
@@ -525,7 +676,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     try {
       await copyText(feedUrl);
       setCopyStatus("Secure subscription URL copied.");
-      track("subscription_link_copied", {
+      track("subscription_url_copied", {
         publicSlug: timetable?.publicSlug,
       });
     } catch {
@@ -563,23 +714,444 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     }
   }
 
+  function renderOnboardingStep() {
+    if (!timetable) return null;
+    const currentTimetable = timetable;
+    const appleDeepLink =
+      calendarDelivery?.response.appleDeepLinkUrl ??
+      calendarDelivery?.response.appleSubscribeUrl;
+
+    if (onboardingStep === "reminders") {
+      return (
+        <>
+          <div
+            className="pt-reminder-list"
+            role="radiogroup"
+            aria-label="Reminder choices"
+          >
+            {reminderChoices.map((choice) => (
+              <label
+                className={`pt-reminder${reminderPreset === choice.id ? " selected" : ""}`}
+                key={choice.id}
+              >
+                <input
+                  type="radio"
+                  name="pt-reminder"
+                  value={choice.id}
+                  checked={reminderPreset === choice.id}
+                  onChange={() => {
+                    setReminderPreset(choice.id);
+                    setCalendarError("");
+                    track("reminder_selected", { preset: choice.id });
+                  }}
+                />
+                <span>
+                  <strong>{choice.title}</strong>
+                  <small>{choice.detail}</small>
+                </span>
+                {choice.hint ? <em>{choice.hint}</em> : null}
+              </label>
+            ))}
+          </div>
+
+          {reminderPreset === "custom" ? (
+            <div className="pt-custom-reminders">
+              <label>
+                <span>Hours before</span>
+                <input
+                  inputMode="numeric"
+                  value={customHours}
+                  onChange={(event) =>
+                    setCustomHours(event.target.value.replace(/[^\d]/g, ""))
+                  }
+                />
+              </label>
+              <label>
+                <span>Minutes before</span>
+                <input
+                  inputMode="numeric"
+                  value={customMinutes}
+                  onChange={(event) =>
+                    setCustomMinutes(event.target.value.replace(/[^\d]/g, ""))
+                  }
+                />
+              </label>
+            </div>
+          ) : null}
+
+          <div className="pt-dialog-timezone" role="note">
+            <Clock3 size={16} aria-hidden="true" />
+            <span>
+              Lecture times stay in {currentTimetable.institutionTimezone}.
+              Reminders only control notifications; they never move a class
+              start or end time.
+            </span>
+          </div>
+
+          {calendarError ? (
+            <p className="pt-error" role="alert">
+              {calendarError}
+            </p>
+          ) : null}
+
+          <div className="pt-dialog-actions">
+            <button
+              type="button"
+              className="pt-button pt-button-primary"
+              onClick={continueFromReminders}
+            >
+              Continue
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    if (onboardingStep === "provider") {
+      return (
+        <div className="pt-method-section no-border">
+          <div>
+            <span className="pt-kicker">Calendar destination</span>
+            <h3>Where should the timetable go?</h3>
+          </div>
+          <div className="pt-method-list">
+            {calendarMethods.map((method) =>
+              method.provider ? (
+                <button
+                  type="button"
+                  className="pt-method"
+                  key={method.title}
+                  disabled={calendarBusy !== null}
+                  onClick={() => selectProvider(method.provider!)}
+                >
+                  <span className="pt-method-icon">
+                    {method.provider === "ics_download" ? (
+                      <Download size={18} aria-hidden="true" />
+                    ) : (
+                      <Link2 size={18} aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="pt-method-copy">
+                    <strong>{method.title}</strong>
+                    <small>{method.description}</small>
+                  </span>
+                  {method.accent ? <em>{method.accent}</em> : null}
+                </button>
+              ) : (
+                <div className="pt-method disabled" key={method.title}>
+                  <span className="pt-method-icon">
+                    <CalendarCheck size={18} aria-hidden="true" />
+                  </span>
+                  <span className="pt-method-copy">
+                    <strong>{method.title}</strong>
+                    <small>{method.description}</small>
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
+          {calendarError ? (
+            <p className="pt-error" role="alert">
+              {calendarError}
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (onboardingStep === "contact_optional") {
+      return (
+        <div className="pt-contact-step">
+          <h3>
+            Want us to be able to reach you about important timetable changes?
+          </h3>
+          <div className="pt-phone-grid">
+            <label>
+              <span>Country</span>
+              <select
+                value={contactCountry}
+                onChange={(event) =>
+                  setContactCountry(event.target.value as SubscriberCountryCode)
+                }
+              >
+                {subscriberCountryOptions.map((country) => (
+                  <option value={country.countryCode} key={country.countryCode}>
+                    {country.flag} {country.callingCode} {country.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Phone number</span>
+              <input
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={contactPhone}
+                placeholder="077 123 4567"
+                onChange={(event) => setContactPhone(event.target.value)}
+              />
+            </label>
+          </div>
+          <p className="pt-helper">
+            This is optional. Your private calendar subscription works even if
+            you skip this.
+          </p>
+          {calendarError ? (
+            <p className="pt-error" role="alert">
+              {calendarError}
+            </p>
+          ) : null}
+          <div className="pt-dialog-actions split">
+            <button
+              type="button"
+              className="pt-button pt-button-primary"
+              onClick={saveContactAndContinue}
+            >
+              Save contact & continue
+            </button>
+            <button
+              type="button"
+              className="pt-button pt-button-secondary"
+              onClick={skipContactAndContinue}
+            >
+              Skip for now
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (onboardingStep === "preparing") {
+      return (
+        <div className="pt-preparing" role="status">
+          <CalendarCheck size={28} aria-hidden="true" />
+          <h3>Preparing your calendar</h3>
+          <p>Keeping this setup inside the sheet.</p>
+        </div>
+      );
+    }
+
+    if (onboardingStep === "provider_result" && calendarDelivery) {
+      return (
+        <div className="pt-result-step">
+          <span className="pt-kicker">Calendar ready</span>
+          <h3>{calendarDelivery.response.calendarName}</h3>
+
+          {calendarDelivery.provider === "apple_subscription" ? (
+            <>
+              <p>
+                Your private HTTPS subscription is ready for Apple Calendar.
+                Keep this URL private.
+              </p>
+              {appleDeepLink ? (
+                <a
+                  className="pt-button pt-button-primary"
+                  href={appleDeepLink}
+                  onClick={() =>
+                    track("apple_calendar_opened", {
+                      publicSlug: currentTimetable.publicSlug,
+                    })
+                  }
+                >
+                  <ExternalLink size={18} aria-hidden="true" />
+                  Open Apple Calendar
+                </a>
+              ) : null}
+              <button
+                type="button"
+                className="pt-button pt-button-secondary"
+                onClick={() => void copySubscriptionUrl()}
+              >
+                <Copy size={18} aria-hidden="true" />
+                Copy subscription URL
+              </button>
+            </>
+          ) : null}
+
+          {calendarDelivery.provider === "webcal_subscription" ? (
+            <>
+              <p>
+                Copy this private HTTPS subscribed-calendar URL for Google
+                Calendar or another compatible calendar. This is not direct
+                Google account sync.
+              </p>
+              <button
+                type="button"
+                className="pt-button pt-button-primary pt-big-copy"
+                onClick={() => void copySubscriptionUrl()}
+              >
+                <Copy size={18} aria-hidden="true" />
+                Copy subscription URL
+              </button>
+              <ol className="pt-instructions">
+                <li>Copy the private HTTPS URL.</li>
+                <li>In Google Calendar, add a calendar from URL.</li>
+                <li>Share the public class page with classmates.</li>
+              </ol>
+            </>
+          ) : null}
+
+          {calendarDelivery.provider === "ics_download" ? (
+            <>
+              <p>
+                One-time import. Future timetable changes will not automatically
+                update this file.
+              </p>
+              {calendarDelivery.response.downloadUrl ? (
+                <button
+                  type="button"
+                  className="pt-button pt-button-primary"
+                  onClick={() => {
+                    triggerCalendarDownload(
+                      calendarDelivery.response.downloadUrl as string,
+                    );
+                    track("ics_download_started", {
+                      publicSlug: currentTimetable.publicSlug,
+                    });
+                  }}
+                >
+                  <Download size={18} aria-hidden="true" />
+                  Download one-time ICS
+                </button>
+              ) : null}
+            </>
+          ) : null}
+
+          {calendarDelivery.response.feedUrl ? (
+            <div className="pt-url-panel">
+              <label htmlFor="pt-private-feed">Private subscription URL</label>
+              <input
+                id="pt-private-feed"
+                readOnly
+                value={calendarDelivery.response.feedUrl}
+                onFocus={(event) => event.currentTarget.select()}
+              />
+              <details className="pt-subscription-details">
+                <summary>Having trouble?</summary>
+                {calendarDelivery.provider === "apple_subscription" ? (
+                  <ol>
+                    <li>Open Calendar on your iPhone.</li>
+                    <li>Add a subscription calendar and paste this URL.</li>
+                    <li>Share the class page, never this private URL.</li>
+                  </ol>
+                ) : (
+                  <ol>
+                    <li>Copy the private HTTPS URL above.</li>
+                    <li>In Google Calendar, add a calendar from URL.</li>
+                    <li>Share the public class page with classmates.</li>
+                  </ol>
+                )}
+              </details>
+            </div>
+          ) : null}
+
+          {copyStatus ? (
+            <p className="pt-status-message" role="status">
+              {copyStatus}
+            </p>
+          ) : null}
+          {calendarDelivery.response.warnings?.map((warning) => (
+            <p key={warning} className="pt-warning">
+              {warning}
+            </p>
+          ))}
+          <div className="pt-dialog-actions">
+            <button
+              type="button"
+              className="pt-button pt-button-primary"
+              onClick={() => {
+                track("share_prompt_viewed", {
+                  publicSlug: currentTimetable.publicSlug,
+                });
+                setOnboardingStep("success");
+              }}
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (onboardingStep === "success" && calendarDelivery) {
+      return (
+        <div className="pt-result-step">
+          <span className="pt-kicker">Done</span>
+          <h3>You're on track.</h3>
+          <dl className="pt-summary-list">
+            <div>
+              <dt>Provider</dt>
+              <dd>{calendarDelivery.response.provider}</dd>
+            </div>
+            <div>
+              <dt>Reminder</dt>
+              <dd>{reminderPreset}</dd>
+            </div>
+            <div>
+              <dt>Contact</dt>
+              <dd>
+                {calendarDelivery.contactSaved && !contactSkipped
+                  ? "Saved"
+                  : "Not added"}
+              </dd>
+            </div>
+          </dl>
+          <div className="pt-dialog-actions split">
+            <button
+              type="button"
+              className="pt-button pt-button-primary"
+              onClick={() => {
+                track("onboarding_completed", {
+                  publicSlug: currentTimetable.publicSlug,
+                  provider: calendarDelivery.provider,
+                  reminderPreset,
+                });
+                setDialogOpen(false);
+                setCalendarDelivery(null);
+              }}
+            >
+              Done
+            </button>
+            <button
+              type="button"
+              className="pt-button pt-button-secondary"
+              onClick={() => void shareTimetable()}
+            >
+              <Share2 size={18} aria-hidden="true" />
+              Share with classmates
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  }
+
   if (status === "loading") return <LoadingPage />;
   if (status === "error" || !timetable || !projection || !tomorrow) {
     return <ErrorPage />;
   }
 
-  const appleDeepLink =
-    calendarDelivery?.response.appleDeepLinkUrl ??
-    calendarDelivery?.response.appleSubscribeUrl;
   const stickyVisible = isMobile && !isPrimaryVisible && !dialogOpen;
+  const dialogTitle =
+    onboardingStep === "reminders"
+      ? "Choose your reminders"
+      : onboardingStep === "provider"
+        ? "Choose calendar destination"
+        : onboardingStep === "contact_optional"
+          ? "Add optional contact"
+          : onboardingStep === "preparing"
+            ? "Preparing your calendar"
+            : onboardingStep === "provider_result"
+              ? "Calendar ready"
+              : "You're on track";
 
   return (
     <PublicShell compactFooter className="pt-app">
       <main className="pt-shell pt-main">
-        <section
-          className={`pt-hero${calendarDelivery ? " has-result" : ""}`}
-          aria-labelledby="pt-title"
-        >
+        <section className="pt-hero" aria-labelledby="pt-title">
           <div className="pt-hero-card">
             <div className="pt-kicker-row">
               <span className="pt-kicker">Current published timetable</span>
@@ -678,128 +1250,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               </p>
             ) : null}
           </div>
-
-          {calendarDelivery ? (
-            <aside className="pt-success-card" aria-live="polite">
-              <span className="pt-kicker">Calendar ready</span>
-              <h2>{calendarDelivery.response.calendarName}</h2>
-              {calendarDelivery.provider === "apple_subscription" ? (
-                <>
-                  <p>
-                    Your secure HTTPS subscription is ready for Apple Calendar.
-                    The subscription URL is private to you.
-                  </p>
-                  {appleDeepLink ? (
-                    <a
-                      className="pt-button pt-button-primary"
-                      href={appleDeepLink}
-                    >
-                      <ExternalLink size={18} aria-hidden="true" />
-                      Open Apple Calendar
-                    </a>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="pt-button pt-button-secondary"
-                    onClick={() => void copySubscriptionUrl()}
-                  >
-                    <Copy size={18} aria-hidden="true" />
-                    Copy secure subscription URL
-                  </button>
-                </>
-              ) : null}
-
-              {calendarDelivery.provider === "webcal_subscription" ? (
-                <>
-                  <p>
-                    Copy this private HTTPS feed into a calendar client that
-                    supports subscribed calendars.
-                  </p>
-                  <button
-                    type="button"
-                    className="pt-button pt-button-primary"
-                    onClick={() => void copySubscriptionUrl()}
-                  >
-                    <Copy size={18} aria-hidden="true" />
-                    Copy subscription URL
-                  </button>
-                </>
-              ) : null}
-
-              {calendarDelivery.provider === "ics_download" ? (
-                <>
-                  <p>
-                    This is a one-time snapshot of the current publication. It
-                    will not update itself later.
-                  </p>
-                  {calendarDelivery.response.downloadUrl ? (
-                    <button
-                      type="button"
-                      className="pt-button pt-button-primary"
-                      onClick={() =>
-                        triggerCalendarDownload(
-                          calendarDelivery.response.downloadUrl as string,
-                        )
-                      }
-                    >
-                      <Download size={18} aria-hidden="true" />
-                      Download again
-                    </button>
-                  ) : null}
-                </>
-              ) : null}
-
-              {calendarDelivery.response.feedUrl ? (
-                <details className="pt-subscription-details">
-                  <summary>Having trouble subscribing?</summary>
-                  {calendarDelivery.provider === "apple_subscription" ? (
-                    <ol>
-                      <li>Open Calendar on your iPhone.</li>
-                      <li>
-                        Tap Calendars → Add Calendar → Add Subscription
-                        Calendar.
-                      </li>
-                      <li>Paste the secure CalenderZW URL and tap Find.</li>
-                    </ol>
-                  ) : (
-                    <p>
-                      Paste the secure URL into your calendar app&apos;s
-                      subscription field.
-                    </p>
-                  )}
-                  <label htmlFor="pt-private-feed">
-                    Private subscription URL
-                  </label>
-                  <input
-                    id="pt-private-feed"
-                    readOnly
-                    value={calendarDelivery.response.feedUrl}
-                    onFocus={(event) => event.currentTarget.select()}
-                  />
-                  <p>Keep this URL private. Share the class page instead.</p>
-                </details>
-              ) : null}
-
-              {copyStatus ? (
-                <p className="pt-status-message" role="status">
-                  {copyStatus}
-                </p>
-              ) : null}
-              {calendarDelivery.response.warnings?.map((warning) => (
-                <p key={warning} className="pt-warning">
-                  {warning}
-                </p>
-              ))}
-              <button
-                type="button"
-                className="pt-text-button"
-                onClick={() => void shareTimetable()}
-              >
-                <Share2 size={16} aria-hidden="true" />
-                Share public timetable with classmates
-              </button>
-            </aside>
-          ) : null}
         </section>
 
         <section
@@ -950,7 +1400,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           className="pt-dialog-backdrop"
           role="presentation"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setDialogOpen(false);
+            if (event.target === event.currentTarget) closeDialog();
           }}
         >
           <div
@@ -963,141 +1413,20 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             <div className="pt-dialog-header">
               <div>
                 <span className="pt-kicker">Subscribe to calendar</span>
-                <h2 id="pt-dialog-title">Choose your reminders</h2>
+                <h2 id="pt-dialog-title">{dialogTitle}</h2>
               </div>
               <button
                 type="button"
                 className="pt-icon-button"
                 aria-label="Close calendar subscription dialog"
-                onClick={() => setDialogOpen(false)}
+                onClick={closeDialog}
               >
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
 
-            <div className="pt-dialog-body">
-              <div
-                className="pt-reminder-list"
-                role="radiogroup"
-                aria-label="Reminder choices"
-              >
-                {reminderChoices.map((choice) => (
-                  <label
-                    className={`pt-reminder${reminderPreset === choice.id ? " selected" : ""}`}
-                    key={choice.id}
-                  >
-                    <input
-                      type="radio"
-                      name="pt-reminder"
-                      value={choice.id}
-                      checked={reminderPreset === choice.id}
-                      onChange={() => {
-                        setReminderPreset(choice.id);
-                        setCalendarError("");
-                        track("reminder_selected", { preset: choice.id });
-                      }}
-                    />
-                    <span>
-                      <strong>{choice.title}</strong>
-                      <small>{choice.detail}</small>
-                    </span>
-                    {choice.hint ? <em>{choice.hint}</em> : null}
-                  </label>
-                ))}
-              </div>
-
-              {reminderPreset === "custom" ? (
-                <div className="pt-custom-reminders">
-                  <label>
-                    <span>Hours before</span>
-                    <input
-                      inputMode="numeric"
-                      value={customHours}
-                      onChange={(event) =>
-                        setCustomHours(event.target.value.replace(/[^\d]/g, ""))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>Minutes before</span>
-                    <input
-                      inputMode="numeric"
-                      value={customMinutes}
-                      onChange={(event) =>
-                        setCustomMinutes(
-                          event.target.value.replace(/[^\d]/g, ""),
-                        )
-                      }
-                    />
-                  </label>
-                </div>
-              ) : null}
-
-              <div className="pt-dialog-timezone" role="note">
-                <Clock3 size={16} aria-hidden="true" />
-                <span>
-                  Lecture times stay in {timetable.institutionTimezone}.
-                  Reminders only control notifications; they never move a class
-                  start or end time.
-                </span>
-              </div>
-
-              <div className="pt-method-section">
-                <div>
-                  <span className="pt-kicker">Delivery method</span>
-                  <h3>Where should the timetable go?</h3>
-                </div>
-                <div className="pt-method-list">
-                  {calendarMethods.map((method) =>
-                    method.provider ? (
-                      <button
-                        type="button"
-                        className="pt-method"
-                        key={method.title}
-                        disabled={
-                          calendarBusy !== null ||
-                          (reminderPreset === "custom" &&
-                            customReminderOffset === null)
-                        }
-                        onClick={() => void prepareCalendar(method.provider!)}
-                      >
-                        <span className="pt-method-icon">
-                          {method.provider === "ics_download" ? (
-                            <Download size={18} aria-hidden="true" />
-                          ) : (
-                            <Link2 size={18} aria-hidden="true" />
-                          )}
-                        </span>
-                        <span className="pt-method-copy">
-                          <strong>
-                            {calendarBusy === method.provider
-                              ? "Preparing…"
-                              : method.title}
-                          </strong>
-                          <small>{method.description}</small>
-                        </span>
-                        {method.accent ? <em>{method.accent}</em> : null}
-                      </button>
-                    ) : (
-                      <div className="pt-method disabled" key={method.title}>
-                        <span className="pt-method-icon">
-                          <CalendarCheck size={18} aria-hidden="true" />
-                        </span>
-                        <span className="pt-method-copy">
-                          <strong>{method.title}</strong>
-                          <small>{method.description}</small>
-                        </span>
-                      </div>
-                    ),
-                  )}
-                </div>
-              </div>
-
-              {calendarError ? (
-                <p className="pt-error" role="alert">
-                  {calendarError}
-                </p>
-              ) : null}
+            <div className="pt-dialog-body" aria-live="polite">
+              {renderOnboardingStep()}
             </div>
           </div>
         </div>

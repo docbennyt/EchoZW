@@ -119,6 +119,7 @@ beforeEach(() => {
       "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
     downloadUrl: "https://calender.aido.co.zw/calendar/download/sub-42.ics",
     expiresAt: null,
+    contact: { saved: false },
     warnings: [],
   });
   setIphoneViewport();
@@ -218,7 +219,7 @@ describe("public timetable reliability UX", () => {
     expect(courseToneClass("ICS1101")).toMatch(/^tone-/);
   });
 
-  it("offers Apple first on iPhone, keeps one-time ICS distinct, and has accessible dialog dismissal", async () => {
+  it("uses a focused in-modal reminder step before provider selection", async () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
 
     const primary = await screen.findByRole("button", {
@@ -231,14 +232,48 @@ describe("public timetable reliability UX", () => {
       name: "Choose your reminders",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(
+      within(dialog).getByRole("button", { name: "Continue" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("button", { name: /Apple Calendar/i }),
+    ).toBeNull();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(
+      await screen.findByRole("dialog", {
+        name: "Choose calendar destination",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers Apple first on iPhone, shows subscription URL and one-time ICS, and has accessible dialog dismissal", async () => {
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+
+    const primary = await screen.findByRole("button", {
+      name: "Subscribe to calendar",
+    });
+    primary.focus();
+    fireEvent.click(primary);
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Choose calendar destination",
+    });
     const apple = within(dialog).getByRole("button", {
       name: /Apple Calendar/i,
+    });
+    const url = within(dialog).getByRole("button", {
+      name: /Google\/other subscription URL/i,
     });
     const oneTime = within(dialog).getByRole("button", {
       name: /Download one-time \.ics/i,
     });
     expect(
-      apple.compareDocumentPosition(oneTime) & Node.DOCUMENT_POSITION_FOLLOWING,
+      apple.compareDocumentPosition(url) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect(
+      url.compareDocumentPosition(oneTime) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).not.toBe(0);
     expect(
       within(dialog).queryByText(/Google Calendar direct sync/i),
@@ -249,7 +284,7 @@ describe("public timetable reliability UX", () => {
     await waitFor(() => expect(primary).toHaveFocus());
   });
 
-  it("creates a canonical HTTPS Apple feed without forcing navigation and exposes copy fallback", async () => {
+  it("creates a canonical HTTPS Apple feed after skipped contact and keeps result in the modal", async () => {
     const { container } = render(
       <PublicTimetableReliability slug={timetable.publicSlug} />,
     );
@@ -257,7 +292,16 @@ describe("public timetable reliability UX", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: "Subscribe to calendar" }),
     );
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
     fireEvent.click(screen.getByRole("button", { name: /Apple Calendar/i }));
+    expect(
+      await screen.findByRole("dialog", { name: "Add optional contact" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Phone number")).toHaveAttribute(
+      "autocomplete",
+      "tel",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
 
     await waitFor(() =>
       expect(mocks.createCalendarSubscription).toHaveBeenCalledTimes(1),
@@ -271,7 +315,7 @@ describe("public timetable reliability UX", () => {
       }),
     );
     expect(
-      await screen.findByText(/secure HTTPS subscription is ready/i),
+      await screen.findByText(/private HTTPS subscription is ready/i),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Open Apple Calendar/i }),
@@ -280,9 +324,58 @@ describe("public timetable reliability UX", () => {
       "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
     );
     expect(
-      screen.getByRole("button", { name: /Copy secure subscription URL/i }),
+      screen.getByRole("button", { name: /Copy subscription URL/i }),
     ).toBeInTheDocument();
-    expect(container.querySelector(".pt-success-card")).not.toBeNull();
+    expect(
+      screen.getByRole("dialog", { name: "Calendar ready" }),
+    ).toBeInTheDocument();
+    expect(container.querySelector(".pt-success-card")).toBeNull();
+  });
+
+  it("sends optional contact only after explicit consent and never tracks the phone", async () => {
+    mocks.createCalendarSubscription.mockResolvedValueOnce({
+      subscriptionId: "sub-contact",
+      provider: "webcal_subscription",
+      calendarName: "Class 1.1 · CalenderZW",
+      feedUrl: "https://calender.aido.co.zw/calendar/feed/private-token.ics",
+      downloadUrl:
+        "https://calender.aido.co.zw/calendar/download/sub-contact.ics",
+      expiresAt: null,
+      contact: { saved: true, countryCode: "ZW" },
+      warnings: [],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Subscribe to calendar" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Google\/other subscription URL/i }),
+    );
+    fireEvent.change(screen.getByLabelText("Phone number"), {
+      target: { value: "077 123 4567" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save contact & continue" }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.createCalendarSubscription).toHaveBeenCalledWith(
+        expect.objectContaining({
+          provider: "webcal_subscription",
+          subscriberContact: {
+            countryCode: "ZW",
+            phone: "077 123 4567",
+            consentUpdates: true,
+            consentSource: "calendar_onboarding",
+          },
+        }),
+      ),
+    );
+    expect(JSON.stringify(mocks.track.mock.calls)).not.toContain(
+      "077 123 4567",
+    );
   });
 
   it("shares only the public class URL and never the private feed URL", async () => {

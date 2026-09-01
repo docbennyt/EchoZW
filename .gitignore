@@ -10,3 +10,4 @@ test-results/
 tsconfig.tsbuildinfo
 .data/
 *smoke*.log
+.playwright-mcp/

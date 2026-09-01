@@ -2,6 +2,7 @@ import { z } from "zod";
 import { buildFeedUrl } from "./calendar.js";
 import type { CalendarProvider } from "./device.js";
 import { validateReminderMinutes } from "./reminders.js";
+import { subscriberContactSchema } from "./subscriberContact.js";
 import type { ReminderPresetId, Timetable } from "./types.js";
 
 export type SubscriptionStatus =
@@ -19,6 +20,7 @@ export type CalendarSubscription = {
   timezone: string;
   tokenHash?: string;
   rawToken?: string;
+  subscriberProfileId?: string;
   status: SubscriptionStatus;
   syncedTimetableVersionId?: string;
   externalCalendarId?: string;
@@ -45,6 +47,7 @@ export const subscriptionRequestSchema = z.object({
     .max(5)
     .default([]),
   timezone: z.string().default("Africa/Harare"),
+  subscriberContact: subscriberContactSchema.optional(),
 });
 
 export type CreateSubscriptionInput = z.infer<typeof subscriptionRequestSchema>;
@@ -63,6 +66,10 @@ export type CreateSubscriptionResponse = {
   googleConnectUrl?: string;
   expiresAt: null;
   warnings: string[];
+  contact: {
+    saved: boolean;
+    countryCode?: string;
+  };
 };
 
 export function getCalendarName(timetable: Timetable) {
@@ -87,6 +94,7 @@ export function createSubscriptionRecord(input: {
   anonymousSessionId: string;
   rawToken?: string;
   tokenHash?: string;
+  subscriberProfileId?: string;
 }) {
   const now = new Date().toISOString();
   return {
@@ -100,6 +108,7 @@ export function createSubscriptionRecord(input: {
     timezone: input.timetable.timezone,
     rawToken: input.rawToken,
     tokenHash: input.tokenHash,
+    subscriberProfileId: input.subscriberProfileId,
     status: "pending",
     syncedTimetableVersionId: input.timetable.version,
     createdAt: now,
@@ -127,7 +136,7 @@ export function buildSubscriptionResponse(input: {
   publicOrigin: string;
   timetable: Timetable;
   externallyFetchable: boolean;
-}) {
+}): CreateSubscriptionResponse {
   const feedUrl = input.subscription.rawToken
     ? buildFeedUrl(input.publicOrigin, input.subscription.rawToken)
     : undefined;
@@ -158,5 +167,6 @@ export function buildSubscriptionResponse(input: {
     googleConnectUrl,
     expiresAt: null,
     warnings,
+    contact: { saved: Boolean(input.subscription.subscriberProfileId) },
   } satisfies CreateSubscriptionResponse;
 }
