@@ -10,6 +10,7 @@ import {
 import { handleCorrectionsAdminApi } from "./correctionsAdminApi.js";
 import { handlePilotAdminApi } from "./pilotAdminApi.js";
 import { handleStaffAdminApi } from "./staffAdminApi.js";
+import { sanitizeForLog } from "./observability.js";
 
 function sendJson(
   res: ServerResponse,
@@ -27,7 +28,18 @@ function sendJson(
 function logAdminFailure(scope: "session" | "admin-api", error: unknown) {
   const code =
     error instanceof AdminAuthError ? error.code : "DATABASE_UNAVAILABLE";
-  console.warn(`admin ${scope} failure: ${code}`);
+  console.warn(
+    JSON.stringify(
+      sanitizeForLog({
+        event: "auth.staff_session",
+        scope,
+        code:
+          code === "FORBIDDEN" || code === "SUPERADMIN_REQUIRED"
+            ? "AUTH_STAFF_SESSION_FORBIDDEN"
+            : "AUTH_STAFF_SESSION_UNAVAILABLE",
+      }),
+    ),
+  );
 }
 
 export async function handleAdminRequest(

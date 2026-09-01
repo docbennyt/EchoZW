@@ -33,6 +33,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "subscription_link_copied",
   "timetable_shared",
   "admin_logged_in",
+  "auth_client_error",
   "admin_timetable_created",
   "admin_timetable_published",
   "admin_timetable_updated",

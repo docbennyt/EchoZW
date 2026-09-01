@@ -1,4 +1,5 @@
 import { createReadStream } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import {
   createServer,
@@ -15,9 +16,22 @@ import { validateLegalProductionConfig } from "../src/domain/legalValidation.js"
 import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
 import { handleAdminRequest } from "./adminApi.js";
 import { handleAnalyticsRequest } from "./analyticsApi.js";
+import { handleHealthRequest, checkReadiness } from "./healthApi.js";
+import {
+  attachRequestLogging,
+  classifyRoute,
+  logUnknownRequestError,
+  sanitizeForLog,
+} from "./observability.js";
 import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
 import { getPublishedTimetableBySlug } from "./pilotRepository.js";
+import {
+  buildRuntimePublicConfig,
+  runtimeConfigResponseHeaders,
+  serializeRuntimeConfigScript,
+} from "./runtimePublicConfig.js";
+import { checkSchemaCompatibility } from "./schemaCompatibility.js";
 import { injectSpaMetadata } from "./spaMetadata.js";
 import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
 import { validateSupabaseProductionConfig } from "./supabase/config.js";
@@ -26,20 +40,86 @@ import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 const port = Number(process.env.PORT ?? 80);
 const serverDir = fileURLToPath(new URL(".", import.meta.url));
 const distDir = resolve(serverDir, "../../dist");
+const releaseSha =
+  process.env.RENDER_GIT_COMMIT ??
+  process.env.SOURCE_VERSION ??
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GITHUB_SHA ??
+  null;
+let readiness: Awaited<ReturnType<typeof checkReadiness>> | null = null;
+const readinessPromise = checkReadiness(process.env)
+  .then((result) => {
+    readiness = result;
+    return result;
+  })
+  .catch(() => {
+    readiness = {
+      status: "not_ready",
+      release: releaseSha,
+      dependencies: {
+        serverConfig: "missing",
+        supabase: "unavailable",
+        schema: "unavailable",
+        browserAuthConfig: "missing",
+      },
+    };
+    return readiness;
+  });
 
 if (process.env.NODE_ENV === "production") {
   validateLegalProductionConfig(process.env);
   validateSupabaseProductionConfig(process.env);
   const googleStatus = validateGoogleOAuthProductionConfig(process.env);
-  if (googleStatus.enabled) {
-    const { redirectUri, clientIdSuffix } = getGoogleOAuthStartupStatus(
-      process.env,
+  const googleStartup = getGoogleOAuthStartupStatus(process.env);
+  const supabase = validateSupabaseProductionConfig(process.env);
+  void checkSchemaCompatibility(process.env).then((schemaCompatibility) => {
+    console.info(
+      JSON.stringify(
+        sanitizeForLog({
+          event: "app.startup",
+          app: "CalenderZW",
+          environment: process.env.NODE_ENV,
+          nodeVersion: process.version,
+          port,
+          publicOrigin: process.env.PUBLIC_APP_URL ?? null,
+          releaseSha,
+          supabase: {
+            projectHost: supabase.projectHost,
+            runtimeUrlConfigured: Boolean(process.env.SUPABASE_URL),
+            publishableKeyConfigured: Boolean(supabase.publishableKey),
+            privilegedKeyConfigured: Boolean(supabase.privilegedKey),
+            browserRuntimeConfigAvailable: Boolean(
+              supabase.url && supabase.publishableKey,
+            ),
+          },
+          google: {
+            enabled: googleStatus.enabled,
+            redirectUri: googleStartup.redirectUri,
+            clientIdSuffix: googleStartup.clientIdSuffix,
+          },
+          calendar: {
+            tokenHashSecretConfigured: Boolean(
+              process.env.CALENDAR_TOKEN_HASH_SECRET,
+            ),
+          },
+          sourceIngestion: {
+            enabled: Boolean(process.env.SOURCE_RELAY_SECRET),
+            configured: Boolean(process.env.SOURCE_RELAY_SECRET),
+          },
+          analytics: {
+            enabled: Boolean(process.env.ANALYTICS_ENABLED ?? true),
+            configured: Boolean(process.env.SUPABASE_URL),
+          },
+          schemaCompatibility: {
+            status: schemaCompatibility.status,
+            requiredCount: schemaCompatibility.requiredCount,
+            failureCount: schemaCompatibility.failures.length,
+            failures: schemaCompatibility.failures,
+          },
+        }),
+      ),
     );
-    console.info("Google OAuth configuration", {
-      redirectUri,
-      clientIdSuffix,
-    });
-  }
+  });
 }
 
 const contentTypes: Record<string, string> = {
@@ -164,6 +244,14 @@ async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
   res.end(responseBody);
 }
 
+function serveRuntimeConfig(res: ServerResponse) {
+  const script = serializeRuntimeConfigScript(
+    buildRuntimePublicConfig(process.env),
+  );
+  res.writeHead(200, runtimeConfigResponseHeaders(Buffer.byteLength(script)));
+  res.end(script);
+}
+
 async function serveStatic(req: IncomingMessage, res: ServerResponse) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     res.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
@@ -198,8 +286,38 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse) {
 }
 
 const server = createServer(async (req, res) => {
+  const startedAt = Date.now();
+  const requestId = randomUUID();
+  const route = classifyRoute(req.url);
   applySecurityHeaders(res);
+  attachRequestLogging({ req, res, requestId, startedAt });
   try {
+    if (
+      req.method === "GET" &&
+      new URL(req.url ?? "/", "http://localhost").pathname ===
+        "/runtime-config.js"
+    ) {
+      serveRuntimeConfig(res);
+      return;
+    }
+    if (await handleHealthRequest(req, res, process.env)) return;
+    const currentReadiness = readiness ?? (await readinessPromise);
+    if (currentReadiness.status !== "ready") {
+      res.writeHead(503, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      });
+      res.end(
+        JSON.stringify({
+          error: {
+            code: "SERVICE_NOT_READY",
+            message: "CalenderZW is starting up. Please try again shortly.",
+            requestId,
+          },
+        }),
+      );
+      return;
+    }
     if (await handleAdminRequest(req, res)) return;
     if (await handleAnalyticsRequest(req, res, process.env)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
@@ -208,13 +326,20 @@ const server = createServer(async (req, res) => {
       return;
     if (await handleCalendarRequest(req, res, "production")) return;
     await serveStatic(req, res);
-  } catch {
+  } catch (error) {
+    logUnknownRequestError({
+      error,
+      requestId,
+      route,
+      durationMs: Date.now() - startedAt,
+    });
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(
       JSON.stringify({
         error: {
           code: "INTERNAL_ERROR",
           message: "We could not complete that request. Please try again.",
+          requestId,
         },
       }),
     );
@@ -222,5 +347,14 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`CalenderZW server listening on ${port}`);
+  console.log(
+    JSON.stringify(
+      sanitizeForLog({
+        event: "app.listening",
+        app: "CalenderZW",
+        port,
+        releaseSha,
+      }),
+    ),
+  );
 });

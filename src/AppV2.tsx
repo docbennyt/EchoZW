@@ -30,6 +30,10 @@ import {
   PASSWORD_RESET_SENT_MESSAGE,
   validateNewPassword,
 } from "./authRecovery";
+import {
+  browserAuthFailureCode,
+  trackBrowserAuthFailure,
+} from "./authDiagnostics";
 
 const currentPath = () => window.location.pathname;
 const currentYear = new Date().getFullYear();
@@ -1054,7 +1058,11 @@ function AdminLoginPage() {
     let supabase;
     try {
       supabase = createSupabaseBrowserClient();
-    } catch {
+    } catch (error) {
+      trackBrowserAuthFailure({
+        code: browserAuthFailureCode(error),
+        path: currentPath(),
+      });
       setStatus("error");
       setMessage("Administrator sign-in is temporarily unavailable.");
       return;
@@ -1065,6 +1073,10 @@ function AdminLoginPage() {
     });
     const accessToken = data.session?.access_token;
     if (error || !accessToken) {
+      trackBrowserAuthFailure({
+        code: "AUTH_PASSWORD_REJECTED",
+        path: currentPath(),
+      });
       setStatus("error");
       setMessage("Email or password is incorrect.");
       return;
@@ -1077,11 +1089,19 @@ function AdminLoginPage() {
     } catch (caught) {
       await supabase.auth.signOut();
       if (caught instanceof Error && caught.name === "FORBIDDEN") {
+        trackBrowserAuthFailure({
+          code: "AUTH_STAFF_SESSION_FORBIDDEN",
+          path: currentPath(),
+        });
         setStatus("forbidden");
         setMessage(
           "This account does not have CalenderZW administrator access.",
         );
       } else {
+        trackBrowserAuthFailure({
+          code: "AUTH_STAFF_SESSION_UNAVAILABLE",
+          path: currentPath(),
+        });
         setStatus("error");
         setMessage("Administrator sign-in is temporarily unavailable.");
       }
@@ -1101,7 +1121,11 @@ function AdminLoginPage() {
     let supabase;
     try {
       supabase = createSupabaseBrowserClient();
-    } catch {
+    } catch (error) {
+      trackBrowserAuthFailure({
+        code: browserAuthFailureCode(error),
+        path: currentPath(),
+      });
       setStatus("error");
       setMessage("Password reset is temporarily unavailable.");
       return;
@@ -1111,6 +1135,10 @@ function AdminLoginPage() {
       redirectTo: getPasswordResetRedirect(),
     });
     if (error) {
+      trackBrowserAuthFailure({
+        code: "AUTH_RECOVERY_REQUEST_FAILED",
+        path: currentPath(),
+      });
       setStatus("error");
       setMessage("Password reset is temporarily unavailable.");
       return;
@@ -1231,7 +1259,11 @@ function UpdatePasswordPage() {
       try {
         supabase = createSupabaseBrowserClient();
         supabaseRef.current = supabase;
-      } catch {
+      } catch (error) {
+        trackBrowserAuthFailure({
+          code: browserAuthFailureCode(error),
+          path: currentPath(),
+        });
         if (!active) return;
         setStatus("error");
         setMessage("Password recovery is temporarily unavailable.");
@@ -1422,7 +1454,11 @@ function AuthCallbackPage() {
       let supabase;
       try {
         supabase = createSupabaseBrowserClient();
-      } catch {
+      } catch (error) {
+        trackBrowserAuthFailure({
+          code: browserAuthFailureCode(error),
+          path: currentPath(),
+        });
         if (active) setMessage("Sign-in is temporarily unavailable.");
         return;
       }

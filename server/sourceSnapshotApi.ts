@@ -243,7 +243,8 @@ function logSourceSnapshotEvent(input: {
 }) {
   const hashPrefix = input.contentHash?.slice(0, 12);
   const logger = input.status === "rejected" ? console.warn : console.info;
-  logger("source snapshot", {
+  logger("source.snapshot", {
+    event: "source.snapshot",
     code: input.code ?? null,
     contentHashPrefix: hashPrefix ?? null,
     durationMs: input.durationMs,
