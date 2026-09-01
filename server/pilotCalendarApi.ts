@@ -225,6 +225,7 @@ export async function handlePilotCalendarRequest(
         anonymousSessionId,
         rawToken,
         tokenHash,
+        subscriberContact: parsed.data.subscriberContact,
       });
       const feedUrl = rawToken
         ? buildFeedUrl(publicOrigin, rawToken)
@@ -248,6 +249,13 @@ export async function handlePilotCalendarRequest(
           appleSubscribeUrl: appleDeepLinkUrl,
           downloadUrl: `${publicOrigin}/calendar/download/${encodeURIComponent(String(subscription.id))}.ics`,
           expiresAt: null,
+          contact: {
+            saved: Boolean(
+              (subscription as Record<string, unknown>).subscriber_profile_id,
+            ),
+            countryCode:
+              parsed.data.subscriberContact?.countryCode ?? undefined,
+          },
           warnings: externallyFetchable
             ? []
             : [

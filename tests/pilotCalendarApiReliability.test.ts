@@ -147,6 +147,7 @@ describe("private published calendar feed reliability", () => {
     );
     repositoryMocks.createCalendarSubscriptionRecord.mockResolvedValue({
       id: "sub-created",
+      subscriber_profile_id: null,
       calendar_name: "Class 1.1 · CalenderZW",
     });
   });
@@ -285,6 +286,7 @@ describe("private published calendar feed reliability", () => {
       feedUrl: string;
       appleDeepLinkUrl: string;
       appleSubscribeUrl: string;
+      contact: { saved: boolean };
       warnings: string[];
     };
     expect(payload.feedUrl).toMatch(
@@ -295,6 +297,60 @@ describe("private published calendar feed reliability", () => {
     );
     expect(payload.appleSubscribeUrl).toBe(payload.appleDeepLinkUrl);
     expect(payload.appleDeepLinkUrl).not.toContain("webcal://https://");
+    expect(payload.contact.saved).toBe(false);
     expect(payload.warnings).toEqual([]);
+  });
+
+  it("passes optional subscriber contact to the server-owned subscription transaction", async () => {
+    repositoryMocks.createCalendarSubscriptionRecord.mockResolvedValueOnce({
+      id: "sub-created",
+      calendar_name: "Class 1.1 - CalenderZW",
+      subscriber_profile_id: "profile-1",
+    });
+    const body = JSON.stringify({
+      timetableId: "tt-1",
+      provider: "webcal_subscription",
+      reminderPreset: "on_time",
+      customReminderOffsets: [],
+      timezone: "Africa/Harare",
+      subscriberContact: {
+        countryCode: "ZW",
+        phone: "077 123 4567",
+        consentUpdates: true,
+        consentSource: "calendar_onboarding",
+      },
+    });
+    const { response, capture } = makeResponse();
+    const handled = await handlePilotCalendarRequest(
+      makeRequest({
+        method: "POST",
+        url: "/api/calendar/subscriptions",
+        headers: { "content-type": "application/json" },
+        body,
+      }),
+      response,
+      { PUBLIC_APP_URL: "https://calender.aido.co.zw" },
+      "production",
+    );
+
+    expect(handled).toBe(true);
+    expect(capture.statusCode).toBe(201);
+    expect(
+      repositoryMocks.createCalendarSubscriptionRecord,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriberContact: {
+          countryCode: "ZW",
+          phone: "077 123 4567",
+          consentUpdates: true,
+          consentSource: "calendar_onboarding",
+        },
+      }),
+    );
+    expect(capture.body).not.toContain("077 123 4567");
+    expect(JSON.parse(capture.body).contact).toEqual({
+      saved: true,
+      countryCode: "ZW",
+    });
   });
 });

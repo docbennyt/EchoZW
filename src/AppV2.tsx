@@ -740,6 +740,12 @@ function PrivacyContent() {
           able to view the timetable feed. CalenderZW stores hashed feed tokens
           and supports feed revocation.
         </p>
+        <p>
+          If you optionally add a phone number for urgent timetable updates, it
+          is stored as subscriber contact data with your explicit update
+          consent. It is not placed in analytics events, calendar feed URLs or
+          public timetable responses.
+        </p>
       </section>
       <section id="use-and-sharing">
         <h2>5. Use and sharing</h2>
@@ -755,9 +761,10 @@ function PrivacyContent() {
         <h2>6. Retention and security</h2>
         <p>
           Public timetable audit history may be retained for accuracy. Google
-          credentials are retained only while the relevant connection remains
-          active. Safeguards include HTTPS requirements, server-side secrets,
-          API validation, hashed private-feed tokens and access controls.
+          credentials and optional subscriber contact details are retained only
+          while the relevant connection or consent remains active. Safeguards
+          include HTTPS requirements, server-side secrets, API validation,
+          hashed private-feed tokens and access controls.
         </p>
       </section>
       <section id="your-choices">
@@ -891,8 +898,16 @@ function DataDeletionContent() {
           private feed URL.
         </p>
       </section>
+      <section id="subscriber-contact">
+        <h2>4. Subscriber contact</h2>
+        <p>
+          Optional phone contact for timetable updates can be deleted or
+          unlinked from your subscription on request. Include the phone number
+          and class timetable reference, but do not send private feed tokens.
+        </p>
+      </section>
       <section id="contact">
-        <h2>4. Contact</h2>
+        <h2>5. Contact</h2>
         <p>
           Privacy:{" "}
           <a href={`mailto:${legalConfig.privacyEmail}`}>

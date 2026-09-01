@@ -47,7 +47,8 @@
 }
 
 .pt-app button,
-.pt-app input {
+.pt-app input,
+.pt-app select {
   font: inherit;
 }
 
@@ -67,6 +68,7 @@
 .pt-app button:focus-visible,
 .pt-app a:focus-visible,
 .pt-app input:focus-visible,
+.pt-app select:focus-visible,
 .pt-app summary:focus-visible {
   outline: 3px solid var(--pt-gold);
   outline-offset: 3px;
@@ -750,6 +752,12 @@
   border-top: 1px solid var(--pt-line);
 }
 
+.pt-method-section.no-border {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
 .pt-method-section h3 {
   margin: 5px 0 12px;
   font-size: 18px;
@@ -795,6 +803,138 @@ button.pt-method:hover {
   color: var(--pt-danger);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.pt-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.pt-dialog-actions.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.pt-dialog-actions .pt-button,
+.pt-result-step .pt-button {
+  min-width: 0;
+}
+
+.pt-contact-step,
+.pt-result-step,
+.pt-preparing {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.pt-contact-step h3,
+.pt-result-step h3,
+.pt-preparing h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+
+.pt-contact-step > p,
+.pt-result-step > p,
+.pt-preparing p {
+  margin: 0;
+  color: var(--pt-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.pt-phone-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.72fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.pt-phone-grid label,
+.pt-url-panel {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--pt-muted);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.pt-phone-grid input,
+.pt-phone-grid select,
+.pt-url-panel input {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid var(--pt-line);
+  border-radius: 9px;
+  padding: 9px 10px;
+  background: #fff;
+  color: var(--pt-ink);
+}
+
+.pt-url-panel {
+  margin-top: 2px;
+  padding: 12px;
+  border: 1px solid var(--pt-line);
+  border-radius: 12px;
+  background: var(--pt-sage-soft);
+}
+
+.pt-url-panel input {
+  font-size: 12px;
+}
+
+.pt-big-copy {
+  width: 100%;
+  min-height: 56px;
+}
+
+.pt-instructions {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--pt-muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.pt-preparing {
+  place-items: center;
+  padding: 26px 8px;
+  text-align: center;
+}
+
+.pt-summary-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.pt-summary-list div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--pt-line);
+}
+
+.pt-summary-list dt {
+  color: var(--pt-muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.pt-summary-list dd {
+  margin: 0;
+  color: var(--pt-forest);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
 }
 
 .pt-sticky-cta {
@@ -947,6 +1087,11 @@ button.pt-method:hover {
   .pt-dialog-body {
     padding: 15px 16px calc(22px + env(safe-area-inset-bottom));
   }
+
+  .pt-phone-grid,
+  .pt-dialog-actions.split {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 480px) {
@@ -1004,6 +1149,16 @@ button.pt-method:hover {
   .pt-reminder,
   .pt-method {
     grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .pt-dialog-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pt-dialog-actions .pt-button,
+  .pt-result-step .pt-button {
+    width: 100%;
   }
 
   .pt-reminder em,

@@ -310,6 +310,9 @@ export async function handleCalendarRequest(
         anonymousSessionId,
         rawToken,
         tokenHash,
+        subscriberProfileId: parsed.data.subscriberContact
+          ? crypto.randomUUID()
+          : undefined,
       });
 
       subscriptionsById.set(subscription.id, subscription);
@@ -323,6 +326,12 @@ export async function handleCalendarRequest(
         timetable: demoTimetable,
         externallyFetchable: isExternallyFetchableUrl(publicOrigin),
       });
+      if (parsed.data.subscriberContact) {
+        response.contact = {
+          saved: true,
+          countryCode: parsed.data.subscriberContact.countryCode,
+        };
+      }
 
       sendJson(res, 201, response, {
         "Set-Cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000`,
