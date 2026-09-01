@@ -2,17 +2,8 @@ import type {
   PublicTimetable,
   PublicTimetableSession,
 } from "../api/pilotTypes.js";
+import { resolveScheduleForDate, zonedDateParts } from "./resolvedSchedule.js";
 import { zonedDateTimeToUtc } from "./timezone.js";
-
-const weekdayShortToTimetable: Record<string, number> = {
-  Sun: 7,
-  Mon: 1,
-  Tue: 2,
-  Wed: 3,
-  Thu: 4,
-  Fri: 5,
-  Sat: 6,
-};
 
 export type TomorrowScheduleSession = {
   session: PublicTimetableSession;
@@ -37,23 +28,6 @@ function addDays(dateKey: string, amount: number) {
   const date = new Date(Date.UTC(year, month - 1, day));
   date.setUTCDate(date.getUTCDate() + amount);
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
-}
-
-function zonedDateParts(instant: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    weekday: "short",
-  }).formatToParts(instant);
-  const values = Object.fromEntries(
-    parts.map((part) => [part.type, part.value]),
-  );
-  return {
-    dateKey: `${values.year}-${values.month}-${values.day}`,
-    weekday: weekdayShortToTimetable[values.weekday] ?? 7,
-  };
 }
 
 function weekdayForLocalDate(dateKey: string, timeZone: string) {
@@ -82,30 +56,14 @@ export function getTomorrowSchedule(
     institutionDateTomorrow,
     timeZone,
   );
-  const startsBeforeTomorrow =
-    !timetable.startsOn || institutionDateTomorrow >= timetable.startsOn;
-  const endsAfterTomorrow =
-    !timetable.endsOn || institutionDateTomorrow <= timetable.endsOn;
-
-  const sessions =
-    !startsBeforeTomorrow || !endsAfterTomorrow
-      ? []
-      : timetable.sessions
-          .filter((session) => session.weekday === tomorrowWeekday)
-          .map((session) => ({
-            session,
-            start: zonedDateTimeToUtc(
-              institutionDateTomorrow,
-              session.startTime,
-              timeZone,
-            ),
-            end: zonedDateTimeToUtc(
-              institutionDateTomorrow,
-              session.endTime,
-              timeZone,
-            ),
-          }))
-          .sort((left, right) => left.start.getTime() - right.start.getTime());
+  const sessions = resolveScheduleForDate(
+    timetable,
+    institutionDateTomorrow,
+  ).map((occurrence) => ({
+    session: occurrence.session,
+    start: occurrence.start,
+    end: occurrence.end,
+  }));
 
   return {
     institutionDateToday,

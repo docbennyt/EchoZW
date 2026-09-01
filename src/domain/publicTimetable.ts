@@ -2,6 +2,7 @@ import type {
   PublicTimetable,
   PublicTimetableSession,
 } from "../api/pilotTypes.js";
+import { getResolvedUpcomingOccurrences } from "./resolvedSchedule.js";
 
 const weekdayLabels = [
   "Sunday",
@@ -100,11 +101,6 @@ function getWeekdayIndexForDateKey(dateKey: string, timeZone: string) {
   return getZonedParts(midday, timeZone).weekdayIndex;
 }
 
-function toTimetableWeekday(dateKey: string, timeZone: string) {
-  const weekdayIndex = getWeekdayIndexForDateKey(dateKey, timeZone);
-  return weekdayIndex === 0 ? 7 : weekdayIndex;
-}
-
 function getRelativeLabel(dateKey: string, timeZone: string, now: Date) {
   const today = getZonedParts(now, timeZone).dateKey;
   const tomorrow = addDaysToYmd(today, 1);
@@ -158,47 +154,14 @@ export function getUpcomingOccurrences(
   now = new Date(),
   limit = 3,
 ): UpcomingTimetableOccurrence[] {
-  if (
-    !timetable.startsOn ||
-    !timetable.endsOn ||
-    timetable.startsOn > timetable.endsOn
-  ) {
-    return [];
-  }
-
   const timeZone = timetable.institutionTimezone || "Africa/Harare";
-  const today = getZonedParts(now, timeZone).dateKey;
-  const occurrences: UpcomingTimetableOccurrence[] = [];
-
-  for (
-    let dayOffset = 0;
-    dayOffset <= 21 && occurrences.length < limit * 3;
-    dayOffset += 1
-  ) {
-    const dateKey = addDaysToYmd(today, dayOffset);
-    if (dateKey < timetable.startsOn || dateKey > timetable.endsOn) continue;
-
-    const weekday = toTimetableWeekday(dateKey, timeZone);
-    const sessions = timetable.sessions.filter(
-      (session: PublicTimetableSession) => session.weekday === weekday,
-    );
-
-    for (const session of sessions) {
-      const start = zonedDateTimeToUtc(dateKey, session.startTime, timeZone);
-      const end = zonedDateTimeToUtc(dateKey, session.endTime, timeZone);
-      if (start < now) continue;
-
-      occurrences.push({
-        session,
-        start,
-        end,
-        dateKey,
-        relativeLabel: getRelativeLabel(dateKey, timeZone, now),
-      });
-    }
-  }
-
-  return occurrences
-    .sort((left, right) => left.start.getTime() - right.start.getTime())
-    .slice(0, limit);
+  return getResolvedUpcomingOccurrences(timetable, now, limit).map(
+    (occurrence) => ({
+      session: occurrence.session as PublicTimetableSession,
+      start: occurrence.start,
+      end: occurrence.end,
+      dateKey: occurrence.dateKey,
+      relativeLabel: getRelativeLabel(occurrence.dateKey, timeZone, now),
+    }),
+  );
 }

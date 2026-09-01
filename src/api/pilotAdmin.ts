@@ -8,6 +8,10 @@ import type {
   AdminTimetableSession,
   AdminTimetableSummary,
   PublishTimetableResponse,
+  StaffAssignmentSummary,
+  StaffMember,
+  TimetableCorrectionDirective,
+  TimetableSessionException,
 } from "./pilotTypes";
 
 type ApiOptions = {
@@ -367,6 +371,186 @@ export function publishTimetable(accessToken: string, timetableId: string) {
     `/api/admin/timetables/${timetableId}/publish`,
     {
       method: "POST",
+      accessToken,
+    },
+  );
+}
+
+export function listStaff(accessToken: string) {
+  return adminFetch<{ staff: StaffMember[] }>("/api/admin/staff", {
+    accessToken,
+  });
+}
+
+export function inviteClassRep(
+  accessToken: string,
+  input: { email: string; displayName: string; timetableId: string },
+) {
+  return adminFetch<{ invite: { staffUserId: string; assignmentId: string } }>(
+    "/api/admin/staff/invite",
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
+}
+
+export function resendClassRepInvite(accessToken: string, staffUserId: string) {
+  return adminFetch<{ ok: true }>(
+    `/api/admin/staff/${staffUserId}/resend-invite`,
+    {
+      method: "POST",
+      accessToken,
+    },
+  );
+}
+
+export function assignClassRep(
+  accessToken: string,
+  staffUserId: string,
+  timetableId: string,
+) {
+  return adminFetch<{ assignment: { id: string } }>(
+    `/api/admin/staff/${staffUserId}/assignments`,
+    {
+      method: "POST",
+      accessToken,
+      body: { timetableId },
+    },
+  );
+}
+
+export function revokeClassRepAssignment(
+  accessToken: string,
+  assignmentId: string,
+) {
+  return adminFetch<{ ok: true }>(
+    `/api/admin/staff/assignments/${assignmentId}`,
+    {
+      method: "DELETE",
+      accessToken,
+    },
+  );
+}
+
+export function setStaffActive(
+  accessToken: string,
+  staffUserId: string,
+  active: boolean,
+) {
+  return adminFetch<{ ok: true }>(`/api/admin/staff/${staffUserId}`, {
+    method: "PATCH",
+    accessToken,
+    body: { active },
+  });
+}
+
+export function listMyTimetables(accessToken: string) {
+  return adminFetch<{ timetables: StaffAssignmentSummary[] }>(
+    "/api/admin/my/timetables",
+    {
+      accessToken,
+    },
+  );
+}
+
+export function listTimetableCorrections(
+  accessToken: string,
+  timetableId: string,
+) {
+  return adminFetch<{
+    corrections: {
+      corrections: TimetableCorrectionDirective[];
+      exceptions: TimetableSessionException[];
+    };
+  }>(`/api/admin/timetables/${timetableId}/corrections`, { accessToken });
+}
+
+export function createRecurringCorrection(
+  accessToken: string,
+  timetableId: string,
+  input: {
+    stableSessionKey?: string | null;
+    action: "add" | "modify" | "remove";
+    sourceMayReplace: boolean;
+    courseCode?: string | null;
+    courseName?: string | null;
+    weekday?: number | null;
+    startTime?: string | null;
+    endTime?: string | null;
+    venue?: string | null;
+    lecturer?: string | null;
+    sessionType?: string | null;
+    notes?: string | null;
+    reason: string;
+    provenance?: string | null;
+  },
+) {
+  return adminFetch<{ correction: TimetableCorrectionDirective }>(
+    `/api/admin/timetables/${timetableId}/corrections`,
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
+}
+
+export function createTimetableException(
+  accessToken: string,
+  timetableId: string,
+  input: {
+    stableSessionKey?: string | null;
+    exceptionDate: string;
+    exceptionType: "cancelled" | "moved" | "extra";
+    replacementStartsAt?: string | null;
+    replacementEndsAt?: string | null;
+    courseCode?: string | null;
+    courseName?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+    venue?: string | null;
+    lecturer?: string | null;
+    sessionType?: string | null;
+    notes?: string | null;
+    reason: string;
+    provenance?: string | null;
+  },
+) {
+  return adminFetch<{ exception: TimetableSessionException }>(
+    `/api/admin/timetables/${timetableId}/exceptions`,
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
+}
+
+export function revokeRecurringCorrection(
+  accessToken: string,
+  timetableId: string,
+  correctionId: string,
+) {
+  return adminFetch<{ ok: true }>(
+    `/api/admin/timetables/${timetableId}/corrections/${correctionId}`,
+    {
+      method: "DELETE",
+      accessToken,
+    },
+  );
+}
+
+export function revokeTimetableException(
+  accessToken: string,
+  timetableId: string,
+  exceptionId: string,
+) {
+  return adminFetch<{ ok: true }>(
+    `/api/admin/timetables/${timetableId}/exceptions/${exceptionId}`,
+    {
+      method: "DELETE",
       accessToken,
     },
   );

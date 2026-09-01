@@ -3,6 +3,10 @@ import type {
   PublicTimetableSession,
 } from "../api/pilotTypes.js";
 import {
+  resolveRecurringSessions,
+  resolveScheduleForDate,
+} from "./resolvedSchedule.js";
+import {
   assertIanaTimeZone,
   formatIcsLocalDateTime,
   formatIcsUtc,
@@ -29,6 +33,9 @@ export type CanonicalPublishedCalendarEvent = {
   uid: string;
   weekday: number;
   recurrenceDay: string;
+  recurring: boolean;
+  exceptionDate: string | null;
+  exDates: string[];
   firstDate: string;
   startTime: string;
   endTime: string;
@@ -143,6 +150,19 @@ function eventDescription(
     .join("\n");
 }
 
+function datesBetween(startDate: string, endDate: string) {
+  const dates: string[] = [];
+  const { year, month, day } = parseDateKey(startDate);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  for (;;) {
+    const dateKey = formatDateKey(date);
+    if (dateKey > endDate) break;
+    dates.push(dateKey);
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+  return dates;
+}
+
 function normalizePublicOrigin(value: string) {
   const parsed = new URL(value);
   return parsed.origin.replace(/\/$/, "");
@@ -187,7 +207,8 @@ export function projectPublishedTimetable(input: {
   );
   const lastModifiedUtc = formatIcsUtc(new Date(timetable.publishedAt));
 
-  const events = timetable.sessions.map((session) => {
+  const recurringSessions = resolveRecurringSessions(timetable);
+  const recurringEvents = recurringSessions.map((session) => {
     if (!session.stableSessionKey.trim()) {
       throw new Error(
         "Published timetable session is missing stable identity.",
@@ -217,11 +238,25 @@ export function projectPublishedTimetable(input: {
       timezone,
     );
 
+    const exDates = (timetable.exceptions ?? [])
+      .filter(
+        (exception) =>
+          exception.active &&
+          exception.stableSessionKey === session.stableSessionKey &&
+          (exception.exceptionType === "cancelled" ||
+            exception.exceptionType === "moved"),
+      )
+      .map((exception) => exception.exceptionDate)
+      .sort();
+
     return {
       stableSessionKey: session.stableSessionKey,
       uid: `${session.stableSessionKey}@calender.aido.co.zw`,
       weekday: session.weekday,
       recurrenceDay: weekdayMap[session.weekday],
+      recurring: true,
+      exceptionDate: null,
+      exDates,
       firstDate,
       startTime: session.startTime,
       endTime: session.endTime,
@@ -246,6 +281,49 @@ export function projectPublishedTimetable(input: {
       })),
     } satisfies CanonicalPublishedCalendarEvent;
   });
+  const oneOffEvents = datesBetween(timetable.startsOn, timetable.endsOn)
+    .flatMap((dateKey) =>
+      resolveScheduleForDate(timetable, dateKey).filter(
+        (occurrence) => !occurrence.recurring,
+      ),
+    )
+    .map((occurrence) => {
+      const session = occurrence.session;
+      return {
+        stableSessionKey: session.stableSessionKey,
+        uid: `${session.stableSessionKey}@calender.aido.co.zw`,
+        weekday: session.weekday,
+        recurrenceDay: weekdayMap[session.weekday],
+        recurring: false,
+        exceptionDate: occurrence.dateKey,
+        exDates: [],
+        firstDate: occurrence.dateKey,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        localStart: formatIcsLocalDateTime(
+          occurrence.dateKey,
+          session.startTime,
+        ),
+        localEnd: formatIcsLocalDateTime(occurrence.dateKey, session.endTime),
+        firstStartUtc: occurrence.start.toISOString(),
+        firstEndUtc: occurrence.end.toISOString(),
+        recurrenceUntilUtc,
+        courseCode: session.courseCode,
+        courseName: session.courseName,
+        summary: `${session.courseCode} Â· ${session.courseName}`,
+        description: eventDescription(timetable, session, publicUrl),
+        venue: session.venue ?? "",
+        lecturer: session.lecturer,
+        sessionType: session.sessionType,
+        notes: session.notes,
+        lastModifiedUtc,
+        sequence: timetable.versionNumber,
+        alarms: reminderOffsets.map((minutesBefore) => ({
+          minutesBefore,
+          description: alarmDescription(session.courseName, minutesBefore),
+        })),
+      } satisfies CanonicalPublishedCalendarEvent;
+    });
 
   return {
     calendarName: `${normalizeClassLabel(timetable.classGroup)} · CalenderZW`,
@@ -255,6 +333,6 @@ export function projectPublishedTimetable(input: {
     publishedAt: timetable.publishedAt,
     versionNumber: timetable.versionNumber,
     publicUrl,
-    events,
+    events: [...recurringEvents, ...oneOffEvents],
   };
 }

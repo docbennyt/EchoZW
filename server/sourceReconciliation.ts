@@ -99,6 +99,21 @@ export type SourceReconciliationResult = {
   timetableId: string;
 };
 
+export type HumanCorrectionReplacementPolicy = {
+  correctionId: string;
+  sourceMayReplace: boolean;
+};
+
+export type HumanCorrectionReplacementDecision = {
+  correctionId: string;
+  maySupersede: boolean;
+  reason:
+    | "PINNED"
+    | "AMBIGUOUS_SOURCE"
+    | "UNAMBIGUOUS_OFFICIAL_SOURCE"
+    | "NO_REPLACE_PERMISSION";
+};
+
 function createDeterministicId(prefix: string, seed: string) {
   return `${prefix}_${createHash("sha256").update(seed).digest("hex").slice(0, 16)}`;
 }
@@ -470,6 +485,37 @@ function assertConservationInvariant(
     noSilentLoss,
     sourceCandidateCount: sourceCandidates.length,
     sourceCandidatesCovered,
+  };
+}
+
+export function decideHumanCorrectionReplacement(input: {
+  correction: HumanCorrectionReplacementPolicy;
+  item: ReconciliationItem;
+}): HumanCorrectionReplacementDecision {
+  if (!input.correction.sourceMayReplace) {
+    return {
+      correctionId: input.correction.correctionId,
+      maySupersede: false,
+      reason: "PINNED",
+    };
+  }
+
+  const unambiguous =
+    input.item.outcome !== "ambiguous" &&
+    input.item.sourceCandidates.length === 1 &&
+    input.item.currentSessions.length === 1;
+  if (!unambiguous) {
+    return {
+      correctionId: input.correction.correctionId,
+      maySupersede: false,
+      reason: "AMBIGUOUS_SOURCE",
+    };
+  }
+
+  return {
+    correctionId: input.correction.correctionId,
+    maySupersede: true,
+    reason: "UNAMBIGUOUS_OFFICIAL_SOURCE",
   };
 }
 

@@ -16,6 +16,8 @@ import type {
   AdminTimetableVersion,
   PublicTimetable,
   PublicTimetableSession,
+  TimetableCorrectionDirective,
+  TimetableSessionException,
 } from "../src/api/pilotTypes.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -250,6 +252,64 @@ function mapSession(row: JsonRecord): AdminTimetableSession {
     lecturer: row.lecturer ? String(row.lecturer) : null,
     sessionType: row.session_type ? String(row.session_type) : null,
     notes: row.notes ? String(row.notes) : null,
+  };
+}
+
+function mapPublicCorrection(row: JsonRecord): TimetableCorrectionDirective {
+  const sourceMayReplace = Boolean(row.source_may_replace);
+  return {
+    id: String(row.id),
+    stableSessionKey: row.stable_session_key
+      ? String(row.stable_session_key)
+      : null,
+    action: row.action as TimetableCorrectionDirective["action"],
+    sourceMayReplace,
+    pinned: !sourceMayReplace,
+    courseCode: row.course_code ? String(row.course_code) : null,
+    courseName: row.course_name ? String(row.course_name) : null,
+    weekday: row.weekday === null ? null : Number(row.weekday),
+    startTime: row.start_time ? String(row.start_time) : null,
+    endTime: row.end_time ? String(row.end_time) : null,
+    venue: row.venue ? String(row.venue) : null,
+    lecturer: row.lecturer ? String(row.lecturer) : null,
+    sessionType: row.session_type ? String(row.session_type) : null,
+    notes: row.notes ? String(row.notes) : null,
+    reason: String(row.reason),
+    provenance: row.provenance ? String(row.provenance) : null,
+    creatorRole:
+      row.creator_role as TimetableCorrectionDirective["creatorRole"],
+    active: Boolean(row.active),
+    createdAt: String(row.created_at),
+  };
+}
+
+function mapPublicException(row: JsonRecord): TimetableSessionException {
+  return {
+    id: String(row.id),
+    stableSessionKey: row.stable_session_key
+      ? String(row.stable_session_key)
+      : null,
+    exceptionDate: String(row.exception_date),
+    exceptionType:
+      row.exception_type as TimetableSessionException["exceptionType"],
+    replacementStartsAt: row.replacement_starts_at
+      ? String(row.replacement_starts_at)
+      : null,
+    replacementEndsAt: row.replacement_ends_at
+      ? String(row.replacement_ends_at)
+      : null,
+    courseCode: row.course_code ? String(row.course_code) : null,
+    courseName: row.course_name ? String(row.course_name) : null,
+    startTime: row.start_time ? String(row.start_time) : null,
+    endTime: row.end_time ? String(row.end_time) : null,
+    venue: row.venue ? String(row.venue) : null,
+    lecturer: row.lecturer ? String(row.lecturer) : null,
+    sessionType: row.session_type ? String(row.session_type) : null,
+    notes: row.notes ? String(row.notes) : null,
+    reason: row.reason ? String(row.reason) : null,
+    provenance: row.provenance ? String(row.provenance) : null,
+    active: Boolean(row.active),
+    createdAt: String(row.created_at),
   };
 }
 
@@ -1794,6 +1854,33 @@ async function getPublishedTimetable(filter: {
     "DATABASE_UNAVAILABLE",
     "Could not load timetable sessions.",
   );
+  const [corrections, exceptions] = await Promise.all([
+    expectData(
+      client
+        .from("timetable_correction_directives")
+        .select(
+          "id, stable_session_key, action, source_may_replace, course_code, course_name, weekday, start_time, end_time, venue, lecturer, session_type, notes, reason, provenance, creator_role, active, created_at",
+        )
+        .eq("timetable_id", String((timetable as JsonRecord).id))
+        .eq("active", true)
+        .order("created_at", { ascending: true }),
+      "DATABASE_UNAVAILABLE",
+      "Could not load timetable corrections.",
+    ),
+    expectData(
+      client
+        .from("timetable_session_exceptions")
+        .select(
+          "id, stable_session_key, exception_date, exception_type, replacement_starts_at, replacement_ends_at, course_code, course_name, start_time, end_time, venue, lecturer, session_type, notes, reason, provenance, active, created_at",
+        )
+        .eq("timetable_id", String((timetable as JsonRecord).id))
+        .eq("active", true)
+        .order("exception_date")
+        .order("start_time"),
+      "DATABASE_UNAVAILABLE",
+      "Could not load timetable exceptions.",
+    ),
+  ]);
 
   const timetableRecord = timetable as JsonRecord;
   const versionRecord = version as JsonRecord;
@@ -1849,6 +1936,12 @@ async function getPublishedTimetable(filter: {
         ? String((row as JsonRecord).notes)
         : null,
     })) satisfies PublicTimetableSession[],
+    corrections: (corrections ?? []).map((row: unknown) =>
+      mapPublicCorrection(row as JsonRecord),
+    ),
+    exceptions: (exceptions ?? []).map((row: unknown) =>
+      mapPublicException(row as JsonRecord),
+    ),
   } satisfies PublicTimetable;
 }
 
