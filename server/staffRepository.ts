@@ -70,6 +70,10 @@ function publicOrigin() {
   ).replace(/\/$/, "");
 }
 
+function classRepSetupRedirect() {
+  return `${publicOrigin()}/account/update-password`;
+}
+
 function mapAssignment(row: JsonRecord): StaffAssignmentSummary {
   const timetable = asSingle(
     row.timetables as JsonRecord | JsonRecord[] | null,
@@ -175,13 +179,30 @@ async function findAuthUserByEmail(email: string) {
   return null;
 }
 
+async function sendClassRepSetupEmail(email: string) {
+  const { error } = await client().auth.resetPasswordForEmail(email, {
+    redirectTo: classRepSetupRedirect(),
+  });
+  if (error) {
+    throw new StaffApiError(
+      "INVITE_FAILED",
+      "Could not send the class rep setup email.",
+      502,
+      error,
+    );
+  }
+}
+
 async function ensureInvitedAuthUser(email: string, displayName: string) {
   const existing = await findAuthUserByEmail(email);
-  if (existing) return { userId: existing.id, invited: false };
+  if (existing) {
+    await sendClassRepSetupEmail(email);
+    return { userId: existing.id, invited: false, setupEmailSent: true };
+  }
 
   const { data, error } = await client().auth.admin.inviteUserByEmail(email, {
     data: { display_name: displayName, product: "CalenderZW" },
-    redirectTo: `${publicOrigin()}/admin/login`,
+    redirectTo: classRepSetupRedirect(),
   });
   if (error || !data.user) {
     throw new StaffApiError(
@@ -191,7 +212,7 @@ async function ensureInvitedAuthUser(email: string, displayName: string) {
       error,
     );
   }
-  return { userId: data.user.id, invited: true };
+  return { userId: data.user.id, invited: true, setupEmailSent: true };
 }
 
 export async function listStaffMembers() {
@@ -285,7 +306,11 @@ export async function inviteClassRep(input: {
     action: "class_rep.invite_email_sent",
     entityType: "staff_user",
     entityId: String(staff?.id),
-    metadata: { invited: authUser.invited, assignmentId: assignment.id },
+    metadata: {
+      invited: authUser.invited,
+      setupEmailSent: authUser.setupEmailSent,
+      assignmentId: assignment.id,
+    },
   });
 
   return { staffUserId: String(staff?.id), assignmentId: assignment.id };
@@ -307,21 +332,7 @@ export async function resendClassRepInvite(input: {
   if (!staff || staff.role !== "class_rep" || !staff.email) {
     throw new StaffApiError("NOT_FOUND", "Class rep not found.", 404);
   }
-  const { error } = await admin.auth.admin.inviteUserByEmail(
-    String(staff.email),
-    {
-      data: { display_name: staff.display_name ?? "", product: "CalenderZW" },
-      redirectTo: `${publicOrigin()}/admin/login`,
-    },
-  );
-  if (error) {
-    throw new StaffApiError(
-      "INVITE_FAILED",
-      "Could not resend the class rep invitation.",
-      502,
-      error,
-    );
-  }
+  await sendClassRepSetupEmail(String(staff.email));
   await expectData(
     admin
       .from("staff_users")
@@ -350,7 +361,7 @@ export async function assignClassRep(input: {
   await expectData(
     admin
       .from("class_rep_assignments")
-      .update({ active: false, revoked_at: now, revoked_by: input.actorId })
+      .update({ active: false, revoked_at: now })
       .eq("staff_user_id", input.staffUserId)
       .eq("active", true)
       .select("id"),
@@ -392,7 +403,6 @@ export async function revokeClassRepAssignment(input: {
       .update({
         active: false,
         revoked_at: new Date().toISOString(),
-        revoked_by: input.actorId,
       })
       .eq("id", input.assignmentId)
       .select("id")
