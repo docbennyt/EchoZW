@@ -99,8 +99,8 @@ describe("staff repository safety", () => {
         revoked_at: expect.any(String),
       }),
     );
-    expect(revokeBuilder.update.mock.calls[0][0]).not.toHaveProperty(
-      "revoked_by",
+    expect(revokeBuilder.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ revoked_by: expect.anything() }),
     );
     expect(insertBuilder.insert).toHaveBeenCalledWith({
       staff_user_id: "staff-rep",
