@@ -10,6 +10,7 @@ import {
 import { handleCorrectionsAdminApi } from "./correctionsAdminApi.js";
 import { handlePilotAdminApi } from "./pilotAdminApi.js";
 import { handleStaffAdminApi } from "./staffAdminApi.js";
+import { handleAdminAnalyticsApi } from "./adminAnalyticsApi.js";
 import { sanitizeForLog } from "./observability.js";
 
 function sendJson(
@@ -126,6 +127,7 @@ export async function handleAdminRequest(
   if (requestUrl.pathname.startsWith("/api/admin/")) {
     try {
       const { user } = await requireSuperadmin(req, deps);
+      if (await handleAdminAnalyticsApi(req, res)) return true;
       if (await handlePilotAdminApi(req, res, user)) return true;
       sendJson(res, 501, {
         error: {
