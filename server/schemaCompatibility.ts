@@ -31,7 +31,7 @@ const REQUIRED_SCHEMA_PROBES: RequiredRestProbe[] = [
   },
   {
     object: "timetable_session_exceptions.correction fields",
-    path: "/rest/v1/timetable_session_exceptions?select=timetable_id,stable_session_key,exception_date,starts_at,ends_at,cancelled,active,creator_staff_user_id&limit=0",
+    path: "/rest/v1/timetable_session_exceptions?select=timetable_id,stable_session_key,exception_date,exception_type,replacement_starts_at,replacement_ends_at,start_time,end_time,active,creator_staff_user_id&limit=0",
   },
   {
     object: "subscriber_profiles",
@@ -72,9 +72,11 @@ export async function checkSchemaCompatibility(
     };
   }
 
+  // Supabase's modern sb_secret_* keys are opaque API keys, not JWTs. Send the
+  // privileged key through the supported apikey header instead of inventing a
+  // Bearer token. Legacy service-role JWT keys are also accepted as API keys.
   const headers = {
-    apikey: config.publishableKey,
-    Authorization: `Bearer ${config.privilegedKey ?? config.publishableKey}`,
+    apikey: config.privilegedKey ?? config.publishableKey,
   };
   const failures: SchemaCompatibilityResult["failures"] = [];
 

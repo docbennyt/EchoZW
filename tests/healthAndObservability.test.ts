@@ -131,6 +131,44 @@ describe("health and observability", () => {
     ).toBe(true);
   });
 
+  it("uses the privileged API key without inventing an opaque Bearer JWT", async () => {
+    const modernEnv = {
+      ...env,
+      SUPABASE_SECRET_KEY: "sb_secret_server_only",
+    } as NodeJS.ProcessEnv;
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 204 }),
+    );
+
+    await checkSchemaCompatibility(modernEnv, fetchImpl);
+
+    for (const [, init] of fetchImpl.mock.calls) {
+      expect(init?.headers).toMatchObject({ apikey: "sb_secret_server_only" });
+      const headers = init?.headers as Record<string, string> | undefined;
+      expect(headers?.Authorization).toBeUndefined();
+    }
+  });
+
+  it("probes the actual timetable exception correction columns", async () => {
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 204 }),
+    );
+
+    await checkSchemaCompatibility(env, fetchImpl);
+
+    const exceptionProbe = fetchImpl.mock.calls.find(([url]) =>
+      String(url).includes("/rest/v1/timetable_session_exceptions?"),
+    );
+    expect(exceptionProbe).toBeTruthy();
+    const url = String(exceptionProbe?.[0]);
+    expect(url).toContain("exception_type");
+    expect(url).toContain("replacement_starts_at");
+    expect(url).toContain("replacement_ends_at");
+    expect(url).toContain("start_time");
+    expect(url).toContain("end_time");
+    expect(url).not.toContain("starts_at,ends_at,cancelled");
+  });
+
   it("redacts private feed URLs, auth headers, phone, email, and tokens from logs", () => {
     expect(classifyRoute("/cdn-cgi/rum")).toMatchObject({
       category: "static",
