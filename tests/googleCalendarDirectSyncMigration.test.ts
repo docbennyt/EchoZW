@@ -24,8 +24,8 @@ describe("Google Calendar direct sync migration", () => {
     );
     expect(migration).toContain("encrypted_refresh_token text not null");
     expect(migration).toContain("granted_scope text not null");
-    expect(migration).not.toContain("access_token text");
-    expect(migration).not.toContain("refresh_token text not null");
+    expect(migration).not.toMatch(/^\s*access_token\s+text\b/m);
+    expect(migration).not.toMatch(/^\s*refresh_token\s+text\b/m);
   });
 
   it("keeps OAuth state and credentials inaccessible to browser roles", () => {
