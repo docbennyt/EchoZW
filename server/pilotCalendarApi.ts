@@ -25,6 +25,12 @@ import {
   isExternallyFetchableUrl,
 } from "../src/domain/publicUrl.js";
 import { recordCalendarFeedActivity } from "./analyticsRepository.js";
+import {
+  beginGoogleCalendarConnection,
+  completeGoogleCalendarConnection,
+  disconnectGoogleCalendar,
+  getPublicGoogleCalendarStatus,
+} from "./googleCalendarSync.js";
 
 function sendJson(
   res: ServerResponse,
@@ -80,12 +86,15 @@ function getCookie(req: IncomingMessage, name: string) {
     ?.slice(name.length + 1);
 }
 
-function getOrCreateAnonymousSession(req: IncomingMessage) {
+function getAnonymousSession(req: IncomingMessage) {
   const headerId = headerValue(req.headers["x-calenderzw-anonymous-id"]);
   if (isAnalyticsUuid(headerId)) return headerId;
   const cookieId = getCookie(req, "calenderzw_anon_session");
-  if (isAnalyticsUuid(cookieId)) return cookieId;
-  return crypto.randomUUID();
+  return isAnalyticsUuid(cookieId) ? cookieId : null;
+}
+
+function getOrCreateAnonymousSession(req: IncomingMessage) {
+  return getAnonymousSession(req) ?? crypto.randomUUID();
 }
 
 async function readBody(req: IncomingMessage) {
@@ -192,6 +201,15 @@ async function buildRevisionAwareCalendar(input: {
   return { ics, revision };
 }
 
+function redirect(res: ServerResponse, location: string) {
+  res.writeHead(302, {
+    Location: location,
+    "Cache-Control": "no-store",
+    "Referrer-Policy": "no-referrer",
+  });
+  res.end();
+}
+
 export async function handlePilotCalendarRequest(
   req: IncomingMessage,
   res: ServerResponse,
@@ -200,6 +218,14 @@ export async function handlePilotCalendarRequest(
 ) {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
   const publicOrigin = getPublicAppUrlFromHeaders(env, req.headers, mode);
+
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/calendar/google/status"
+  ) {
+    sendJson(res, 200, getPublicGoogleCalendarStatus(env));
+    return true;
+  }
 
   if (
     req.method === "POST" &&
@@ -219,11 +245,14 @@ export async function handlePilotCalendarRequest(
         return true;
       }
 
-      if (parsed.data.provider === "google_api") {
-        sendJson(res, 422, {
+      if (
+        parsed.data.provider === "google_api" &&
+        !getPublicGoogleCalendarStatus(env).enabled
+      ) {
+        sendJson(res, 503, {
           error: {
-            code: "NOT_SUPPORTED",
-            message: "Direct Google Calendar sync is not enabled in this MVP.",
+            code: "GOOGLE_NOT_CONFIGURED",
+            message: "Direct Google Calendar connection is not available right now.",
           },
         });
         return true;
@@ -234,7 +263,8 @@ export async function handlePilotCalendarRequest(
         parsed.data.customReminderOffsets,
       );
       const rawToken =
-        parsed.data.provider === "ics_download"
+        parsed.data.provider === "ics_download" ||
+        parsed.data.provider === "google_api"
           ? undefined
           : generateFeedToken();
       const tokenHash = rawToken ? await sha256Base64Url(rawToken) : undefined;
@@ -259,18 +289,26 @@ export async function handlePilotCalendarRequest(
           ? toAppleDeepLinkUrl(feedUrl)
           : undefined;
       const secureCookie = mode === "production" ? "; Secure" : "";
+      const subscriptionId = String(subscription.id);
 
       sendJson(
         res,
         201,
         {
-          subscriptionId: String(subscription.id),
+          subscriptionId,
           provider: parsed.data.provider,
           calendarName: String(subscription.calendar_name),
           feedUrl,
           appleDeepLinkUrl,
           appleSubscribeUrl: appleDeepLinkUrl,
-          downloadUrl: `${publicOrigin}/calendar/download/${encodeURIComponent(String(subscription.id))}.ics`,
+          downloadUrl:
+            parsed.data.provider === "google_api"
+              ? undefined
+              : `${publicOrigin}/calendar/download/${encodeURIComponent(subscriptionId)}.ics`,
+          googleConnectUrl:
+            parsed.data.provider === "google_api"
+              ? `${publicOrigin}/api/calendar/google/connect?subscriptionId=${encodeURIComponent(subscriptionId)}`
+              : undefined,
           expiresAt: null,
           contact: {
             saved: Boolean(
@@ -282,13 +320,97 @@ export async function handlePilotCalendarRequest(
           warnings: externallyFetchable
             ? []
             : [
-                "This development URL is not externally fetchable. Use a public HTTPS tunnel or preview deployment for device subscriptions.",
+                "This development URL is not externally fetchable. Use a public HTTPS deployment for calendar connections.",
               ],
         },
         {
           "Set-Cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${secureCookie}`,
         },
       );
+    } catch (error) {
+      sendError(res, error);
+    }
+    return true;
+  }
+
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/calendar/google/connect"
+  ) {
+    try {
+      const subscriptionId = requestUrl.searchParams.get("subscriptionId");
+      if (!subscriptionId) {
+        throw new PilotApiError(
+          "SUBSCRIPTION_NOT_FOUND",
+          "We could not find this Google Calendar setup.",
+          404,
+        );
+      }
+      const authUrl = await beginGoogleCalendarConnection({
+        subscriptionId,
+        anonymousSessionId: getAnonymousSession(req),
+        env,
+      });
+      redirect(res, authUrl.toString());
+    } catch (error) {
+      sendError(res, error);
+    }
+    return true;
+  }
+
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/calendar/google/callback"
+  ) {
+    const code = requestUrl.searchParams.get("code");
+    const state = requestUrl.searchParams.get("state");
+    const oauthError = requestUrl.searchParams.get("error");
+    if (oauthError || !code || !state) {
+      redirect(
+        res,
+        `${publicOrigin}/find?calendar=${encodeURIComponent(oauthError || "google-cancelled")}`,
+      );
+      return true;
+    }
+
+    try {
+      const result = await completeGoogleCalendarConnection({ code, state, env });
+      redirect(
+        res,
+        `${publicOrigin}/t/${encodeURIComponent(result.publicSlug)}?calendar=google-success&subscriptionId=${encodeURIComponent(result.subscriptionId)}`,
+      );
+    } catch (error) {
+      console.warn("Google Calendar callback failed", {
+        code: error instanceof PilotApiError ? error.code : "GOOGLE_CALLBACK_FAILED",
+      });
+      redirect(res, `${publicOrigin}/find?calendar=google-failed`);
+    }
+    return true;
+  }
+
+  if (
+    req.method === "POST" &&
+    requestUrl.pathname === "/api/calendar/google/disconnect"
+  ) {
+    try {
+      const parsedBody = JSON.parse((await readBody(req)) || "{}") as {
+        subscriptionId?: string;
+        deleteCreatedCalendar?: boolean;
+      };
+      if (!parsedBody.subscriptionId) {
+        throw new PilotApiError(
+          "SUBSCRIPTION_NOT_FOUND",
+          "Google Calendar setup not found.",
+          404,
+        );
+      }
+      const result = await disconnectGoogleCalendar({
+        subscriptionId: parsedBody.subscriptionId,
+        anonymousSessionId: getAnonymousSession(req),
+        deleteCreatedCalendar: Boolean(parsedBody.deleteCreatedCalendar),
+        env,
+      });
+      sendJson(res, 200, result);
     } catch (error) {
       sendError(res, error);
     }
