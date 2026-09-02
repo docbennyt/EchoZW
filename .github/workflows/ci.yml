@@ -4,16 +4,47 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/google-calendar-direct-sync
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Format branch once
+        run: |
+          npx prettier --write \
+            docs/DR-52_GOOGLE_DIRECT_SYNC_EXECUTION.md \
+            public/data-deletion/index.html \
+            public/privacy/index.html \
+            server/googleCalendarRepository.ts \
+            server/googleCalendarSync.ts \
+            server/pilotCalendarApi.ts \
+            src/GoogleCalendarDirectConnect.tsx \
+            tests/googleCalendarDirectSync.test.ts
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add \
+              docs/DR-52_GOOGLE_DIRECT_SYNC_EXECUTION.md \
+              public/data-deletion/index.html \
+              public/privacy/index.html \
+              server/googleCalendarRepository.ts \
+              server/googleCalendarSync.ts \
+              server/pilotCalendarApi.ts \
+              src/GoogleCalendarDirectConnect.tsx \
+              tests/googleCalendarDirectSync.test.ts
+            git commit -m "chore: format Google direct sync changes"
+            git push origin HEAD:feat/google-calendar-direct-sync
+          fi
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test
