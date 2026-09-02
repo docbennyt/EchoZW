@@ -45,6 +45,14 @@ const REQUIRED_SCHEMA_PROBES: RequiredRestProbe[] = [
     object: "create_calendar_subscription_with_profile RPC",
     path: "/rest/v1/rpc/create_calendar_subscription_with_profile",
   },
+  {
+    object: "google_calendar_oauth_states",
+    path: "/rest/v1/google_calendar_oauth_states?select=state_hash&limit=0",
+  },
+  {
+    object: "google_calendar_credentials",
+    path: "/rest/v1/google_calendar_credentials?select=subscription_id&limit=0",
+  },
 ];
 
 function statusCodeForProbe(response: Response) {
