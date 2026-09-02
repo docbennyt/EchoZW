@@ -511,7 +511,7 @@ export async function syncGoogleSubscription(
       continue;
     }
 
-    let remoteEventId = externalEventId;
+    let remoteEventId: string;
     if (externalEventId) {
       const result = await googleApiRequest({
         accessToken,
@@ -528,14 +528,15 @@ export async function syncGoogleSubscription(
         method: "POST",
         body: payload,
       });
-      remoteEventId = result?.id ? String(result.id) : null;
-      if (!remoteEventId) {
+      const createdEventId = result?.id ? String(result.id) : null;
+      if (!createdEventId) {
         throw new PilotApiError(
           "GOOGLE_EVENT_CREATE_FAILED",
           "Google Calendar could not create a timetable event.",
           502,
         );
       }
+      remoteEventId = createdEventId;
       created += 1;
     }
 
