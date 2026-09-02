@@ -1,0 +1,605 @@
+/* Production UX polish layered over the stable CalenderZW surfaces. */
+
+/* Use the actual shipped CalenderZW lockup rather than reconstructing it in CSS. */
+.czw-brand .czw-brand-lockup {
+  width: 168px;
+  height: 42px;
+  display: block;
+  background-image: url("/calenderzw-logo.png");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+}
+
+.czw-brand .czw-brand-lockup > * {
+  display: none !important;
+}
+
+.czw-brand-on-dark .czw-brand-lockup {
+  width: 174px;
+  height: 46px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  background-color: #fffefa;
+  background-origin: content-box;
+}
+
+/* Founder attribution is intentionally hidden during the adoption pilot. */
+.czw-footer-bottom > span:nth-child(2) {
+  display: none !important;
+}
+
+.czw-footer-bottom {
+  justify-content: flex-start !important;
+}
+
+/* Bring the value proposition into the first desktop viewport. */
+@media (min-width: 960px) {
+  .czw-marketing .czw-hero {
+    min-height: calc(100svh - 72px);
+    padding-top: clamp(28px, 4.2vh, 48px);
+    padding-bottom: clamp(44px, 6vh, 68px);
+  }
+
+  .czw-marketing .czw-hero-grid {
+    align-items: center;
+  }
+
+  .czw-marketing .czw-product-scene {
+    min-height: min(520px, calc(100svh - 150px));
+  }
+}
+
+/* Truthful, high-signal social proof: real pilot connection count, not fake testimonials. */
+.czw-pilot-proof {
+  margin-top: 21px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 13px 10px 10px;
+  border: 1px solid rgba(21, 61, 50, 0.13);
+  border-radius: 14px;
+  background: rgba(255, 254, 250, 0.72);
+  box-shadow: 0 10px 28px rgba(21, 61, 50, 0.07);
+  backdrop-filter: blur(10px);
+}
+
+.czw-avatar-stack {
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+}
+
+.czw-proof-avatar {
+  width: 34px;
+  height: 34px;
+  margin-left: -7px;
+  border: 2px solid var(--czw-cream);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: #dfe9dd;
+  color: var(--czw-forest);
+  box-shadow: 0 4px 12px rgba(21, 61, 50, 0.1);
+}
+
+.czw-proof-avatar:first-child {
+  margin-left: 0;
+}
+
+.czw-proof-avatar:nth-child(2) {
+  background: #f7e7b3;
+}
+
+.czw-proof-avatar:nth-child(3) {
+  background: #dde7f2;
+}
+
+.czw-proof-avatar:nth-child(4) {
+  background: #eadfd8;
+}
+
+.czw-proof-avatar small {
+  position: absolute;
+  right: -2px;
+  bottom: -3px;
+  min-width: 18px;
+  padding: 1px 3px;
+  border-radius: 5px;
+  background: var(--czw-forest-dark);
+  color: #fff;
+  font-size: 6px;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+
+.czw-proof-more {
+  background: var(--czw-forest);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.czw-pilot-proof > div:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.czw-pilot-proof strong {
+  color: var(--czw-ink);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.czw-pilot-proof > div:last-child span {
+  color: var(--czw-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+/* Make How it works visual before textual. */
+.czw-enhanced .czw-step-grid article {
+  min-height: 292px;
+  display: flex;
+  flex-direction: column;
+}
+
+.czw-enhanced .czw-step-grid article > span {
+  order: 1;
+}
+
+.czw-step-visual {
+  order: 2;
+  min-height: 82px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid var(--czw-line);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: linear-gradient(135deg, #f8faf6, #fffefa);
+  overflow: hidden;
+}
+
+.czw-step-visual + h3,
+.czw-enhanced .czw-step-grid h3 {
+  order: 3;
+  margin: 18px 0 9px;
+}
+
+.czw-enhanced .czw-step-grid p {
+  order: 4;
+}
+
+.czw-step-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--czw-forest);
+  color: #fff;
+}
+
+.czw-step-visual > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.czw-step-visual i {
+  padding: 5px 7px;
+  border: 1px solid #d5ddd3;
+  border-radius: 999px;
+  background: #fff;
+  color: #51605a;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.czw-step-remind .czw-step-icon {
+  background: #d8a830;
+  color: #17211d;
+}
+
+.czw-step-remind i:first-child {
+  border-color: var(--czw-forest);
+  background: var(--czw-sage-soft);
+  color: var(--czw-forest);
+}
+
+.czw-step-add > svg {
+  margin-left: auto;
+  color: var(--czw-success);
+}
+
+/* Marketing copy must reflect the now-enabled Google capability. */
+.czw-enhanced #options .czw-option-grid article:last-child > p,
+.czw-enhanced #options .czw-option-grid article:last-child > small {
+  display: none;
+}
+
+.czw-google-live-copy {
+  display: block !important;
+  margin: 0 !important;
+  max-width: 50ch !important;
+  color: #c0d2ca !important;
+}
+
+.czw-live-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  margin-top: 14px !important;
+  padding: 6px 9px !important;
+  border-color: rgba(122, 214, 172, 0.5) !important;
+  background: rgba(61, 138, 103, 0.16);
+  color: #d7f6e7 !important;
+  font-weight: 780;
+}
+
+/* Demonstrate breadth without presenting an invented timetable as real data. */
+.czw-enhanced .czw-trust-card > :not(.czw-trust-card-live) {
+  display: none;
+}
+
+.czw-trust-card-live {
+  display: block;
+}
+
+.czw-trust-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.czw-trust-live-head > span:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.czw-trust-live-head small {
+  color: var(--czw-muted);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.czw-trust-live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: var(--czw-sage-soft);
+  color: var(--czw-forest);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.czw-programme-proof {
+  margin: -4px 0 16px;
+  color: var(--czw-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.czw-trust-card-live > a {
+  color: var(--czw-forest);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* Stable skeleton: preserve page geometry while the published timetable resolves. */
+.pt-app .pt-state-page {
+  position: relative;
+  min-height: clamp(470px, 62svh, 650px);
+  margin-block: 0;
+  padding: clamp(22px, 4vw, 34px);
+  overflow: hidden;
+}
+
+.pt-app .pt-state-page::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 300px;
+  margin-top: 28px;
+  border-radius: 18px;
+  background:
+    linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.72),
+        transparent
+      ) -180px
+      0 / 180px 100% no-repeat,
+    linear-gradient(#e5eae3 0 0) 0 0 / 38% 17px no-repeat,
+    linear-gradient(#edf0eb 0 0) 0 36px / 66% 12px no-repeat,
+    linear-gradient(#edf0eb 0 0) 0 62px / 46% 12px no-repeat,
+    linear-gradient(#e8ede6 0 0) 0 104px / 100% 118px no-repeat,
+    linear-gradient(#edf0eb 0 0) 0 248px / 74% 12px no-repeat,
+    linear-gradient(#edf0eb 0 0) 0 274px / 52% 12px no-repeat;
+  animation: czw-skeleton-shimmer 1.25s ease-in-out infinite;
+}
+
+@keyframes czw-skeleton-shimmer {
+  to {
+    background-position:
+      calc(100% + 180px) 0,
+      0 0,
+      0 36px,
+      0 62px,
+      0 104px,
+      0 248px,
+      0 274px;
+  }
+}
+
+/* Direct Google now lives inside the same onboarding sheet as every other provider. */
+.pt-google-bridge-active > .pt-method.disabled {
+  display: none;
+}
+
+.pt-method-google-direct {
+  border-color: rgba(21, 61, 50, 0.32);
+  background: linear-gradient(135deg, #f2f7f1, #fff);
+}
+
+.pt-method-google-direct em {
+  color: var(--pt-forest);
+  font-weight: 800;
+}
+
+.pt-method-google-icon {
+  background: var(--pt-forest);
+  color: #fff;
+}
+
+.pt-google-contact-card {
+  padding: 14px;
+  border: 1px solid rgba(21, 61, 50, 0.2);
+  border-radius: 14px;
+  display: grid;
+  gap: 13px;
+  background: linear-gradient(145deg, #f3f7f1, #fffefa 72%);
+}
+
+.pt-google-contact-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+}
+
+.pt-google-contact-heading > div {
+  display: grid;
+  gap: 4px;
+}
+
+.pt-google-contact-heading strong {
+  font-size: 14px;
+  color: var(--pt-ink);
+}
+
+.pt-google-contact-heading small,
+.pt-google-optional-label small {
+  color: var(--pt-muted);
+  font-size: 11px;
+  line-height: 1.48;
+}
+
+.pt-google-disclosure {
+  padding: 10px;
+  border: 1px solid rgba(21, 61, 50, 0.12);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  background: rgba(223, 233, 221, 0.52);
+  color: var(--pt-forest);
+  font-size: 11px;
+  line-height: 1.48;
+}
+
+.pt-google-optional-label {
+  display: grid;
+  gap: 2px;
+}
+
+.pt-google-optional-label > span {
+  color: var(--pt-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pt-google-phone-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.72fr) minmax(0, 1fr);
+  gap: 9px;
+}
+
+.pt-google-phone-grid label {
+  display: grid;
+  gap: 5px;
+  color: var(--pt-muted);
+  font-size: 10px;
+  font-weight: 760;
+}
+
+.pt-google-phone-grid input,
+.pt-google-phone-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 9px;
+  border: 1px solid var(--pt-line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--pt-ink);
+}
+
+.pt-google-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.pt-google-actions .pt-button {
+  width: 100%;
+  min-width: 0;
+}
+
+.pt-google-connected-note,
+.pt-google-failed-note {
+  width: 100%;
+  margin-top: 2px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  text-align: left;
+}
+
+.pt-google-connected-note {
+  border: 1px solid rgba(39, 112, 93, 0.22);
+  background: rgba(223, 233, 221, 0.68);
+  color: var(--pt-forest);
+}
+
+.pt-google-connected-note > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--pt-forest);
+  color: #fff;
+}
+
+.pt-google-connected-note > div {
+  display: grid;
+  gap: 2px;
+}
+
+.pt-google-connected-note strong {
+  font-size: 12px;
+}
+
+.pt-google-connected-note small {
+  color: var(--pt-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.pt-google-failed-note {
+  border: 1px solid rgba(143, 52, 46, 0.18);
+  background: rgba(143, 52, 46, 0.06);
+  color: var(--pt-danger);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 820px) {
+  .czw-brand .czw-brand-lockup {
+    width: 148px;
+    height: 38px;
+  }
+
+  .czw-pilot-proof {
+    width: 100%;
+    align-items: center;
+  }
+
+  .czw-pilot-proof strong {
+    font-size: 11px;
+  }
+
+  .czw-step-visual {
+    min-height: 74px;
+  }
+
+  .pt-app .pt-state-page {
+    min-height: calc(100svh - 230px);
+    margin-block: 0;
+    padding: 20px;
+  }
+
+  .pt-app .pt-state-page::after {
+    height: 330px;
+  }
+
+  .pt-google-phone-grid,
+  .pt-google-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .czw-brand .czw-brand-lockup {
+    width: 142px;
+    height: 36px;
+  }
+
+  .czw-pilot-proof {
+    gap: 9px;
+    padding-right: 10px;
+  }
+
+  .czw-proof-avatar {
+    width: 31px;
+    height: 31px;
+  }
+
+  .czw-proof-avatar:nth-child(4) {
+    display: none;
+  }
+
+  .czw-pilot-proof > div:last-child span {
+    font-size: 8.5px;
+  }
+
+  .czw-trust-live-head {
+    align-items: flex-start;
+  }
+
+  .czw-trust-live-status {
+    margin-left: 0;
+  }
+
+  .pt-app .pt-state-page::after {
+    height: 280px;
+    background:
+      linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.72),
+          transparent
+        ) -180px
+        0 / 180px 100% no-repeat,
+      linear-gradient(#e5eae3 0 0) 0 0 / 52% 16px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 34px / 80% 11px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 59px / 58% 11px no-repeat,
+      linear-gradient(#e8ede6 0 0) 0 98px / 100% 112px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 236px / 84% 11px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 260px / 61% 11px no-repeat;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-app .pt-state-page::after {
+    animation: none;
+  }
+}

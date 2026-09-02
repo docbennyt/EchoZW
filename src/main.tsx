@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
-import {
-  GoogleCalendarConnectPage,
-  GoogleCalendarDirectEntry,
-} from "./GoogleCalendarDirectConnect";
+import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
+import {
+  MarketingEnhancements,
+  TimetableGoogleOnboardingEnhancement,
+} from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import "./styles.css";
 import "./appV2.css";
@@ -13,6 +14,8 @@ import "./finderDiscovery.css";
 import "./publicTimetableReliability.css";
 import "./publicTimetableMatrix.css";
 import "./googleCalendarDirect.css";
+import "./productionUxEnhancements.css";
+import "./productionUxEnhancementsPatch.css";
 
 function currentPath() {
   return window.location.pathname;
@@ -57,13 +60,18 @@ function RootApp() {
     return (
       <>
         <PublicTimetableReliability slug={slug} />
-        <GoogleCalendarDirectEntry slug={slug} />
+        <TimetableGoogleOnboardingEnhancement slug={slug} />
         <GoogleCalendarDisconnectEntry />
       </>
     );
   }
 
-  return <AppV2 />;
+  return (
+    <>
+      <AppV2 />
+      <MarketingEnhancements />
+    </>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

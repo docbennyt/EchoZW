@@ -1,0 +1,92 @@
+/* Small follow-up rules for the production UX pass. */
+
+.pt-google-back {
+  grid-column: 1 / -1;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--pt-forest);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pt-google-back:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+/* Keep the loading state visually anchored to the eventual timetable geometry. */
+.pt-app .pt-state-page > svg,
+.pt-app .pt-state-page > h1,
+.pt-app .pt-state-page > p {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 820px) {
+  .pt-app .pt-state-page {
+    min-height: calc(100svh - 150px);
+    border-radius: 18px;
+    padding: 22px 18px;
+  }
+
+  .pt-app .pt-state-page::after {
+    height: 360px;
+    margin-top: 24px;
+    background:
+      linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.72),
+          transparent
+        ) -180px
+        0 / 180px 100% no-repeat,
+      linear-gradient(#e5eae3 0 0) 0 0 / 62% 16px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 34px / 42% 11px no-repeat,
+      linear-gradient(#e8ede6 0 0) 0 78px / 100% 144px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 246px / 82% 12px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 274px / 58% 12px no-repeat,
+      linear-gradient(#edf0eb 0 0) 0 322px / 100% 38px no-repeat;
+  }
+
+  .pt-google-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pt-google-back {
+    grid-column: auto;
+  }
+
+  .czw-pilot-proof {
+    width: 100%;
+  }
+
+  .czw-pilot-proof > div:last-child span {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 960px) and (max-height: 820px) {
+  .czw-marketing .czw-hero {
+    padding-top: 24px;
+    padding-bottom: 36px;
+  }
+
+  .czw-marketing .czw-hero h1 {
+    margin-top: 14px;
+    margin-bottom: 16px;
+    font-size: clamp(46px, 5vw, 68px);
+  }
+
+  .czw-marketing .czw-hero-actions {
+    margin-top: 22px;
+  }
+
+  .czw-pilot-proof {
+    margin-top: 15px;
+  }
+}
