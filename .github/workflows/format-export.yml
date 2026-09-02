@@ -1,0 +1,32 @@
+name: Format export
+
+on:
+  push:
+    branches:
+      - feature/production-ui-google-onboarding-polish
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write src/ProductionUxEnhancements.tsx src/productionUxEnhancements.css src/productionUxEnhancementsPatch.css
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formatted-ux-files
+          path: |
+            src/ProductionUxEnhancements.tsx
+            src/productionUxEnhancements.css
+            src/productionUxEnhancementsPatch.css
+          if-no-files-found: error
