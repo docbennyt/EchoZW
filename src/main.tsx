@@ -5,6 +5,7 @@ import {
   GoogleCalendarConnectPage,
   GoogleCalendarDirectEntry,
 } from "./GoogleCalendarDirectConnect";
+import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import "./styles.css";
 import "./appV2.css";
@@ -57,6 +58,7 @@ function RootApp() {
       <>
         <PublicTimetableReliability slug={slug} />
         <GoogleCalendarDirectEntry slug={slug} />
+        <GoogleCalendarDisconnectEntry />
       </>
     );
   }
