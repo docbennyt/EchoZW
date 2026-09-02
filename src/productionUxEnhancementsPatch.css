@@ -27,6 +27,43 @@
   z-index: 1;
 }
 
+/* Keep the hero focused on the primary value proposition and CTA. */
+.czw-marketing .czw-microcopy {
+  display: none !important;
+}
+
+/* On the dark footer, keep the real calendar icon but render the wordmark natively. */
+.czw-footer .czw-brand-on-dark .czw-brand-lockup {
+  width: auto;
+  height: 42px;
+  padding: 0;
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+}
+
+.czw-footer .czw-brand-on-dark .czw-brand-lockup::before {
+  content: "";
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  background-image: url("/calenderzw-logo.png");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 168px 42px;
+}
+
+.czw-footer .czw-brand-on-dark .czw-wordmark {
+  display: inline-flex !important;
+  color: #fffefa;
+}
+
+.czw-footer .czw-brand-on-dark .czw-wordmark span {
+  color: #f0c653;
+}
+
 @media (max-width: 820px) {
   .pt-app .pt-state-page {
     min-height: calc(100svh - 150px);
