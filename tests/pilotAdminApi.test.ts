@@ -126,7 +126,7 @@ describe("pilot timetable admin API contracts", () => {
     });
   });
 
-  it("returns publishResult for timetable publication", async () => {
+  it("returns publishResult and Google propagation summary for timetable publication", async () => {
     repositoryMocks.publishTimetable.mockResolvedValueOnce({
       publicSlug: "hit-cs-1-1-august-2026",
       versionNumber: 1,
@@ -148,6 +148,11 @@ describe("pilot timetable admin API contracts", () => {
         versionNumber: 1,
         sessionCount: 5,
         publishedAt: "2026-08-07T12:00:00.000Z",
+      },
+      googleCalendarSync: {
+        attempted: 0,
+        succeeded: 0,
+        failed: 0,
       },
     });
   });

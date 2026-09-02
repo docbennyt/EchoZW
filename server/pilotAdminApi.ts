@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
+import { syncGoogleSubscriptionsForTimetable } from "./googleCalendarSync.js";
 import {
   createAcademicPeriod,
   createClassGroup,
@@ -139,6 +140,18 @@ async function readJson(req: IncomingMessage) {
 
   const raw = Buffer.concat(chunks).toString("utf8").trim();
   return raw ? (JSON.parse(raw) as unknown) : {};
+}
+
+async function syncGoogleCalendars(timetableId: string) {
+  try {
+    return await syncGoogleSubscriptionsForTimetable(timetableId);
+  } catch (error) {
+    console.warn("Google Calendar publication propagation unavailable", {
+      timetableId,
+      code: error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
+    });
+    return { attempted: 0, succeeded: 0, failed: 0, unavailable: true };
+  }
 }
 
 export async function handlePilotAdminApi(
@@ -370,12 +383,15 @@ export async function handlePilotAdminApi(
       /^\/api\/admin\/timetables\/([^/]+)\/publish$/,
     );
     if (req.method === "POST" && publishMatch) {
+      const timetableId = decodeURIComponent(publishMatch[1]);
       const publishResult = await publishTimetable(
-        decodeURIComponent(publishMatch[1]),
+        timetableId,
         getUserId(user),
       );
+      const googleCalendarSync = await syncGoogleCalendars(timetableId);
       sendJson(res, 200, {
         publishResult,
+        googleCalendarSync,
       });
       return true;
     }

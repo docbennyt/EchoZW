@@ -7,6 +7,7 @@ import {
   revokeCorrection,
   revokeException,
 } from "./correctionsRepository.js";
+import { syncGoogleSubscriptionsForTimetable } from "./googleCalendarSync.js";
 import { PilotApiError } from "./pilotRepository.js";
 import type { StaffAuthContext } from "./supabase/auth.js";
 
@@ -87,6 +88,18 @@ function sendCorrectionError(res: ServerResponse, error: unknown) {
   });
 }
 
+async function syncGoogleCalendars(timetableId: string) {
+  try {
+    return await syncGoogleSubscriptionsForTimetable(timetableId);
+  } catch (error) {
+    console.warn("Google Calendar timetable propagation unavailable", {
+      timetableId,
+      code: error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
+    });
+    return { attempted: 0, succeeded: 0, failed: 0, unavailable: true };
+  }
+}
+
 export async function handleCorrectionsAdminApi(
   req: IncomingMessage,
   res: ServerResponse,
@@ -107,14 +120,15 @@ export async function handleCorrectionsAdminApi(
       return true;
     }
     if (req.method === "POST" && correctionsMatch) {
+      const timetableId = decodeURIComponent(correctionsMatch[1]);
       const parsed = correctionSchema.parse(await readJson(req));
-      sendJson(res, 201, {
-        correction: await createRecurringCorrection({
-          timetableId: decodeURIComponent(correctionsMatch[1]),
-          actor,
-          ...parsed,
-        }),
+      const correction = await createRecurringCorrection({
+        timetableId,
+        actor,
+        ...parsed,
       });
+      const googleCalendarSync = await syncGoogleCalendars(timetableId);
+      sendJson(res, 201, { correction, googleCalendarSync });
       return true;
     }
 
@@ -122,12 +136,14 @@ export async function handleCorrectionsAdminApi(
       /^\/api\/admin\/timetables\/([^/]+)\/corrections\/([^/]+)$/,
     );
     if (req.method === "DELETE" && revokeCorrectionMatch) {
+      const timetableId = decodeURIComponent(revokeCorrectionMatch[1]);
       await revokeCorrection({
-        timetableId: decodeURIComponent(revokeCorrectionMatch[1]),
+        timetableId,
         correctionId: decodeURIComponent(revokeCorrectionMatch[2]),
         actor,
       });
-      sendJson(res, 200, { ok: true });
+      const googleCalendarSync = await syncGoogleCalendars(timetableId);
+      sendJson(res, 200, { ok: true, googleCalendarSync });
       return true;
     }
 
@@ -135,14 +151,15 @@ export async function handleCorrectionsAdminApi(
       /^\/api\/admin\/timetables\/([^/]+)\/exceptions$/,
     );
     if (req.method === "POST" && exceptionsMatch) {
+      const timetableId = decodeURIComponent(exceptionsMatch[1]);
       const parsed = exceptionSchema.parse(await readJson(req));
-      sendJson(res, 201, {
-        exception: await createSessionException({
-          timetableId: decodeURIComponent(exceptionsMatch[1]),
-          actor,
-          ...parsed,
-        }),
+      const exception = await createSessionException({
+        timetableId,
+        actor,
+        ...parsed,
       });
+      const googleCalendarSync = await syncGoogleCalendars(timetableId);
+      sendJson(res, 201, { exception, googleCalendarSync });
       return true;
     }
 
@@ -150,12 +167,14 @@ export async function handleCorrectionsAdminApi(
       /^\/api\/admin\/timetables\/([^/]+)\/exceptions\/([^/]+)$/,
     );
     if (req.method === "DELETE" && revokeExceptionMatch) {
+      const timetableId = decodeURIComponent(revokeExceptionMatch[1]);
       await revokeException({
-        timetableId: decodeURIComponent(revokeExceptionMatch[1]),
+        timetableId,
         exceptionId: decodeURIComponent(revokeExceptionMatch[2]),
         actor,
       });
-      sendJson(res, 200, { ok: true });
+      const googleCalendarSync = await syncGoogleCalendars(timetableId);
+      sendJson(res, 200, { ok: true, googleCalendarSync });
       return true;
     }
   } catch (error) {
