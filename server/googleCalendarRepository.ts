@@ -24,7 +24,8 @@ export async function createGoogleOAuthState(input: {
       subscription_id: input.subscriptionId,
       expires_at: input.expiresAt,
     });
-  if (error) throw databaseError("Could not start Google Calendar connection.", error);
+  if (error)
+    throw databaseError("Could not start Google Calendar connection.", error);
 }
 
 export async function consumeGoogleOAuthState(input: {
@@ -37,7 +38,8 @@ export async function consumeGoogleOAuthState(input: {
     .select("state_hash, subscription_id, expires_at")
     .eq("state_hash", input.stateHash)
     .maybeSingle();
-  if (error) throw databaseError("Could not verify Google Calendar connection.", error);
+  if (error)
+    throw databaseError("Could not verify Google Calendar connection.", error);
   if (!data) return null;
 
   const { error: deleteError } = await db
@@ -45,7 +47,10 @@ export async function consumeGoogleOAuthState(input: {
     .delete()
     .eq("state_hash", input.stateHash);
   if (deleteError) {
-    throw databaseError("Could not complete Google Calendar connection.", deleteError);
+    throw databaseError(
+      "Could not complete Google Calendar connection.",
+      deleteError,
+    );
   }
 
   return data as JsonRecord;
@@ -69,7 +74,11 @@ export async function saveGoogleCredential(input: {
       },
       { onConflict: "subscription_id" },
     );
-  if (error) throw databaseError("Could not securely save Google Calendar access.", error);
+  if (error)
+    throw databaseError(
+      "Could not securely save Google Calendar access.",
+      error,
+    );
 }
 
 export async function getGoogleCredential(
@@ -81,7 +90,8 @@ export async function getGoogleCredential(
     .select("subscription_id, encrypted_refresh_token, granted_scope")
     .eq("subscription_id", subscriptionId)
     .maybeSingle();
-  if (error) throw databaseError("Could not load Google Calendar access.", error);
+  if (error)
+    throw databaseError("Could not load Google Calendar access.", error);
   return (data ?? null) as JsonRecord | null;
 }
 
@@ -93,7 +103,8 @@ export async function deleteGoogleCredential(
     .from("google_calendar_credentials")
     .delete()
     .eq("subscription_id", subscriptionId);
-  if (error) throw databaseError("Could not remove Google Calendar access.", error);
+  if (error)
+    throw databaseError("Could not remove Google Calendar access.", error);
 }
 
 export async function listActiveGoogleSubscriptions(
@@ -107,7 +118,8 @@ export async function listActiveGoogleSubscriptions(
     .eq("provider", "google_api")
     .eq("status", "active")
     .is("revoked_at", null);
-  if (error) throw databaseError("Could not load Google Calendar subscriptions.", error);
+  if (error)
+    throw databaseError("Could not load Google Calendar subscriptions.", error);
   return (data ?? []) as JsonRecord[];
 }
 
@@ -128,14 +140,20 @@ export async function updateGoogleSubscription(input: {
   if (input.syncedTimetableVersionId !== undefined) {
     patch.synced_timetable_version_id = input.syncedTimetableVersionId;
   }
-  if (input.lastSyncedAt !== undefined) patch.last_synced_at = input.lastSyncedAt;
-  if (input.lastErrorCode !== undefined) patch.last_error_code = input.lastErrorCode;
+  if (input.lastSyncedAt !== undefined)
+    patch.last_synced_at = input.lastSyncedAt;
+  if (input.lastErrorCode !== undefined)
+    patch.last_error_code = input.lastErrorCode;
 
   const { error } = await client(input.env)
     .from("calendar_subscriptions")
     .update(patch)
     .eq("id", input.subscriptionId);
-  if (error) throw databaseError("Could not update Google Calendar subscription.", error);
+  if (error)
+    throw databaseError(
+      "Could not update Google Calendar subscription.",
+      error,
+    );
 }
 
 export async function getCurrentPublishedVersionId(
@@ -147,7 +165,8 @@ export async function getCurrentPublishedVersionId(
     .select("current_published_version_id")
     .eq("id", timetableId)
     .maybeSingle();
-  if (error) throw databaseError("Could not load published timetable version.", error);
+  if (error)
+    throw databaseError("Could not load published timetable version.", error);
   const value = (data as JsonRecord | null)?.current_published_version_id;
   return value ? String(value) : null;
 }
@@ -161,7 +180,8 @@ export async function listGoogleEventSyncRecords(
     .select("*")
     .eq("subscription_id", subscriptionId)
     .eq("provider", "google_api");
-  if (error) throw databaseError("Could not load Google Calendar event state.", error);
+  if (error)
+    throw databaseError("Could not load Google Calendar event state.", error);
   return (data ?? []) as JsonRecord[];
 }
 
@@ -195,7 +215,8 @@ export async function upsertGoogleEventSyncRecord(input: {
       },
       { onConflict: "subscription_id,provider,internal_event_id" },
     );
-  if (error) throw databaseError("Could not save Google Calendar event state.", error);
+  if (error)
+    throw databaseError("Could not save Google Calendar event state.", error);
 }
 
 export async function deleteGoogleEventSyncRecord(input: {
@@ -209,5 +230,6 @@ export async function deleteGoogleEventSyncRecord(input: {
     .eq("subscription_id", input.subscriptionId)
     .eq("provider", "google_api")
     .eq("internal_event_id", input.internalEventId);
-  if (error) throw databaseError("Could not remove Google Calendar event state.", error);
+  if (error)
+    throw databaseError("Could not remove Google Calendar event state.", error);
 }

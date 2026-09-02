@@ -1,4 +1,9 @@
-import { CalendarCheck, ChevronLeft, ExternalLink, ShieldCheck } from "lucide-react";
+import {
+  CalendarCheck,
+  ChevronLeft,
+  ExternalLink,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
@@ -153,7 +158,9 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
         timezone: timetable.institutionTimezone,
       });
       if (!response.googleConnectUrl) {
-        throw new Error("Google Calendar connection is not available right now.");
+        throw new Error(
+          "Google Calendar connection is not available right now.",
+        );
       }
       window.location.assign(response.googleConnectUrl);
     } catch (caught) {
@@ -187,7 +194,10 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
           <section className="gcal-card">
             <h1>Timetable unavailable</h1>
             <p>Open the public timetable and try again.</p>
-            <a className="pt-button pt-button-primary" href={`/t/${encodeURIComponent(slug)}`}>
+            <a
+              className="pt-button pt-button-primary"
+              href={`/t/${encodeURIComponent(slug)}`}
+            >
               Back to timetable
             </a>
           </section>
@@ -221,10 +231,11 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
               <strong>CalenderZW only manages the calendar it creates.</strong>
               <p>
                 Google will let CalenderZW create a separate secondary calendar,
-                add this class timetable, apply your chosen reminders, and update
-                or remove only CalenderZW-created timetable events when the
-                published timetable changes. CalenderZW does not read, analyse,
-                edit, or delete events in your existing personal calendars.
+                add this class timetable, apply your chosen reminders, and
+                update or remove only CalenderZW-created timetable events when
+                the published timetable changes. CalenderZW does not read,
+                analyse, edit, or delete events in your existing personal
+                calendars.
               </p>
             </div>
           </div>
@@ -287,9 +298,8 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
           <p className="gcal-legal-copy">
             By continuing, you choose to connect Google Calendar for this
             timetable. You can disconnect later. Read our{" "}
-            <a href="/privacy">Privacy Policy</a>,{" "}
-            <a href="/terms">Terms</a>, and{" "}
-            <a href="/data-deletion">Data deletion</a> guidance.
+            <a href="/privacy">Privacy Policy</a>, <a href="/terms">Terms</a>,
+            and <a href="/data-deletion">Data deletion</a> guidance.
           </p>
         </section>
       </main>

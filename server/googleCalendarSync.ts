@@ -183,7 +183,10 @@ async function googleApiRequest(input: {
     },
     body: input.body ? JSON.stringify(input.body) : undefined,
   });
-  if (input.allowMissing && (response.status === 404 || response.status === 410)) {
+  if (
+    input.allowMissing &&
+    (response.status === 404 || response.status === 410)
+  ) {
     return null;
   }
   if (!response.ok) {
@@ -347,10 +350,7 @@ async function createSecondaryCalendar(input: {
   return id;
 }
 
-async function loadAccessToken(
-  subscriptionId: string,
-  env: NodeJS.ProcessEnv,
-) {
+async function loadAccessToken(subscriptionId: string, env: NodeJS.ProcessEnv) {
   const credential = await getGoogleCredential(subscriptionId, env);
   if (!credential?.encrypted_refresh_token) {
     throw new PilotApiError(
@@ -426,9 +426,15 @@ export async function syncGoogleSubscription(
   env: NodeJS.ProcessEnv = process.env,
 ) {
   requireGoogleConfig(env);
-  const subscription = asRecord(await getCalendarSubscriptionById(subscriptionId));
+  const subscription = asRecord(
+    await getCalendarSubscriptionById(subscriptionId),
+  );
   if (!subscription?.id || subscription.provider !== "google_api") {
-    throw new PilotApiError("SUBSCRIPTION_NOT_FOUND", "Google Calendar setup not found.", 404);
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
   }
   if (subscription.revoked_at || subscription.status === "disconnected") {
     return { created: 0, updated: 0, deleted: 0, unchanged: 0 };
@@ -457,7 +463,10 @@ export async function syncGoogleSubscription(
     reminderOffsetsMinutes: reminders,
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
-  const publishedVersionId = await getCurrentPublishedVersionId(timetableId, env);
+  const publishedVersionId = await getCurrentPublishedVersionId(
+    timetableId,
+    env,
+  );
   if (!publishedVersionId) {
     throw new PilotApiError(
       "TIMETABLE_NOT_PUBLISHED",
@@ -614,9 +623,15 @@ export async function completeGoogleCalendarConnection(input: {
   }
 
   const subscriptionId = String(stateRow.subscription_id);
-  const subscription = asRecord(await getCalendarSubscriptionById(subscriptionId));
+  const subscription = asRecord(
+    await getCalendarSubscriptionById(subscriptionId),
+  );
   if (!subscription?.id || subscription.provider !== "google_api") {
-    throw new PilotApiError("SUBSCRIPTION_NOT_FOUND", "Google Calendar setup not found.", 404);
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
   }
 
   const token = await exchangeAuthorizationCode({ code: input.code, env });
@@ -667,7 +682,9 @@ export async function completeGoogleCalendarConnection(input: {
     throw error;
   }
 
-  const timetable = await getPublishedTimetableById(String(subscription.timetable_id));
+  const timetable = await getPublishedTimetableById(
+    String(subscription.timetable_id),
+  );
   return { subscriptionId, publicSlug: timetable.publicSlug };
 }
 
@@ -697,7 +714,8 @@ export async function syncGoogleSubscriptionsForTimetable(
       console.warn("Google Calendar sync failed", {
         subscriptionId,
         timetableId,
-        code: error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
+        code:
+          error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
       });
     }
   }
@@ -716,7 +734,11 @@ export async function disconnectGoogleCalendar(input: {
     await getCalendarSubscriptionById(input.subscriptionId),
   );
   if (!subscription?.id || subscription.provider !== "google_api") {
-    throw new PilotApiError("SUBSCRIPTION_NOT_FOUND", "Google Calendar setup not found.", 404);
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
   }
   assertSubscriptionOwner(subscription, input.anonymousSessionId);
 
@@ -739,10 +761,13 @@ export async function disconnectGoogleCalendar(input: {
         // Token revocation still proceeds; the user can remove the retained calendar manually.
       }
     }
-    await fetch(`${googleRevokeEndpoint}?token=${encodeURIComponent(refreshToken)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    }).catch(() => undefined);
+    await fetch(
+      `${googleRevokeEndpoint}?token=${encodeURIComponent(refreshToken)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      },
+    ).catch(() => undefined);
   }
 
   await deleteGoogleCredential(input.subscriptionId, env);

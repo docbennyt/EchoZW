@@ -253,7 +253,8 @@ export async function handlePilotCalendarRequest(
         sendJson(res, 503, {
           error: {
             code: "GOOGLE_NOT_CONFIGURED",
-            message: "Direct Google Calendar connection is not available right now.",
+            message:
+              "Direct Google Calendar connection is not available right now.",
           },
         });
         return true;
@@ -383,14 +384,21 @@ export async function handlePilotCalendarRequest(
     }
 
     try {
-      const result = await completeGoogleCalendarConnection({ code, state, env });
+      const result = await completeGoogleCalendarConnection({
+        code,
+        state,
+        env,
+      });
       redirect(
         res,
         `${publicOrigin}/t/${encodeURIComponent(result.publicSlug)}?calendar=google-success&subscriptionId=${encodeURIComponent(result.subscriptionId)}`,
       );
     } catch (error) {
       console.warn("Google Calendar callback failed", {
-        code: error instanceof PilotApiError ? error.code : "GOOGLE_CALLBACK_FAILED",
+        code:
+          error instanceof PilotApiError
+            ? error.code
+            : "GOOGLE_CALLBACK_FAILED",
       });
       redirect(res, `${publicOrigin}/find?calendar=google-failed`);
     }

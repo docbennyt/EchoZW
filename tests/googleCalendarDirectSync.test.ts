@@ -16,8 +16,14 @@ const configuredEnv = {
 
 describe("Google Calendar direct sync security", () => {
   it("encrypts refresh tokens with randomized authenticated ciphertext", () => {
-    const first = encryptGoogleRefreshToken("refresh-token-value", configuredEnv);
-    const second = encryptGoogleRefreshToken("refresh-token-value", configuredEnv);
+    const first = encryptGoogleRefreshToken(
+      "refresh-token-value",
+      configuredEnv,
+    );
+    const second = encryptGoogleRefreshToken(
+      "refresh-token-value",
+      configuredEnv,
+    );
 
     expect(first).not.toBe("refresh-token-value");
     expect(first).not.toBe(second);
