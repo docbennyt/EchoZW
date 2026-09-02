@@ -94,7 +94,10 @@ describe("staff repository safety", () => {
     ).resolves.toEqual({ id: "new-assignment" });
 
     expect(revokeBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ active: false, revoked_at: expect.any(String) }),
+      expect.objectContaining({
+        active: false,
+        revoked_at: expect.any(String),
+      }),
     );
     expect(revokeBuilder.update.mock.calls[0][0]).not.toHaveProperty(
       "revoked_by",
@@ -135,7 +138,10 @@ describe("staff repository safety", () => {
     });
 
     await expect(
-      resendClassRepInvite({ actorId: "actor-1", staffUserId: "staff-rep" }),
+      resendClassRepInvite({
+        actorId: "actor-1",
+        staffUserId: "staff-rep",
+      }),
     ).resolves.toBeUndefined();
 
     expect(resetPasswordForEmail).toHaveBeenCalledWith("rep@example.test", {
