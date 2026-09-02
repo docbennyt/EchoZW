@@ -1,13 +1,26 @@
 import { googleCalendarScope } from "./googleScopes.js";
 
-export type GoogleOAuthConfig = {
-  enabled: boolean;
+type GoogleOAuthEnabledConfig = {
+  enabled: true;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  clientIdSuffix: string | null;
+  scope: string;
+};
+
+type GoogleOAuthDisabledConfig = {
+  enabled: false;
   clientId?: string;
   clientSecret?: string;
   redirectUri?: string;
   clientIdSuffix: string | null;
   scope: string;
 };
+
+export type GoogleOAuthConfig =
+  | GoogleOAuthEnabledConfig
+  | GoogleOAuthDisabledConfig;
 
 export function getGoogleClientIdSuffix(clientId?: string) {
   if (!clientId) return null;
@@ -21,14 +34,27 @@ export function resolveGoogleOAuthConfig(
   const clientId = env.GOOGLE_CLIENT_ID?.trim();
   const clientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
   const redirectUri = env.GOOGLE_REDIRECT_URI?.trim();
+  const shared = {
+    clientIdSuffix: getGoogleClientIdSuffix(clientId),
+    scope: googleCalendarScope,
+  };
+
+  if (clientId && clientSecret && redirectUri) {
+    return {
+      ...shared,
+      enabled: true,
+      clientId,
+      clientSecret,
+      redirectUri,
+    };
+  }
 
   return {
-    enabled: Boolean(clientId && clientSecret && redirectUri),
+    ...shared,
+    enabled: false,
     clientId,
     clientSecret,
     redirectUri,
-    clientIdSuffix: getGoogleClientIdSuffix(clientId),
-    scope: googleCalendarScope,
   };
 }
 
