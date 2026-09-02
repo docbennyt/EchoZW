@@ -1,0 +1,200 @@
+.pt-button-google {
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid rgba(31, 41, 55, 0.18);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.pt-button-google:hover {
+  border-color: rgba(31, 41, 55, 0.3);
+  background: #fafafa;
+}
+
+.gcal-inline-status,
+.gcal-inline-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  flex-basis: 100%;
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.gcal-inline-status {
+  color: #17423a;
+}
+
+.gcal-inline-error {
+  color: #9a3412;
+}
+
+.gcal-page {
+  min-height: 100vh;
+  background: #f6f1e8;
+}
+
+.gcal-shell {
+  width: min(760px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 44px 0 80px;
+}
+
+.gcal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 18px;
+  color: #17423a;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.gcal-card {
+  border: 1px solid rgba(23, 66, 58, 0.12);
+  border-radius: 24px;
+  background: #fffdf8;
+  padding: clamp(24px, 5vw, 44px);
+  box-shadow: 0 24px 70px rgba(47, 54, 47, 0.08);
+}
+
+.gcal-heading > span {
+  display: inline-block;
+  margin-bottom: 0.7rem;
+  color: #6e7d6d;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+}
+
+.gcal-heading h1 {
+  margin: 0;
+  color: #18332e;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+}
+
+.gcal-heading p {
+  margin: 1rem 0 0;
+  color: #65716c;
+  line-height: 1.6;
+}
+
+.gcal-disclosure {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  margin: 28px 0;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(23, 66, 58, 0.13);
+  background: rgba(231, 239, 232, 0.65);
+  color: #28433d;
+}
+
+.gcal-disclosure strong {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.gcal-disclosure p {
+  margin: 0;
+  color: #52655f;
+  line-height: 1.6;
+}
+
+.gcal-reminders {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.gcal-reminders legend,
+.gcal-permissions h2 {
+  margin: 0 0 10px;
+  color: #18332e;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.gcal-reminders label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+  border: 1px solid rgba(23, 66, 58, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.gcal-reminders input {
+  width: 18px;
+  height: 18px;
+  accent-color: #17423a;
+}
+
+.gcal-reminders span {
+  display: grid;
+  gap: 2px;
+}
+
+.gcal-reminders small {
+  color: #6d7773;
+}
+
+.gcal-permissions {
+  margin: 28px 0;
+  padding-top: 24px;
+  border-top: 1px solid rgba(23, 66, 58, 0.1);
+}
+
+.gcal-permissions ol {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #53625e;
+  line-height: 1.65;
+}
+
+.gcal-continue {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.gcal-continue:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.gcal-legal-copy {
+  margin: 16px 0 0;
+  color: #707a76;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.gcal-legal-copy a {
+  color: #17423a;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .gcal-shell {
+    width: min(100% - 28px, 760px);
+    padding: 22px 0 56px;
+  }
+
+  .gcal-card {
+    border-radius: 19px;
+    padding: 22px 18px;
+  }
+
+  .gcal-disclosure {
+    grid-template-columns: 1fr;
+  }
+}
