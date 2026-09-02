@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
@@ -55,6 +56,7 @@ export function GoogleCalendarDirectEntry({ slug }: { slug: string }) {
   const search = new URLSearchParams(window.location.search);
   const connected = search.get("calendar") === "google-success";
   const failed = search.get("calendar") === "google-failed";
+  const subscriptionId = search.get("subscriptionId");
 
   useEffect(() => {
     let active = true;
@@ -76,6 +78,32 @@ export function GoogleCalendarDirectEntry({ slug }: { slug: string }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (connected) {
+      track("google_oauth_completed", {
+        publicSlug: slug,
+        provider: "google_api",
+        subscriptionId,
+      });
+      track("google_calendar_created", {
+        publicSlug: slug,
+        provider: "google_api",
+        subscriptionId,
+      });
+      track("google_calendar_sync_completed", {
+        publicSlug: slug,
+        provider: "google_api",
+        subscriptionId,
+      });
+    } else if (failed) {
+      track("google_oauth_failed", {
+        publicSlug: slug,
+        provider: "google_api",
+        reason: "callback",
+      });
+    }
+  }, [connected, failed, slug, subscriptionId]);
+
   if (!target) return null;
 
   return createPortal(
@@ -85,6 +113,12 @@ export function GoogleCalendarDirectEntry({ slug }: { slug: string }) {
           className="pt-button pt-button-google"
           href={googleConnectPath(slug)}
           aria-label="Add this timetable directly to Google Calendar"
+          onClick={() =>
+            track("calendar_provider_selected", {
+              publicSlug: slug,
+              provider: "google_api",
+            })
+          }
         >
           <CalendarCheck size={18} aria-hidden="true" />
           Add to Google Calendar
@@ -127,6 +161,11 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
         setTimetable(nextTimetable);
         setGoogleEnabled(google.enabled);
         setStatus("ready");
+        track("calendar_success_viewed", {
+          publicSlug: nextTimetable.publicSlug,
+          provider: "google_api",
+          status: google.enabled ? "enabled" : "disabled",
+        });
       })
       .catch(() => {
         if (active) setStatus("error");
@@ -149,6 +188,11 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
     if (!timetable || !googleEnabled || busy) return;
     setBusy(true);
     setError("");
+    track("google_oauth_started", {
+      publicSlug: timetable.publicSlug,
+      provider: "google_api",
+      reminderPreset,
+    });
     try {
       const response = await createCalendarSubscription({
         timetableId: timetable.timetableId,
@@ -164,6 +208,11 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
       }
       window.location.assign(response.googleConnectUrl);
     } catch (caught) {
+      track("google_oauth_failed", {
+        publicSlug: timetable.publicSlug,
+        provider: "google_api",
+        reason: "subscription_create",
+      });
       setError(
         caught instanceof Error
           ? caught.message
