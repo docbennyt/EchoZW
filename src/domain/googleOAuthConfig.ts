@@ -19,8 +19,7 @@ type GoogleOAuthDisabledConfig = {
 };
 
 export type GoogleOAuthConfig =
-  | GoogleOAuthEnabledConfig
-  | GoogleOAuthDisabledConfig;
+  GoogleOAuthEnabledConfig | GoogleOAuthDisabledConfig;
 
 export function getGoogleClientIdSuffix(clientId?: string) {
   if (!clientId) return null;
