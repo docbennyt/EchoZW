@@ -15,6 +15,7 @@ import "./publicTimetableReliability.css";
 import "./publicTimetableMatrix.css";
 import "./googleCalendarDirect.css";
 import "./productionUxEnhancements.css";
+import "./productionUxEnhancementsPatch.css";
 
 function currentPath() {
   return window.location.pathname;
