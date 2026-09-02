@@ -3,7 +3,6 @@ import {
   CalendarCheck,
   Check,
   Clock3,
-  Link2,
   Search,
   ShieldCheck,
   UserRound,
@@ -146,7 +145,7 @@ function ProgrammeTrustExample() {
     <div className="czw-trust-card-live">
       <div className="czw-trust-live-head">
         <span>
-          <small>EXAMPLE CLASS TIMETABLE</small>
+          <small>EXAMPLE · SCHOOL OF BUSINESS & MANAGEMENT SCIENCES</small>
           <strong>BCom Forensic Accounting · 2.1</strong>
         </span>
         <span className="czw-trust-live-status">
@@ -288,9 +287,11 @@ export function TimetableGoogleOnboardingEnhancement({
 
   useEffect(() => {
     if (!methodTarget) {
-      setStage("method");
-      setError("");
-      return;
+      const timer = window.setTimeout(() => {
+        setStage("method");
+        setError("");
+      }, 0);
+      return () => window.clearTimeout(timer);
     }
     methodTarget.classList.add("pt-google-bridge-active");
     return () => methodTarget.classList.remove("pt-google-bridge-active");
@@ -416,6 +417,12 @@ export function TimetableGoogleOnboardingEnhancement({
     setStage("contact");
   }
 
+  function returnToMethods() {
+    setStage("method");
+    setError("");
+    setContactPhone("");
+  }
+
   const providerPortal =
     methodTarget && googleEnabled
       ? createPortal(
@@ -522,6 +529,14 @@ export function TimetableGoogleOnboardingEnhancement({
                   onClick={() => void beginGoogle()}
                 >
                   Continue without phone
+                </button>
+                <button
+                  type="button"
+                  className="pt-google-back"
+                  disabled={stage === "busy"}
+                  onClick={returnToMethods}
+                >
+                  Back to calendar choices
                 </button>
               </div>
             </div>
