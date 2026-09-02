@@ -10,6 +10,10 @@ const repositoryMocks = vi.hoisted(() => ({
   getPublishedTimetableById: vi.fn(),
 }));
 
+const revisionMocks = vi.hoisted(() => ({
+  getCalendarRevision: vi.fn(),
+}));
+
 vi.mock("../server/pilotRepository", () => {
   class PilotApiError extends Error {
     constructor(
@@ -26,6 +30,8 @@ vi.mock("../server/pilotRepository", () => {
     ...repositoryMocks,
   };
 });
+
+vi.mock("../server/calendarRevisionRepository", () => revisionMocks);
 
 import { handlePilotCalendarRequest } from "../server/pilotCalendarApi";
 
@@ -150,6 +156,10 @@ describe("private published calendar feed reliability", () => {
       subscriber_profile_id: null,
       calendar_name: "Class 1.1 · CalenderZW",
     });
+    revisionMocks.getCalendarRevision.mockResolvedValue({
+      updatedAt: "2026-08-09T08:00:00.000Z",
+      sequence: 1,
+    });
   });
 
   it("serves an unauthenticated GET as text/calendar with private revalidation headers", async () => {
@@ -181,7 +191,7 @@ describe("private published calendar feed reliability", () => {
     expect(Number(head.headers["content-length"])).toBeGreaterThan(0);
   });
 
-  it("returns 304 for current ETag and If-Modified-Since validators", async () => {
+  it("uses ETag for 304 and never trusts If-Modified-Since alone", async () => {
     const first = await runFeed({});
     const etagResult = await runFeed({
       headers: { "if-none-match": first.headers.etag },
@@ -193,8 +203,66 @@ describe("private published calendar feed reliability", () => {
     expect(etagResult.statusCode).toBe(304);
     expect(etagResult.body).toBe("");
     expect(etagResult.headers["content-length"]).toBeUndefined();
-    expect(modifiedSinceResult.statusCode).toBe(304);
-    expect(modifiedSinceResult.body).toBe("");
+    expect(modifiedSinceResult.statusCode).toBe(200);
+    expect(modifiedSinceResult.body).toContain("BEGIN:VCALENDAR");
+  });
+
+  it("propagates a Class Rep correction through the same existing subscription", async () => {
+    const first = await runFeed({});
+    const oldLastModified = first.headers["last-modified"];
+
+    repositoryMocks.getPublishedTimetableById.mockResolvedValue(
+      makeTimetable({
+        corrections: [
+          {
+            id: "correction-os",
+            stableSessionKey: null,
+            action: "add",
+            sourceMayReplace: false,
+            pinned: true,
+            courseCode: "ICS1102",
+            courseName: "Operating System",
+            weekday: 1,
+            startTime: "14:00:00",
+            endTime: "16:00:00",
+            venue: "N111 LAB",
+            lecturer: "Ms Dube",
+            sessionType: null,
+            notes: null,
+            reason: "Class Rep correction",
+            provenance: "Class representative",
+            creatorRole: "class_rep",
+            active: true,
+            createdAt: "2026-09-02T07:51:46.472Z",
+          },
+        ],
+      }),
+    );
+    revisionMocks.getCalendarRevision.mockResolvedValue({
+      updatedAt: "2026-09-02T07:51:46.472Z",
+      sequence: 2,
+    });
+
+    const byOldEtag = await runFeed({
+      headers: { "if-none-match": first.headers.etag },
+    });
+    expect(byOldEtag.statusCode).toBe(200);
+    expect(byOldEtag.headers.etag).not.toBe(first.headers.etag);
+    expect(byOldEtag.headers["last-modified"]).not.toBe(oldLastModified);
+    expect(byOldEtag.body).toContain("ICS1102");
+    expect(byOldEtag.body).toContain("Operating System");
+    expect(byOldEtag.body).toContain("SEQUENCE:2");
+
+    const byOldModifiedSince = await runFeed({
+      headers: { "if-modified-since": oldLastModified },
+    });
+    expect(byOldModifiedSince.statusCode).toBe(200);
+    expect(byOldModifiedSince.body).toContain("ICS1102");
+
+    const current = await runFeed({
+      headers: { "if-none-match": byOldEtag.headers.etag },
+    });
+    expect(current.statusCode).toBe(304);
   });
 
   it("changes ETag and feed content on a newer publication", async () => {
@@ -212,6 +280,10 @@ describe("private published calendar feed reliability", () => {
         ],
       }),
     );
+    revisionMocks.getCalendarRevision.mockResolvedValue({
+      updatedAt: "2026-08-10T08:00:00.000Z",
+      sequence: 2,
+    });
     const republished = await runFeed({
       headers: { "if-none-match": first.headers.etag },
     });

@@ -12,6 +12,7 @@ import {
   getPublishedTimetableById,
   PilotApiError,
 } from "./pilotRepository.js";
+import { getCalendarRevision } from "./calendarRevisionRepository.js";
 import { generatePublishedTimetableIcs } from "./publishedCalendar.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 import {
@@ -108,15 +109,6 @@ function requestHasEtag(req: IncomingMessage, etag: string) {
   return values.includes("*") || values.includes(etag);
 }
 
-function requestNotModifiedSince(req: IncomingMessage, lastModified: Date) {
-  if (req.headers["if-none-match"]) return false;
-  const header = req.headers["if-modified-since"];
-  if (!header || Array.isArray(header)) return false;
-  const parsed = Date.parse(header);
-  if (Number.isNaN(parsed)) return false;
-  return Math.floor(lastModified.getTime() / 1000) <= Math.floor(parsed / 1000);
-}
-
 function feedHeaders(input: {
   calendarName: string;
   ics: string;
@@ -146,13 +138,16 @@ function writeIcsResponse(
   const etag = makeFeedEtag(ics);
   const lastModified = new Date(lastModifiedValue);
   if (Number.isNaN(lastModified.getTime())) {
-    throw new Error(
-      "Published timetable has an invalid publication timestamp.",
-    );
+    throw new Error("Published timetable has an invalid revision timestamp.");
   }
   const headers = feedHeaders({ calendarName, ics, etag, lastModified });
 
-  if (requestHasEtag(req, etag) || requestNotModifiedSince(req, lastModified)) {
+  // ETag is derived from the complete personalized ICS representation and is the
+  // only safe 304 validator here. If-Modified-Since alone can be stale because
+  // subscribed-calendar clients only have second-level timestamp precision while
+  // Class Rep corrections can change the effective schedule independently of the
+  // base publication record.
+  if (requestHasEtag(req, etag)) {
     const notModifiedHeaders: Record<string, string> = { ...headers };
     delete notModifiedHeaders["Content-Length"];
     res.writeHead(304, notModifiedHeaders);
@@ -167,6 +162,34 @@ function writeIcsResponse(
   }
   res.end(ics);
   return 200;
+}
+
+async function buildRevisionAwareCalendar(input: {
+  timetableId: string;
+  reminders: number[];
+  publicOrigin: string;
+  env: NodeJS.ProcessEnv;
+}) {
+  const timetable = await getPublishedTimetableById(input.timetableId);
+  if (!timetable.publishedAt) {
+    throw new PilotApiError(
+      "TIMETABLE_NOT_PUBLISHED",
+      "This timetable does not have a published calendar yet.",
+      404,
+    );
+  }
+  const revision = await getCalendarRevision(input.timetableId, input.env);
+  const resolvedTimetable = {
+    ...timetable,
+    publishedAt: revision.updatedAt,
+    versionNumber: revision.sequence,
+  };
+  const ics = generatePublishedTimetableIcs({
+    timetable: resolvedTimetable,
+    reminderOffsetsMinutes: input.reminders,
+    publicOrigin: input.publicOrigin,
+  });
+  return { ics, revision };
 }
 
 export async function handlePilotCalendarRequest(
@@ -290,29 +313,23 @@ export async function handlePilotCalendarRequest(
           404,
         );
       }
-      const timetable = await getPublishedTimetableById(
-        String((subscription as Record<string, unknown>).timetable_id),
+      const timetableId = String(
+        (subscription as Record<string, unknown>).timetable_id,
       );
       const reminders = ((subscription as Record<string, unknown>)
         .reminder_offsets_minutes ?? []) as number[];
-      const ics = generatePublishedTimetableIcs({
-        timetable,
-        reminderOffsetsMinutes: reminders,
+      const { ics, revision } = await buildRevisionAwareCalendar({
+        timetableId,
+        reminders,
         publicOrigin,
+        env,
       });
-      if (!timetable.publishedAt) {
-        throw new PilotApiError(
-          "TIMETABLE_NOT_PUBLISHED",
-          "This timetable does not have a published calendar yet.",
-          404,
-        );
-      }
       writeIcsResponse(
         req,
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
-        timetable.publishedAt,
+        revision.updatedAt,
       );
     } catch (error) {
       sendError(res, error);
@@ -334,29 +351,23 @@ export async function handlePilotCalendarRequest(
       ) {
         throw new PilotApiError("NOT_FOUND", "Calendar feed not found.", 404);
       }
-      const timetable = await getPublishedTimetableById(
-        String((subscription as Record<string, unknown>).timetable_id),
+      const timetableId = String(
+        (subscription as Record<string, unknown>).timetable_id,
       );
       const reminders = ((subscription as Record<string, unknown>)
         .reminder_offsets_minutes ?? []) as number[];
-      const ics = generatePublishedTimetableIcs({
-        timetable,
-        reminderOffsetsMinutes: reminders,
+      const { ics, revision } = await buildRevisionAwareCalendar({
+        timetableId,
+        reminders,
         publicOrigin,
+        env,
       });
-      if (!timetable.publishedAt) {
-        throw new PilotApiError(
-          "TIMETABLE_NOT_PUBLISHED",
-          "This timetable does not have a published calendar yet.",
-          404,
-        );
-      }
       const statusCode = writeIcsResponse(
         req,
         res,
         String((subscription as Record<string, unknown>).calendar_name),
         ics,
-        timetable.publishedAt,
+        revision.updatedAt,
       );
       const subscriptionId = String(
         (subscription as Record<string, unknown>).id,
