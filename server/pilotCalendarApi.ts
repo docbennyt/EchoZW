@@ -25,6 +25,7 @@ import {
   isExternallyFetchableUrl,
 } from "../src/domain/publicUrl.js";
 import { recordCalendarFeedActivity } from "./analyticsRepository.js";
+import { updateGoogleSubscription } from "./googleCalendarRepository.js";
 import {
   beginGoogleCalendarConnection,
   completeGoogleCalendarConnection,
@@ -280,6 +281,15 @@ export async function handlePilotCalendarRequest(
         tokenHash,
         subscriberContact: parsed.data.subscriberContact,
       });
+      const subscriptionId = String(subscription.id);
+      if (parsed.data.provider === "google_api") {
+        await updateGoogleSubscription({
+          subscriptionId,
+          status: "pending",
+          lastErrorCode: null,
+          env,
+        });
+      }
       const feedUrl = rawToken
         ? buildFeedUrl(publicOrigin, rawToken)
         : undefined;
@@ -289,7 +299,6 @@ export async function handlePilotCalendarRequest(
           ? toAppleDeepLinkUrl(feedUrl)
           : undefined;
       const secureCookie = mode === "production" ? "; Secure" : "";
-      const subscriptionId = String(subscription.id);
 
       sendJson(
         res,
