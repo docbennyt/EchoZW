@@ -84,12 +84,8 @@ if (process.env.NODE_ENV === "production") {
             ),
           },
           sourceIngestion: {
-            enabled: Boolean(
-              process.env.HIT_TIMETABLE_RELAY_SECRET ?? process.env.SOURCE_RELAY_SECRET,
-            ),
-            configured: Boolean(
-              process.env.HIT_TIMETABLE_RELAY_SECRET ?? process.env.SOURCE_RELAY_SECRET,
-            ),
+            enabled: Boolean(process.env.SOURCE_RELAY_SECRET),
+            configured: Boolean(process.env.SOURCE_RELAY_SECRET),
           },
           analytics: {
             enabled: Boolean(process.env.ANALYTICS_ENABLED ?? true),
