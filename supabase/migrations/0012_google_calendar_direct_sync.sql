@@ -24,6 +24,8 @@ alter table google_calendar_credentials enable row level security;
 
 revoke all on table google_calendar_oauth_states from anon, authenticated;
 revoke all on table google_calendar_credentials from anon, authenticated;
+grant all on table google_calendar_oauth_states to service_role;
+grant all on table google_calendar_credentials to service_role;
 
 comment on table google_calendar_credentials is
   'Server-only encrypted Google OAuth refresh tokens for CalenderZW-created secondary calendars.';
