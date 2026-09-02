@@ -10,6 +10,11 @@
   background: #fafafa;
 }
 
+/* The previous Android provider list contained a disabled "Google direct sync\n   roadmap" card. Direct Google sync now has its own live entry point and\n   backend capability gate, so the stale placeholder must not contradict it. */
+.pt-method.disabled {
+  display: none;
+}
+
 .gcal-inline-status,
 .gcal-inline-error {
   display: flex;
