@@ -16,7 +16,7 @@ import { validateLegalProductionConfig } from "../src/domain/legalValidation.js"
 import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
 import { handleAdminRequest } from "./adminApi.js";
 import { handleAnalyticsRequest } from "./analyticsApi.js";
-import { handleHealthRequest, checkReadiness } from "./healthApi.js";
+import { handleHealthRequest } from "./healthApi.js";
 import {
   attachRequestLogging,
   classifyRoute,
@@ -46,25 +46,6 @@ const releaseSha =
   process.env.VERCEL_GIT_COMMIT_SHA ??
   process.env.GITHUB_SHA ??
   null;
-let readiness: Awaited<ReturnType<typeof checkReadiness>> | null = null;
-const readinessPromise = checkReadiness(process.env)
-  .then((result) => {
-    readiness = result;
-    return result;
-  })
-  .catch(() => {
-    readiness = {
-      status: "not_ready",
-      release: releaseSha,
-      dependencies: {
-        serverConfig: "missing",
-        supabase: "unavailable",
-        schema: "unavailable",
-        browserAuthConfig: "missing",
-      },
-    };
-    return readiness;
-  });
 
 if (process.env.NODE_ENV === "production") {
   validateLegalProductionConfig(process.env);
@@ -103,8 +84,14 @@ if (process.env.NODE_ENV === "production") {
             ),
           },
           sourceIngestion: {
-            enabled: Boolean(process.env.SOURCE_RELAY_SECRET),
-            configured: Boolean(process.env.SOURCE_RELAY_SECRET),
+            enabled: Boolean(
+              process.env.HIT_TIMETABLE_RELAY_SECRET ??
+                process.env.SOURCE_RELAY_SECRET,
+            ),
+            configured: Boolean(
+              process.env.HIT_TIMETABLE_RELAY_SECRET ??
+                process.env.SOURCE_RELAY_SECRET,
+            ),
           },
           analytics: {
             enabled: Boolean(process.env.ANALYTICS_ENABLED ?? true),
@@ -301,23 +288,11 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (await handleHealthRequest(req, res, process.env)) return;
-    const currentReadiness = readiness ?? (await readinessPromise);
-    if (currentReadiness.status !== "ready") {
-      res.writeHead(503, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      });
-      res.end(
-        JSON.stringify({
-          error: {
-            code: "SERVICE_NOT_READY",
-            message: "CalenderZW is starting up. Please try again shortly.",
-            requestId,
-          },
-        }),
-      );
-      return;
-    }
+
+    // Readiness is an infrastructure/deployment signal, not a global traffic
+    // kill-switch. Individual handlers already surface dependency-specific
+    // failures, while static/login/public shells must remain reachable so a
+    // transient or false-negative readiness probe cannot take down the site.
     if (await handleAdminRequest(req, res)) return;
     if (await handleAnalyticsRequest(req, res, process.env)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
