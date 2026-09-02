@@ -318,8 +318,13 @@
   margin-top: 28px;
   border-radius: 18px;
   background:
-    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent)
-      -180px 0 / 180px 100% no-repeat,
+    linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.72),
+        transparent
+      ) -180px
+      0 / 180px 100% no-repeat,
     linear-gradient(#e5eae3 0 0) 0 0 / 38% 17px no-repeat,
     linear-gradient(#edf0eb 0 0) 0 36px / 66% 12px no-repeat,
     linear-gradient(#edf0eb 0 0) 0 62px / 46% 12px no-repeat,
@@ -582,8 +587,8 @@
           transparent,
           rgba(255, 255, 255, 0.72),
           transparent
-        )
-        -180px 0 / 180px 100% no-repeat,
+        ) -180px
+        0 / 180px 100% no-repeat,
       linear-gradient(#e5eae3 0 0) 0 0 / 52% 16px no-repeat,
       linear-gradient(#edf0eb 0 0) 0 34px / 80% 11px no-repeat,
       linear-gradient(#edf0eb 0 0) 0 59px / 58% 11px no-repeat,

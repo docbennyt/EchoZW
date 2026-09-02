@@ -63,7 +63,10 @@ function usePortalTargets(selector: string) {
 
 function PilotSocialProof() {
   return (
-    <div className="czw-pilot-proof" aria-label="Current CalenderZW pilot activity">
+    <div
+      className="czw-pilot-proof"
+      aria-label="Current CalenderZW pilot activity"
+    >
       <div className="czw-avatar-stack" aria-hidden="true">
         {["CS", "FA", "ENG", "BUS"].map((label) => (
           <span className="czw-proof-avatar" key={label}>
@@ -186,9 +189,11 @@ export function MarketingEnhancements() {
   return (
     <>
       {heroTarget ? createPortal(<PilotSocialProof />, heroTarget) : null}
-      {stepTargets.slice(0, 3).map((target, index) =>
-        createPortal(<StepVisual index={index} />, target, `step-${index}`),
-      )}
+      {stepTargets
+        .slice(0, 3)
+        .map((target, index) =>
+          createPortal(<StepVisual index={index} />, target, `step-${index}`),
+        )}
       {googleOptionTarget
         ? createPortal(<GoogleMarketingCopy />, googleOptionTarget)
         : null}
@@ -555,8 +560,8 @@ export function TimetableGoogleOnboardingEnhancement({
             <div>
               <strong>Google Calendar connected</strong>
               <small>
-                Future approved CalenderZW timetable updates can sync to the same
-                Google calendar.
+                Future approved CalenderZW timetable updates can sync to the
+                same Google calendar.
               </small>
             </div>
           </div>,

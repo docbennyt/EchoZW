@@ -38,8 +38,13 @@
     height: 360px;
     margin-top: 24px;
     background:
-      linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent)
-        -180px 0 / 180px 100% no-repeat,
+      linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.72),
+          transparent
+        ) -180px
+        0 / 180px 100% no-repeat,
       linear-gradient(#e5eae3 0 0) 0 0 / 62% 16px no-repeat,
       linear-gradient(#edf0eb 0 0) 0 34px / 42% 11px no-repeat,
       linear-gradient(#e8ede6 0 0) 0 78px / 100% 144px no-repeat,
