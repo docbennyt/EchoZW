@@ -1,0 +1,1 @@
+Implementation prerequisites: verify existing Google OAuth production credentials/scope, add encrypted server-side credential persistence, connect the production calendar API path (not demo vite handler), and drive sync from canonical resolved timetable changes. URL subscription remains fallback.
