@@ -4,35 +4,16 @@ on:
   push:
   pull_request:
 
-permissions:
-  contents: write
-
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feat/google-calendar-direct-sync
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Format final Google OAuth changes once
-        run: |
-          npx prettier --write \
-            src/domain/googleOAuthConfig.ts \
-            src/GoogleCalendarDirectConnect.tsx
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add \
-              src/domain/googleOAuthConfig.ts \
-              src/GoogleCalendarDirectConnect.tsx
-            git commit -m "chore: format final Google OAuth changes"
-            git push origin HEAD:feat/google-calendar-direct-sync
-          fi
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test
