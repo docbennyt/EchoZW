@@ -113,7 +113,11 @@
   place-items: center;
   padding: 20px;
   background:
-    radial-gradient(circle at 50% 0%, rgba(216, 168, 48, 0.18), transparent 28rem),
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(216, 168, 48, 0.18),
+      transparent 28rem
+    ),
     rgba(247, 244, 236, 0.98);
   backdrop-filter: blur(14px);
 }
