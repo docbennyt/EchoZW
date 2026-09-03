@@ -37,7 +37,8 @@ function GoogleCalendarHandoff({
       subscriptionId,
     });
 
-    const storage = typeof window !== "undefined" ? window.sessionStorage : null;
+    const storage =
+      typeof window !== "undefined" ? window.sessionStorage : null;
     if (!shouldAutoOpenGoogleCalendar(subscriptionId, storage)) return;
 
     const timer = window.setTimeout(() => {
