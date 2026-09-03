@@ -1,8 +1,4 @@
-import {
-  HIT_MASTER_PARSER_VERSION,
-  HitParserError,
-  parseHitSistMasterSnapshot,
-} from "../src/domain/hitMasterSnapshotParser.js";
+import { HitParserError, resolveSourceParser } from "./sourceParserRegistry.js";
 import {
   loadLatestRelaySnapshotForParsing,
   persistSourceSnapshotParseFailure,
@@ -23,8 +19,10 @@ async function main() {
     throw new Error(`No relay snapshot found for source ${sourceKey}.`);
   }
 
+  const parser = resolveSourceParser(snapshot.parserProfile);
+
   try {
-    const parserResult = parseHitSistMasterSnapshot({
+    const parserResult = parser.parse({
       contentHash: snapshot.contentHash,
       payload: snapshot.payload,
       sourceKey: snapshot.sourceKey,
@@ -106,7 +104,7 @@ async function main() {
         {
           failureCode: error.code,
           failureMetadata: error.metadata,
-          parserVersion: HIT_MASTER_PARSER_VERSION,
+          parserVersion: parser.parserVersion,
           snapshot,
         },
         process.env,
@@ -119,7 +117,7 @@ async function main() {
               message: error.message,
               metadata: error.metadata,
             },
-            parserVersion: HIT_MASTER_PARSER_VERSION,
+            parserVersion: parser.parserVersion,
             snapshot: snapshot.snapshotId,
           },
           null,

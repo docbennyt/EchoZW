@@ -22,6 +22,8 @@ export type RelaySourceRecord = {
   lastSuccessfulSnapshotAt: string | null;
   lastErrorAt: string | null;
   lastErrorCode: string | null;
+  parserProfile: string | null;
+  relaySecretEnvName: string | null;
 };
 
 export class SourceSnapshotRepositoryError extends Error {
@@ -56,6 +58,10 @@ function mapRelaySource(row: JsonRecord): RelaySourceRecord {
       : null,
     lastErrorAt: row.last_error_at ? String(row.last_error_at) : null,
     lastErrorCode: row.last_error_code ? String(row.last_error_code) : null,
+    parserProfile: row.parser_profile ? String(row.parser_profile) : null,
+    relaySecretEnvName: row.relay_secret_env_name
+      ? String(row.relay_secret_env_name)
+      : null,
   };
 }
 

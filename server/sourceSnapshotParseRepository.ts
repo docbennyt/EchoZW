@@ -1,9 +1,7 @@
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
-import type {
-  HitParserResult,
-  HitSnapshotParserInput,
-} from "../src/domain/hitMasterSnapshotParser.js";
+import type { HitSnapshotParserInput } from "../src/domain/hitMasterSnapshotParser.js";
 import type { GoogleDocsSourceSnapshot } from "../src/domain/sourceSnapshots.js";
+import type { SourceParserResult } from "./sourceParserRegistry.js";
 import { SourceSnapshotRepositoryError } from "./sourceSnapshotRepository.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -25,6 +23,7 @@ export type RelaySnapshotForParse = HitSnapshotParserInput & {
   provider: string;
   snapshotId: string;
   sourceId: string;
+  parserProfile: string | null;
 };
 
 export type SourceSnapshotParseRunRecord = {
@@ -126,7 +125,7 @@ export async function loadLatestRelaySnapshotForParsing(
   const source = await expectData(
     client
       .from("timetable_sources")
-      .select("id, source_key, provider, external_file_id")
+      .select("id, source_key, provider, external_file_id, parser_profile")
       .eq("source_key", sourceKey)
       .single(),
     "Could not load the configured relay source for parsing.",
@@ -161,6 +160,9 @@ export async function loadLatestRelaySnapshotForParsing(
     snapshotId: String((snapshot as JsonRecord).id),
     sourceId: String((snapshot as JsonRecord).source_id),
     sourceKey: String((source as JsonRecord).source_key),
+    parserProfile: (source as JsonRecord).parser_profile
+      ? String((source as JsonRecord).parser_profile)
+      : null,
   } satisfies RelaySnapshotForParse;
 }
 
@@ -206,7 +208,7 @@ async function loadExistingParseRun(
 
 export async function persistSourceSnapshotParseRun(
   input: {
-    parserResult: HitParserResult;
+    parserResult: SourceParserResult;
     snapshot: RelaySnapshotForParse;
   },
   env: NodeJS.ProcessEnv = process.env,

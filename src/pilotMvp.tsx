@@ -12,6 +12,7 @@ import {
   Save,
   Share2,
   ShieldCheck,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { track } from "./analytics";
@@ -22,6 +23,13 @@ import {
 } from "./api/adminSession";
 import { fetchAnalyticsOverview } from "./api/adminAnalytics";
 import type { AnalyticsOverview } from "./domain/adminAnalytics";
+import {
+  fetchSourceGatewayState,
+  mapSourceGatewayCohort,
+  mapSourceGatewayProgramme,
+  processLatestSourceSnapshot,
+  type SourceGatewayState,
+} from "./api/sourceGatewayAdmin";
 import {
   assignClassRep,
   createRecurringCorrection,
@@ -331,6 +339,7 @@ function AdminNav({ path }: { path: string }) {
     { href: "/admin/class-groups", label: "Class groups" },
     { href: "/admin/academic-periods", label: "Academic periods" },
     { href: "/admin/timetables", label: "Timetables" },
+    { href: "/admin/source-gateway", label: "Source Gateway" },
   ];
 
   return (
@@ -349,6 +358,296 @@ function AdminNav({ path }: { path: string }) {
         </a>
       ))}
     </nav>
+  );
+}
+
+function SourceGatewayPage({
+  accessToken,
+  academicPeriods,
+  classGroups,
+  programmes,
+}: {
+  accessToken: string;
+  academicPeriods: AdminAcademicPeriod[];
+  classGroups: AdminClassGroup[];
+  programmes: AdminProgramme[];
+}) {
+  const [state, setState] = useState<SourceGatewayState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState("");
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setState(await fetchSourceGatewayState(accessToken));
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Could not load Source Gateway.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [refresh]);
+
+  const saveProgramme = async (discoveredId: string, programmeId: string) => {
+    if (!programmeId) return;
+    setSaving(discoveredId);
+    try {
+      await mapSourceGatewayProgramme(accessToken, discoveredId, programmeId);
+      await refresh();
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const saveCohort = async (
+    discoveredId: string,
+    programmeId: string,
+    cohortId: string,
+    academicPeriodId: string,
+  ) => {
+    if (!programmeId || !cohortId || !academicPeriodId) return;
+    setSaving(discoveredId);
+    try {
+      await mapSourceGatewayCohort(accessToken, discoveredId, {
+        targetAcademicPeriodId: academicPeriodId,
+        targetCohortId: cohortId,
+        targetProgrammeId: programmeId,
+      });
+      await refresh();
+    } finally {
+      setSaving("");
+    }
+  };
+
+  if (loading && !state) return <p>Loading Source Gateway...</p>;
+
+  return (
+    <div className="stack">
+      {error ? <p className="content-notice">{error}</p> : null}
+      <Surface
+        title="Source Gateway"
+        subtitle="Connected sources produce private review drafts only."
+        actions={
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => void refresh()}
+          >
+            <RefreshCw size={18} />
+          </button>
+        }
+      >
+        {state?.sources.length ? (
+          <div className="source-gateway-grid">
+            {state.sources.map((source) => {
+              const sourceCohorts = state.cohorts.filter(
+                (cohort) => cohort.source_id === source.id,
+              );
+              const mappedCount = sourceCohorts.filter(
+                (cohort) => cohort.mapping_status === "mapped",
+              ).length;
+              const pendingReviews = state.reviews.filter(
+                (review) =>
+                  review.source_id === source.id && review.status === "pending",
+              ).length;
+              return (
+                <article className="source-gateway-card" key={source.id}>
+                  <div>
+                    <strong>{source.display_name}</strong>
+                    <span>
+                      {source.parser_profile ?? "Parser not configured"}
+                    </span>
+                  </div>
+                  <dl>
+                    <div>
+                      <dt>Cohorts</dt>
+                      <dd>
+                        {mappedCount}/{sourceCohorts.length} mapped
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Reviews</dt>
+                      <dd>{pendingReviews} pending</dd>
+                    </div>
+                    <div>
+                      <dt>Processing</dt>
+                      <dd>
+                        {source.last_processing_error_code ??
+                          source.last_processing_completed_at ??
+                          "Waiting"}
+                      </dd>
+                    </div>
+                  </dl>
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={async () => {
+                      setSaving(source.id);
+                      try {
+                        await processLatestSourceSnapshot(
+                          accessToken,
+                          source.id,
+                        );
+                        await refresh();
+                      } finally {
+                        setSaving("");
+                      }
+                    }}
+                    disabled={saving === source.id}
+                  >
+                    <RefreshCw size={18} />
+                  </button>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyPanel
+            title="No sources connected"
+            text="Accepted snapshots will appear here once a source is configured."
+          />
+        )}
+      </Surface>
+
+      <Surface title="Programme Mapping">
+        <div className="source-gateway-list">
+          {(state?.programmes ?? []).map((programme) => (
+            <article className="source-gateway-row" key={programme.id}>
+              <div>
+                <strong>{programme.source_programme_code}</strong>
+                <span>{programme.session_count} sessions detected</span>
+              </div>
+              <select
+                defaultValue={programme.target_programme_id ?? ""}
+                onChange={(event) =>
+                  void saveProgramme(programme.id, event.currentTarget.value)
+                }
+                disabled={saving === programme.id}
+              >
+                <option value="">Map programme</option>
+                {programmes.map((target) => (
+                  <option key={target.id} value={target.id}>
+                    {target.name}
+                  </option>
+                ))}
+              </select>
+            </article>
+          ))}
+        </div>
+      </Surface>
+
+      <Surface title="Cohort Mapping">
+        <div className="source-gateway-list">
+          {(state?.cohorts ?? []).map((cohort) => {
+            const targetProgrammeId = cohort.target_programme_id ?? "";
+            const targetCohortId = cohort.target_cohort_id ?? "";
+            const targetAcademicPeriodId =
+              cohort.target_academic_period_id ?? "";
+            return (
+              <article className="source-gateway-row" key={cohort.id}>
+                <div>
+                  <strong>{cohort.source_cohort_code}</strong>
+                  <span>
+                    {cohort.session_count} sessions · {cohort.mapping_status}
+                  </span>
+                </div>
+                <select
+                  defaultValue={targetProgrammeId}
+                  id={`${cohort.id}-programme`}
+                >
+                  <option value="">Programme</option>
+                  {programmes.map((target) => (
+                    <option key={target.id} value={target.id}>
+                      {target.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  defaultValue={targetCohortId}
+                  id={`${cohort.id}-cohort`}
+                >
+                  <option value="">Class</option>
+                  {classGroups.map((target) => (
+                    <option key={target.id} value={target.id}>
+                      {target.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  defaultValue={targetAcademicPeriodId}
+                  id={`${cohort.id}-period`}
+                >
+                  <option value="">Period</option>
+                  {academicPeriods.map((target) => (
+                    <option key={target.id} value={target.id}>
+                      {target.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="secondary"
+                  type="button"
+                  disabled={saving === cohort.id}
+                  onClick={() => {
+                    const programme = document.getElementById(
+                      `${cohort.id}-programme`,
+                    ) as HTMLSelectElement | null;
+                    const classGroup = document.getElementById(
+                      `${cohort.id}-cohort`,
+                    ) as HTMLSelectElement | null;
+                    const period = document.getElementById(
+                      `${cohort.id}-period`,
+                    ) as HTMLSelectElement | null;
+                    void saveCohort(
+                      cohort.id,
+                      programme?.value ?? "",
+                      classGroup?.value ?? "",
+                      period?.value ?? "",
+                    );
+                  }}
+                >
+                  <Save size={18} />
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </Surface>
+
+      <Surface title="Review Queue">
+        <div className="source-gateway-list">
+          {(state?.reviews ?? []).map((review) => (
+            <article className="source-gateway-row" key={review.id}>
+              <div>
+                <strong>{review.source_cohort_code}</strong>
+                <span>
+                  {String(review.summary.sessionCount ?? 0)} source sessions ·{" "}
+                  {review.status}
+                </span>
+              </div>
+              <a
+                className="secondary"
+                href={`/admin/timetables/${review.timetable_id}`}
+              >
+                Review timetable
+              </a>
+            </article>
+          ))}
+        </div>
+      </Surface>
+    </div>
   );
 }
 
@@ -3606,6 +3905,14 @@ export function AdminMvpScreen({ path }: { path: string }) {
               timetables={data.timetables}
               refreshAll={data.refreshAll}
               path={path}
+            />
+          ) : null}
+          {path === "/admin/source-gateway" ? (
+            <SourceGatewayPage
+              accessToken={accessToken}
+              academicPeriods={data.academicPeriods}
+              classGroups={data.classGroups}
+              programmes={data.programmes}
             />
           ) : null}
         </div>

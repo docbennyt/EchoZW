@@ -132,6 +132,8 @@ describe("source snapshot repository", () => {
         lastSuccessfulSnapshotAt: null,
         lastErrorAt: null,
         lastErrorCode: null,
+        parserProfile: "hit_sist_master_v1",
+        relaySecretEnvName: "HIT_TIMETABLE_RELAY_SECRET",
       },
       payload: createPayload(),
       contentHash: "hash-abc",

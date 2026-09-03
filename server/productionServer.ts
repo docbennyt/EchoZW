@@ -34,6 +34,7 @@ import {
 import { checkSchemaCompatibility } from "./schemaCompatibility.js";
 import { injectSpaMetadata } from "./spaMetadata.js";
 import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
+import { startSourceProcessingWorker } from "./sourceProcessingWorker.js";
 import { validateSupabaseProductionConfig } from "./supabase/config.js";
 import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 
@@ -84,8 +85,8 @@ if (process.env.NODE_ENV === "production") {
             ),
           },
           sourceIngestion: {
-            enabled: Boolean(process.env.SOURCE_RELAY_SECRET),
-            configured: Boolean(process.env.SOURCE_RELAY_SECRET),
+            enabled: Boolean(process.env.HIT_TIMETABLE_RELAY_SECRET),
+            configured: Boolean(process.env.HIT_TIMETABLE_RELAY_SECRET),
           },
           analytics: {
             enabled: Boolean(process.env.ANALYTICS_ENABLED ?? true),
@@ -314,6 +315,16 @@ const server = createServer(async (req, res) => {
     );
   }
 });
+
+const sourceProcessingWorker = startSourceProcessingWorker(process.env);
+
+function shutdown() {
+  sourceProcessingWorker.stop();
+  server.close(() => process.exit(0));
+}
+
+process.once("SIGTERM", shutdown);
+process.once("SIGINT", shutdown);
 
 server.listen(port, "0.0.0.0", () => {
   console.log(
