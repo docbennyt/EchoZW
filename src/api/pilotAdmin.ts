@@ -39,7 +39,10 @@ export class PilotClientError extends Error {
   }
 }
 
-async function adminFetch<T>(path: string, options: ApiOptions): Promise<T> {
+export async function adminFetch<T>(
+  path: string,
+  options: ApiOptions,
+): Promise<T> {
   const response = await fetch(path, {
     method: options.method ?? "GET",
     headers: {

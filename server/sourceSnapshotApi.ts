@@ -12,7 +12,7 @@ import {
   isSourceTimestampWithinWindow,
   timingSafeEqualBase64Url,
 } from "../src/domain/sourceSnapshots.js";
-import { getRelaySecretForSourceKey } from "./sourceSnapshotConfig.js";
+import { getRelaySecretForSource } from "./sourceSnapshotConfig.js";
 import {
   acceptRelaySourceSnapshot,
   getRelaySourceByKey,
@@ -20,13 +20,15 @@ import {
   type RelaySourceRecord,
   type SourceSnapshotRepositoryError,
 } from "./sourceSnapshotRepository.js";
+import { enqueueSourceProcessingJob } from "./sourceProcessingRepository.js";
 
 type SourceSnapshotDependencies = {
   acceptSnapshot?: typeof acceptRelaySourceSnapshot;
   getNowMs?: () => number;
-  getRelaySecret?: typeof getRelaySecretForSourceKey;
+  getRelaySecret?: typeof getRelaySecretForSource;
   loadSourceByKey?: typeof getRelaySourceByKey;
   markSourceError?: typeof markRelaySourceError;
+  enqueueProcessingJob?: typeof enqueueSourceProcessingJob;
 };
 
 class SourceSnapshotApiError extends Error {
@@ -293,9 +295,11 @@ export async function handleSourceSnapshotRequest(
   const requestId = crypto.randomUUID();
   const nowMs = deps.getNowMs?.() ?? Date.now();
   const loadSourceByKey = deps.loadSourceByKey ?? getRelaySourceByKey;
-  const getRelaySecret = deps.getRelaySecret ?? getRelaySecretForSourceKey;
+  const getRelaySecret = deps.getRelaySecret ?? getRelaySecretForSource;
   const acceptSnapshot = deps.acceptSnapshot ?? acceptRelaySourceSnapshot;
   const recordSourceError = deps.markSourceError ?? markRelaySourceError;
+  const enqueueProcessing =
+    deps.enqueueProcessingJob ?? enqueueSourceProcessingJob;
 
   let resolvedSource: RelaySourceRecord | null = null;
   let observedAt: string | null = null;
@@ -332,7 +336,7 @@ export async function handleSourceSnapshotRequest(
       );
     }
 
-    const relaySecret = getRelaySecret(sourceHeader, env);
+    const relaySecret = getRelaySecret(resolvedSource, env);
     if (!relaySecret) {
       logSourceRelayAuthFailure({
         bodyBytes: Buffer.byteLength(rawBody, "utf8"),
@@ -395,6 +399,15 @@ export async function handleSourceSnapshotRequest(
       },
       env,
     );
+    if (result.status === "accepted") {
+      await enqueueProcessing(
+        {
+          snapshotId: result.snapshotId,
+          sourceId: resolvedSource.id,
+        },
+        env,
+      );
+    }
 
     const durationMs = Date.now() - startedAt;
     logSourceSnapshotEvent({

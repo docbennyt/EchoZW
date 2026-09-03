@@ -76,6 +76,7 @@ function createSnapshot() {
     snapshotId: "snapshot-1",
     sourceId: "source-1",
     sourceKey: "hit-sist-master-sem1-2026",
+    parserProfile: "hit_sist_master_v1",
   };
 }
 

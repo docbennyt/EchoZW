@@ -82,6 +82,8 @@ const sourceRecord = {
   lastSuccessfulSnapshotAt: null,
   lastErrorAt: null,
   lastErrorCode: null,
+  parserProfile: "hit_sist_master_v1",
+  relaySecretEnvName: "HIT_TIMETABLE_RELAY_SECRET",
 };
 
 describe("source snapshot API", () => {
@@ -117,6 +119,9 @@ describe("source snapshot API", () => {
           status: "accepted" as const,
           snapshotId: "snapshot-1",
           contentHash: payload.contentHash,
+        })),
+        enqueueProcessingJob: vi.fn(async () => ({
+          status: "queued" as const,
         })),
         getNowMs: () => Number(timestamp),
         getRelaySecret: () => "test-secret",
@@ -256,6 +261,9 @@ describe("source snapshot API", () => {
           snapshotId: "snapshot-1",
           contentHash: payload.contentHash,
         })),
+        enqueueProcessingJob: vi.fn(async () => ({
+          status: "queued" as const,
+        })),
         getNowMs: () => Number(timestamp),
         loadSourceByKey: vi.fn(async () => sourceRecord),
         markSourceError: vi.fn(async () => undefined),
@@ -268,6 +276,49 @@ describe("source snapshot API", () => {
       snapshotId: "snapshot-1",
       contentHash: payload.contentHash,
     });
+  });
+
+  it("enqueues durable processing only for newly accepted snapshots", async () => {
+    const payload = createPayload();
+    const bodyString = JSON.stringify(payload);
+    const timestamp = "1724315400000";
+    const signature = computeSourceRelaySignature({
+      rawBody: bodyString,
+      secret: "test-secret",
+      timestamp,
+    });
+    const enqueueProcessingJob = vi.fn(async () => ({
+      status: "queued" as const,
+    }));
+    const { res } = createResponse();
+
+    await handleSourceSnapshotRequest(
+      createRequest({
+        body: bodyString,
+        headers: {
+          "x-czw-source": "hit-sist-master-sem1-2026",
+          "x-czw-timestamp": timestamp,
+          "x-czw-signature": signature,
+          "x-czw-content-hash": payload.contentHash,
+        },
+      }),
+      res,
+      process.env,
+      {
+        acceptSnapshot: vi.fn(async () => ({
+          status: "unchanged" as const,
+          snapshotId: "snapshot-1",
+          contentHash: payload.contentHash,
+        })),
+        enqueueProcessingJob,
+        getNowMs: () => Number(timestamp),
+        getRelaySecret: () => "test-secret",
+        loadSourceByKey: vi.fn(async () => sourceRecord),
+        markSourceError: vi.fn(async () => undefined),
+      },
+    );
+
+    expect(enqueueProcessingJob).not.toHaveBeenCalled();
   });
 
   it("rejects requests signed with untrimmed secret bytes when the runtime trims configuration", async () => {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  getRelaySecretForSource,
   getRelaySecretForSourceKey,
   HIT_TIMETABLE_SOURCE_KEY,
   normalizeRelaySecret,
@@ -18,5 +19,33 @@ describe("source snapshot config", () => {
         HIT_TIMETABLE_RELAY_SECRET: "  test-secret  ",
       }),
     ).toBe("test-secret");
+  });
+
+  it("loads the relay secret through the source row env-name indirection", () => {
+    expect(
+      getRelaySecretForSource(
+        {
+          relaySecretEnvName: "CUSTOM_SOURCE_SECRET",
+          sourceKey: "future-source",
+        },
+        {
+          CUSTOM_SOURCE_SECRET: "  future-secret  ",
+        } as NodeJS.ProcessEnv,
+      ),
+    ).toBe("future-secret");
+  });
+
+  it("falls back to the existing HIT source key for backwards compatibility", () => {
+    expect(
+      getRelaySecretForSource(
+        {
+          relaySecretEnvName: null,
+          sourceKey: HIT_TIMETABLE_SOURCE_KEY,
+        },
+        {
+          HIT_TIMETABLE_RELAY_SECRET: "legacy-secret",
+        },
+      ),
+    ).toBe("legacy-secret");
   });
 });
