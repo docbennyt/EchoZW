@@ -2,9 +2,10 @@ import { CalendarCheck, Check, ExternalLink, Smartphone } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { track } from "./analytics";
-
-export const GOOGLE_CALENDAR_HOME_URL =
-  "https://calendar.google.com/calendar/r";
+import {
+  GOOGLE_CALENDAR_HOME_URL,
+  shouldAutoOpenGoogleCalendar,
+} from "./domain/googleCalendarHandoff";
 
 function usePortalTarget(selector: string) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
@@ -22,25 +23,6 @@ function usePortalTarget(selector: string) {
   return target;
 }
 
-export function googleCalendarHandoffKey(subscriptionId: string | null) {
-  return `calenderzw_google_calendar_handoff_${subscriptionId || "unknown"}`;
-}
-
-export function shouldAutoOpenGoogleCalendar(
-  subscriptionId: string | null,
-  storage: Pick<Storage, "getItem" | "setItem"> | null,
-) {
-  if (!storage) return true;
-  const key = googleCalendarHandoffKey(subscriptionId);
-  try {
-    if (storage.getItem(key)) return false;
-    storage.setItem(key, "1");
-    return true;
-  } catch {
-    return true;
-  }
-}
-
 function GoogleCalendarHandoff({
   slug,
   subscriptionId,
@@ -48,8 +30,6 @@ function GoogleCalendarHandoff({
   slug: string;
   subscriptionId: string | null;
 }) {
-  const [autoOpening, setAutoOpening] = useState(true);
-
   useEffect(() => {
     track("calendar_success_viewed", {
       publicSlug: slug,
@@ -58,9 +38,7 @@ function GoogleCalendarHandoff({
     });
 
     const storage = typeof window !== "undefined" ? window.sessionStorage : null;
-    const shouldOpen = shouldAutoOpenGoogleCalendar(subscriptionId, storage);
-    setAutoOpening(shouldOpen);
-    if (!shouldOpen) return;
+    if (!shouldAutoOpenGoogleCalendar(subscriptionId, storage)) return;
 
     const timer = window.setTimeout(() => {
       window.location.assign(GOOGLE_CALENDAR_HOME_URL);
@@ -97,12 +75,10 @@ function GoogleCalendarHandoff({
           Open Google Calendar
         </a>
 
-        {autoOpening ? (
-          <div className="czw-google-opening" role="status">
-            <CalendarCheck size={16} aria-hidden="true" />
-            Opening your calendar…
-          </div>
-        ) : null}
+        <div className="czw-google-opening" role="status">
+          <CalendarCheck size={16} aria-hidden="true" />
+          Opening automatically. If it stays here, tap the button above.
+        </div>
 
         <details className="czw-samsung-calendar-help">
           <summary>
@@ -116,7 +92,10 @@ function GoogleCalendarHandoff({
           </p>
         </details>
 
-        <a className="czw-google-back-timetable" href={`/t/${encodeURIComponent(slug)}`}>
+        <a
+          className="czw-google-back-timetable"
+          href={`/t/${encodeURIComponent(slug)}`}
+        >
           Back to timetable
         </a>
       </div>
@@ -169,7 +148,10 @@ function FastGoogleContactChoice({
     <>
       <div className="czw-google-fast-copy">
         <strong>Phone number is optional.</strong>
-        <span>Connect your calendar now. Add a number only if you want direct timetable alerts.</span>
+        <span>
+          Connect your calendar now. Add a number only if you want direct
+          timetable alerts.
+        </span>
       </div>
       <button
         type="button"
