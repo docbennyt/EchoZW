@@ -14,11 +14,6 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Print formatted onboarding CSS
-        run: |
-          npx prettier --write src/studentOnboardingAcceleration.css
-          echo "FORMATTED_CSS_BASE64=$(base64 -w0 src/studentOnboardingAcceleration.css)"
-          exit 1
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test
