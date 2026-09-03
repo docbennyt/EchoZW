@@ -10,6 +10,11 @@ const handlerMocks = vi.hoisted(() => ({
     return true;
   }),
   staff: vi.fn(),
+  analytics: vi.fn(async (_req, res: ServerResponse) => {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ ok: true }));
+    return true;
+  }),
 }));
 
 vi.mock("../server/correctionsAdminApi", () => ({
@@ -18,6 +23,10 @@ vi.mock("../server/correctionsAdminApi", () => ({
 
 vi.mock("../server/staffAdminApi", () => ({
   handleStaffAdminApi: handlerMocks.staff,
+}));
+
+vi.mock("../server/adminAnalyticsApi", () => ({
+  handleAdminAnalyticsApi: handlerMocks.analytics,
 }));
 
 import { handleAdminRequest } from "../server/adminApi";
@@ -178,5 +187,43 @@ describe("role-scoped admin route gates", () => {
     expect(res.statusCode).toBe(403);
     expect(body().error.code).toBe("SUPERADMIN_REQUIRED");
     expect(handlerMocks.staff).not.toHaveBeenCalled();
+  });
+
+  it("blocks a class rep from founder analytics APIs", async () => {
+    const { res, body } = response();
+    await handleAdminRequest(
+      request("GET", "/api/admin/analytics/overview"),
+      res,
+      {
+        createUserClient: () => userClient({ id: "rep-user" }),
+        createAdminClient: () =>
+          adminClient({
+            staff: { id: "staff-rep", role: "class_rep", active: true },
+          }),
+      },
+    );
+
+    expect(res.statusCode).toBe(403);
+    expect(body().error.code).toBe("SUPERADMIN_REQUIRED");
+    expect(handlerMocks.analytics).not.toHaveBeenCalled();
+  });
+
+  it("allows a superadmin to reach founder analytics APIs", async () => {
+    const { res, body } = response();
+    await handleAdminRequest(
+      request("GET", "/api/admin/analytics/overview"),
+      res,
+      {
+        createUserClient: () => userClient({ id: "admin-user" }),
+        createAdminClient: () =>
+          adminClient({
+            staff: { id: "staff-admin", role: "superadmin", active: true },
+          }),
+      },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(body()).toEqual({ ok: true });
+    expect(handlerMocks.analytics).toHaveBeenCalled();
   });
 });

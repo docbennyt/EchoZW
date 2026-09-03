@@ -3,6 +3,7 @@ import type {
   AnalyticsProperties,
   CoarseClient,
 } from "../src/domain/analytics.js";
+import { isAnalyticsUuid } from "../src/domain/analytics.js";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 
 export type AnalyticsEventInsert = {
@@ -19,20 +20,56 @@ export type AnalyticsEventInsert = {
   client: CoarseClient;
 };
 
+type AnalyticsPersistenceClient = ReturnType<typeof createSupabaseAdminClient>;
+
+async function resolveAnalyticsPersonId(
+  client: AnalyticsPersistenceClient,
+  event: AnalyticsEventInsert,
+) {
+  try {
+    const subscriptionId =
+      event.subscriptionId && isAnalyticsUuid(event.subscriptionId)
+        ? event.subscriptionId
+        : null;
+    const seenAt =
+      event.clientTimestamp && !Number.isNaN(Date.parse(event.clientTimestamp))
+        ? event.clientTimestamp
+        : new Date().toISOString();
+    const { data, error } = await client.rpc("resolve_analytics_person", {
+      p_product_key: event.productKey,
+      p_anonymous_id: event.anonymousId,
+      p_subscription_id: subscriptionId,
+      p_seen_at: seenAt,
+    });
+    if (error) throw error;
+    return typeof data === "string" ? data : null;
+  } catch (error) {
+    console.warn("analytics identity stitching unavailable", {
+      eventName: event.eventName,
+      hasSubscriptionId: Boolean(event.subscriptionId),
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return null;
+  }
+}
+
 export async function persistAnalyticsEvents(
   events: AnalyticsEventInsert[],
   env: NodeJS.ProcessEnv = process.env,
 ) {
   if (events.length === 0) return;
   const client = createSupabaseAdminClient(env);
-  const { error } = await client.from("analytics_events").insert(
-    events.map((event) => ({
+  const rows = [];
+  for (const event of events) {
+    const analyticsPersonId = await resolveAnalyticsPersonId(client, event);
+    rows.push({
       product_key: event.productKey,
       event_name: event.eventName,
       anonymous_id: event.anonymousId,
       session_id: event.sessionId,
       timetable_id: event.timetableId ?? null,
       subscription_id: event.subscriptionId ?? null,
+      analytics_person_id: analyticsPersonId,
       public_slug: event.publicSlug ?? null,
       provider: event.provider ?? null,
       properties: event.properties,
@@ -40,8 +77,9 @@ export async function persistAnalyticsEvents(
       device_kind: event.client.deviceKind,
       browser_family: event.client.browserFamily,
       os_family: event.client.osFamily,
-    })),
-  );
+    });
+  }
+  const { error } = await client.from("analytics_events").insert(rows);
   if (error) {
     throw new Error(`analytics insert failed: ${error.message}`);
   }

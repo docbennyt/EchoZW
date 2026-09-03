@@ -20,6 +20,8 @@ import {
   type AdminSessionResponse,
   type AdminSessionUser,
 } from "./api/adminSession";
+import { fetchAnalyticsOverview } from "./api/adminAnalytics";
+import type { AnalyticsOverview } from "./domain/adminAnalytics";
 import {
   assignClassRep,
   createRecurringCorrection,
@@ -322,6 +324,7 @@ function EmptyPanel({ title, text }: { title: string; text: string }) {
 function AdminNav({ path }: { path: string }) {
   const items = [
     { href: "/admin", label: "Overview" },
+    { href: "/admin/analytics", label: "Analytics" },
     { href: "/admin/team", label: "Team" },
     { href: "/admin/institutions", label: "Institutions" },
     { href: "/admin/programmes", label: "Programmes" },
@@ -346,6 +349,262 @@ function AdminNav({ path }: { path: string }) {
         </a>
       ))}
     </nav>
+  );
+}
+
+function AnalyticsOverviewPage({ accessToken }: { accessToken: string }) {
+  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const params = useMemo(() => {
+    const search = new URLSearchParams(window.location.search);
+    if (!search.has("from") || !search.has("to")) {
+      const today = new Date().toISOString().slice(0, 10);
+      const from = new Date();
+      from.setUTCDate(from.getUTCDate() - 6);
+      search.set("from", search.get("from") ?? from.toISOString().slice(0, 10));
+      search.set("to", search.get("to") ?? today);
+    }
+    return search;
+  }, []);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setOverview(await fetchAnalyticsOverview(accessToken, params));
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Could not load founder analytics.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken, params]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void refresh();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [refresh]);
+
+  const activeConnections = overview?.kpis.find(
+    (metric) => metric.id === "activeCalendarConnections",
+  );
+
+  return (
+    <div className="pilot-stack analytics-workspace">
+      <Surface
+        title="Analytics"
+        subtitle="Founder-only product adoption and calendar health."
+        actions={
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => void refresh()}
+          >
+            Refresh
+          </button>
+        }
+      >
+        <div className="analytics-filter-bar" aria-label="Analytics filters">
+          <span>{overview?.filters.from ?? params.get("from")}</span>
+          <span>{overview?.filters.to ?? params.get("to")}</span>
+          <span>{overview?.filters.timezone ?? "Africa/Harare"}</span>
+          <a href="/admin/analytics">Reset filters</a>
+        </div>
+        {overview ? (
+          <p className="pilot-muted">
+            Last refreshed {formatTimestamp(overview.refreshedAt)}
+          </p>
+        ) : null}
+      </Surface>
+
+      {error ? (
+        <Surface title="Analytics unavailable">
+          <p className="content-notice">{error}</p>
+        </Surface>
+      ) : null}
+
+      <section className="analytics-grid" aria-busy={loading}>
+        <article className="analytics-primary">
+          <span>Active calendar connections</span>
+          <strong>{loading ? "..." : (activeConnections?.value ?? 0)}</strong>
+          <p>Google, Apple/webcal, and subscription links. ICS is separate.</p>
+        </article>
+        {(overview?.kpis ?? []).slice(1).map((metric) => (
+          <article key={metric.id} className="analytics-kpi">
+            <span>{metric.label}</span>
+            <strong>{loading ? "..." : metric.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <Surface
+        title="Adoption trend"
+        subtitle="Daily unique people and calendar connection movement."
+      >
+        {overview?.adoptionTimeseries.length ? (
+          <div className="analytics-trend" role="list">
+            {overview.adoptionTimeseries.map((point) => {
+              const maxValue = Math.max(
+                ...overview.adoptionTimeseries.map((item) =>
+                  Math.max(item.uniquePeople, item.calendarConnections, 1),
+                ),
+              );
+              return (
+                <div key={point.date} role="listitem">
+                  <span>{point.date.slice(5)}</span>
+                  <div>
+                    <i
+                      style={{
+                        blockSize: `${Math.max(
+                          8,
+                          (point.uniquePeople / maxValue) * 96,
+                        )}px`,
+                      }}
+                      aria-label={`${point.uniquePeople} unique people`}
+                    />
+                    <b
+                      style={{
+                        blockSize: `${Math.max(
+                          8,
+                          (point.calendarConnections / maxValue) * 96,
+                        )}px`,
+                      }}
+                      aria-label={`${point.calendarConnections} calendar connections`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyPanel
+            title="Insufficient historical instrumentation"
+            text="No adoption trend can be computed for the current date range."
+          />
+        )}
+      </Surface>
+
+      <Surface
+        title="Conversion funnel"
+        subtitle="Unique analytics people at each adoption step."
+      >
+        {loading ? <p>Loading funnel...</p> : null}
+        {!loading && overview?.funnel.length === 0 ? (
+          <EmptyPanel
+            title="No funnel activity"
+            text="No matching student journey events exist in this date range."
+          />
+        ) : (
+          <div className="analytics-funnel">
+            {overview?.funnel.map((stage) => (
+              <button
+                key={stage.stage}
+                type="button"
+                style={{
+                  inlineSize: `${Math.max(
+                    18,
+                    Math.round((stage.conversionFromFirst ?? 1) * 100),
+                  )}%`,
+                }}
+                aria-label={`${stage.stage}: ${stage.people} people`}
+              >
+                <span>{stage.stage}</span>
+                <strong>{stage.people}</strong>
+              </button>
+            ))}
+          </div>
+        )}
+      </Surface>
+
+      <Surface
+        title="Provider mix"
+        subtitle="Setup choices vs active connections."
+      >
+        {overview?.providerMix.length ? (
+          <div className="analytics-bars">
+            {overview.providerMix.map((provider) => (
+              <div key={provider.provider}>
+                <span>{provider.provider}</span>
+                <meter
+                  min={0}
+                  max={Math.max(
+                    provider.setupChoices,
+                    provider.activeConnections,
+                    1,
+                  )}
+                  value={provider.activeConnections}
+                />
+                <strong>{provider.activeConnections}</strong>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel
+            title="No provider data"
+            text="No calendar provider events match the current filters."
+          />
+        )}
+      </Surface>
+
+      <Surface title="Data quality">
+        {overview ? (
+          <div className="analytics-quality-grid">
+            <span>Events received: {overview.dataQuality.eventsReceived}</span>
+            <span>
+              Anonymous identities:{" "}
+              {overview.dataQuality.uniqueAnonymousIdentities}
+            </span>
+            <span>
+              Subscription-linked:{" "}
+              {overview.dataQuality.identitiesStitchedToSubscriptions}
+            </span>
+            <span>
+              Consented contact rate:{" "}
+              {Math.round(
+                overview.dataQuality.consentedContactLinkageRate * 100,
+              )}
+              %
+            </span>
+            <span>
+              Missing timetable: {overview.dataQuality.missingTimetableContext}
+            </span>
+            <span>
+              Missing subscription:{" "}
+              {overview.dataQuality.missingSubscriptionLinkage}
+            </span>
+            <span>
+              Last ingestion:{" "}
+              {overview.dataQuality.lastIngestionAt
+                ? formatTimestamp(overview.dataQuality.lastIngestionAt)
+                : "No events yet"}
+            </span>
+            <span>
+              Persistence failures:{" "}
+              {overview.dataQuality.persistenceFailures ?? "Not measured yet"}
+            </span>
+            {overview.dataQuality.knownHistoricalInstrumentationGaps.length ? (
+              <div>
+                <strong>Known gaps</strong>
+                {overview.dataQuality.knownHistoricalInstrumentationGaps.map(
+                  (gap) => (
+                    <p key={gap}>{gap}</p>
+                  ),
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p>Loading data quality...</p>
+        )}
+      </Surface>
+    </div>
   );
 }
 
@@ -3299,6 +3558,9 @@ export function AdminMvpScreen({ path }: { path: string }) {
           ) : null}
           {path === "/admin" ? (
             <AdminOverview timetables={data.timetables} />
+          ) : null}
+          {path === "/admin/analytics" ? (
+            <AnalyticsOverviewPage accessToken={accessToken} />
           ) : null}
           {path === "/admin/team" ? (
             <TeamPage accessToken={accessToken} timetables={data.timetables} />

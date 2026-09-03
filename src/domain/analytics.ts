@@ -1,4 +1,13 @@
 export const ANALYTICS_EVENT_NAMES = [
+  "landing_viewed",
+  "finder_opened",
+  "finder_search_started",
+  "institution_selected",
+  "programme_selected",
+  "class_group_selected",
+  "timetable_search_completed",
+  "timetable_search_no_results",
+  "timetable_result_opened",
   "timetable_viewed",
   "calendar_cta_clicked",
   "onboarding_opened",
@@ -32,6 +41,7 @@ export const ANALYTICS_EVENT_NAMES = [
   "calendar_setup_help_opened",
   "subscription_link_copied",
   "timetable_shared",
+  "share_link_opened",
   "admin_logged_in",
   "auth_client_error",
   "admin_timetable_created",
@@ -64,6 +74,17 @@ export const ANALYTICS_PROPERTY_KEYS = [
   "shareTarget",
   "step",
   "country",
+  "entryPath",
+  "referrerHost",
+  "utmSource",
+  "utmMedium",
+  "utmCampaign",
+  "utmContent",
+  "shareAttributionId",
+  "institutionId",
+  "programmeId",
+  "classGroupId",
+  "failureClass",
 ] as const;
 
 const eventNameSet = new Set<string>(ANALYTICS_EVENT_NAMES);
@@ -107,6 +128,256 @@ export function sanitizeAnalyticsProperties(
     }
   }
   return output;
+}
+
+export const ADOPTION_STAGES = [
+  "Visitor",
+  "Timetable viewer",
+  "Engaged",
+  "Onboarding started",
+  "Provider selected",
+  "Calendar connected",
+  "Active subscriber",
+  "Advocate",
+  "At risk",
+] as const;
+
+export type AdoptionStage = (typeof ADOPTION_STAGES)[number];
+
+export const IDENTITY_STRENGTHS = [
+  "anonymous",
+  "subscription_linked",
+  "consented_contact_linked",
+] as const;
+
+export type IdentityStrength = (typeof IDENTITY_STRENGTHS)[number];
+
+export type AnalyticsPersonEvidence = {
+  eventNames: AnalyticsEventName[];
+  sessionIds?: string[];
+  hasActiveCalendarConnection?: boolean;
+  hasRecentFeedOrSyncActivity?: boolean;
+  hasProlongedProviderFailure?: boolean;
+  hasConsentedContact?: boolean;
+  subscriptionIds?: string[];
+};
+
+const engagedEvents = new Set<AnalyticsEventName>([
+  "calendar_cta_clicked",
+  "share_prompt_viewed",
+  "timetable_shared",
+  "share_link_opened",
+]);
+
+const providerSelectedEvents = new Set<AnalyticsEventName>([
+  "provider_selected",
+  "calendar_method_selected",
+  "calendar_provider_selected",
+]);
+
+const connectedEvents = new Set<AnalyticsEventName>([
+  "subscription_created",
+  "calendar_subscription_created",
+  "google_oauth_completed",
+  "google_calendar_created",
+]);
+
+export function determineIdentityStrength(
+  evidence: Pick<
+    AnalyticsPersonEvidence,
+    "hasConsentedContact" | "subscriptionIds"
+  >,
+): IdentityStrength {
+  if (evidence.hasConsentedContact) return "consented_contact_linked";
+  if ((evidence.subscriptionIds ?? []).length > 0) return "subscription_linked";
+  return "anonymous";
+}
+
+export function analyticsIdentityLabel(strength: IdentityStrength) {
+  if (strength === "consented_contact_linked") return "Consented contact";
+  if (strength === "subscription_linked") return "Subscription-linked student";
+  return "Anonymous visitor";
+}
+
+export type AnalyticsIdentityJoinEvidence = {
+  leftAnonymousId?: string | null;
+  rightAnonymousId?: string | null;
+  leftSubscriptionId?: string | null;
+  rightSubscriptionId?: string | null;
+  leftSubscriberProfileId?: string | null;
+  rightSubscriberProfileId?: string | null;
+};
+
+export function shouldJoinAnalyticsIdentities(
+  evidence: AnalyticsIdentityJoinEvidence,
+) {
+  if (
+    evidence.leftSubscriptionId &&
+    evidence.leftSubscriptionId === evidence.rightSubscriptionId
+  ) {
+    return true;
+  }
+  if (
+    evidence.leftSubscriberProfileId &&
+    evidence.leftSubscriberProfileId === evidence.rightSubscriberProfileId
+  ) {
+    return true;
+  }
+  return Boolean(
+    evidence.leftAnonymousId &&
+    evidence.leftAnonymousId === evidence.rightAnonymousId,
+  );
+}
+
+export function determineAdoptionStage(
+  evidence: AnalyticsPersonEvidence,
+): AdoptionStage {
+  const events = new Set(evidence.eventNames);
+  if (evidence.hasProlongedProviderFailure) return "At risk";
+  if (events.has("timetable_shared")) return "Advocate";
+  if (
+    evidence.hasActiveCalendarConnection &&
+    evidence.hasRecentFeedOrSyncActivity
+  ) {
+    return "Active subscriber";
+  }
+  if (
+    evidence.hasActiveCalendarConnection ||
+    [...connectedEvents].some((event) => events.has(event))
+  ) {
+    return "Calendar connected";
+  }
+  if ([...providerSelectedEvents].some((event) => events.has(event))) {
+    return "Provider selected";
+  }
+  if (events.has("onboarding_opened")) return "Onboarding started";
+  if (
+    [...engagedEvents].some((event) => events.has(event)) ||
+    new Set(evidence.sessionIds ?? []).size > 1
+  ) {
+    return "Engaged";
+  }
+  if (events.has("timetable_viewed")) return "Timetable viewer";
+  return "Visitor";
+}
+
+export type EngagementScoreExplanation = {
+  score: number;
+  contributions: { label: string; points: number }[];
+};
+
+const scoreRules: {
+  eventName: AnalyticsEventName;
+  label: string;
+  points: number;
+  once?: boolean;
+}[] = [
+  { eventName: "timetable_viewed", label: "Timetable viewed", points: 5 },
+  {
+    eventName: "calendar_cta_clicked",
+    label: "Calendar CTA clicked",
+    points: 10,
+  },
+  { eventName: "onboarding_opened", label: "Onboarding started", points: 10 },
+  { eventName: "provider_selected", label: "Provider selected", points: 10 },
+  {
+    eventName: "calendar_provider_selected",
+    label: "Provider selected",
+    points: 10,
+  },
+  {
+    eventName: "calendar_subscription_created",
+    label: "Subscription created",
+    points: 25,
+  },
+  {
+    eventName: "subscription_created",
+    label: "Subscription created",
+    points: 25,
+  },
+  {
+    eventName: "google_oauth_completed",
+    label: "Google OAuth completed",
+    points: 15,
+  },
+  {
+    eventName: "google_calendar_sync_completed",
+    label: "Successful calendar sync",
+    points: 10,
+  },
+  { eventName: "timetable_shared", label: "Shared timetable", points: 15 },
+  {
+    eventName: "onboarding_abandoned",
+    label: "Abandoned onboarding",
+    points: -5,
+  },
+  {
+    eventName: "google_calendar_sync_failed",
+    label: "Repeated provider error",
+    points: -10,
+  },
+];
+
+export function explainEngagementScore(
+  eventNames: AnalyticsEventName[],
+  sessionIds: string[] = [],
+): EngagementScoreExplanation {
+  const counts = new Map<AnalyticsEventName, number>();
+  for (const eventName of eventNames) {
+    counts.set(eventName, (counts.get(eventName) ?? 0) + 1);
+  }
+
+  const contributions = scoreRules
+    .map((rule) => {
+      const count = counts.get(rule.eventName) ?? 0;
+      if (count === 0) return null;
+      return {
+        label: rule.label,
+        points: rule.points * (rule.once ? 1 : count),
+      };
+    })
+    .filter(
+      (value): value is { label: string; points: number } => value !== null,
+    );
+
+  if (new Set(sessionIds).size > 1) {
+    contributions.push({ label: "Second session", points: 5 });
+  }
+
+  const rawScore = contributions.reduce((sum, item) => sum + item.points, 0);
+  return {
+    score: Math.max(0, Math.min(100, rawScore)),
+    contributions,
+  };
+}
+
+export function sanitizeReferrerHost(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const parsed = new URL(value);
+    return parsed.hostname.toLowerCase().slice(0, 160);
+  } catch {
+    return value
+      .trim()
+      .replace(/[/?#].*$/, "")
+      .toLowerCase()
+      .slice(0, 160);
+  }
+}
+
+export function maskPhoneE164(value: string | null | undefined) {
+  if (!value) return null;
+  const normalized = value.trim();
+  if (!/^\+[1-9][0-9]{7,14}$/.test(normalized)) return null;
+  const visiblePrefix = normalized.slice(0, Math.min(7, normalized.length - 4));
+  return `${visiblePrefix}...${normalized.slice(-4)}`;
+}
+
+export function redactAnalyticsValue(key: string, value: unknown) {
+  if (sensitiveKeyPattern.test(key)) return undefined;
+  if (/phone/i.test(key) && typeof value === "string")
+    return maskPhoneE164(value);
+  return value;
 }
 
 export type CoarseClient = {
