@@ -3,7 +3,7 @@ import {
   GOOGLE_CALENDAR_HOME_URL,
   googleCalendarHandoffKey,
   shouldAutoOpenGoogleCalendar,
-} from "../src/StudentOnboardingAcceleration";
+} from "../src/domain/googleCalendarHandoff";
 
 function memoryStorage() {
   const values = new Map<string, string>();
