@@ -2,18 +2,12 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const identitySql = readFileSync(
-  new URL(
-    "../supabase/migrations/0014_founder_analytics_correctness_hardening.sql",
-    import.meta.url,
-  ),
+  "supabase/migrations/0014_founder_analytics_correctness_hardening.sql",
   "utf8",
 );
 
 const metricSql = readFileSync(
-  new URL(
-    "../supabase/migrations/0015_founder_analytics_metric_hardening.sql",
-    import.meta.url,
-  ),
+  "supabase/migrations/0015_founder_analytics_metric_hardening.sql",
   "utf8",
 );
 
