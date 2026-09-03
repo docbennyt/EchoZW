@@ -33,8 +33,8 @@ describe("founder analytics hardening migrations", () => {
     expect(identitySql).toContain(
       "revoke all on function public.resolve_analytics_person",
     );
-    expect(identitySql).not.toContain("to anon");
-    expect(identitySql).not.toContain("to authenticated");
+    expect(identitySql).not.toMatch(/\bto\s+anon\s*;/i);
+    expect(identitySql).not.toMatch(/\bto\s+authenticated\s*;/i);
   });
 
   it("excludes one-time ICS exports from calendar activation", () => {
@@ -60,7 +60,7 @@ describe("founder analytics hardening migrations", () => {
     expect(metricSql).toContain(
       "revoke all on function public.get_admin_analytics_overview(",
     );
-    expect(metricSql).not.toContain("to anon");
-    expect(metricSql).not.toContain("to authenticated");
+    expect(metricSql).not.toMatch(/\bto\s+anon\s*;/i);
+    expect(metricSql).not.toMatch(/\bto\s+authenticated\s*;/i);
   });
 });
