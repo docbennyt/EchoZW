@@ -91,9 +91,7 @@
 }
 
 /* Proxy buttons above own the fast path. Keep only the navigation escape hatch. */
-.pt-google-contact-card.czw-google-fast-track
-  .pt-google-actions
-  > .pt-button {
+.pt-google-contact-card.czw-google-fast-track .pt-google-actions > .pt-button {
   display: none;
 }
 
