@@ -1,0 +1,255 @@
+/* Fast-path student onboarding: calendar connection is primary; phone capture stays optional. */
+.pt-google-contact-card.czw-google-fast-track {
+  position: relative;
+}
+
+.pt-google-contact-card.czw-google-fast-track .pt-google-contact-heading {
+  order: 1;
+}
+
+.pt-google-contact-card.czw-google-fast-track .pt-google-disclosure {
+  order: 2;
+}
+
+.czw-google-fast-copy {
+  order: 3;
+  display: grid;
+  gap: 3px;
+  color: var(--pt-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.czw-google-fast-copy strong {
+  color: var(--pt-ink);
+  font-size: 12px;
+}
+
+.czw-google-fast-continue {
+  order: 4;
+  width: 100%;
+  min-height: 52px;
+}
+
+.czw-google-phone-toggle {
+  order: 5;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(21, 61, 50, 0.16);
+  border-radius: 10px;
+  padding: 9px 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(238, 243, 235, 0.72);
+  color: var(--pt-forest);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.czw-google-phone-toggle:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.pt-google-contact-card.czw-google-fast-track .pt-google-optional-label,
+.pt-google-contact-card.czw-google-fast-track .pt-google-phone-grid {
+  display: none;
+}
+
+.pt-google-contact-card.czw-google-phone-open .pt-google-optional-label {
+  order: 6;
+  display: grid;
+}
+
+.pt-google-contact-card.czw-google-phone-open .pt-google-phone-grid {
+  order: 7;
+  display: grid;
+}
+
+.czw-google-phone-save {
+  order: 8;
+  width: 100%;
+  min-height: 50px;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  box-shadow: 0 -8px 20px rgba(255, 254, 250, 0.88);
+}
+
+.pt-google-contact-card.czw-google-fast-track > .pt-error {
+  order: 9;
+}
+
+.pt-google-contact-card.czw-google-fast-track .pt-google-actions {
+  order: 10;
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: -3px;
+}
+
+/* Proxy buttons above own the fast path. Keep only the navigation escape hatch. */
+.pt-google-contact-card.czw-google-fast-track
+  .pt-google-actions
+  > .pt-button {
+  display: none;
+}
+
+.pt-google-contact-card.czw-google-fast-track .pt-google-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+/* Google OAuth completion should feel like a successful handoff, not a return to a dead-end timetable. */
+.czw-google-handoff {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(216, 168, 48, 0.18), transparent 28rem),
+    rgba(247, 244, 236, 0.98);
+  backdrop-filter: blur(14px);
+}
+
+.czw-google-handoff-card {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: clamp(24px, 5vw, 38px);
+  border: 1px solid rgba(21, 61, 50, 0.15);
+  border-radius: 24px;
+  display: grid;
+  gap: 14px;
+  background: var(--pt-white);
+  box-shadow: 0 28px 80px rgba(15, 47, 39, 0.18);
+  text-align: center;
+}
+
+.czw-google-handoff-icon {
+  width: 58px;
+  height: 58px;
+  margin-inline: auto;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--pt-forest);
+  color: #fff;
+}
+
+.czw-google-handoff-card .pt-kicker {
+  justify-content: center;
+  margin-top: 3px;
+}
+
+.czw-google-handoff-card h1 {
+  margin: 0;
+  color: var(--pt-ink);
+  font-size: clamp(30px, 7vw, 44px);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+}
+
+.czw-google-handoff-card > p {
+  margin: 0 auto 3px;
+  max-width: 44ch;
+  color: var(--pt-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.czw-google-open-calendar {
+  width: 100%;
+  min-height: 56px;
+  margin-top: 3px;
+}
+
+.czw-google-opening {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--pt-forest);
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.czw-samsung-calendar-help {
+  margin-top: 2px;
+  border: 1px solid var(--pt-line);
+  border-radius: 12px;
+  background: var(--pt-sage-soft);
+  color: var(--pt-ink);
+  text-align: left;
+}
+
+.czw-samsung-calendar-help summary {
+  min-height: 44px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--pt-forest);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.czw-samsung-calendar-help p {
+  margin: 0;
+  padding: 0 12px 12px;
+  color: var(--pt-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.czw-google-back-timetable {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pt-forest);
+  font-size: 11px;
+  font-weight: 780;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .pt-google-contact-card.czw-google-fast-track {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .pt-google-contact-card.czw-google-fast-track .pt-google-disclosure {
+    padding: 8px 9px;
+  }
+
+  .czw-google-fast-copy span {
+    display: none;
+  }
+
+  .czw-google-fast-continue {
+    min-height: 54px;
+  }
+
+  .czw-google-handoff {
+    align-items: end;
+    padding: 0;
+  }
+
+  .czw-google-handoff-card {
+    width: 100%;
+    max-height: 94dvh;
+    padding: 24px 18px calc(22px + env(safe-area-inset-bottom));
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+  }
+}
