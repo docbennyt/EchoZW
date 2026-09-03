@@ -8,6 +8,7 @@ import {
   TimetableGoogleOnboardingEnhancement,
 } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
+import { StudentOnboardingAcceleration } from "./StudentOnboardingAcceleration";
 import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
@@ -16,6 +17,7 @@ import "./publicTimetableMatrix.css";
 import "./googleCalendarDirect.css";
 import "./productionUxEnhancements.css";
 import "./productionUxEnhancementsPatch.css";
+import "./studentOnboardingAcceleration.css";
 
 function currentPath() {
   return window.location.pathname;
@@ -61,6 +63,7 @@ function RootApp() {
       <>
         <PublicTimetableReliability slug={slug} />
         <TimetableGoogleOnboardingEnhancement slug={slug} />
+        <StudentOnboardingAcceleration slug={slug} />
         <GoogleCalendarDisconnectEntry />
       </>
     );
