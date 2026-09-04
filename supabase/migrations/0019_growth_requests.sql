@@ -56,7 +56,11 @@ create table if not exists public.growth_requests (
   ),
   check (
     contact_consent
-    or (contact_email is null and contact_phone_e164 is null)
+    or (
+      contact_name is null
+      and contact_email is null
+      and contact_phone_e164 is null
+    )
   ),
   check (
     request_type <> 'missing_timetable'
@@ -75,7 +79,11 @@ create table if not exists public.growth_requests (
   ),
   check (
     not testimonial_consent
-    or (request_type = 'feedback' and contact_consent)
+    or (
+      request_type = 'feedback'
+      and contact_consent
+      and (contact_email is not null or contact_phone_e164 is not null)
+    )
   ),
   check (
     not testimonial_approved
