@@ -23,9 +23,9 @@ function memoryStorage() {
 }
 
 describe("Google Calendar handoff", () => {
-  it("uses the signed-in Google Calendar home destination", () => {
+  it("uses the canonical Google Calendar destination", () => {
     expect(GOOGLE_CALENDAR_HOME_URL).toBe(
-      "https://calendar.google.com/calendar/u/0/r",
+      "https://calendar.google.com/calendar/r",
     );
   });
 
