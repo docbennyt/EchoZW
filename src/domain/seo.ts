@@ -8,6 +8,8 @@ export type SeoRouteMetadata = {
 export const INDEXABLE_STATIC_ROUTES = [
   "/",
   "/find",
+  "/request",
+  "/feedback",
   "/support",
   "/privacy",
   "/terms",
@@ -26,6 +28,18 @@ const staticRouteMetadata: Record<string, SeoRouteMetadata> = {
     description:
       "Find a published CalenderZW timetable by institution, programme, class, and academic period.",
     canonicalPath: "/find",
+  },
+  "/request": {
+    title: "Request your university timetable | CalenderZW",
+    description:
+      "Request a missing university timetable and tell CalenderZW if you are a Class Rep or have access to an official timetable source.",
+    canonicalPath: "/request",
+  },
+  "/feedback": {
+    title: "Give feedback | CalenderZW",
+    description:
+      "Report a timetable or calendar problem, suggest an improvement, or share private feedback with the CalenderZW team.",
+    canonicalPath: "/feedback",
   },
   "/support": {
     title: "CalenderZW help and timetable support",

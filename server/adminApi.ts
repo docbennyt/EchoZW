@@ -11,6 +11,7 @@ import { handleCorrectionsAdminApi } from "./correctionsAdminApi.js";
 import { handlePilotAdminApi } from "./pilotAdminApi.js";
 import { handleStaffAdminApi } from "./staffAdminApi.js";
 import { handleAdminAnalyticsApi } from "./adminAnalyticsApi.js";
+import { handleGrowthInboxAdminApi } from "./growthInboxAdminApi.js";
 import { handleSourceGatewayAdminApi } from "./sourceGatewayAdminApi.js";
 import { sanitizeForLog } from "./observability.js";
 
@@ -129,6 +130,7 @@ export async function handleAdminRequest(
     try {
       const { user } = await requireSuperadmin(req, deps);
       if (await handleAdminAnalyticsApi(req, res)) return true;
+      if (await handleGrowthInboxAdminApi(req, res)) return true;
       if (await handleSourceGatewayAdminApi(req, res, user)) return true;
       if (await handlePilotAdminApi(req, res, user)) return true;
       sendJson(res, 501, {

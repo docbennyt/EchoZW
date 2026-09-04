@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
+import { FinderDemandPrompt } from "./FinderDemandPrompt";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
+import { FeedbackPage, TimetableRequestPage } from "./GrowthCapturePages";
+import { GrowthInboxPage } from "./GrowthInboxPage";
 import {
   MarketingEnhancements,
   TimetableGoogleOnboardingEnhancement,
@@ -19,6 +22,8 @@ import "./googleCalendarDirect.css";
 import "./productionUxEnhancements.css";
 import "./productionUxEnhancementsPatch.css";
 import "./studentOnboardingAcceleration.css";
+import "./growthCapturePages.css";
+import "./growthInboxPage.css";
 
 function currentPath() {
   return window.location.pathname;
@@ -67,6 +72,18 @@ function RootApp() {
 
   if (calendarRecoveryPath) return null;
 
+  if (path === "/request" || path === "/request/") {
+    return <TimetableRequestPage />;
+  }
+
+  if (path === "/feedback" || path === "/feedback/") {
+    return <FeedbackPage />;
+  }
+
+  if (path === "/admin/demand" || path === "/admin/demand/") {
+    return <GrowthInboxPage />;
+  }
+
   const googleSlug = googleTimetableSlug(path);
   if (googleSlug) {
     return <GoogleCalendarConnectPage slug={googleSlug} />;
@@ -87,6 +104,7 @@ function RootApp() {
   return (
     <>
       <AppV2 />
+      {path === "/find" || path === "/find/" ? <FinderDemandPrompt /> : null}
       <MarketingEnhancements />
     </>
   );
