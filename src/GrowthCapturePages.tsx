@@ -18,7 +18,13 @@ async function postJson(path: string, body: unknown) {
     throw new Error(payload?.error?.message ?? "Submission failed.");
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="czw-growth-field">
       <span>{label}</span>
@@ -121,7 +127,9 @@ export function TimetableRequestPage() {
                   <option value="official_link">
                     I have an official timetable link
                   </option>
-                  <option value="document">I have the timetable document</option>
+                  <option value="document">
+                    I have the timetable document
+                  </option>
                   <option value="other">Other source access</option>
                 </select>
               </Field>
@@ -281,7 +289,9 @@ export function FeedbackPage() {
             </div>
             <label className="czw-growth-check">
               <input type="checkbox" name="consentContact" />
-              <span>I agree CalenderZW may contact me about this feedback.</span>
+              <span>
+                I agree CalenderZW may contact me about this feedback.
+              </span>
             </label>
             <label className="czw-growth-check">
               <input type="checkbox" name="testimonialPermission" />
