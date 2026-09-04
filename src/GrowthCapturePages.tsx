@@ -11,9 +11,9 @@ async function postJson(path: string, body: unknown) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const payload = (await response.json().catch(() => null)) as
-    | { error?: { message?: string } }
-    | null;
+  const payload = (await response.json().catch(() => null)) as {
+    error?: { message?: string };
+  } | null;
   if (!response.ok)
     throw new Error(payload?.error?.message ?? "Submission failed.");
 }
@@ -153,11 +153,7 @@ export function TimetableRequestPage() {
                   <Input name="contactName" maxLength={120} />
                 </Field>
                 <Field label="WhatsApp / phone">
-                  <Input
-                    name="phoneE164"
-                    inputMode="tel"
-                    placeholder="+263…"
-                  />
+                  <Input name="phoneE164" inputMode="tel" placeholder="+263…" />
                 </Field>
                 <Field label="Email">
                   <Input name="email" inputMode="email" />
@@ -165,7 +161,9 @@ export function TimetableRequestPage() {
               </div>
               <label className="czw-growth-check">
                 <input type="checkbox" name="consentContact" />
-                <span>I agree CalenderZW may contact me about this request.</span>
+                <span>
+                  I agree CalenderZW may contact me about this request.
+                </span>
               </label>
             </div>
             {state === "success" ? (
