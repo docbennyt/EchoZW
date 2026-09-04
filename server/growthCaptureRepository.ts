@@ -87,9 +87,7 @@ export async function createProductFeedback(
   return data;
 }
 
-export async function listGrowthInbox(
-  env: NodeJS.ProcessEnv = process.env,
-) {
+export async function listGrowthInbox(env: NodeJS.ProcessEnv = process.env) {
   const client = createSupabaseAdminClient(env);
   const [requests, feedback] = await Promise.all([
     client
