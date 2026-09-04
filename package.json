@@ -15,7 +15,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "prettier --write src/domain/googleCalendarHandoff.ts && git diff -- src/domain/googleCalendarHandoff.ts && git diff --exit-code -- src/domain/googleCalendarHandoff.ts"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
