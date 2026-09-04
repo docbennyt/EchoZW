@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
+import { GrowthRequestDialog } from "./GrowthRequestDialog";
 import {
   MarketingEnhancements,
   TimetableGoogleOnboardingEnhancement,
@@ -13,6 +14,7 @@ import { googleCalendarFailureRecoveryPath } from "./domain/googleCalendarHandof
 import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
+import "./growthRequest.css";
 import "./publicTimetableReliability.css";
 import "./publicTimetableMatrix.css";
 import "./googleCalendarDirect.css";
@@ -80,6 +82,11 @@ function RootApp() {
         <TimetableGoogleOnboardingEnhancement slug={slug} />
         <StudentOnboardingAcceleration slug={slug} />
         <GoogleCalendarDisconnectEntry />
+        <GrowthRequestDialog
+          mode="feedback"
+          seed={{ publicSlug: slug }}
+          triggerClassName="czw-growth-feedback-floating"
+        />
       </>
     );
   }
