@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
+import { AdminGrowthInbox } from "./AdminGrowthInbox";
 import { AppV2 } from "./AppV2";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
@@ -15,6 +16,7 @@ import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
 import "./growthRequest.css";
+import "./adminGrowthInbox.css";
 import "./publicTimetableReliability.css";
 import "./publicTimetableMatrix.css";
 import "./googleCalendarDirect.css";
@@ -68,6 +70,10 @@ function RootApp() {
   }, [calendarRecoveryPath]);
 
   if (calendarRecoveryPath) return null;
+
+  if (path === "/admin/growth") {
+    return <AdminGrowthInbox />;
+  }
 
   const googleSlug = googleTimetableSlug(path);
   if (googleSlug) {
