@@ -47,6 +47,13 @@ async function loadToken() {
   return token;
 }
 
+function apiErrorMessage(body: unknown) {
+  if (!body || typeof body !== "object" || !("error" in body)) return null;
+  const error = body.error;
+  if (!error || typeof error !== "object" || !("message" in error)) return null;
+  return typeof error.message === "string" ? error.message : null;
+}
+
 async function api<T>(path: string, token: string, init?: RequestInit) {
   const response = await fetch(path, {
     ...init,
@@ -56,16 +63,9 @@ async function api<T>(path: string, token: string, init?: RequestInit) {
       ...init?.headers,
     },
   });
-  const body = (await response.json().catch(() => null)) as
-    | T
-    | { error?: { message?: string } }
-    | null;
+  const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(
-      body && "error" in body && body.error?.message
-        ? body.error.message
-        : "Request failed.",
-    );
+    throw new Error(apiErrorMessage(body) ?? "Request failed.");
   }
   return body as T;
 }
@@ -102,7 +102,9 @@ export function GrowthInboxPage() {
         if (caught instanceof Error && caught.message === "AUTH_REQUIRED") {
           setStatus("auth");
         } else {
-          setError(caught instanceof Error ? caught.message : "Could not load inbox.");
+          setError(
+            caught instanceof Error ? caught.message : "Could not load inbox.",
+          );
           setStatus("error");
         }
       }
@@ -127,7 +129,10 @@ export function GrowthInboxPage() {
     if (!token) return;
     await api(`/api/admin/growth/requests/${item.id}`, token, {
       method: "PATCH",
-      body: JSON.stringify({ status: nextStatus, publicSlug: item.public_slug }),
+      body: JSON.stringify({
+        status: nextStatus,
+        publicSlug: item.public_slug,
+      }),
     });
     await refresh(token);
   }
@@ -157,7 +162,11 @@ export function GrowthInboxPage() {
   }
 
   if (status === "loading") {
-    return <main className="czw-growth-inbox czw-growth-inbox-state">Loading demand…</main>;
+    return (
+      <main className="czw-growth-inbox czw-growth-inbox-state">
+        Loading demand…
+      </main>
+    );
   }
 
   if (status === "error") {
@@ -187,12 +196,17 @@ export function GrowthInboxPage() {
           <span>Timetable requests</span>
         </article>
         <article>
-          <strong>{inbox.requests.filter((item) => item.status === "new").length}</strong>
+          <strong>
+            {inbox.requests.filter((item) => item.status === "new").length}
+          </strong>
           <span>New requests</span>
         </article>
         <article>
           <strong>
-            {inbox.requests.filter((item) => item.source_access !== "none").length}
+            {
+              inbox.requests.filter((item) => item.source_access !== "none")
+                .length
+            }
           </strong>
           <span>Source-access leads</span>
         </article>
@@ -208,7 +222,9 @@ export function GrowthInboxPage() {
             <span>Prioritisation</span>
             <h2>Demand clusters</h2>
           </div>
-          <small>Grouped locally in this view; no IP/device fingerprinting.</small>
+          <small>
+            Grouped locally in this view; no IP/device fingerprinting.
+          </small>
         </div>
         {demandGroups.length ? (
           <ol className="czw-demand-clusters">
@@ -247,8 +263,8 @@ export function GrowthInboxPage() {
                   {item.academic_period ? ` · ${item.academic_period}` : ""}
                 </p>
                 <p>
-                  <strong>Role:</strong> {item.requester_role} · <strong>Source:</strong>{" "}
-                  {item.source_access}
+                  <strong>Role:</strong> {item.requester_role} ·{" "}
+                  <strong>Source:</strong> {item.source_access}
                 </p>
                 {item.source_note ? <p>{item.source_note}</p> : null}
                 {item.consent_contact ? (
@@ -298,19 +314,28 @@ export function GrowthInboxPage() {
                   <time>{formatDate(item.created_at)}</time>
                 </div>
                 <p>{item.message}</p>
-                {item.rating ? <p><strong>{item.rating}/5</strong></p> : null}
+                {item.rating ? (
+                  <p>
+                    <strong>{item.rating}/5</strong>
+                  </p>
+                ) : null}
                 <p>
-                  Testimonial permission: {item.testimonial_permission ? "yes" : "no"} ·
-                  approved: {item.testimonial_approved ? "yes" : "no"}
+                  Testimonial permission:{" "}
+                  {item.testimonial_permission ? "yes" : "no"} · approved:{" "}
+                  {item.testimonial_approved ? "yes" : "no"}
                 </p>
               </div>
               <div className="czw-growth-inbox-actions">
                 <Button
                   type="button"
                   disabled={!item.testimonial_permission}
-                  onClick={() => void updateFeedback(item, !item.testimonial_approved)}
+                  onClick={() =>
+                    void updateFeedback(item, !item.testimonial_approved)
+                  }
                 >
-                  {item.testimonial_approved ? "Revoke approval" : "Approve testimonial"}
+                  {item.testimonial_approved
+                    ? "Revoke approval"
+                    : "Approve testimonial"}
                 </Button>
               </div>
             </article>

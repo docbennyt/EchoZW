@@ -40,15 +40,28 @@ export async function handleGrowthInboxAdminApi(
     return true;
   }
 
-  const requestMatch = pathname.match(/^\/api\/admin\/growth\/requests\/([0-9a-f-]+)$/i);
+  const requestMatch = pathname.match(
+    /^\/api\/admin\/growth\/requests\/([0-9a-f-]+)$/i,
+  );
   if (req.method === "PATCH" && requestMatch) {
     try {
       const body = (await readJson(req)) as Record<string, unknown>;
       const status = String(body.status ?? "");
-      if (!['new','triaged','source_needed','in_progress','published','closed'].includes(status)) throw new Error("INVALID_INPUT");
-      const publicSlug = typeof body.publicSlug === "string" && body.publicSlug.trim()
-        ? body.publicSlug.trim()
-        : null;
+      if (
+        ![
+          "new",
+          "triaged",
+          "source_needed",
+          "in_progress",
+          "published",
+          "closed",
+        ].includes(status)
+      )
+        throw new Error("INVALID_INPUT");
+      const publicSlug =
+        typeof body.publicSlug === "string" && body.publicSlug.trim()
+          ? body.publicSlug.trim()
+          : null;
       const request = await updateTimetableRequestStatus(
         requestMatch[1],
         status as Parameters<typeof updateTimetableRequestStatus>[1],
@@ -57,28 +70,43 @@ export async function handleGrowthInboxAdminApi(
       );
       sendJson(res, 200, { request });
     } catch {
-      sendJson(res, 400, { error: { code: "INVALID_INPUT", message: "Could not update that request." } });
+      sendJson(res, 400, {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Could not update that request.",
+        },
+      });
     }
     return true;
   }
 
-  const feedbackMatch = pathname.match(/^\/api\/admin\/growth\/feedback\/([0-9a-f-]+)$/i);
+  const feedbackMatch = pathname.match(
+    /^\/api\/admin\/growth\/feedback\/([0-9a-f-]+)$/i,
+  );
   if (req.method === "PATCH" && feedbackMatch) {
     try {
       const body = (await readJson(req)) as Record<string, unknown>;
       const status = String(body.status ?? "");
-      if (!['new','reviewed','actioned','closed'].includes(status)) throw new Error("INVALID_INPUT");
+      if (!["new", "reviewed", "actioned", "closed"].includes(status))
+        throw new Error("INVALID_INPUT");
       const feedback = await updateFeedbackReview(
         feedbackMatch[1],
         {
-          status: status as Parameters<typeof updateFeedbackReview>[1]['status'],
+          status: status as Parameters<
+            typeof updateFeedbackReview
+          >[1]["status"],
           testimonialApproved: body.testimonialApproved === true,
         },
         env,
       );
       sendJson(res, 200, { feedback });
     } catch {
-      sendJson(res, 400, { error: { code: "INVALID_INPUT", message: "Could not update that feedback." } });
+      sendJson(res, 400, {
+        error: {
+          code: "INVALID_INPUT",
+          message: "Could not update that feedback.",
+        },
+      });
     }
     return true;
   }
