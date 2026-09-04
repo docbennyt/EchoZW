@@ -8,6 +8,7 @@ const publicNavigation = [
   { label: "How it works", href: "/#how" },
   { label: "Calendar options", href: "/#options" },
   { label: "For class reps", href: "/#reps" },
+  { label: "Request timetable", href: "/request" },
   { label: "Privacy & trust", href: "/#trust" },
 ] as const;
 
@@ -129,12 +130,14 @@ export function GlobalFooter({ compact = false }: { compact?: boolean }) {
               <div>
                 <strong>Product</strong>
                 <a href="/find">Find timetable</a>
+                <a href="/request">Request timetable</a>
                 <a href="/#how">How it works</a>
                 <a href="/#options">Calendar options</a>
               </div>
               <div>
                 <strong>Support</strong>
                 <a href="/support">Help centre</a>
+                <a href="/feedback">Give feedback</a>
                 <a href="/support">Report a timetable problem</a>
                 <a href="/account/settings">Calendar settings</a>
               </div>
@@ -151,6 +154,7 @@ export function GlobalFooter({ compact = false }: { compact?: boolean }) {
           <nav className="czw-compact-links" aria-label="Timetable footer">
             <a href="/privacy">Privacy</a>
             <a href="/terms">Terms</a>
+            <a href="/feedback">Give feedback</a>
             <a href="/support">Report a timetable problem</a>
           </nav>
         )}
