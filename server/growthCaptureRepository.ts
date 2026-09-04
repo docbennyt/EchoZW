@@ -6,7 +6,12 @@ export type TimetableRequestInsert = {
   classGroup: string;
   academicPeriod?: string | null;
   requesterRole: "student" | "class_rep" | "staff" | "other";
-  sourceAccess: "none" | "class_rep" | "official_link" | "document" | "other";
+  sourceAccess:
+    | "none"
+    | "class_rep"
+    | "official_link"
+    | "document"
+    | "other";
   sourceNote?: string | null;
   contactName?: string | null;
   phoneE164?: string | null;
@@ -53,7 +58,8 @@ export async function createTimetableRequest(
     })
     .select("id,status,created_at")
     .single();
-  if (error) throw new Error(`timetable request insert failed: ${error.message}`);
+  if (error)
+    throw new Error(`timetable request insert failed: ${error.message}`);
   return data;
 }
 
@@ -97,25 +103,38 @@ export async function listGrowthInbox(
       .order("created_at", { ascending: false })
       .limit(250),
   ]);
-  if (requests.error) throw new Error(`request inbox failed: ${requests.error.message}`);
-  if (feedback.error) throw new Error(`feedback inbox failed: ${feedback.error.message}`);
+  if (requests.error)
+    throw new Error(`request inbox failed: ${requests.error.message}`);
+  if (feedback.error)
+    throw new Error(`feedback inbox failed: ${feedback.error.message}`);
   return { requests: requests.data ?? [], feedback: feedback.data ?? [] };
 }
 
 export async function updateTimetableRequestStatus(
   id: string,
-  status: "new" | "triaged" | "source_needed" | "in_progress" | "published" | "closed",
+  status:
+    | "new"
+    | "triaged"
+    | "source_needed"
+    | "in_progress"
+    | "published"
+    | "closed",
   publicSlug: string | null,
   env: NodeJS.ProcessEnv = process.env,
 ) {
   const client = createSupabaseAdminClient(env);
   const { data, error } = await client
     .from("timetable_requests")
-    .update({ status, public_slug: publicSlug, updated_at: new Date().toISOString() })
+    .update({
+      status,
+      public_slug: publicSlug,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", id)
     .select("*")
     .single();
-  if (error) throw new Error(`request status update failed: ${error.message}`);
+  if (error)
+    throw new Error(`request status update failed: ${error.message}`);
   return data;
 }
 
@@ -138,6 +157,7 @@ export async function updateFeedbackReview(
     .eq("id", id)
     .select("*")
     .single();
-  if (error) throw new Error(`feedback review update failed: ${error.message}`);
+  if (error)
+    throw new Error(`feedback review update failed: ${error.message}`);
   return data;
 }
