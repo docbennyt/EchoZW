@@ -4,10 +4,7 @@ export const GOOGLE_CALENDAR_HOME_URL =
 const GOOGLE_CALENDAR_RETURN_KEY = "calenderzw_google_calendar_return";
 const GOOGLE_CALENDAR_RETURN_TTL_MS = 30 * 60 * 1000;
 
-type StorageReaderWriter = Pick<
-  Storage,
-  "getItem" | "setItem" | "removeItem"
->;
+type StorageReaderWriter = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 type GoogleCalendarReturnState = {
   slug: string;
@@ -33,9 +30,10 @@ export function rememberGoogleCalendarReturnSlug(
   try {
     storage.setItem(
       GOOGLE_CALENDAR_RETURN_KEY,
-      JSON.stringify(
-        { slug, savedAt: now } satisfies GoogleCalendarReturnState,
-      ),
+      JSON.stringify({
+        slug,
+        savedAt: now,
+      } satisfies GoogleCalendarReturnState),
     );
   } catch {
     // OAuth navigation still works when browser storage is unavailable.
