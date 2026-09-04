@@ -16,7 +16,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "prettier --write server/growthCaptureRepository.ts src/GrowthCapturePages.tsx src/GrowthInboxPage.tsx && git diff -- server/growthCaptureRepository.ts src/GrowthCapturePages.tsx src/GrowthInboxPage.tsx && false"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
