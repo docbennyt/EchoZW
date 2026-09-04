@@ -33,7 +33,9 @@ export function rememberGoogleCalendarReturnSlug(
   try {
     storage.setItem(
       GOOGLE_CALENDAR_RETURN_KEY,
-      JSON.stringify({ slug, savedAt: now } satisfies GoogleCalendarReturnState),
+      JSON.stringify(
+        { slug, savedAt: now } satisfies GoogleCalendarReturnState,
+      ),
     );
   } catch {
     // OAuth navigation still works when browser storage is unavailable.
