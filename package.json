@@ -10,6 +10,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
     "preview": "node dist-server/server/productionServer.js",
+    "deploy:check": "node scripts/verify-production-readiness.mjs",
     "source:parse": "node --env-file-if-exists=.env.local dist-server/server/sourceSnapshotParseCli.js",
     "source:reconcile": "node --env-file-if-exists=.env.local dist-server/server/sourceReconciliationCli.js",
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
