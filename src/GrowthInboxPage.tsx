@@ -47,6 +47,13 @@ async function loadToken() {
   return token;
 }
 
+function apiErrorMessage(body: unknown) {
+  if (!body || typeof body !== "object" || !("error" in body)) return null;
+  const error = body.error;
+  if (!error || typeof error !== "object" || !("message" in error)) return null;
+  return typeof error.message === "string" ? error.message : null;
+}
+
 async function api<T>(path: string, token: string, init?: RequestInit) {
   const response = await fetch(path, {
     ...init,
@@ -56,14 +63,9 @@ async function api<T>(path: string, token: string, init?: RequestInit) {
       ...init?.headers,
     },
   });
-  const body = (await response.json().catch(() => null)) as
-    T | { error?: { message?: string } } | null;
+  const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(
-      body && "error" in body && body.error?.message
-        ? body.error.message
-        : "Request failed.",
-    );
+    throw new Error(apiErrorMessage(body) ?? "Request failed.");
   }
   return body as T;
 }
