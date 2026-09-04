@@ -102,7 +102,9 @@ export function GrowthInboxPage() {
         if (caught instanceof Error && caught.message === "AUTH_REQUIRED") {
           setStatus("auth");
         } else {
-          setError(caught instanceof Error ? caught.message : "Could not load inbox.");
+          setError(
+            caught instanceof Error ? caught.message : "Could not load inbox.",
+          );
           setStatus("error");
         }
       }
@@ -120,7 +122,9 @@ export function GrowthInboxPage() {
       ].join(" · ");
       groups.set(key, (groups.get(key) ?? 0) + 1);
     }
-    return [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+    return [...groups.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
   }, [inbox.requests]);
 
   async function updateRequest(item: TimetableRequest, nextStatus: string) {
@@ -132,7 +136,10 @@ export function GrowthInboxPage() {
     await refresh(token);
   }
 
-  async function updateFeedback(item: Feedback, testimonialApproved: boolean) {
+  async function updateFeedback(
+    item: Feedback,
+    testimonialApproved: boolean,
+  ) {
     if (!token) return;
     await api(`/api/admin/growth/feedback/${item.id}`, token, {
       method: "PATCH",
@@ -157,7 +164,11 @@ export function GrowthInboxPage() {
   }
 
   if (status === "loading") {
-    return <main className="czw-growth-inbox czw-growth-inbox-state">Loading demand…</main>;
+    return (
+      <main className="czw-growth-inbox czw-growth-inbox-state">
+        Loading demand…
+      </main>
+    );
   }
 
   if (status === "error") {
@@ -187,12 +198,17 @@ export function GrowthInboxPage() {
           <span>Timetable requests</span>
         </article>
         <article>
-          <strong>{inbox.requests.filter((item) => item.status === "new").length}</strong>
+          <strong>
+            {inbox.requests.filter((item) => item.status === "new").length}
+          </strong>
           <span>New requests</span>
         </article>
         <article>
           <strong>
-            {inbox.requests.filter((item) => item.source_access !== "none").length}
+            {
+              inbox.requests.filter((item) => item.source_access !== "none")
+                .length
+            }
           </strong>
           <span>Source-access leads</span>
         </article>
@@ -247,8 +263,8 @@ export function GrowthInboxPage() {
                   {item.academic_period ? ` · ${item.academic_period}` : ""}
                 </p>
                 <p>
-                  <strong>Role:</strong> {item.requester_role} · <strong>Source:</strong>{" "}
-                  {item.source_access}
+                  <strong>Role:</strong> {item.requester_role} ·{" "}
+                  <strong>Source:</strong> {item.source_access}
                 </p>
                 {item.source_note ? <p>{item.source_note}</p> : null}
                 {item.consent_contact ? (
@@ -298,19 +314,28 @@ export function GrowthInboxPage() {
                   <time>{formatDate(item.created_at)}</time>
                 </div>
                 <p>{item.message}</p>
-                {item.rating ? <p><strong>{item.rating}/5</strong></p> : null}
+                {item.rating ? (
+                  <p>
+                    <strong>{item.rating}/5</strong>
+                  </p>
+                ) : null}
                 <p>
-                  Testimonial permission: {item.testimonial_permission ? "yes" : "no"} ·
-                  approved: {item.testimonial_approved ? "yes" : "no"}
+                  Testimonial permission:{" "}
+                  {item.testimonial_permission ? "yes" : "no"} · approved:{" "}
+                  {item.testimonial_approved ? "yes" : "no"}
                 </p>
               </div>
               <div className="czw-growth-inbox-actions">
                 <Button
                   type="button"
                   disabled={!item.testimonial_permission}
-                  onClick={() => void updateFeedback(item, !item.testimonial_approved)}
+                  onClick={() =>
+                    void updateFeedback(item, !item.testimonial_approved)
+                  }
                 >
-                  {item.testimonial_approved ? "Revoke approval" : "Approve testimonial"}
+                  {item.testimonial_approved
+                    ? "Revoke approval"
+                    : "Approve testimonial"}
                 </Button>
               </div>
             </article>
