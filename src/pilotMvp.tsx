@@ -908,12 +908,247 @@ function AnalyticsOverviewPage({ accessToken }: { accessToken: string }) {
 }
 
 function AdminOverview({
+  accessToken,
   timetables,
 }: {
+  accessToken: string;
   timetables: AdminTimetableSummary[];
 }) {
+  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+  const [loadingPulse, setLoadingPulse] = useState(true);
+  const [pulseError, setPulseError] = useState("");
+
+  const params = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const from = new Date();
+    from.setUTCDate(from.getUTCDate() - 6);
+    const search = new URLSearchParams();
+    search.set("from", from.toISOString().slice(0, 10));
+    search.set("to", today);
+    return search;
+  }, []);
+
+  const refreshPulse = useCallback(async () => {
+    setLoadingPulse(true);
+    setPulseError("");
+    try {
+      setOverview(await fetchAnalyticsOverview(accessToken, params));
+    } catch (error) {
+      setPulseError(
+        error instanceof Error
+          ? error.message
+          : "Could not load operations overview.",
+      );
+    } finally {
+      setLoadingPulse(false);
+    }
+  }, [accessToken, params]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void refreshPulse();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [refreshPulse]);
+
+  const operations = overview?.operations;
+  const pulse = operations?.pilotPulse;
+  const activationLabel =
+    pulse?.activationConversion === null ||
+    pulse?.activationConversion === undefined
+      ? "Not enough data"
+      : `${Math.round(pulse.activationConversion * 100)}%`;
+
   return (
     <div className="pilot-stack">
+      <Surface
+        title="Pilot pulse"
+        subtitle="Founder-only operations view for adoption, calendar health, and timetable trust."
+        actions={
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => void refreshPulse()}
+          >
+            <RefreshCw size={18} />
+            Refresh
+          </button>
+        }
+      >
+        {pulseError ? <p className="content-notice">{pulseError}</p> : null}
+        <div className="operations-pulse-grid" aria-busy={loadingPulse}>
+          <article>
+            <span>Timetable viewers</span>
+            <strong>
+              {loadingPulse ? "..." : (pulse?.uniqueTimetableViewers ?? 0)}
+            </strong>
+            <small>Unique analytics people in the selected 7-day window.</small>
+          </article>
+          <article>
+            <span>Onboarding starts</span>
+            <strong>
+              {loadingPulse ? "..." : (pulse?.onboardingStarts ?? 0)}
+            </strong>
+            <small>Students opening or starting the calendar flow.</small>
+          </article>
+          <article>
+            <span>Onboarding done</span>
+            <strong>
+              {loadingPulse ? "..." : (pulse?.onboardingCompletions ?? 0)}
+            </strong>
+            <small>
+              Success-state completions, including direct Google success.
+            </small>
+          </article>
+          <article>
+            <span>Activation conversion</span>
+            <strong>{loadingPulse ? "..." : activationLabel}</strong>
+            <small>
+              Created update-capable calendar connections / viewers.
+            </small>
+          </article>
+          <article>
+            <span>Update-enabled</span>
+            <strong>
+              {loadingPulse ? "..." : (pulse?.updateEnabledSubscriptions ?? 0)}
+            </strong>
+            <small>
+              Active Google, Apple, webcal, or Outlook subscriptions.
+            </small>
+          </article>
+          <article>
+            <span>One-time ICS</span>
+            <strong>
+              {loadingPulse ? "..." : (pulse?.oneTimeIcsDownloads ?? 0)}
+            </strong>
+            <small>Prepared file downloads; not update-addressable.</small>
+          </article>
+          <article>
+            <span>Feed observed</span>
+            <strong>
+              {loadingPulse ? "..." : (pulse?.feedObservedSubscriptions ?? 0)}
+            </strong>
+            <small>
+              Feed requested by a client; not proof of a human active user.
+            </small>
+          </article>
+          <article>
+            <span>Shares</span>
+            <strong>{loadingPulse ? "..." : (pulse?.shares ?? 0)}</strong>
+            <small>
+              Class link share events captured by first-party analytics.
+            </small>
+          </article>
+        </div>
+      </Surface>
+
+      <Surface
+        title="Subscriber health"
+        subtitle="Prepared subscriptions and observed feed activity by class."
+      >
+        {loadingPulse ? <p>Loading subscriber health...</p> : null}
+        {!loadingPulse && !operations?.subscriberHealth.length ? (
+          <EmptyPanel
+            title="No subscriber sample yet"
+            text="The cockpit will show class-level subscription health once students create calendar connections."
+          />
+        ) : (
+          <div className="operations-table" role="table">
+            {(operations?.subscriberHealth ?? []).slice(0, 6).map((row) => (
+              <article key={row.timetableId} role="row">
+                <div>
+                  <strong>{row.label}</strong>
+                  <span>{row.publicSlug}</span>
+                </div>
+                <span>{row.activeSubscriptions} active</span>
+                <span>{row.updateEnabledSubscriptions} update-enabled</span>
+                <span>{row.oneTimeIcsDownloads} ICS</span>
+                <span>{row.feedObservedSubscriptions} feed observed</span>
+              </article>
+            ))}
+          </div>
+        )}
+      </Surface>
+
+      <Surface
+        title="Timetable trust"
+        subtitle="Warnings first: source review, pinned corrections, exceptions, and Class Rep coverage."
+      >
+        {loadingPulse ? <p>Loading timetable trust...</p> : null}
+        {!loadingPulse && !operations?.timetableTrust.length ? (
+          <EmptyPanel
+            title="No published timetable trust rows"
+            text="Publish a timetable to see source and correction health here."
+          />
+        ) : (
+          <div className="operations-trust-list">
+            {(operations?.timetableTrust ?? []).slice(0, 6).map((row) => (
+              <article key={row.timetableId}>
+                <div>
+                  <strong>{row.label}</strong>
+                  <span>
+                    Published{" "}
+                    {row.currentPublishedAt
+                      ? formatTimestamp(row.currentPublishedAt)
+                      : "date unknown"}
+                  </span>
+                </div>
+                {row.warnings.length ? (
+                  <ul>
+                    {row.warnings.map((warning) => (
+                      <li key={warning}>{warning}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="status confirmed">No warnings</span>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </Surface>
+
+      <Surface
+        title="Class Rep operations"
+        subtitle="Coverage shortcuts for people who can keep class truth current."
+      >
+        <div className="operations-shortcut-grid">
+          <a href="/admin/team">
+            <strong>
+              {loadingPulse
+                ? "..."
+                : (operations?.classRepOperations.activeClassReps ?? 0)}
+            </strong>
+            <span>Active Class Reps</span>
+          </a>
+          <a href="/admin/team">
+            <strong>
+              {loadingPulse
+                ? "..."
+                : (operations?.classRepOperations.assignedTimetables ?? 0)}
+            </strong>
+            <span>Assigned timetables</span>
+          </a>
+          <a href="/admin/timetables">
+            <strong>
+              {loadingPulse
+                ? "..."
+                : (operations?.classRepOperations
+                    .unassignedPublishedTimetables ?? 0)}
+            </strong>
+            <span>Published without Class Rep</span>
+          </a>
+          <a href="/admin/team">
+            <strong>
+              {loadingPulse
+                ? "..."
+                : (operations?.classRepOperations.recentCorrections ?? 0)}
+            </strong>
+            <span>Recent corrections</span>
+          </a>
+        </div>
+      </Surface>
+
       <Surface
         title="Get a class timetable live"
         subtitle="Create the class setup, enter weekly sessions, then publish one shareable link."
@@ -3856,7 +4091,10 @@ export function AdminMvpScreen({ path }: { path: string }) {
             <p>Loading admin data...</p>
           ) : null}
           {path === "/admin" ? (
-            <AdminOverview timetables={data.timetables} />
+            <AdminOverview
+              accessToken={accessToken}
+              timetables={data.timetables}
+            />
           ) : null}
           {path === "/admin/analytics" ? (
             <AnalyticsOverviewPage accessToken={accessToken} />

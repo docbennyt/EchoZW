@@ -138,4 +138,71 @@ export type AnalyticsOverview = {
     unexpectedEventNames: string[];
     knownHistoricalInstrumentationGaps: string[];
   };
+  operations: FounderOperationsOverview;
+};
+
+export type FounderOperationsOverview = {
+  pilotPulse: {
+    uniqueTimetableViewers: number;
+    onboardingStarts: number;
+    onboardingCompletions: number;
+    calendarSubscriptionsCreated: number;
+    updateEnabledSubscriptions: number;
+    oneTimeIcsDownloads: number;
+    feedObservedSubscriptions: number;
+    shares: number;
+    activationConversion: number | null;
+  };
+  subscriberHealth: {
+    timetableId: string;
+    publicSlug: string;
+    label: string;
+    activeSubscriptions: number;
+    updateEnabledSubscriptions: number;
+    oneTimeIcsDownloads: number;
+    contactableSubscriptions: number;
+    feedObservedSubscriptions: number;
+    lastFeedObservedAt: string | null;
+    providerMix: Record<string, number>;
+  }[];
+  timetableTrust: {
+    timetableId: string;
+    publicSlug: string;
+    label: string;
+    currentPublishedAt: string | null;
+    latestSourceSnapshotAt: string | null;
+    unresolvedSourceReviews: number;
+    pinnedCorrections: number;
+    pendingExceptions: number;
+    hasClassRep: boolean;
+    warnings: string[];
+  }[];
+  classRepOperations: {
+    activeClassReps: number;
+    assignedTimetables: number;
+    unassignedPublishedTimetables: number;
+    recentCorrections: number;
+  };
+};
+
+export const emptyFounderOperationsOverview: FounderOperationsOverview = {
+  pilotPulse: {
+    uniqueTimetableViewers: 0,
+    onboardingStarts: 0,
+    onboardingCompletions: 0,
+    calendarSubscriptionsCreated: 0,
+    updateEnabledSubscriptions: 0,
+    oneTimeIcsDownloads: 0,
+    feedObservedSubscriptions: 0,
+    shares: 0,
+    activationConversion: null,
+  },
+  subscriberHealth: [],
+  timetableTrust: [],
+  classRepOperations: {
+    activeClassReps: 0,
+    assignedTimetables: 0,
+    unassignedPublishedTimetables: 0,
+    recentCorrections: 0,
+  },
 };

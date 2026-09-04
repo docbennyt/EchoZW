@@ -78,6 +78,27 @@ describe("admin analytics API", () => {
       providerMix: [],
       adoptionTimeseries: [],
       funnel: [],
+      operations: {
+        pilotPulse: {
+          uniqueTimetableViewers: 0,
+          onboardingStarts: 0,
+          onboardingCompletions: 0,
+          calendarSubscriptionsCreated: 0,
+          updateEnabledSubscriptions: 0,
+          oneTimeIcsDownloads: 0,
+          feedObservedSubscriptions: 0,
+          shares: 0,
+          activationConversion: null,
+        },
+        subscriberHealth: [],
+        timetableTrust: [],
+        classRepOperations: {
+          activeClassReps: 0,
+          assignedTimetables: 0,
+          unassignedPublishedTimetables: 0,
+          recentCorrections: 0,
+        },
+      },
       dataQuality: {
         eventsReceived: 0,
         uniqueAnonymousIdentities: 0,
