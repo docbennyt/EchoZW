@@ -133,8 +133,7 @@ export async function updateTimetableRequestStatus(
     .eq("id", id)
     .select("*")
     .single();
-  if (error)
-    throw new Error(`request status update failed: ${error.message}`);
+  if (error) throw new Error(`request status update failed: ${error.message}`);
   return data;
 }
 
@@ -157,7 +156,6 @@ export async function updateFeedbackReview(
     .eq("id", id)
     .select("*")
     .single();
-  if (error)
-    throw new Error(`feedback review update failed: ${error.message}`);
+  if (error) throw new Error(`feedback review update failed: ${error.message}`);
   return data;
 }
