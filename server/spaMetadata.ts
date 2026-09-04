@@ -46,7 +46,11 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   }`;
 
   let next = html;
-  next = replaceTag(next, /<title>[\s\S]*?<\/title>/, `<title>${title}</title>`);
+  next = replaceTag(
+    next,
+    /<title>[\s\S]*?<\/title>/,
+    `<title>${title}</title>`,
+  );
   next = upsertMeta(next, "name", "description", description);
   next = replaceTag(
     next,
