@@ -53,6 +53,10 @@ const REQUIRED_SCHEMA_PROBES: RequiredRestProbe[] = [
     object: "google_calendar_credentials",
     path: "/rest/v1/google_calendar_credentials?select=subscription_id&limit=0",
   },
+  {
+    object: "growth_requests",
+    path: "/rest/v1/growth_requests?select=id,request_type,status&limit=0",
+  },
 ];
 
 function statusCodeForProbe(response: Response) {
