@@ -11,9 +11,7 @@ describe("growth capture migration", () => {
     expect(sql).toContain(
       "create table if not exists public.timetable_requests",
     );
-    expect(sql).toContain(
-      "create table if not exists public.product_feedback",
-    );
+    expect(sql).toContain("create table if not exists public.product_feedback");
     expect(sql).toContain(
       "alter table public.timetable_requests enable row level security",
     );
@@ -32,7 +30,9 @@ describe("growth capture migration", () => {
     expect(sql).toContain(
       "grant all on public.timetable_requests to service_role",
     );
-    expect(sql).toContain("grant all on public.product_feedback to service_role");
+    expect(sql).toContain(
+      "grant all on public.product_feedback to service_role",
+    );
   });
 
   it("requires explicit testimonial permission and founder approval separately", () => {
