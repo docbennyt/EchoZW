@@ -16,7 +16,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "for f in server/growthCaptureApi.ts server/growthCaptureRepository.ts server/growthInboxAdminApi.ts src/FinderDemandPrompt.tsx src/GrowthCapturePages.tsx src/GrowthInboxPage.tsx tests/growthCaptureMigration.test.ts; do echo PRETTIER_FILE_BEGIN:$f; prettier $f; echo PRETTIER_FILE_END:$f; done; exit 1"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
