@@ -11,6 +11,7 @@ import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
 import { PublicShell } from "./components/site/SiteChrome";
+import { rememberGoogleCalendarReturnSlug } from "./domain/googleCalendarHandoff";
 import { formatClassGroupLabel } from "./domain/publicTimetable";
 
 type ReminderPresetId = "on_time" | "prepared" | "commuter";
@@ -188,6 +189,7 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
     if (!timetable || !googleEnabled || busy) return;
     setBusy(true);
     setError("");
+    rememberGoogleCalendarReturnSlug(timetable.publicSlug, window.localStorage);
     track("google_oauth_started", {
       publicSlug: timetable.publicSlug,
       provider: "google_api",

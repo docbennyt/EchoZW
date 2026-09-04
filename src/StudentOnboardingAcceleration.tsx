@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { track } from "./analytics";
 import {
   GOOGLE_CALENDAR_HOME_URL,
+  rememberGoogleCalendarReturnSlug,
   shouldAutoOpenGoogleCalendar,
 } from "./domain/googleCalendarHandoff";
 
@@ -42,8 +43,8 @@ function GoogleCalendarHandoff({
     if (!shouldAutoOpenGoogleCalendar(subscriptionId, storage)) return;
 
     const timer = window.setTimeout(() => {
-      window.location.assign(GOOGLE_CALENDAR_HOME_URL);
-    }, 900);
+      window.location.replace(GOOGLE_CALENDAR_HOME_URL);
+    }, 250);
     return () => window.clearTimeout(timer);
   }, [slug, subscriptionId]);
 
@@ -78,7 +79,8 @@ function GoogleCalendarHandoff({
 
         <div className="czw-google-opening" role="status">
           <CalendarCheck size={16} aria-hidden="true" />
-          Opening automatically. If it stays here, tap the button above.
+          Opening Google Calendar automatically. If your device keeps the web
+          page open, tap the button above.
         </div>
 
         <details className="czw-samsung-calendar-help">
@@ -126,6 +128,7 @@ function FastGoogleContactChoice({
   function clickOriginal(selector: string) {
     const button = target.querySelector<HTMLButtonElement>(selector);
     if (!button || button.disabled) return;
+    rememberGoogleCalendarReturnSlug(slug, window.localStorage);
     setBusy(true);
     button.click();
     window.setTimeout(() => setBusy(false), 4500);
