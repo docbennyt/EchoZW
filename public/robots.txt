@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+Disallow: /calendar/feed/
+Disallow: /calendar/download/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /account/
+Disallow: /calendar/feed/
+Disallow: /calendar/download/
+
+Sitemap: https://calender.aido.co.zw/sitemap.xml
