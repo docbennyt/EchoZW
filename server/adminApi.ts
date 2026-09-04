@@ -8,6 +8,7 @@ import {
   type AuthDependencies,
 } from "./supabase/auth.js";
 import { handleCorrectionsAdminApi } from "./correctionsAdminApi.js";
+import { handleGrowthAdminRequest } from "./growthRequestApi.js";
 import { handlePilotAdminApi } from "./pilotAdminApi.js";
 import { handleStaffAdminApi } from "./staffAdminApi.js";
 import { handleAdminAnalyticsApi } from "./adminAnalyticsApi.js";
@@ -128,6 +129,7 @@ export async function handleAdminRequest(
   if (requestUrl.pathname.startsWith("/api/admin/")) {
     try {
       const { user } = await requireSuperadmin(req, deps);
+      if (await handleGrowthAdminRequest(req, res, user.id)) return true;
       if (await handleAdminAnalyticsApi(req, res)) return true;
       if (await handleSourceGatewayAdminApi(req, res, user)) return true;
       if (await handlePilotAdminApi(req, res, user)) return true;
