@@ -6,12 +6,7 @@ export type TimetableRequestInsert = {
   classGroup: string;
   academicPeriod?: string | null;
   requesterRole: "student" | "class_rep" | "staff" | "other";
-  sourceAccess:
-    | "none"
-    | "class_rep"
-    | "official_link"
-    | "document"
-    | "other";
+  sourceAccess: "none" | "class_rep" | "official_link" | "document" | "other";
   sourceNote?: string | null;
   contactName?: string | null;
   phoneE164?: string | null;
