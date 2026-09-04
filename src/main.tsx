@@ -99,7 +99,7 @@ function RootApp() {
         <GrowthRequestDialog
           mode="missing_timetable"
           triggerLabel="Can’t find your class?"
-          triggerClassName="czw-growth-request-floating"
+          triggerClassName="czw-growth-feedback-floating"
         />
       ) : null}
     </>
