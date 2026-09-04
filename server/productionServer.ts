@@ -115,7 +115,7 @@ const contentTypes: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".ico": "image/x-icon",
   ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json",
+  ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",
@@ -200,7 +200,8 @@ async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
     const slug = decodeURIComponent(googleConnectMatch[1]);
     metadata = {
       title: "Connect Google Calendar | CalenderZW",
-      description: "Connect a published CalenderZW timetable to Google Calendar.",
+      description:
+        "Connect a published CalenderZW timetable to Google Calendar.",
       canonicalPath: `/t/${encodeURIComponent(slug)}`,
       robots: "noindex, nofollow",
     };
