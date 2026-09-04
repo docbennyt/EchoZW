@@ -31,6 +31,15 @@ function client() {
   return createSupabaseAdminClient();
 }
 
+function invalidMapping(message: string, details?: unknown): never {
+  throw new SourceSnapshotRepositoryError(
+    "SOURCE_GATEWAY_MAPPING_INVALID",
+    422,
+    message,
+    details,
+  );
+}
+
 async function loadLatestSourceSnapshot(sourceId: string) {
   const snapshot = await expectData<JsonRecord>(
     client()
@@ -81,7 +90,99 @@ async function requeueExistingSourceProcessingJob(snapshotId: string) {
     );
   }
 
-  return data ? { status: "queued" as const } : { status: "existing" as const };
+  return data
+    ? { status: "queued" as const }
+    : { status: "existing" as const };
+}
+
+async function validateCohortMappingTarget(input: {
+  discoveredCohortId: string;
+  targetAcademicPeriodId: string;
+  targetCohortId: string;
+  targetProgrammeId: string;
+}) {
+  const supabase = client();
+  const [discovered, programme, cohort, period] = await Promise.all([
+    expectData<JsonRecord>(
+      supabase
+        .from("timetable_source_discovered_cohorts")
+        .select("id, source_id, source_programme_code")
+        .eq("id", input.discoveredCohortId)
+        .maybeSingle(),
+      "Could not load the discovered cohort mapping target.",
+    ),
+    expectData<JsonRecord>(
+      supabase
+        .from("programmes")
+        .select("id, institution_id")
+        .eq("id", input.targetProgrammeId)
+        .maybeSingle(),
+      "Could not validate the target programme.",
+    ),
+    expectData<JsonRecord>(
+      supabase
+        .from("cohorts")
+        .select("id, programme_id")
+        .eq("id", input.targetCohortId)
+        .maybeSingle(),
+      "Could not validate the target class group.",
+    ),
+    expectData<JsonRecord>(
+      supabase
+        .from("academic_periods")
+        .select("id, institution_id")
+        .eq("id", input.targetAcademicPeriodId)
+        .maybeSingle(),
+      "Could not validate the target academic period.",
+    ),
+  ]);
+
+  if (!discovered || !programme || !cohort || !period) {
+    invalidMapping("Choose an existing programme, class group, and academic period.");
+  }
+
+  if (String(cohort.programme_id) !== input.targetProgrammeId) {
+    invalidMapping(
+      "The selected class group does not belong to the selected programme.",
+      {
+        targetCohortId: input.targetCohortId,
+        targetProgrammeId: input.targetProgrammeId,
+      },
+    );
+  }
+
+  if (String(period.institution_id) !== String(programme.institution_id)) {
+    invalidMapping(
+      "The selected academic period does not belong to the programme institution.",
+      {
+        targetAcademicPeriodId: input.targetAcademicPeriodId,
+        targetProgrammeId: input.targetProgrammeId,
+      },
+    );
+  }
+
+  const programmeMapping = await expectData<JsonRecord>(
+    supabase
+      .from("timetable_source_discovered_programmes")
+      .select("mapping_status, target_programme_id")
+      .eq("source_id", String(discovered.source_id))
+      .eq("source_programme_code", String(discovered.source_programme_code))
+      .maybeSingle(),
+    "Could not validate the source programme mapping.",
+  );
+
+  if (
+    programmeMapping?.mapping_status === "mapped" &&
+    String(programmeMapping.target_programme_id) !== input.targetProgrammeId
+  ) {
+    invalidMapping(
+      "This source programme is already mapped to a different CalenderZW programme.",
+      {
+        sourceProgrammeCode: String(discovered.source_programme_code),
+        targetProgrammeId: input.targetProgrammeId,
+      },
+    );
+  }
 }
 
 export async function listSourceGatewayState() {
@@ -179,6 +280,8 @@ export async function mapSourceCohort(input: {
   targetProgrammeId: string;
   userId: string;
 }) {
+  await validateCohortMappingTarget(input);
+
   const data = await expectData<JsonRecord>(
     client()
       .from("timetable_source_discovered_cohorts")
