@@ -41,20 +41,18 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   const description = escapeHtml(metadata.description);
   const ogTitle = metadata.ogTitle ?? metadata.title;
   const ogDescription = metadata.ogDescription ?? metadata.description;
-  const ogImage = `https://calender.aido.co.zw${
-    metadata.ogImagePath ?? "/web-app-manifest-512x512.png"
-  }`;
+  const ogImagePath =
+    metadata.ogImagePath ?? "/web-app-manifest-512x512.png";
+  const ogImage = `https://calender.aido.co.zw${ogImagePath}`;
+  const titlePattern = /<title>[\s\S]*?<\/title>/;
+  const canonicalPattern = /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/;
 
   let next = html;
-  next = replaceTag(
-    next,
-    /<title>[\s\S]*?<\/title>/,
-    `<title>${title}</title>`,
-  );
+  next = replaceTag(next, titlePattern, `<title>${title}</title>`);
   next = upsertMeta(next, "name", "description", description);
   next = replaceTag(
     next,
-    /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/,
+    canonicalPattern,
     `<link rel="canonical" href="${canonicalUrl}" />`,
   );
   next = upsertMeta(next, "property", "og:title", ogTitle);
