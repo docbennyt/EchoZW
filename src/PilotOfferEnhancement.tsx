@@ -50,7 +50,7 @@ function usePilotOfferMount() {
 function PilotOffer() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const trackedView = useRef(false);
-  const source = useMemo(acquisitionSource, []);
+  const source = useMemo(() => acquisitionSource(), []);
 
   useEffect(() => {
     const section = sectionRef.current;
