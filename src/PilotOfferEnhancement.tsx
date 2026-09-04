@@ -11,9 +11,7 @@ const SHARE_SOURCES = new Set([
 
 function acquisitionSource() {
   if (typeof window === "undefined") return "direct";
-  const raw = new URLSearchParams(window.location.search)
-    .get("src")
-    ?.trim();
+  const raw = new URLSearchParams(window.location.search).get("src")?.trim();
   return raw && SHARE_SOURCES.has(raw) ? raw : "direct";
 }
 
@@ -24,8 +22,7 @@ function usePilotOfferMount() {
     let mount: HTMLDivElement | null = null;
 
     const sync = () => {
-      const finalCta =
-        document.querySelector<HTMLElement>(".czw-final-cta");
+      const finalCta = document.querySelector<HTMLElement>(".czw-final-cta");
       const parent = finalCta?.parentElement;
       if (!finalCta || !parent) return;
 
