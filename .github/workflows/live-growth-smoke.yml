@@ -1,0 +1,49 @@
+name: Live growth smoke
+
+on:
+  push:
+    branches:
+      - verify/live-growth-release
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify deployed growth routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          origin="https://calender.aido.co.zw"
+
+          for attempt in $(seq 1 18); do
+            request_status=$(curl --silent --show-error --location --output /tmp/request.html --write-out '%{http_code}' "$origin/request" || true)
+            feedback_status=$(curl --silent --show-error --location --output /tmp/feedback.html --write-out '%{http_code}' "$origin/feedback" || true)
+            demand_status=$(curl --silent --show-error --location --output /tmp/demand.html --write-out '%{http_code}' "$origin/admin/demand" || true)
+            ready_status=$(curl --silent --show-error --output /tmp/ready.json --write-out '%{http_code}' "$origin/api/health/ready" || true)
+            request_api_status=$(curl --silent --show-error --output /tmp/request-api.json --write-out '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' "$origin/api/public/timetable-requests" || true)
+            feedback_api_status=$(curl --silent --show-error --output /tmp/feedback-api.json --write-out '%{http_code}' -X POST -H 'Content-Type: application/json' --data '{}' "$origin/api/public/feedback" || true)
+
+            echo "attempt=$attempt request=$request_status feedback=$feedback_status demand=$demand_status ready=$ready_status request_api=$request_api_status feedback_api=$feedback_api_status"
+
+            if [[ "$request_status" == "200" && "$feedback_status" == "200" && "$demand_status" == "200" && "$ready_status" == "200" && "$request_api_status" == "400" && "$feedback_api_status" == "400" ]]; then
+              grep -q 'Get your class onto CalenderZW' /tmp/request.html
+              grep -q 'Tell us what worked' /tmp/feedback.html
+              grep -q '"ready":true' /tmp/ready.json
+              grep -q 'INVALID_INPUT' /tmp/request-api.json
+              grep -q 'INVALID_INPUT' /tmp/feedback-api.json
+              echo "Live growth smoke passed."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Live growth smoke did not converge within the retry window."
+          echo "--- request ---"; head -c 500 /tmp/request.html || true; echo
+          echo "--- feedback ---"; head -c 500 /tmp/feedback.html || true; echo
+          echo "--- demand ---"; head -c 500 /tmp/demand.html || true; echo
+          echo "--- ready ---"; cat /tmp/ready.json || true; echo
+          echo "--- request api ---"; cat /tmp/request-api.json || true; echo
+          echo "--- feedback api ---"; cat /tmp/feedback-api.json || true; echo
+          exit 1
