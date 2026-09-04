@@ -81,9 +81,7 @@ async function requeueExistingSourceProcessingJob(snapshotId: string) {
     );
   }
 
-  return data
-    ? { status: "queued" as const }
-    : { status: "existing" as const };
+  return data ? { status: "queued" as const } : { status: "existing" as const };
 }
 
 export async function listSourceGatewayState() {
