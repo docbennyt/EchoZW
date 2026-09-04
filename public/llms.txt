@@ -1,0 +1,40 @@
+# CalenderZW
+
+CalenderZW is a student timetable and calendar synchronisation service operated by aiDo for university students in Zimbabwe.
+
+## What CalenderZW does
+
+- Helps students find a published class timetable.
+- Lets students add published classes to Google Calendar, Apple Calendar, or supported subscribed calendar feeds.
+- Keeps one-time .ics downloads distinct from update-capable calendar connections.
+- Gives Class Representatives scoped tools to correct timetable information.
+- Uses human-reviewed publication: source/parser output is not silently published as student truth.
+
+## Public pages
+
+- Home: https://calender.aido.co.zw/
+- Find a timetable: https://calender.aido.co.zw/find
+- Help and timetable support: https://calender.aido.co.zw/support
+- Privacy Policy: https://calender.aido.co.zw/privacy
+- Terms of Service: https://calender.aido.co.zw/terms
+- Data deletion: https://calender.aido.co.zw/data-deletion
+
+## Published timetable pages
+
+Published class timetables use canonical URLs under:
+
+https://calender.aido.co.zw/t/<public-class-slug>
+
+Use the timetable finder to discover currently published classes.
+
+## Calendar support
+
+Google Calendar uses a direct CalenderZW connection where the production integration is enabled. Apple Calendar and standards-based subscription/download options remain available according to device support.
+
+## Class Representatives and source data
+
+CalenderZW can ingest supported authoritative timetable sources, discover explicit cohorts, create reviewable drafts for mapped classes, and keep publication as an explicit human action. Class Representatives can report or apply scoped corrections according to their permissions.
+
+## Trust and privacy
+
+Public timetables can be viewed without a student account. Private calendar feed URLs, OAuth credentials, administrator pages, source-ingestion endpoints, analytics, and unpublished timetable data are not public discovery resources.

@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="author" content="Dr BennyT" />
+    <meta name="author" content="aiDo" />
     <meta name="application-name" content="CalenderZW" />
     <meta name="apple-mobile-web-app-title" content="CalenderZW" />
     <meta name="theme-color" content="#153d32" />
+    <meta name="robots" content="index, follow" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -19,17 +20,17 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta
       name="description"
-      content="Find a published class timetable, choose useful reminders, and add lectures to the calendar you already use."
+      content="Find a published university timetable and add your classes to Google Calendar, Apple Calendar, or a subscribed calendar feed."
     />
     <link rel="canonical" href="https://calender.aido.co.zw/" />
     <meta property="og:site_name" content="CalenderZW" />
     <meta
       property="og:title"
-      content="CalenderZW | Your university timetable, already in your calendar"
+      content="CalenderZW | University timetables in your calendar"
     />
     <meta
       property="og:description"
-      content="Find a published class timetable, choose useful reminders, and add lectures to the calendar you already use."
+      content="Find a published university timetable and add your classes to Google Calendar, Apple Calendar, or a subscribed calendar feed."
     />
     <meta property="og:url" content="https://calender.aido.co.zw/" />
     <meta property="og:type" content="website" />
@@ -38,25 +39,53 @@
       content="https://calender.aido.co.zw/web-app-manifest-512x512.png"
     />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="CalenderZW | University timetables in your calendar"
+    />
+    <meta
+      name="twitter:description"
+      content="Find a published university timetable and add your classes to Google Calendar, Apple Calendar, or a subscribed calendar feed."
+    />
+    <meta
+      name="twitter:image"
+      content="https://calender.aido.co.zw/web-app-manifest-512x512.png"
+    />
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "CalenderZW",
-        "applicationCategory": "EducationalApplication",
-        "operatingSystem": "Web",
-        "url": "https://calender.aido.co.zw/",
-        "description": "Find a published class timetable, choose useful reminders, and add lectures to the calendar you already use.",
-        "publisher": {
-          "@type": "Organization",
-          "name": "aiDo"
-        },
-        "privacyPolicy": "https://calender.aido.co.zw/privacy"
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://aido.co.zw/#organization",
+            "name": "aiDo",
+            "url": "https://aido.co.zw/"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://calender.aido.co.zw/#website",
+            "name": "CalenderZW",
+            "url": "https://calender.aido.co.zw/",
+            "publisher": {
+              "@id": "https://aido.co.zw/#organization"
+            }
+          },
+          {
+            "@type": "WebApplication",
+            "name": "CalenderZW",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Web",
+            "url": "https://calender.aido.co.zw/",
+            "description": "Find a published university timetable and add your classes to Google Calendar, Apple Calendar, or a subscribed calendar feed.",
+            "publisher": {
+              "@id": "https://aido.co.zw/#organization"
+            },
+            "privacyPolicy": "https://calender.aido.co.zw/privacy"
+          }
+        ]
       }
     </script>
-    <title>
-      CalenderZW | Your university timetable, already in your calendar
-    </title>
+    <title>CalenderZW | University timetables in your calendar</title>
   </head>
   <body>
     <div id="root"></div>
@@ -73,9 +102,9 @@
       >
         <h1>CalenderZW</h1>
         <p>
-          Find a published university class timetable and prepare it for the
-          calendar you already use. JavaScript is required for the interactive
-          timetable finder and calendar setup.
+          Find a published university class timetable and add it to the calendar
+          you already use. JavaScript is required for the interactive timetable
+          finder and calendar setup.
         </p>
         <p>
           <a href="/find">Find timetable</a> ·

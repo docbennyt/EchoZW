@@ -1,5 +1,5 @@
-import { createReadStream } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import {
   createServer,
@@ -14,6 +14,11 @@ import {
 } from "../src/domain/googleOAuthConfig.js";
 import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
 import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
+import {
+  getStaticSeoMetadata,
+  isKnownSpaPath,
+  noindexMetadataForPath,
+} from "../src/domain/seo.js";
 import { handleAdminRequest } from "./adminApi.js";
 import { handleAnalyticsRequest } from "./analyticsApi.js";
 import { handleHealthRequest } from "./healthApi.js";
@@ -32,6 +37,7 @@ import {
   serializeRuntimeConfigScript,
 } from "./runtimePublicConfig.js";
 import { checkSchemaCompatibility } from "./schemaCompatibility.js";
+import { handleSeoPublicRequest } from "./seoPublic.js";
 import { injectSpaMetadata } from "./spaMetadata.js";
 import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
 import { startSourceProcessingWorker } from "./sourceProcessingWorker.js";
@@ -112,7 +118,9 @@ const contentTypes: Record<string, string> = {
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".svg": "image/svg+xml",
+  ".txt": "text/plain; charset=utf-8",
   ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
 };
 
 function applySecurityHeaders(res: ServerResponse) {
@@ -123,6 +131,12 @@ function applySecurityHeaders(res: ServerResponse) {
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=()",
   );
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains",
+    );
+  }
 }
 
 function resolveStaticPath(req: IncomingMessage) {
@@ -173,49 +187,42 @@ async function serveFile(
 
 async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
-  const publicShellPaths = new Set([
-    "/",
-    "/find",
-    "/privacy",
-    "/terms",
-    "/data-deletion",
-    "/support",
-    "/account/settings",
-    "/account/update-password",
-    "/auth/callback",
-  ]);
-  const canonicalPath =
-    requestUrl.pathname.startsWith("/t/") ||
-    publicShellPaths.has(requestUrl.pathname)
-      ? requestUrl.pathname
-      : "/";
+  const pathname = requestUrl.pathname;
   const html = await readFile(join(distDir, "index.html"), "utf8");
-  let responseBody = injectSpaMetadata(html, {
-    title: "CalenderZW | Add your university timetable to your calendar",
-    description:
-      "Find a verified student timetable, choose useful reminders, and add lectures to Google Calendar, Apple Calendar, Outlook, or another calendar application.",
-    canonicalPath,
-    ogTitle: "CalenderZW",
-    ogDescription: "Add your university timetable to your calendar.",
-  });
+  let statusCode = isKnownSpaPath(pathname) ? 200 : 404;
+  let metadata =
+    getStaticSeoMetadata(pathname) ?? noindexMetadataForPath(pathname);
 
-  if (requestUrl.pathname.startsWith("/t/")) {
-    const slug = decodeURIComponent(requestUrl.pathname.replace(/^\/t\//, ""));
+  const googleConnectMatch = pathname.match(/^\/t\/([^/]+)\/google\/?$/);
+  const timetableMatch = pathname.match(/^\/t\/([^/]+)\/?$/);
+
+  if (googleConnectMatch) {
+    const slug = decodeURIComponent(googleConnectMatch[1]);
+    metadata = {
+      title: "Connect Google Calendar | CalenderZW",
+      description:
+        "Connect a published CalenderZW timetable to Google Calendar.",
+      canonicalPath: `/t/${encodeURIComponent(slug)}`,
+      robots: "noindex, nofollow",
+    };
+  } else if (timetableMatch) {
+    const slug = decodeURIComponent(timetableMatch[1]);
     try {
       const timetable = await getPublishedTimetableBySlug(slug);
-      responseBody = injectSpaMetadata(
-        responseBody,
-        buildPublicTimetableMetadata(timetable),
-      );
+      metadata = buildPublicTimetableMetadata(timetable);
+      statusCode = 200;
     } catch {
-      // Keep the generic public shell metadata when a timetable cannot be loaded.
+      metadata = noindexMetadataForPath(pathname);
+      statusCode = 404;
     }
   }
 
-  res.writeHead(200, {
+  const responseBody = injectSpaMetadata(html, metadata);
+
+  res.writeHead(statusCode, {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Length": Buffer.byteLength(responseBody),
-    "Cache-Control": "public, max-age=300",
+    "Cache-Control": statusCode === 404 ? "no-store" : "public, max-age=300",
   });
 
   if (req.method === "HEAD") {
@@ -254,6 +261,16 @@ async function serveStatic(req: IncomingMessage, res: ServerResponse) {
     return;
   }
 
+  const legacySyncMatch = requestUrl.pathname.match(/^\/sync\/([^/]+)\/?$/);
+  if (legacySyncMatch) {
+    res.writeHead(308, {
+      Location: `/t/${legacySyncMatch[1]}`,
+      "Cache-Control": "public, max-age=300",
+    });
+    res.end();
+    return;
+  }
+
   const filePath = resolveStaticPath(req);
   if (filePath) {
     try {
@@ -283,6 +300,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (await handleHealthRequest(req, res, process.env)) return;
+    if (await handleSeoPublicRequest(req, res)) return;
 
     // Readiness is an infrastructure/deployment signal, not a global traffic
     // kill-switch. Individual handlers already surface dependency-specific
