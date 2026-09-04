@@ -63,12 +63,7 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   next = upsertMeta(next, "name", "twitter:title", ogTitle);
   next = upsertMeta(next, "name", "twitter:description", ogDescription);
   next = upsertMeta(next, "name", "twitter:image", ogImage);
-  next = upsertMeta(
-    next,
-    "name",
-    "robots",
-    metadata.robots ?? "index, follow",
-  );
+  next = upsertMeta(next, "name", "robots", metadata.robots ?? "index, follow");
 
   return next;
 }
