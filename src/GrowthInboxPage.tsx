@@ -57,9 +57,7 @@ async function api<T>(path: string, token: string, init?: RequestInit) {
     },
   });
   const body = (await response.json().catch(() => null)) as
-    | T
-    | { error?: { message?: string } }
-    | null;
+    T | { error?: { message?: string } } | null;
   if (!response.ok) {
     throw new Error(
       body && "error" in body && body.error?.message
@@ -122,24 +120,22 @@ export function GrowthInboxPage() {
       ].join(" · ");
       groups.set(key, (groups.get(key) ?? 0) + 1);
     }
-    return [...groups.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
+    return [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [inbox.requests]);
 
   async function updateRequest(item: TimetableRequest, nextStatus: string) {
     if (!token) return;
     await api(`/api/admin/growth/requests/${item.id}`, token, {
       method: "PATCH",
-      body: JSON.stringify({ status: nextStatus, publicSlug: item.public_slug }),
+      body: JSON.stringify({
+        status: nextStatus,
+        publicSlug: item.public_slug,
+      }),
     });
     await refresh(token);
   }
 
-  async function updateFeedback(
-    item: Feedback,
-    testimonialApproved: boolean,
-  ) {
+  async function updateFeedback(item: Feedback, testimonialApproved: boolean) {
     if (!token) return;
     await api(`/api/admin/growth/feedback/${item.id}`, token, {
       method: "PATCH",
@@ -224,7 +220,9 @@ export function GrowthInboxPage() {
             <span>Prioritisation</span>
             <h2>Demand clusters</h2>
           </div>
-          <small>Grouped locally in this view; no IP/device fingerprinting.</small>
+          <small>
+            Grouped locally in this view; no IP/device fingerprinting.
+          </small>
         </div>
         {demandGroups.length ? (
           <ol className="czw-demand-clusters">
