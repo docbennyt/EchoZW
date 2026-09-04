@@ -75,7 +75,9 @@ const noindexRouteMetadata: Record<string, SeoRouteMetadata> = {
 };
 
 export function getStaticSeoMetadata(pathname: string) {
-  return staticRouteMetadata[pathname] ?? noindexRouteMetadata[pathname] ?? null;
+  return (
+    staticRouteMetadata[pathname] ?? noindexRouteMetadata[pathname] ?? null
+  );
 }
 
 export function isKnownSpaPath(pathname: string) {
