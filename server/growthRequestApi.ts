@@ -148,7 +148,11 @@ function bool(value: unknown, field: string) {
 function optionalUuid(value: unknown, field: string) {
   const cleaned = text(value, field, 64);
   if (!cleaned) return null;
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cleaned)) {
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      cleaned,
+    )
+  ) {
     throw new GrowthRequestApiError(
       "VALIDATION_ERROR",
       422,
@@ -240,21 +244,27 @@ function parseCreateInput(body: Record<string, unknown>): CreateGrowthRequestInp
     body.testimonialConsent,
     "Testimonial consent",
   );
+  const contactName = text(body.contactName, "Name", 120);
   const contactEmail = normalizeEmail(body.contactEmail);
   const contactPhoneE164 = normalizePhone(body.contactPhoneE164);
 
-  if ((contactEmail || contactPhoneE164) && !contactConsent) {
+  if ((contactName || contactEmail || contactPhoneE164) && !contactConsent) {
     throw new GrowthRequestApiError(
       "CONTACT_CONSENT_REQUIRED",
       422,
       "Consent is required before we store contact details.",
     );
   }
-  if (testimonialConsent && (!contactConsent || requestType !== "feedback")) {
+  if (
+    testimonialConsent &&
+    (requestType !== "feedback" ||
+      !contactConsent ||
+      (!contactEmail && !contactPhoneE164))
+  ) {
     throw new GrowthRequestApiError(
       "TESTIMONIAL_CONSENT_INVALID",
       422,
-      "Testimonial permission requires feedback and contact consent.",
+      "Testimonial permission requires feedback, contact consent, and a verifiable email or phone number.",
     );
   }
 
@@ -266,7 +276,7 @@ function parseCreateInput(body: Record<string, unknown>): CreateGrowthRequestInp
       classGroupLabel: text(body.classGroupLabel, "Class", 120, true),
       academicPeriodName: text(body.academicPeriodName, "Academic period", 160),
       message: text(body.message, "Notes", 4000),
-      contactName: text(body.contactName, "Name", 120),
+      contactName,
       contactEmail,
       contactPhoneE164,
       contactConsent,
@@ -294,7 +304,7 @@ function parseCreateInput(body: Record<string, unknown>): CreateGrowthRequestInp
     feedbackType,
     rating: parseRating(body.rating),
     message: text(body.message, "Feedback", 4000, true),
-    contactName: text(body.contactName, "Name", 120),
+    contactName,
     contactEmail,
     contactPhoneE164,
     contactConsent,
