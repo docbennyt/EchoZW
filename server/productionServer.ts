@@ -16,6 +16,7 @@ import { validateLegalProductionConfig } from "../src/domain/legalValidation.js"
 import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
 import { handleAdminRequest } from "./adminApi.js";
 import { handleAnalyticsRequest } from "./analyticsApi.js";
+import { handleGrowthPublicRequest } from "./growthRequestApi.js";
 import { handleHealthRequest } from "./healthApi.js";
 import {
   attachRequestLogging,
@@ -291,6 +292,7 @@ const server = createServer(async (req, res) => {
     if (await handleAdminRequest(req, res)) return;
     if (await handleAnalyticsRequest(req, res, process.env)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
+    if (await handleGrowthPublicRequest(req, res, process.env)) return;
     if (await handleSourceSnapshotRequest(req, res, process.env)) return;
     if (await handlePilotCalendarRequest(req, res, process.env, "production"))
       return;
