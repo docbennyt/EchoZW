@@ -97,9 +97,7 @@ function PilotOffer() {
         <div className="czw-pilot-offer-card">
           <div className="czw-pilot-offer-copy">
             <span className="czw-kicker">HIT Undergraduate Pilot</span>
-            <h2 id="czw-pilot-offer-title">
-              Free through 30 September 2026.
-            </h2>
+            <h2 id="czw-pilot-offer-title">Free through 30 September 2026.</h2>
             <p>
               We&apos;re piloting CalenderZW with HIT undergraduates. Find your
               class, add it to your calendar and use CalenderZW at no charge
