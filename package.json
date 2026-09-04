@@ -16,7 +16,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "prettier --write src/PilotOfferEnhancement.tsx && git diff -- src/PilotOfferEnhancement.tsx && exit 1"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
