@@ -9,6 +9,7 @@ import {
 } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import { StudentOnboardingAcceleration } from "./StudentOnboardingAcceleration";
+import { googleCalendarFailureRecoveryPath } from "./domain/googleCalendarHandoff";
 import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
@@ -45,12 +46,26 @@ function timetableSlug(path: string) {
 
 function RootApp() {
   const [path, setPath] = useState(currentPath);
+  const calendarRecoveryPath =
+    path === "/find"
+      ? googleCalendarFailureRecoveryPath(
+          new URLSearchParams(window.location.search).get("calendar"),
+          window.localStorage,
+        )
+      : null;
 
   useEffect(() => {
     const handleNavigation = () => setPath(currentPath());
     window.addEventListener("popstate", handleNavigation);
     return () => window.removeEventListener("popstate", handleNavigation);
   }, []);
+
+  useEffect(() => {
+    if (!calendarRecoveryPath) return;
+    window.location.replace(calendarRecoveryPath);
+  }, [calendarRecoveryPath]);
+
+  if (calendarRecoveryPath) return null;
 
   const googleSlug = googleTimetableSlug(path);
   if (googleSlug) {
