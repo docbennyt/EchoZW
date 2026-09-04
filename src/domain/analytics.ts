@@ -1,5 +1,8 @@
 export const ANALYTICS_EVENT_NAMES = [
   "landing_viewed",
+  "pilot_offer_viewed",
+  "pilot_cta_clicked",
+  "future_price_viewed",
   "finder_opened",
   "finder_search_started",
   "institution_selected",

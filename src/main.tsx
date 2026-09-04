@@ -6,6 +6,7 @@ import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
 import { FeedbackPage, TimetableRequestPage } from "./GrowthCapturePages";
 import { GrowthInboxPage } from "./GrowthInboxPage";
+import { PilotOfferEnhancement } from "./PilotOfferEnhancement";
 import {
   MarketingEnhancements,
   TimetableGoogleOnboardingEnhancement,
@@ -24,6 +25,7 @@ import "./productionUxEnhancementsPatch.css";
 import "./studentOnboardingAcceleration.css";
 import "./growthCapturePages.css";
 import "./growthInboxPage.css";
+import "./pilotOfferEnhancement.css";
 
 function currentPath() {
   return window.location.pathname;
@@ -106,6 +108,7 @@ function RootApp() {
       <AppV2 />
       {path === "/find" || path === "/find/" ? <FinderDemandPrompt /> : null}
       <MarketingEnhancements />
+      <PilotOfferEnhancement />
     </>
   );
 }
