@@ -1,5 +1,5 @@
 export const GOOGLE_CALENDAR_HOME_URL =
-  "https://calendar.google.com/calendar/u/0/r";
+  "https://calendar.google.com/calendar/r";
 
 const GOOGLE_CALENDAR_RETURN_KEY = "calenderzw_google_calendar_return";
 const GOOGLE_CALENDAR_RETURN_TTL_MS = 30 * 60 * 1000;
