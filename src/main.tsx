@@ -95,6 +95,13 @@ function RootApp() {
     <>
       <AppV2 />
       <MarketingEnhancements />
+      {path === "/find" ? (
+        <GrowthRequestDialog
+          mode="missing_timetable"
+          triggerLabel="Can’t find your class?"
+          triggerClassName="czw-growth-request-floating"
+        />
+      ) : null}
     </>
   );
 }
