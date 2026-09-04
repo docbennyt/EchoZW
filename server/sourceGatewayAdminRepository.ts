@@ -31,6 +31,59 @@ function client() {
   return createSupabaseAdminClient();
 }
 
+async function loadLatestSourceSnapshot(sourceId: string) {
+  const snapshot = await expectData<JsonRecord>(
+    client()
+      .from("timetable_source_snapshots")
+      .select("id, source_id")
+      .eq("source_id", sourceId)
+      .order("accepted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    "Could not load latest source snapshot.",
+  );
+  if (!snapshot) {
+    throw new SourceSnapshotRepositoryError(
+      "SOURCE_SNAPSHOT_NOT_FOUND",
+      404,
+      "No source snapshot is available to process.",
+    );
+  }
+  return snapshot;
+}
+
+async function requeueExistingSourceProcessingJob(snapshotId: string) {
+  const now = new Date().toISOString();
+  const supabase = client();
+  const { data, error } = await supabase
+    .from("timetable_source_processing_jobs")
+    .update({
+      available_at: now,
+      completed_at: null,
+      last_error_code: null,
+      last_error_metadata: {},
+      result_summary: {},
+      started_at: null,
+      status: "queued",
+      updated_at: now,
+    })
+    .eq("snapshot_id", snapshotId)
+    .neq("status", "processing")
+    .select("id, status")
+    .maybeSingle();
+
+  if (error) {
+    throw new SourceSnapshotRepositoryError(
+      "SOURCE_GATEWAY_DATABASE_UNAVAILABLE",
+      503,
+      "Could not requeue the latest source snapshot.",
+      error,
+    );
+  }
+
+  return data ? { status: "queued" as const } : { status: "existing" as const };
+}
+
 export async function listSourceGatewayState() {
   const supabase = client();
   const [sources, programmes, cohorts, reviews, jobs] = await Promise.all([
@@ -140,37 +193,29 @@ export async function mapSourceCohort(input: {
       })
       .eq("id", input.discoveredCohortId)
       .select(
-        "id, mapping_status, target_programme_id, target_cohort_id, target_academic_period_id",
+        "id, source_id, mapping_status, target_programme_id, target_cohort_id, target_academic_period_id",
       )
       .single(),
     "Could not save source cohort mapping.",
   );
+
+  if (data?.source_id) {
+    await enqueueLatestSourceSnapshot(String(data.source_id));
+  }
+
   return data;
 }
 
 export async function enqueueLatestSourceSnapshot(sourceId: string) {
-  const snapshot = await expectData<JsonRecord>(
-    client()
-      .from("timetable_source_snapshots")
-      .select("id, source_id")
-      .eq("source_id", sourceId)
-      .order("accepted_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    "Could not load latest source snapshot.",
-  );
-  if (!snapshot) {
-    throw new SourceSnapshotRepositoryError(
-      "SOURCE_SNAPSHOT_NOT_FOUND",
-      404,
-      "No source snapshot is available to process.",
-    );
-  }
-  return enqueueSourceProcessingJob(
+  const snapshot = await loadLatestSourceSnapshot(sourceId);
+  const result = await enqueueSourceProcessingJob(
     {
       snapshotId: String(snapshot.id),
       sourceId: String(snapshot.source_id),
     },
     process.env,
   );
+
+  if (result.status === "queued") return result;
+  return requeueExistingSourceProcessingJob(String(snapshot.id));
 }
