@@ -1,12 +1,13 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { renderSitemap } from "../server/seoPublic";
+import { injectSpaMetadata } from "../server/spaMetadata";
 import {
   INDEXABLE_STATIC_ROUTES,
   getStaticSeoMetadata,
   isKnownSpaPath,
   noindexMetadataForPath,
 } from "../src/domain/seo";
-import { renderSitemap } from "../server/seoPublic";
-import { injectSpaMetadata } from "../server/spaMetadata";
 
 describe("public SEO policy", () => {
   it("keeps public discovery routes indexable and private routes noindex", () => {
@@ -24,6 +25,7 @@ describe("public SEO policy", () => {
     expect(isKnownSpaPath("/t/hit-cs-1-1")).toBe(true);
     expect(isKnownSpaPath("/t/hit-cs-1-1/google")).toBe(true);
     expect(isKnownSpaPath("/admin/source-gateway")).toBe(true);
+    expect(isKnownSpaPath("/t/hit-cs-1-1/not-a-route")).toBe(false);
     expect(isKnownSpaPath("/definitely-not-a-page")).toBe(false);
   });
 
@@ -71,5 +73,24 @@ describe("public SEO policy", () => {
     expect(result).toContain(
       '<meta name="twitter:title" content="Find your university timetable | CalenderZW" />',
     );
+  });
+
+  it("keeps public crawler policy away from private surfaces", () => {
+    const robots = readFileSync("public/robots.txt", "utf8");
+    expect(robots).toContain("User-agent: OAI-SearchBot");
+    expect(robots).toContain("Disallow: /admin");
+    expect(robots).toContain("Disallow: /api/");
+    expect(robots).toContain("Disallow: /calendar/feed/");
+    expect(robots).toContain(
+      "Sitemap: https://calender.aido.co.zw/sitemap.xml",
+    );
+  });
+
+  it("keeps llms.txt factual and free of private discovery endpoints", () => {
+    const llms = readFileSync("public/llms.txt", "utf8");
+    expect(llms).toContain("# CalenderZW");
+    expect(llms).toContain("https://calender.aido.co.zw/find");
+    expect(llms).not.toContain("/calendar/feed/");
+    expect(llms).not.toContain("/api/internal/");
   });
 });
