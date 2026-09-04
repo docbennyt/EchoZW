@@ -81,8 +81,8 @@ export function getStaticSeoMetadata(pathname: string) {
 export function isKnownSpaPath(pathname: string) {
   if (getStaticSeoMetadata(pathname)) return true;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
-  if (pathname.startsWith("/t/")) return true;
-  if (pathname.startsWith("/sync/")) return true;
+  if (/^\/t\/[^/]+(?:\/google)?\/?$/.test(pathname)) return true;
+  if (/^\/sync\/[^/]+\/?$/.test(pathname)) return true;
   return false;
 }
 
