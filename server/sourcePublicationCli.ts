@@ -39,8 +39,7 @@ async function plan(reconciliationId: string) {
     persistence: persisted.persistence,
     planHash: persisted.plan.planHash,
     policy: persisted.plan.policy,
-    previousPublishedVersionId:
-      persisted.plan.previousPublishedVersionId,
+    previousPublishedVersionId: persisted.plan.previousPublishedVersionId,
     publicationId: persisted.id,
     reconciliationId: persisted.plan.reconciliationId,
     removalSessionIds: persisted.plan.removalSessionIds,
