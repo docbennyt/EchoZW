@@ -33,8 +33,12 @@ describe("guarded source publication contracts", () => {
     expect(repositorySource).toContain(
       '.from("timetable_source_reconciliations")',
     );
-    expect(repositorySource).toContain("hashCanonicalJson(result) !== resultHash");
-    expect(repositorySource).toContain("buildSourcePublicationPlan(reconciliation)");
+    expect(repositorySource).toContain(
+      "hashCanonicalJson(result) !== resultHash",
+    );
+    expect(repositorySource).toContain(
+      "buildSourcePublicationPlan(reconciliation)",
+    );
     expect(repositorySource).not.toContain(
       "reconcileSourceCandidatesToPublishedTimetable",
     );
@@ -44,9 +48,7 @@ describe("guarded source publication contracts", () => {
     expect(repositorySource).toContain(
       '.eq("reconciliation_id", plan.reconciliationId)',
     );
-    expect(repositorySource).toContain(
-      '"SOURCE_PUBLICATION_PLAN_DRIFT"',
-    );
+    expect(repositorySource).toContain('"SOURCE_PUBLICATION_PLAN_DRIFT"');
     expect(repositorySource).toContain("plan_hash: plan.planHash");
     expect(repositorySource).toContain(
       "plan_payload: sourcePublicationPlanPayload(plan)",
