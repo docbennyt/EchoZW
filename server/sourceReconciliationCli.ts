@@ -1,3 +1,4 @@
+import { persistVerifiedSourceReconciliation } from "./sourceReconciliationPersistence.js";
 import { runSourceReconciliation } from "./sourceReconciliationRepository.js";
 
 function printSection(title: string, value: unknown) {
@@ -18,6 +19,7 @@ async function main() {
     sourceCohortCode,
     sourceKey,
   });
+  const persisted = await persistVerifiedSourceReconciliation(result);
 
   console.log(
     `Binding: ${result.binding.sourceKey} ${result.binding.sourceCohortCode} -> ${result.binding.targetPublicSlug} (${result.binding.targetAcademicPeriodName})`,
@@ -25,6 +27,8 @@ async function main() {
   console.log(`Source snapshot: ${result.sourceSnapshotId}`);
   console.log(`Parse run: ${result.parseRunId}`);
   console.log(`Published version: ${result.publishedVersionId}`);
+  console.log(`Verified reconciliation: ${persisted.id}`);
+  console.log(`Reconciliation evidence hash: ${persisted.resultHash}`);
   console.log(`MATCHED ${result.summary.matched}`);
   console.log(`CHANGED ${result.summary.changed}`);
   console.log(`SOURCE ONLY ${result.summary.sourceOnly}`);
@@ -52,6 +56,7 @@ async function main() {
     result.items.filter((item) => item.outcome === "current_only").slice(0, 5),
   );
   printSection("ZERO_MUTATION_PROOF", result.zeroMutationProof);
+  printSection("VERIFIED_RECONCILIATION", persisted);
 }
 
 main().catch((error) => {
@@ -59,11 +64,13 @@ main().catch((error) => {
     JSON.stringify(
       {
         error: {
-          code: "SOURCE_RECONCILIATION_ERROR",
+          code:
+            error && typeof error === "object" && "code" in error
+              ? String(error.code)
+              : "SOURCE_RECONCILIATION_ERROR",
           message: error instanceof Error ? error.message : String(error),
         },
       },
-      null,
       2,
     ),
   );
