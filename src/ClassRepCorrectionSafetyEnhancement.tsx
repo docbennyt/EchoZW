@@ -401,7 +401,7 @@ export function ClassRepCorrectionWorkspace({
             assignment.timetableId,
             editingCorrection.id,
             recurringMutationKeyRef.current,
-            editingCorrection.updatedAt,
+            editingCorrection.updatedAt ?? editingCorrection.createdAt,
             input,
           )
         : await createRecurringClassUpdate(
@@ -446,7 +446,7 @@ export function ClassRepCorrectionWorkspace({
             assignment.timetableId,
             editingException.id,
             extraMutationKeyRef.current,
-            editingException.updatedAt,
+            editingException.updatedAt ?? editingException.createdAt,
             input,
           )
         : await createExtraClassUpdate(
@@ -476,24 +476,26 @@ export function ClassRepCorrectionWorkspace({
     setBusyUpdateId(entry.item.id);
     setMessage("");
     try {
-      const result =
-        entry.kind === "correction"
-          ? await revokeRecurringClassUpdate(
-              accessToken,
-              assignment.timetableId,
-              entry.item.id,
-            )
-          : await revokeSessionException(
-              accessToken,
-              assignment.timetableId,
-              entry.item.id,
-            );
-      const item =
-        entry.kind === "correction" ? result.correction : result.exception;
+      let item: TimetableCorrectionDirective | TimetableSessionException;
+      if (entry.kind === "correction") {
+        const result = await revokeRecurringClassUpdate(
+          accessToken,
+          assignment.timetableId,
+          entry.item.id,
+        );
+        item = result.correction;
+      } else {
+        const result = await revokeSessionException(
+          accessToken,
+          assignment.timetableId,
+          entry.item.id,
+        );
+        item = result.exception;
+      }
       const undo: UndoState = {
         kind: entry.kind,
         id: item.id,
-        updatedAt: item.updatedAt,
+        updatedAt: item.updatedAt ?? item.createdAt,
         label: updateLabel(entry),
         expiresAt: Date.now() + UNDO_WINDOW_MS,
       };
