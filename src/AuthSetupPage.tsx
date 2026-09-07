@@ -76,6 +76,7 @@ export function AuthSetupPage() {
   const [message, setMessage] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [authClientReady, setAuthClientReady] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const supabaseRef = useRef<ReturnType<
@@ -101,6 +102,7 @@ export function AuthSetupPage() {
       try {
         supabase = createSupabaseBrowserClient();
         supabaseRef.current = supabase;
+        setAuthClientReady(true);
       } catch (error) {
         trackBrowserAuthFailure({
           code: browserAuthFailureCode(error),
@@ -187,11 +189,10 @@ export function AuthSetupPage() {
   }
 
   const copy = setupCopy(intent);
-  const hasValidAuthClient = supabaseRef.current !== null;
   const showForm =
     status === "ready" ||
     status === "updating" ||
-    (status === "error" && hasValidAuthClient);
+    (status === "error" && authClientReady);
 
   return (
     <div className="czw-app-shell">
