@@ -72,13 +72,14 @@ async function correctionFetch<T>(
     headers: {
       Authorization: `Bearer ${input.accessToken}`,
       ...(input.body ? { "Content-Type": "application/json" } : {}),
-      ...(input.mutationKey
-        ? { "Idempotency-Key": input.mutationKey }
-        : {}),
+      ...(input.mutationKey ? { "Idempotency-Key": input.mutationKey } : {}),
     },
     body: input.body ? JSON.stringify(input.body) : undefined,
   });
-  const body = (await response.json().catch(() => null)) as T | ErrorBody | null;
+  const body = (await response.json().catch(() => null)) as
+    | T
+    | ErrorBody
+    | null;
   if (!response.ok) {
     const error = body as ErrorBody | null;
     throw new CorrectionMutationError(
