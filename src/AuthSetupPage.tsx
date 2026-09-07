@@ -7,8 +7,8 @@ import {
   authSetupIntentFromUrl,
   INVITE_INVALID_MESSAGE,
   MIN_PASSWORD_LENGTH,
-  PASSWORD_RESET_INVALID_MESSAGE,
   PASSWORD_RESET_PATH,
+  RECOVERY_INVALID_MESSAGE,
   restoreAuthSessionFromRedirect,
   safeAuthNextPath,
   type AuthSetupIntent,
@@ -65,7 +65,7 @@ function setupCopy(intent: AuthSetupIntent) {
     action: "Update password",
     updating: "Updating password...",
     success: "Password updated.",
-    invalid: PASSWORD_RESET_INVALID_MESSAGE,
+    invalid: RECOVERY_INVALID_MESSAGE,
   };
 }
 
@@ -113,14 +113,15 @@ export function AuthSetupPage() {
         });
         if (!active) return;
         setStatus("error");
-        setMessage("Account setup is temporarily unavailable. Please try again.");
+        setMessage(
+          "Account setup is temporarily unavailable. Please try again.",
+        );
         return;
       }
 
       const result = await restoreAuthSessionFromRedirect(supabase.auth, url, {
         fallbackIntent,
-        sanitize: () =>
-          window.history.replaceState({}, "", currentPath()),
+        sanitize: () => window.history.replaceState({}, "", currentPath()),
       });
       if (!active) return;
 
@@ -167,7 +168,9 @@ export function AuthSetupPage() {
     const supabase = supabaseRef.current;
     if (!supabase) {
       setStatus("error");
-      setMessage("Account setup is temporarily unavailable. Please try again.");
+      setMessage(
+        "Account setup is temporarily unavailable. Please try again.",
+      );
       return;
     }
 
@@ -192,7 +195,10 @@ export function AuthSetupPage() {
 
   const copy = setupCopy(intent);
   const showForm =
-    status === "ready" || status === "updating" || status === "success" || status === "error";
+    status === "ready" ||
+    status === "updating" ||
+    status === "success" ||
+    status === "error";
 
   return (
     <div className="czw-app-shell">
