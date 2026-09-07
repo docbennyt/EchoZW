@@ -71,6 +71,7 @@ main().catch((error) => {
           message: error instanceof Error ? error.message : String(error),
         },
       },
+      null,
       2,
     ),
   );
