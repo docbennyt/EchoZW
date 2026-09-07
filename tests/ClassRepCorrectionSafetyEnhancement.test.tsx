@@ -13,9 +13,9 @@ import {
 import { fetchPublicTimetable } from "../src/api/publicTimetable";
 
 vi.mock("../src/api/correctionMutations", async () => {
-  const actual = await vi.importActual<typeof import("../src/api/correctionMutations")>(
-    "../src/api/correctionMutations",
-  );
+  const actual = await vi.importActual<
+    typeof import("../src/api/correctionMutations")
+  >("../src/api/correctionMutations");
   return {
     ...actual,
     createExtraClassUpdate: vi.fn(),
@@ -152,7 +152,9 @@ describe("DR-53 Class Rep correction safety workspace", () => {
     expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
 
     resolveSave(mutationResult());
-    await screen.findByText(/Saved — timetable updated: ICS1103 · Tuesday 08:00/);
+    await screen.findByText(
+      /Saved — timetable updated: ICS1103 · Tuesday 08:00/,
+    );
   });
 
   it("keeps the same mutation key and form values when retrying after a network failure", async () => {
@@ -219,7 +221,9 @@ describe("DR-53 Class Rep correction safety workspace", () => {
       />,
     );
 
-    expect(await screen.findByText("3 exact copies detected")).toBeInTheDocument();
+    expect(
+      await screen.findByText("3 exact copies detected"),
+    ).toBeInTheDocument();
     expect(
       screen.getAllByText("Fundamental of Digital Electronics"),
     ).toHaveLength(3);
@@ -229,7 +233,9 @@ describe("DR-53 Class Rep correction safety workspace", () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByText("3 exact copies detected")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText("3 exact copies detected"),
+      ).not.toBeInTheDocument();
     });
     expect(dedupeRecurringClassUpdates).toHaveBeenCalledWith(
       "token",
@@ -239,6 +245,8 @@ describe("DR-53 Class Rep correction safety workspace", () => {
     expect(
       screen.getAllByText("Fundamental of Digital Electronics"),
     ).toHaveLength(1);
-    expect(screen.getByText(/safely removed 2 duplicate updates/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/safely removed 2 duplicate updates/),
+    ).toBeInTheDocument();
   });
 });

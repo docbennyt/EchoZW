@@ -98,7 +98,9 @@ function localDateInput() {
 function newMutationKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   if (!globalThis.crypto?.getRandomValues) {
-    throw new Error("This browser cannot create a secure timetable update key.");
+    throw new Error(
+      "This browser cannot create a secure timetable update key.",
+    );
   }
   const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40;
@@ -158,7 +160,8 @@ function readUndoState(): UndoState | null {
 function updateLabel(entry: UpdateEntry) {
   if (entry.kind === "correction") {
     const item = entry.item;
-    const course = item.courseCode || item.stableSessionKey || "Recurring class";
+    const course =
+      item.courseCode || item.stableSessionKey || "Recurring class";
     const when = item.weekday ? weekdayLabels[item.weekday] : "Recurring";
     return `${course} · ${when}${item.startTime ? ` ${item.startTime.slice(0, 5)}` : ""}`;
   }
@@ -226,7 +229,13 @@ function extraFormFromItem(item: TimetableSessionException): ExtraFormState {
   };
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="dr53-field">
       <span>{label}</span>
@@ -647,7 +656,9 @@ export function ClassRepCorrectionWorkspace({
         <form id="dr53-extra-form" className="dr53-card" onSubmit={submitExtra}>
           <div className="dr53-card-title">
             <div>
-              <h3>{editingException ? "Edit extra class" : "Add extra class"}</h3>
+              <h3>
+                {editingException ? "Edit extra class" : "Add extra class"}
+              </h3>
               <p>One date only. It will not repeat next week.</p>
             </div>
             {editingException ? (
@@ -757,7 +768,9 @@ export function ClassRepCorrectionWorkspace({
             />
           </Field>
           <button className="dr53-primary" disabled={savingExtra} type="submit">
-            {savingExtra ? <LoaderCircle className="dr53-spin" size={18} /> : null}
+            {savingExtra ? (
+              <LoaderCircle className="dr53-spin" size={18} />
+            ) : null}
             {savingExtra
               ? "Saving…"
               : editingException
@@ -774,7 +787,9 @@ export function ClassRepCorrectionWorkspace({
           <div className="dr53-card-title">
             <div>
               <h3>
-                {editingCorrection ? "Edit recurring update" : "Update timetable"}
+                {editingCorrection
+                  ? "Edit recurring update"
+                  : "Update timetable"}
               </h3>
               <p>Recurring correction for this assigned class.</p>
             </div>
@@ -1019,7 +1034,8 @@ export function ClassRepCorrectionWorkspace({
                   <span>{item.courseName || "Course name not recorded"}</span>
                   <small>{item.reason || "No reason recorded"}</small>
                   <small>
-                    {item.creatorRole || "staff"} · revision {item.revision || 1} ·{" "}
+                    {item.creatorRole || "staff"} · revision{" "}
+                    {item.revision || 1} ·{" "}
                     {new Date(item.createdAt).toLocaleString("en-ZW")}
                   </small>
                 </div>
@@ -1047,7 +1063,9 @@ export function ClassRepCorrectionWorkspace({
 }
 
 function findClassRepMount() {
-  const root = document.querySelector<HTMLElement>("main.admin-page .pilot-stack");
+  const root = document.querySelector<HTMLElement>(
+    "main.admin-page .pilot-stack",
+  );
   if (!root) return null;
   const surfaces = [
     ...root.querySelectorAll<HTMLElement>(":scope > .pilot-surface"),

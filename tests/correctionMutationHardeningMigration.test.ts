@@ -21,7 +21,9 @@ describe("DR-53 correction mutation hardening migration", () => {
     expect(migration).toContain("timetable_exception_semantic_fingerprint");
     expect(migration).toContain("pg_advisory_xact_lock");
     expect(migration).toContain("TIMETABLE_UPDATE_ALREADY_EXISTS");
-    expect(migration).toContain("timetable_correction_semantic_duplicate_guard");
+    expect(migration).toContain(
+      "timetable_correction_semantic_duplicate_guard",
+    );
     expect(migration).toContain("timetable_exception_semantic_duplicate_guard");
   });
 

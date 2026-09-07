@@ -217,17 +217,19 @@ async function audit(input: {
   entityId?: string | null;
   metadata?: JsonRecord;
 }) {
-  const { error } = await client().from("audit_logs").insert({
-    actor_id: input.actor.user.id,
-    action: input.action,
-    entity_type: input.entityType,
-    entity_id: input.entityId ?? null,
-    metadata: {
-      staffUserId: input.actor.staff.id,
-      staffRole: input.actor.staff.role,
-      ...(input.metadata ?? {}),
-    },
-  });
+  const { error } = await client()
+    .from("audit_logs")
+    .insert({
+      actor_id: input.actor.user.id,
+      action: input.action,
+      entity_type: input.entityType,
+      entity_id: input.entityId ?? null,
+      metadata: {
+        staffUserId: input.actor.staff.id,
+        staffRole: input.actor.staff.role,
+        ...(input.metadata ?? {}),
+      },
+    });
   if (error) {
     throw new PilotApiError(
       "DATABASE_UNAVAILABLE",
@@ -360,7 +362,11 @@ async function getCorrectionRow(timetableId: string, correctionId: string) {
     "Could not load the recurring correction.",
   );
   if (!row) {
-    throw new PilotApiError("CORRECTION_NOT_FOUND", "Correction not found.", 404);
+    throw new PilotApiError(
+      "CORRECTION_NOT_FOUND",
+      "Correction not found.",
+      404,
+    );
   }
   return row;
 }
@@ -377,7 +383,11 @@ async function getExceptionRow(timetableId: string, exceptionId: string) {
     "Could not load the timetable exception.",
   );
   if (!row) {
-    throw new PilotApiError("EXCEPTION_NOT_FOUND", "Class update not found.", 404);
+    throw new PilotApiError(
+      "EXCEPTION_NOT_FOUND",
+      "Class update not found.",
+      404,
+    );
   }
   return row;
 }
@@ -574,7 +584,10 @@ export async function createRecurringCorrection(
       entityId: String(duplicate.id),
       action: "timetable_correction.semantic_duplicate_prevented",
     });
-    return { item: mapCorrection(duplicate), mutationOutcome: "already_exists" };
+    return {
+      item: mapCorrection(duplicate),
+      mutationOutcome: "already_exists",
+    };
   }
 
   const { data, error } = await client()
@@ -605,7 +618,10 @@ export async function createRecurringCorrection(
           action: "timetable_correction.idempotency_replayed",
           concurrent: true,
         });
-        return { item: mapCorrection(racedReplay), mutationOutcome: "replayed" };
+        return {
+          item: mapCorrection(racedReplay),
+          mutationOutcome: "replayed",
+        };
       }
       const racedDuplicate = await findActiveCorrectionByFingerprint(
         input.timetableId,
@@ -970,7 +986,10 @@ export async function revokeCorrection(input: {
   correctionId: string;
   actor: StaffAuthContext;
 }): Promise<MutationResult<TimetableCorrectionDirective>> {
-  const existing = await getCorrectionRow(input.timetableId, input.correctionId);
+  const existing = await getCorrectionRow(
+    input.timetableId,
+    input.correctionId,
+  );
   if (!existing.active) {
     return { item: mapCorrection(existing), mutationOutcome: "replayed" };
   }
@@ -1083,7 +1102,10 @@ export async function restoreCorrection(input: {
   expectedUpdatedAt: string;
   actor: StaffAuthContext;
 }): Promise<MutationResult<TimetableCorrectionDirective>> {
-  const existing = await getCorrectionRow(input.timetableId, input.correctionId);
+  const existing = await getCorrectionRow(
+    input.timetableId,
+    input.correctionId,
+  );
   assertUndoable(existing, input.expectedUpdatedAt);
   const now = new Date().toISOString();
   const { data, error } = await client()

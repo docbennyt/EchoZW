@@ -77,9 +77,7 @@ async function correctionFetch<T>(
     body: input.body ? JSON.stringify(input.body) : undefined,
   });
   const body = (await response.json().catch(() => null)) as
-    | T
-    | ErrorBody
-    | null;
+    T | ErrorBody | null;
   if (!response.ok) {
     const error = body as ErrorBody | null;
     throw new CorrectionMutationError(
