@@ -3,9 +3,9 @@ import type {
   TimetableMutationOutcome,
   TimetableSessionException,
 } from "../src/api/pilotTypes.js";
+import { PilotApiError } from "./pilotRepository.js";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 import type { StaffAuthContext } from "./supabase/auth.js";
-import { PilotApiError } from "./pilotRepository.js";
 
 type JsonRecord = Record<string, unknown>;
 type QueryError = { code?: string; message?: string; details?: string } | null;
@@ -13,6 +13,47 @@ type QueryError = { code?: string; message?: string; details?: string } | null;
 type MutationResult<T> = {
   item: T;
   mutationOutcome: TimetableMutationOutcome;
+};
+
+type CorrectionWrite = {
+  timetableId: string;
+  actor: StaffAuthContext;
+  mutationKey: string;
+  stableSessionKey?: string | null;
+  action: "add" | "modify" | "remove";
+  sourceMayReplace: boolean;
+  courseCode?: string | null;
+  courseName?: string | null;
+  weekday?: number | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  venue?: string | null;
+  lecturer?: string | null;
+  sessionType?: string | null;
+  notes?: string | null;
+  reason: string;
+  provenance?: string | null;
+};
+
+type ExceptionWrite = {
+  timetableId: string;
+  actor: StaffAuthContext;
+  mutationKey: string;
+  stableSessionKey?: string | null;
+  exceptionDate: string;
+  exceptionType: "cancelled" | "moved" | "extra";
+  replacementStartsAt?: string | null;
+  replacementEndsAt?: string | null;
+  courseCode?: string | null;
+  courseName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  venue?: string | null;
+  lecturer?: string | null;
+  sessionType?: string | null;
+  notes?: string | null;
+  reason: string;
+  provenance?: string | null;
 };
 
 let repositoryEnv: NodeJS.ProcessEnv | undefined;
@@ -23,6 +64,16 @@ export function setCorrectionsRepositoryEnv(env: NodeJS.ProcessEnv) {
 
 function client() {
   return createSupabaseAdminClient(repositoryEnv ?? process.env);
+}
+
+function requireText(value: string | null | undefined, message: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) throw new PilotApiError("VALIDATION_ERROR", message, 422);
+  return trimmed;
+}
+
+function maybeText(value: string | null | undefined) {
+  return value?.trim() || null;
 }
 
 function normalizeTime(value: string) {
@@ -49,16 +100,6 @@ function assertTimeRange(startTime: string, endTime: string) {
   }
 }
 
-function requireText(value: string | null | undefined, message: string) {
-  const trimmed = value?.trim();
-  if (!trimmed) throw new PilotApiError("VALIDATION_ERROR", message, 422);
-  return trimmed;
-}
-
-function maybeText(value: string | null | undefined) {
-  return value?.trim() || null;
-}
-
 function mapCorrection(row: JsonRecord): TimetableCorrectionDirective {
   const sourceMayReplace = Boolean(row.source_may_replace);
   return {
@@ -71,7 +112,10 @@ function mapCorrection(row: JsonRecord): TimetableCorrectionDirective {
     pinned: !sourceMayReplace,
     courseCode: row.course_code ? String(row.course_code) : null,
     courseName: row.course_name ? String(row.course_name) : null,
-    weekday: row.weekday === null || row.weekday === undefined ? null : Number(row.weekday),
+    weekday:
+      row.weekday === null || row.weekday === undefined
+        ? null
+        : Number(row.weekday),
     startTime: row.start_time ? String(row.start_time) : null,
     endTime: row.end_time ? String(row.end_time) : null,
     venue: row.venue ? String(row.venue) : null,
@@ -122,8 +166,7 @@ function mapException(row: JsonRecord): TimetableSessionException {
     notes: row.notes ? String(row.notes) : null,
     reason: row.reason ? String(row.reason) : null,
     provenance: row.provenance ? String(row.provenance) : null,
-    creatorRole:
-      row.creator_role as TimetableSessionException["creatorRole"],
+    creatorRole: row.creator_role as TimetableSessionException["creatorRole"],
     active: Boolean(row.active),
     mutationKey: row.mutation_key ? String(row.mutation_key) : null,
     semanticFingerprint: row.semantic_fingerprint
@@ -174,19 +217,17 @@ async function audit(input: {
   entityId?: string | null;
   metadata?: JsonRecord;
 }) {
-  const { error } = await client()
-    .from("audit_logs")
-    .insert({
-      actor_id: input.actor.user.id,
-      action: input.action,
-      entity_type: input.entityType,
-      entity_id: input.entityId ?? null,
-      metadata: {
-        staffUserId: input.actor.staff.id,
-        staffRole: input.actor.staff.role,
-        ...(input.metadata ?? {}),
-      },
-    });
+  const { error } = await client().from("audit_logs").insert({
+    actor_id: input.actor.user.id,
+    action: input.action,
+    entity_type: input.entityType,
+    entity_id: input.entityId ?? null,
+    metadata: {
+      staffUserId: input.actor.staff.id,
+      staffRole: input.actor.staff.role,
+      ...(input.metadata ?? {}),
+    },
+  });
   if (error) {
     throw new PilotApiError(
       "DATABASE_UNAVAILABLE",
@@ -198,39 +239,39 @@ async function audit(input: {
 }
 
 async function fingerprintCorrection(payload: JsonRecord) {
-  const value = await expectData<string>(
+  const fingerprint = await expectData<string>(
     client().rpc("timetable_correction_semantic_fingerprint", {
       p_payload: payload,
     }),
     "DATABASE_UNAVAILABLE",
     "Could not verify the correction identity.",
   );
-  if (!value) {
+  if (!fingerprint) {
     throw new PilotApiError(
       "DATABASE_UNAVAILABLE",
       "Could not verify the correction identity.",
       503,
     );
   }
-  return value;
+  return fingerprint;
 }
 
 async function fingerprintException(payload: JsonRecord) {
-  const value = await expectData<string>(
+  const fingerprint = await expectData<string>(
     client().rpc("timetable_exception_semantic_fingerprint", {
       p_payload: payload,
     }),
     "DATABASE_UNAVAILABLE",
     "Could not verify the timetable update identity.",
   );
-  if (!value) {
+  if (!fingerprint) {
     throw new PilotApiError(
       "DATABASE_UNAVAILABLE",
       "Could not verify the timetable update identity.",
       503,
     );
   }
-  return value;
+  return fingerprint;
 }
 
 async function findCorrectionByMutationKey(input: {
@@ -238,7 +279,7 @@ async function findCorrectionByMutationKey(input: {
   staffUserId: string;
   mutationKey: string;
 }) {
-  return await expectData<JsonRecord>(
+  return expectData<JsonRecord>(
     client()
       .from("timetable_correction_directives")
       .select("*")
@@ -256,7 +297,7 @@ async function findExceptionByMutationKey(input: {
   staffUserId: string;
   mutationKey: string;
 }) {
-  return await expectData<JsonRecord>(
+  return expectData<JsonRecord>(
     client()
       .from("timetable_session_exceptions")
       .select("*")
@@ -341,32 +382,13 @@ async function getExceptionRow(timetableId: string, exceptionId: string) {
   return row;
 }
 
-function correctionPayload(input: {
-  timetableId: string;
-  actor: StaffAuthContext;
-  mutationKey: string;
-  stableSessionKey?: string | null;
-  action: "add" | "modify" | "remove";
-  sourceMayReplace: boolean;
-  courseCode?: string | null;
-  courseName?: string | null;
-  weekday?: number | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-  reason: string;
-  provenance?: string | null;
-}) {
-  const reason = requireText(input.reason, "Reason is required.");
+function correctionPayload(input: CorrectionWrite) {
   const payload: JsonRecord = {
     timetable_id: input.timetableId,
     stable_session_key: maybeText(input.stableSessionKey),
     action: input.action,
     source_may_replace: input.sourceMayReplace,
-    reason,
+    reason: requireText(input.reason, "Reason is required."),
     provenance: maybeText(input.provenance),
     creator_role: input.actor.staff.role,
     creator_user_id: input.actor.user.id,
@@ -402,30 +424,10 @@ function correctionPayload(input: {
     payload.session_type = maybeText(input.sessionType);
     payload.notes = maybeText(input.notes);
   }
-
   return payload;
 }
 
-function exceptionPayload(input: {
-  timetableId: string;
-  actor: StaffAuthContext;
-  mutationKey: string;
-  stableSessionKey?: string | null;
-  exceptionDate: string;
-  exceptionType: "cancelled" | "moved" | "extra";
-  replacementStartsAt?: string | null;
-  replacementEndsAt?: string | null;
-  courseCode?: string | null;
-  courseName?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-  reason: string;
-  provenance?: string | null;
-}) {
+function exceptionPayload(input: ExceptionWrite) {
   const payload: JsonRecord = {
     timetable_id: input.timetableId,
     stable_session_key: maybeText(input.stableSessionKey),
@@ -474,7 +476,6 @@ function exceptionPayload(input: {
       "Replacement end is required.",
     );
   }
-
   return payload;
 }
 
@@ -509,25 +510,31 @@ export async function listTimetableCorrections(timetableId: string) {
   };
 }
 
-export async function createRecurringCorrection(input: {
-  timetableId: string;
+async function recordReplay(input: {
   actor: StaffAuthContext;
-  mutationKey: string;
-  stableSessionKey?: string | null;
-  action: "add" | "modify" | "remove";
-  sourceMayReplace: boolean;
-  courseCode?: string | null;
-  courseName?: string | null;
-  weekday?: number | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-  reason: string;
-  provenance?: string | null;
-}): Promise<MutationResult<TimetableCorrectionDirective>> {
+  timetableId: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  edit?: boolean;
+  concurrent?: boolean;
+}) {
+  await audit({
+    actor: input.actor,
+    action: input.action,
+    entityType: input.entityType,
+    entityId: input.entityId,
+    metadata: {
+      timetableId: input.timetableId,
+      ...(input.edit ? { edit: true } : {}),
+      ...(input.concurrent ? { concurrent: true } : {}),
+    },
+  });
+}
+
+export async function createRecurringCorrection(
+  input: CorrectionWrite,
+): Promise<MutationResult<TimetableCorrectionDirective>> {
   const payload = correctionPayload(input);
   const semanticFingerprint = await fingerprintCorrection(payload);
   payload.semantic_fingerprint = semanticFingerprint;
@@ -545,12 +552,12 @@ export async function createRecurringCorrection(input: {
         409,
       );
     }
-    await audit({
+    await recordReplay({
       actor: input.actor,
-      action: "timetable_correction.idempotency_replayed",
+      timetableId: input.timetableId,
       entityType: "timetable_correction_directive",
       entityId: String(replay.id),
-      metadata: { timetableId: input.timetableId },
+      action: "timetable_correction.idempotency_replayed",
     });
     return { item: mapCorrection(replay), mutationOutcome: "replayed" };
   }
@@ -560,12 +567,12 @@ export async function createRecurringCorrection(input: {
     semanticFingerprint,
   );
   if (duplicate) {
-    await audit({
+    await recordReplay({
       actor: input.actor,
-      action: "timetable_correction.semantic_duplicate_prevented",
+      timetableId: input.timetableId,
       entityType: "timetable_correction_directive",
       entityId: String(duplicate.id),
-      metadata: { timetableId: input.timetableId },
+      action: "timetable_correction.semantic_duplicate_prevented",
     });
     return { item: mapCorrection(duplicate), mutationOutcome: "already_exists" };
   }
@@ -575,7 +582,6 @@ export async function createRecurringCorrection(input: {
     .insert(payload)
     .select("*")
     .single();
-
   if (error) {
     if (isUniqueConflict(error)) {
       const racedReplay = await findCorrectionByMutationKey({
@@ -591,12 +597,13 @@ export async function createRecurringCorrection(input: {
             409,
           );
         }
-        await audit({
+        await recordReplay({
           actor: input.actor,
-          action: "timetable_correction.idempotency_replayed",
+          timetableId: input.timetableId,
           entityType: "timetable_correction_directive",
           entityId: String(racedReplay.id),
-          metadata: { timetableId: input.timetableId, concurrent: true },
+          action: "timetable_correction.idempotency_replayed",
+          concurrent: true,
         });
         return { item: mapCorrection(racedReplay), mutationOutcome: "replayed" };
       }
@@ -605,12 +612,13 @@ export async function createRecurringCorrection(input: {
         semanticFingerprint,
       );
       if (racedDuplicate) {
-        await audit({
+        await recordReplay({
           actor: input.actor,
-          action: "timetable_correction.semantic_duplicate_prevented",
+          timetableId: input.timetableId,
           entityType: "timetable_correction_directive",
           entityId: String(racedDuplicate.id),
-          metadata: { timetableId: input.timetableId, concurrent: true },
+          action: "timetable_correction.semantic_duplicate_prevented",
+          concurrent: true,
         });
         return {
           item: mapCorrection(racedDuplicate),
@@ -640,26 +648,9 @@ export async function createRecurringCorrection(input: {
   return { item: mapCorrection(data), mutationOutcome: "created" };
 }
 
-export async function createSessionException(input: {
-  timetableId: string;
-  actor: StaffAuthContext;
-  mutationKey: string;
-  stableSessionKey?: string | null;
-  exceptionDate: string;
-  exceptionType: "cancelled" | "moved" | "extra";
-  replacementStartsAt?: string | null;
-  replacementEndsAt?: string | null;
-  courseCode?: string | null;
-  courseName?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-  reason: string;
-  provenance?: string | null;
-}): Promise<MutationResult<TimetableSessionException>> {
+export async function createSessionException(
+  input: ExceptionWrite,
+): Promise<MutationResult<TimetableSessionException>> {
   const payload = exceptionPayload(input);
   const semanticFingerprint = await fingerprintException(payload);
   payload.semantic_fingerprint = semanticFingerprint;
@@ -677,12 +668,12 @@ export async function createSessionException(input: {
         409,
       );
     }
-    await audit({
+    await recordReplay({
       actor: input.actor,
-      action: "timetable_exception.idempotency_replayed",
+      timetableId: input.timetableId,
       entityType: "timetable_session_exception",
       entityId: String(replay.id),
-      metadata: { timetableId: input.timetableId },
+      action: "timetable_exception.idempotency_replayed",
     });
     return { item: mapException(replay), mutationOutcome: "replayed" };
   }
@@ -692,12 +683,12 @@ export async function createSessionException(input: {
     semanticFingerprint,
   );
   if (duplicate) {
-    await audit({
+    await recordReplay({
       actor: input.actor,
-      action: "timetable_exception.semantic_duplicate_prevented",
+      timetableId: input.timetableId,
       entityType: "timetable_session_exception",
       entityId: String(duplicate.id),
-      metadata: { timetableId: input.timetableId },
+      action: "timetable_exception.semantic_duplicate_prevented",
     });
     return { item: mapException(duplicate), mutationOutcome: "already_exists" };
   }
@@ -707,7 +698,6 @@ export async function createSessionException(input: {
     .insert(payload)
     .select("*")
     .single();
-
   if (error) {
     if (isUniqueConflict(error)) {
       const racedReplay = await findExceptionByMutationKey({
@@ -723,12 +713,13 @@ export async function createSessionException(input: {
             409,
           );
         }
-        await audit({
+        await recordReplay({
           actor: input.actor,
-          action: "timetable_exception.idempotency_replayed",
+          timetableId: input.timetableId,
           entityType: "timetable_session_exception",
           entityId: String(racedReplay.id),
-          metadata: { timetableId: input.timetableId, concurrent: true },
+          action: "timetable_exception.idempotency_replayed",
+          concurrent: true,
         });
         return { item: mapException(racedReplay), mutationOutcome: "replayed" };
       }
@@ -737,12 +728,13 @@ export async function createSessionException(input: {
         semanticFingerprint,
       );
       if (racedDuplicate) {
-        await audit({
+        await recordReplay({
           actor: input.actor,
-          action: "timetable_exception.semantic_duplicate_prevented",
+          timetableId: input.timetableId,
           entityType: "timetable_session_exception",
           entityId: String(racedDuplicate.id),
-          metadata: { timetableId: input.timetableId, concurrent: true },
+          action: "timetable_exception.semantic_duplicate_prevented",
+          concurrent: true,
         });
         return {
           item: mapException(racedDuplicate),
@@ -771,27 +763,12 @@ export async function createSessionException(input: {
   return { item: mapException(data), mutationOutcome: "created" };
 }
 
-export async function replaceRecurringCorrection(input: {
-  timetableId: string;
-  correctionId: string;
-  expectedUpdatedAt: string;
-  actor: StaffAuthContext;
-  mutationKey: string;
-  stableSessionKey?: string | null;
-  action: "add" | "modify" | "remove";
-  sourceMayReplace: boolean;
-  courseCode?: string | null;
-  courseName?: string | null;
-  weekday?: number | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-  reason: string;
-  provenance?: string | null;
-}): Promise<MutationResult<TimetableCorrectionDirective>> {
+export async function replaceRecurringCorrection(
+  input: CorrectionWrite & {
+    correctionId: string;
+    expectedUpdatedAt: string;
+  },
+): Promise<MutationResult<TimetableCorrectionDirective>> {
   const payload = correctionPayload(input);
   const semanticFingerprint = await fingerprintCorrection(payload);
   payload.semantic_fingerprint = semanticFingerprint;
@@ -812,12 +789,13 @@ export async function replaceRecurringCorrection(input: {
         409,
       );
     }
-    await audit({
+    await recordReplay({
       actor: input.actor,
-      action: "timetable_correction.idempotency_replayed",
+      timetableId: input.timetableId,
       entityType: "timetable_correction_directive",
       entityId: String(replay.id),
-      metadata: { timetableId: input.timetableId, edit: true },
+      action: "timetable_correction.idempotency_replayed",
+      edit: true,
     });
     return { item: mapCorrection(replay), mutationOutcome: "replayed" };
   }
@@ -835,7 +813,6 @@ export async function replaceRecurringCorrection(input: {
       p_payload: payload,
     },
   );
-
   if (error) {
     if (isStaleEdit(error)) {
       throw new PilotApiError(
@@ -851,12 +828,13 @@ export async function replaceRecurringCorrection(input: {
         semanticFingerprint,
       );
       if (duplicate) {
-        await audit({
+        await recordReplay({
           actor: input.actor,
-          action: "timetable_correction.semantic_duplicate_prevented",
+          timetableId: input.timetableId,
           entityType: "timetable_correction_directive",
           entityId: String(duplicate.id),
-          metadata: { timetableId: input.timetableId, edit: true },
+          action: "timetable_correction.semantic_duplicate_prevented",
+          edit: true,
         });
         return {
           item: mapCorrection(duplicate),
@@ -886,28 +864,12 @@ export async function replaceRecurringCorrection(input: {
   return { item: mapCorrection(row), mutationOutcome: "updated" };
 }
 
-export async function replaceSessionException(input: {
-  timetableId: string;
-  exceptionId: string;
-  expectedUpdatedAt: string;
-  actor: StaffAuthContext;
-  mutationKey: string;
-  stableSessionKey?: string | null;
-  exceptionDate: string;
-  exceptionType: "cancelled" | "moved" | "extra";
-  replacementStartsAt?: string | null;
-  replacementEndsAt?: string | null;
-  courseCode?: string | null;
-  courseName?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-  reason: string;
-  provenance?: string | null;
-}): Promise<MutationResult<TimetableSessionException>> {
+export async function replaceSessionException(
+  input: ExceptionWrite & {
+    exceptionId: string;
+    expectedUpdatedAt: string;
+  },
+): Promise<MutationResult<TimetableSessionException>> {
   const payload = exceptionPayload(input);
   const semanticFingerprint = await fingerprintException(payload);
   payload.semantic_fingerprint = semanticFingerprint;
@@ -928,12 +890,13 @@ export async function replaceSessionException(input: {
         409,
       );
     }
-    await audit({
+    await recordReplay({
       actor: input.actor,
-      action: "timetable_exception.idempotency_replayed",
+      timetableId: input.timetableId,
       entityType: "timetable_session_exception",
       entityId: String(replay.id),
-      metadata: { timetableId: input.timetableId, edit: true },
+      action: "timetable_exception.idempotency_replayed",
+      edit: true,
     });
     return { item: mapException(replay), mutationOutcome: "replayed" };
   }
@@ -951,7 +914,6 @@ export async function replaceSessionException(input: {
       p_payload: payload,
     },
   );
-
   if (error) {
     if (isStaleEdit(error)) {
       throw new PilotApiError(
@@ -967,12 +929,13 @@ export async function replaceSessionException(input: {
         semanticFingerprint,
       );
       if (duplicate) {
-        await audit({
+        await recordReplay({
           actor: input.actor,
-          action: "timetable_exception.semantic_duplicate_prevented",
+          timetableId: input.timetableId,
           entityType: "timetable_session_exception",
           entityId: String(duplicate.id),
-          metadata: { timetableId: input.timetableId, edit: true },
+          action: "timetable_exception.semantic_duplicate_prevented",
+          edit: true,
         });
         return {
           item: mapException(duplicate),
@@ -1008,7 +971,7 @@ export async function revokeCorrection(input: {
   actor: StaffAuthContext;
 }): Promise<MutationResult<TimetableCorrectionDirective>> {
   const existing = await getCorrectionRow(input.timetableId, input.correctionId);
-  if (!Boolean(existing.active)) {
+  if (!existing.active) {
     return { item: mapCorrection(existing), mutationOutcome: "replayed" };
   }
 
@@ -1046,7 +1009,7 @@ export async function revokeException(input: {
   actor: StaffAuthContext;
 }): Promise<MutationResult<TimetableSessionException>> {
   const existing = await getExceptionRow(input.timetableId, input.exceptionId);
-  if (!Boolean(existing.active)) {
+  if (!existing.active) {
     return { item: mapException(existing), mutationOutcome: "replayed" };
   }
 
@@ -1081,7 +1044,7 @@ export async function revokeException(input: {
 const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 function assertUndoable(row: JsonRecord, expectedUpdatedAt: string) {
-  if (Boolean(row.active)) {
+  if (row.active) {
     throw new PilotApiError(
       "UPDATE_ALREADY_ACTIVE",
       "This timetable update is already active.",
@@ -1102,7 +1065,9 @@ function assertUndoable(row: JsonRecord, expectedUpdatedAt: string) {
       409,
     );
   }
-  const revokedAt = row.revoked_at ? new Date(String(row.revoked_at)).getTime() : 0;
+  const revokedAt = row.revoked_at
+    ? new Date(String(row.revoked_at)).getTime()
+    : 0;
   if (!revokedAt || Date.now() - revokedAt > UNDO_WINDOW_MS) {
     throw new PilotApiError(
       "UNDO_WINDOW_EXPIRED",
