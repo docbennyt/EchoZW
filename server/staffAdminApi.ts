@@ -1,19 +1,28 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
+import type { StaffAuthContext } from "./supabase/auth.js";
 import {
   assignClassRep,
+  inviteAdmin,
   inviteClassRep,
   listStaffMembers,
-  resendClassRepInvite,
+  resendStaffInvite,
   revokeClassRepAssignment,
   setStaffActive,
+  setStaffRole,
+  staffMutationActor,
   StaffApiError,
 } from "./staffRepository.js";
 
-const inviteSchema = z.object({
+const inviteClassRepSchema = z.object({
   email: z.string().email(),
   displayName: z.string().min(1),
   timetableId: z.string().uuid(),
+});
+
+const inviteAdminSchema = z.object({
+  email: z.string().email(),
+  displayName: z.string().min(1),
 });
 
 const assignmentSchema = z.object({
@@ -22,6 +31,10 @@ const assignmentSchema = z.object({
 
 const activeSchema = z.object({
   active: z.boolean(),
+});
+
+const roleSchema = z.object({
+  role: z.enum(["admin", "class_rep"]),
 });
 
 function sendJson(res: ServerResponse, status: number, body: unknown) {
@@ -69,9 +82,11 @@ function sendStaffError(res: ServerResponse, error: unknown) {
 export async function handleStaffAdminApi(
   req: IncomingMessage,
   res: ServerResponse,
-  actor: { id: string },
+  context: StaffAuthContext,
 ) {
   const url = new URL(req.url ?? "/", "http://localhost");
+  const actor = staffMutationActor(context);
+
   try {
     if (req.method === "GET" && url.pathname === "/api/admin/staff") {
       sendJson(res, 200, { staff: await listStaffMembers() });
@@ -79,10 +94,33 @@ export async function handleStaffAdminApi(
     }
 
     if (req.method === "POST" && url.pathname === "/api/admin/staff/invite") {
-      const parsed = inviteSchema.parse(await readJson(req));
+      const parsed = inviteClassRepSchema.parse(await readJson(req));
       sendJson(res, 201, {
-        invite: await inviteClassRep({ actorId: actor.id, ...parsed }),
+        invite: await inviteClassRep({ actor, ...parsed }),
       });
+      return true;
+    }
+
+    if (
+      req.method === "POST" &&
+      url.pathname === "/api/admin/staff/invite-admin"
+    ) {
+      const parsed = inviteAdminSchema.parse(await readJson(req));
+      sendJson(res, 201, {
+        invite: await inviteAdmin({ actor, ...parsed }),
+      });
+      return true;
+    }
+
+    const roleMatch = url.pathname.match(/^\/api\/admin\/staff\/([^/]+)\/role$/);
+    if (req.method === "PATCH" && roleMatch) {
+      const parsed = roleSchema.parse(await readJson(req));
+      await setStaffRole({
+        actor,
+        staffUserId: decodeURIComponent(roleMatch[1]),
+        role: parsed.role,
+      });
+      sendJson(res, 200, { ok: true });
       return true;
     }
 
@@ -90,7 +128,7 @@ export async function handleStaffAdminApi(
     if (req.method === "PATCH" && staffMatch) {
       const parsed = activeSchema.parse(await readJson(req));
       await setStaffActive({
-        actorId: actor.id,
+        actor,
         staffUserId: decodeURIComponent(staffMatch[1]),
         active: parsed.active,
       });
@@ -102,8 +140,8 @@ export async function handleStaffAdminApi(
       /^\/api\/admin\/staff\/([^/]+)\/resend-invite$/,
     );
     if (req.method === "POST" && resendMatch) {
-      await resendClassRepInvite({
-        actorId: actor.id,
+      await resendStaffInvite({
+        actor,
         staffUserId: decodeURIComponent(resendMatch[1]),
       });
       sendJson(res, 200, { ok: true });
@@ -117,7 +155,7 @@ export async function handleStaffAdminApi(
       const parsed = assignmentSchema.parse(await readJson(req));
       sendJson(res, 201, {
         assignment: await assignClassRep({
-          actorId: actor.id,
+          actor,
           staffUserId: decodeURIComponent(assignmentMatch[1]),
           timetableId: parsed.timetableId,
         }),
@@ -130,7 +168,7 @@ export async function handleStaffAdminApi(
     );
     if (req.method === "DELETE" && revokeMatch) {
       await revokeClassRepAssignment({
-        actorId: actor.id,
+        actor,
         assignmentId: decodeURIComponent(revokeMatch[1]),
       });
       sendJson(res, 200, { ok: true });
