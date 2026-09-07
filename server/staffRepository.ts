@@ -1,5 +1,9 @@
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
-import type { StaffRole } from "./supabase/auth.js";
+import type {
+  StaffAuthContext,
+  StaffPermissions,
+  StaffRole,
+} from "./supabase/auth.js";
 
 type JsonRecord = Record<string, unknown>;
 type SupabaseErrorLike = { code?: string; message?: string };
@@ -15,12 +19,21 @@ export class StaffApiError extends Error {
   }
 }
 
+export type StaffMutationActor = {
+  userId: string;
+  staffUserId: string;
+  role: StaffRole;
+  isFounder: boolean;
+  permissions: StaffPermissions;
+};
+
 export type StaffMember = {
   id: string;
   userId: string;
   email: string | null;
   displayName: string | null;
   role: StaffRole;
+  isFounder: boolean;
   active: boolean;
   invitedAt: string | null;
   lastInvitedAt: string | null;
@@ -51,6 +64,16 @@ function client() {
   return createSupabaseAdminClient(repositoryEnv ?? process.env);
 }
 
+export function staffMutationActor(context: StaffAuthContext): StaffMutationActor {
+  return {
+    userId: context.user.id,
+    staffUserId: context.staff.id,
+    role: context.staff.role,
+    isFounder: context.staff.isFounder,
+    permissions: context.permissions,
+  };
+}
+
 function asSingle<T>(value: T | T[] | null | undefined): T | null {
   if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -70,7 +93,7 @@ function publicOrigin() {
   ).replace(/\/$/, "");
 }
 
-function classRepSetupRedirect() {
+function staffSetupRedirect() {
   return `${publicOrigin()}/account/update-password`;
 }
 
@@ -110,6 +133,7 @@ function mapStaff(row: JsonRecord, assignments: StaffAssignmentSummary[]) {
     email: row.email ? String(row.email) : null,
     displayName: row.display_name ? String(row.display_name) : null,
     role: row.role as StaffRole,
+    isFounder: row.is_founder === true,
     active: Boolean(row.active),
     invitedAt: row.invited_at ? String(row.invited_at) : null,
     lastInvitedAt: row.last_invited_at ? String(row.last_invited_at) : null,
@@ -155,6 +179,57 @@ async function audit(input: {
   }
 }
 
+async function auditRejected(input: {
+  actor: StaffMutationActor;
+  action: string;
+  targetId?: string;
+  reason: string;
+}) {
+  try {
+    await audit({
+      actorId: input.actor.userId,
+      action: input.action,
+      entityType: "staff_user",
+      entityId: input.targetId ?? null,
+      metadata: { reason: input.reason, actorRole: input.actor.role },
+    });
+  } catch {
+    // Authorization must still fail closed if the audit sink is unavailable.
+    console.warn("CalenderZW staff authorization rejection audit unavailable.");
+  }
+}
+
+function assertCanManageClassReps(actor: StaffMutationActor) {
+  if (!actor.permissions.canManageClassReps) {
+    throw new StaffApiError(
+      "STAFF_MANAGER_REQUIRED",
+      "Class Rep management access is required.",
+      403,
+    );
+  }
+}
+
+async function assertFounder(actor: StaffMutationActor, action: string, targetId?: string) {
+  if (
+    actor.role !== "superadmin" ||
+    !actor.isFounder ||
+    !actor.permissions.canManageAdmins ||
+    !actor.permissions.canManageFounderAuthority
+  ) {
+    await auditRejected({
+      actor,
+      action: "staff.privilege_escalation_rejected",
+      targetId,
+      reason: action,
+    });
+    throw new StaffApiError(
+      "FOUNDER_REQUIRED",
+      "Founder superadmin access is required for this staff change.",
+      403,
+    );
+  }
+}
+
 async function findAuthUserByEmail(email: string) {
   const admin = client();
   for (let page = 1; page <= 20; page += 1) {
@@ -179,14 +254,14 @@ async function findAuthUserByEmail(email: string) {
   return null;
 }
 
-async function sendClassRepSetupEmail(email: string) {
+async function sendStaffSetupEmail(email: string) {
   const { error } = await client().auth.resetPasswordForEmail(email, {
-    redirectTo: classRepSetupRedirect(),
+    redirectTo: staffSetupRedirect(),
   });
   if (error) {
     throw new StaffApiError(
       "INVITE_FAILED",
-      "Could not send the class rep setup email.",
+      "Could not send the staff setup email.",
       502,
       error,
     );
@@ -196,23 +271,66 @@ async function sendClassRepSetupEmail(email: string) {
 async function ensureInvitedAuthUser(email: string, displayName: string) {
   const existing = await findAuthUserByEmail(email);
   if (existing) {
-    await sendClassRepSetupEmail(email);
+    await sendStaffSetupEmail(email);
     return { userId: existing.id, invited: false, setupEmailSent: true };
   }
 
   const { data, error } = await client().auth.admin.inviteUserByEmail(email, {
     data: { display_name: displayName, product: "CalenderZW" },
-    redirectTo: classRepSetupRedirect(),
+    redirectTo: staffSetupRedirect(),
   });
   if (error || !data.user) {
     throw new StaffApiError(
       "INVITE_FAILED",
-      "Could not send the class rep invitation.",
+      "Could not send the staff invitation.",
       502,
       error,
     );
   }
   return { userId: data.user.id, invited: true, setupEmailSent: true };
+}
+
+async function getStaffRecord(staffUserId: string) {
+  return expectData<JsonRecord>(
+    client()
+      .from("staff_users")
+      .select(
+        "id, user_id, email, display_name, role, is_founder, active, invited_at, last_invited_at, accepted_at, disabled_at",
+      )
+      .eq("id", staffUserId)
+      .maybeSingle(),
+    "Could not load staff member.",
+  );
+}
+
+async function getStaffRecordByUserId(userId: string) {
+  return expectData<JsonRecord>(
+    client()
+      .from("staff_users")
+      .select("id, user_id, role, is_founder, active")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    "Could not load existing staff authorization.",
+  );
+}
+
+async function revokeActiveAssignments(actorId: string, staffUserId: string) {
+  const now = new Date().toISOString();
+  await expectData(
+    client()
+      .from("class_rep_assignments")
+      .update({ active: false, revoked_at: now })
+      .eq("staff_user_id", staffUserId)
+      .eq("active", true)
+      .select("id"),
+    "Could not revoke previous Class Rep assignments.",
+  );
+  await audit({
+    actorId,
+    action: "class_rep.assignments_revoked_for_role_change",
+    entityType: "staff_user",
+    entityId: staffUserId,
+  });
 }
 
 export async function listStaffMembers() {
@@ -221,7 +339,7 @@ export async function listStaffMembers() {
     admin
       .from("staff_users")
       .select(
-        "id, user_id, email, display_name, role, active, invited_at, last_invited_at, accepted_at, disabled_at",
+        "id, user_id, email, display_name, role, is_founder, active, invited_at, last_invited_at, accepted_at, disabled_at",
       )
       .order("created_at", { ascending: false }),
     "Could not load staff members.",
@@ -254,11 +372,12 @@ export async function listStaffMembers() {
 }
 
 export async function inviteClassRep(input: {
-  actorId: string;
+  actor: StaffMutationActor;
   email: string;
   displayName: string;
   timetableId: string;
 }) {
+  assertCanManageClassReps(input.actor);
   const email = safeEmail(input.email);
   const displayName = input.displayName.trim();
   if (!email.includes("@")) {
@@ -271,38 +390,71 @@ export async function inviteClassRep(input: {
   const authUser = await ensureInvitedAuthUser(email, displayName);
   const now = new Date().toISOString();
   const admin = client();
-  const staff = await expectData<JsonRecord>(
-    admin
-      .from("staff_users")
-      .upsert(
-        {
-          user_id: authUser.userId,
-          email,
-          display_name: displayName,
-          role: "class_rep",
-          active: true,
-          invited_at: now,
-          last_invited_at: now,
-          disabled_at: null,
-          created_by: input.actorId,
-          updated_at: now,
-        },
-        { onConflict: "user_id" },
+  const existing = await getStaffRecordByUserId(authUser.userId);
+
+  if (existing && existing.role !== "class_rep") {
+    await auditRejected({
+      actor: input.actor,
+      action: "staff.role_change_rejected",
+      targetId: String(existing.id),
+      reason: "class_rep_invite_cannot_demote_privileged_staff",
+    });
+    throw new StaffApiError(
+      existing.is_founder ? "FOUNDER_PROTECTED" : "ROLE_CHANGE_REQUIRED",
+      existing.is_founder
+        ? "Founder authority cannot be changed through a Class Rep invitation."
+        : "Use the founder role controls before assigning this staff member as a Class Rep.",
+      409,
+    );
+  }
+
+  const staff = existing
+    ? await expectData<JsonRecord>(
+        admin
+          .from("staff_users")
+          .update({
+            email,
+            display_name: displayName,
+            active: true,
+            last_invited_at: now,
+            disabled_at: null,
+            updated_at: now,
+          })
+          .eq("id", String(existing.id))
+          .select("id, user_id")
+          .single(),
+        "Could not update the Class Rep staff record.",
       )
-      .select("id, user_id")
-      .single(),
-    "Could not save the class rep staff record.",
-  );
+    : await expectData<JsonRecord>(
+        admin
+          .from("staff_users")
+          .insert({
+            user_id: authUser.userId,
+            email,
+            display_name: displayName,
+            role: "class_rep",
+            is_founder: false,
+            active: true,
+            invited_at: now,
+            last_invited_at: now,
+            disabled_at: null,
+            created_by: input.actor.userId,
+            updated_at: now,
+          })
+          .select("id, user_id")
+          .single(),
+        "Could not save the Class Rep staff record.",
+      );
 
   const assignment = await assignClassRep({
-    actorId: input.actorId,
+    actor: input.actor,
     staffUserId: String(staff?.id),
     timetableId: input.timetableId,
     auditAction: "class_rep.invited",
   });
 
   await audit({
-    actorId: input.actorId,
+    actorId: input.actor.userId,
     action: "class_rep.invite_email_sent",
     entityType: "staff_user",
     entityId: String(staff?.id),
@@ -316,25 +468,117 @@ export async function inviteClassRep(input: {
   return { staffUserId: String(staff?.id), assignmentId: assignment.id };
 }
 
-export async function resendClassRepInvite(input: {
-  actorId: string;
+export async function inviteAdmin(input: {
+  actor: StaffMutationActor;
+  email: string;
+  displayName: string;
+}) {
+  await assertFounder(input.actor, "invite_admin");
+  const email = safeEmail(input.email);
+  const displayName = input.displayName.trim();
+  if (!email.includes("@")) {
+    throw new StaffApiError("VALIDATION_FAILED", "Enter a valid email.", 422);
+  }
+  if (!displayName) {
+    throw new StaffApiError("VALIDATION_FAILED", "Name is required.", 422);
+  }
+
+  const authUser = await ensureInvitedAuthUser(email, displayName);
+  const existing = await getStaffRecordByUserId(authUser.userId);
+  if (existing?.is_founder) {
+    throw new StaffApiError(
+      "FOUNDER_PROTECTED",
+      "Founder authority cannot be changed through an Admin invitation.",
+      409,
+    );
+  }
+
+  const now = new Date().toISOString();
+  const admin = client();
+  let staff: JsonRecord | null;
+  if (existing) {
+    if (existing.role === "class_rep") {
+      await revokeActiveAssignments(input.actor.userId, String(existing.id));
+    }
+    staff = await expectData<JsonRecord>(
+      admin
+        .from("staff_users")
+        .update({
+          email,
+          display_name: displayName,
+          role: "admin",
+          active: true,
+          disabled_at: null,
+          last_invited_at: now,
+          updated_at: now,
+        })
+        .eq("id", String(existing.id))
+        .select("id, user_id")
+        .single(),
+      "Could not grant Admin access.",
+    );
+  } else {
+    staff = await expectData<JsonRecord>(
+      admin
+        .from("staff_users")
+        .insert({
+          user_id: authUser.userId,
+          email,
+          display_name: displayName,
+          role: "admin",
+          is_founder: false,
+          active: true,
+          invited_at: now,
+          last_invited_at: now,
+          disabled_at: null,
+          created_by: input.actor.userId,
+          updated_at: now,
+        })
+        .select("id, user_id")
+        .single(),
+      "Could not save the Admin staff record.",
+    );
+  }
+
+  await audit({
+    actorId: input.actor.userId,
+    action: existing?.role === "admin" ? "admin.invite_resent" : "admin.role_granted",
+    entityType: "staff_user",
+    entityId: String(staff?.id),
+    metadata: {
+      invited: authUser.invited,
+      setupEmailSent: authUser.setupEmailSent,
+      existingAuthUser: !authUser.invited,
+    },
+  });
+
+  return { staffUserId: String(staff?.id) };
+}
+
+export async function resendStaffInvite(input: {
+  actor: StaffMutationActor;
   staffUserId: string;
 }) {
-  const admin = client();
-  const staff = await expectData<JsonRecord>(
-    admin
-      .from("staff_users")
-      .select("id, email, display_name, role, active")
-      .eq("id", input.staffUserId)
-      .maybeSingle(),
-    "Could not load the class rep.",
-  );
-  if (!staff || staff.role !== "class_rep" || !staff.email) {
-    throw new StaffApiError("NOT_FOUND", "Class rep not found.", 404);
+  const staff = await getStaffRecord(input.staffUserId);
+  if (!staff || !staff.email) {
+    throw new StaffApiError("NOT_FOUND", "Staff member not found.", 404);
   }
-  await sendClassRepSetupEmail(String(staff.email));
+  if (staff.is_founder) {
+    throw new StaffApiError(
+      "FOUNDER_PROTECTED",
+      "Founder setup cannot be changed through staff invitation controls.",
+      409,
+    );
+  }
+  if (staff.role === "admin") {
+    await assertFounder(input.actor, "resend_admin_invite", input.staffUserId);
+  } else {
+    assertCanManageClassReps(input.actor);
+  }
+
+  await sendStaffSetupEmail(String(staff.email));
   await expectData(
-    admin
+    client()
       .from("staff_users")
       .update({ last_invited_at: new Date().toISOString() })
       .eq("id", input.staffUserId)
@@ -343,19 +587,25 @@ export async function resendClassRepInvite(input: {
     "Could not update invitation timestamp.",
   );
   await audit({
-    actorId: input.actorId,
-    action: "class_rep.invite_resent",
+    actorId: input.actor.userId,
+    action: staff.role === "admin" ? "admin.invite_resent" : "class_rep.invite_resent",
     entityType: "staff_user",
     entityId: input.staffUserId,
   });
 }
 
 export async function assignClassRep(input: {
-  actorId: string;
+  actor: StaffMutationActor;
   staffUserId: string;
   timetableId: string;
   auditAction?: string;
 }) {
+  assertCanManageClassReps(input.actor);
+  const staff = await getStaffRecord(input.staffUserId);
+  if (!staff || staff.role !== "class_rep" || staff.is_founder) {
+    throw new StaffApiError("NOT_FOUND", "Class Rep not found.", 404);
+  }
+
   const now = new Date().toISOString();
   const admin = client();
   await expectData(
@@ -365,7 +615,7 @@ export async function assignClassRep(input: {
       .eq("staff_user_id", input.staffUserId)
       .eq("active", true)
       .select("id"),
-    "Could not revoke previous class rep assignments.",
+    "Could not revoke previous Class Rep assignments.",
   );
   const row = await expectData<JsonRecord>(
     admin
@@ -374,29 +624,31 @@ export async function assignClassRep(input: {
         staff_user_id: input.staffUserId,
         timetable_id: input.timetableId,
         active: true,
-        created_by: input.actorId,
+        created_by: input.actor.userId,
       })
       .select("id")
       .single(),
-    "Could not assign the class rep.",
+    "Could not assign the Class Rep.",
   );
   await audit({
-    actorId: input.actorId,
+    actorId: input.actor.userId,
     action: input.auditAction ?? "class_rep.assigned",
     entityType: "class_rep_assignment",
     entityId: String(row?.id),
     metadata: {
       staffUserId: input.staffUserId,
       timetableId: input.timetableId,
+      actorRole: input.actor.role,
     },
   });
   return { id: String(row?.id) };
 }
 
 export async function revokeClassRepAssignment(input: {
-  actorId: string;
+  actor: StaffMutationActor;
   assignmentId: string;
 }) {
+  assertCanManageClassReps(input.actor);
   await expectData(
     client()
       .from("class_rep_assignments")
@@ -407,59 +659,48 @@ export async function revokeClassRepAssignment(input: {
       .eq("id", input.assignmentId)
       .select("id")
       .single(),
-    "Could not revoke the class rep assignment.",
+    "Could not revoke the Class Rep assignment.",
   );
   await audit({
-    actorId: input.actorId,
+    actorId: input.actor.userId,
     action: "class_rep.assignment_revoked",
     entityType: "class_rep_assignment",
     entityId: input.assignmentId,
+    metadata: { actorRole: input.actor.role },
   });
 }
 
-async function activeSuperadminCount() {
-  const rows = await expectData<JsonRecord[]>(
-    client()
-      .from("staff_users")
-      .select("id")
-      .eq("role", "superadmin")
-      .eq("active", true),
-    "Could not verify superadmin safety.",
-  );
-  return rows?.length ?? 0;
-}
-
 export async function setStaffActive(input: {
-  actorId: string;
+  actor: StaffMutationActor;
   staffUserId: string;
   active: boolean;
 }) {
-  const admin = client();
-  const staff = await expectData<JsonRecord>(
-    admin
-      .from("staff_users")
-      .select("id, role, active")
-      .eq("id", input.staffUserId)
-      .maybeSingle(),
-    "Could not load staff member.",
-  );
+  const staff = await getStaffRecord(input.staffUserId);
   if (!staff)
     throw new StaffApiError("NOT_FOUND", "Staff member not found.", 404);
-  if (
-    staff.role === "superadmin" &&
-    staff.active === true &&
-    input.active === false &&
-    (await activeSuperadminCount()) <= 1
-  ) {
+
+  if (staff.is_founder) {
+    await auditRejected({
+      actor: input.actor,
+      action: "staff.founder_change_rejected",
+      targetId: input.staffUserId,
+      reason: "founder_active_state_protected",
+    });
     throw new StaffApiError(
-      "LAST_SUPERADMIN",
-      "At least one active superadmin must remain.",
-      409,
+      "FOUNDER_PROTECTED",
+      "Founder access cannot be disabled or reactivated through staff controls.",
+      403,
     );
   }
 
+  if (staff.role === "admin") {
+    await assertFounder(input.actor, "change_admin_active_state", input.staffUserId);
+  } else {
+    assertCanManageClassReps(input.actor);
+  }
+
   await expectData(
-    admin
+    client()
       .from("staff_users")
       .update({
         active: input.active,
@@ -472,9 +713,75 @@ export async function setStaffActive(input: {
     "Could not update staff access.",
   );
   await audit({
-    actorId: input.actorId,
-    action: input.active ? "staff.reactivated" : "staff.disabled",
+    actorId: input.actor.userId,
+    action:
+      staff.role === "admin"
+        ? input.active
+          ? "admin.reactivated"
+          : "admin.deactivated"
+        : input.active
+          ? "class_rep.reactivated"
+          : "class_rep.deactivated",
     entityType: "staff_user",
     entityId: input.staffUserId,
+  });
+}
+
+export async function setStaffRole(input: {
+  actor: StaffMutationActor;
+  staffUserId: string;
+  role: "admin" | "class_rep";
+}) {
+  await assertFounder(input.actor, "change_staff_role", input.staffUserId);
+  const staff = await getStaffRecord(input.staffUserId);
+  if (!staff) {
+    throw new StaffApiError("NOT_FOUND", "Staff member not found.", 404);
+  }
+  if (staff.is_founder || staff.role === "superadmin") {
+    throw new StaffApiError(
+      "FOUNDER_PROTECTED",
+      "Founder authority cannot be demoted, replaced, or transferred.",
+      403,
+    );
+  }
+  if (staff.user_id === input.actor.userId) {
+    throw new StaffApiError(
+      "SELF_PRIVILEGE_CHANGE_FORBIDDEN",
+      "You cannot change your own privileged role.",
+      403,
+    );
+  }
+  if (staff.role === input.role) return;
+
+  if (input.role === "admin") {
+    await revokeActiveAssignments(input.actor.userId, input.staffUserId);
+  }
+
+  const now = new Date().toISOString();
+  await expectData(
+    client()
+      .from("staff_users")
+      .update({
+        role: input.role,
+        active: input.role === "admin",
+        disabled_at: input.role === "admin" ? null : now,
+        updated_at: now,
+      })
+      .eq("id", input.staffUserId)
+      .select("id")
+      .single(),
+    "Could not update staff role.",
+  );
+
+  await audit({
+    actorId: input.actor.userId,
+    action: input.role === "admin" ? "admin.role_granted" : "admin.role_revoked",
+    entityType: "staff_user",
+    entityId: input.staffUserId,
+    metadata: {
+      previousRole: String(staff.role),
+      newRole: input.role,
+      classRepRequiresAssignmentAfterDemotion: input.role === "class_rep",
+    },
   });
 }
