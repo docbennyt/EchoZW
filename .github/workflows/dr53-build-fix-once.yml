@@ -1,0 +1,93 @@
+name: DR-53 build fix once
+
+on:
+  push:
+    branches:
+      - DR-53-correction-idempotency-crud
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply narrow TypeScript compatibility fixes
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/ClassRepCorrectionSafetyEnhancement.tsx')
+          text = path.read_text()
+          text = text.replace(
+              '            editingCorrection.updatedAt,\n',
+              '            editingCorrection.updatedAt ?? editingCorrection.createdAt,\n',
+          )
+          text = text.replace(
+              '            editingException.updatedAt,\n',
+              '            editingException.updatedAt ?? editingException.createdAt,\n',
+          )
+          old = '''      const result =
+        entry.kind === "correction"
+          ? await revokeRecurringClassUpdate(
+              accessToken,
+              assignment.timetableId,
+              entry.item.id,
+            )
+          : await revokeSessionException(
+              accessToken,
+              assignment.timetableId,
+              entry.item.id,
+            );
+      const item =
+        entry.kind === "correction" ? result.correction : result.exception;
+      const undo: UndoState = {
+        kind: entry.kind,
+        id: item.id,
+        updatedAt: item.updatedAt,
+'''
+          new = '''      let item: TimetableCorrectionDirective | TimetableSessionException;
+      if (entry.kind === "correction") {
+        const result = await revokeRecurringClassUpdate(
+          accessToken,
+          assignment.timetableId,
+          entry.item.id,
+        );
+        item = result.correction;
+      } else {
+        const result = await revokeSessionException(
+          accessToken,
+          assignment.timetableId,
+          entry.item.id,
+        );
+        item = result.exception;
+      }
+      const undo: UndoState = {
+        kind: entry.kind,
+        id: item.id,
+        updatedAt: item.updatedAt ?? item.createdAt,
+'''
+          if old not in text:
+              raise SystemExit('expected revoke block not found')
+          text = text.replace(old, new)
+          path.write_text(text)
+      - name: Format changed component
+        run: npx prettier --write src/ClassRepCorrectionSafetyEnhancement.tsx src/api/pilotTypes.ts src/api/correctionMutations.ts
+      - name: Commit fixes
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/ClassRepCorrectionSafetyEnhancement.tsx src/api/pilotTypes.ts src/api/correctionMutations.ts
+          git commit -m "DR-53 fix build type compatibility"
+          git push origin HEAD:DR-53-correction-idempotency-crud
