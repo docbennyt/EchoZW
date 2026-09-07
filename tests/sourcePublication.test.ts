@@ -128,7 +128,10 @@ describe("guarded source publication planning", () => {
   it("preserves stable identity for matched sessions", () => {
     const current = currentSession();
     const plan = buildSourcePublicationPlan(
-      artifact({ currentSessions: [current], sourceCandidates: [sourceCandidate()] }),
+      artifact({
+        currentSessions: [current],
+        sourceCandidates: [sourceCandidate()],
+      }),
     );
 
     expect(plan.blockers).toEqual([]);
@@ -147,7 +150,10 @@ describe("guarded source publication planning", () => {
       venue: "N110",
     });
     const plan = buildSourcePublicationPlan(
-      artifact({ currentSessions: [current], sourceCandidates: [sourceCandidate()] }),
+      artifact({
+        currentSessions: [current],
+        sourceCandidates: [sourceCandidate()],
+      }),
     );
 
     expect(plan.blockers).toEqual([]);
