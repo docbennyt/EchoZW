@@ -27,57 +27,32 @@ jobs:
           from pathlib import Path
           path = Path('src/ClassRepCorrectionSafetyEnhancement.tsx')
           text = path.read_text()
-          text = text.replace(
-              '            editingCorrection.updatedAt,\n',
-              '            editingCorrection.updatedAt ?? editingCorrection.createdAt,\n',
+          text = text.replace('            editingCorrection.updatedAt,\n', '            editingCorrection.updatedAt ?? editingCorrection.createdAt,\n')
+          text = text.replace('            editingException.updatedAt,\n', '            editingException.updatedAt ?? editingException.createdAt,\n')
+          start_marker = '      const result =\n        entry.kind === "correction"'
+          end_marker = '      const undo: UndoState = {'
+          start = text.index(start_marker)
+          end = text.index(end_marker, start)
+          replacement = (
+              '      let item: TimetableCorrectionDirective | TimetableSessionException;\n'
+              '      if (entry.kind === "correction") {\n'
+              '        const result = await revokeRecurringClassUpdate(\n'
+              '          accessToken,\n'
+              '          assignment.timetableId,\n'
+              '          entry.item.id,\n'
+              '        );\n'
+              '        item = result.correction;\n'
+              '      } else {\n'
+              '        const result = await revokeSessionException(\n'
+              '          accessToken,\n'
+              '          assignment.timetableId,\n'
+              '          entry.item.id,\n'
+              '        );\n'
+              '        item = result.exception;\n'
+              '      }\n'
           )
-          text = text.replace(
-              '            editingException.updatedAt,\n',
-              '            editingException.updatedAt ?? editingException.createdAt,\n',
-          )
-          old = '''      const result =
-        entry.kind === "correction"
-          ? await revokeRecurringClassUpdate(
-              accessToken,
-              assignment.timetableId,
-              entry.item.id,
-            )
-          : await revokeSessionException(
-              accessToken,
-              assignment.timetableId,
-              entry.item.id,
-            );
-      const item =
-        entry.kind === "correction" ? result.correction : result.exception;
-      const undo: UndoState = {
-        kind: entry.kind,
-        id: item.id,
-        updatedAt: item.updatedAt,
-'''
-          new = '''      let item: TimetableCorrectionDirective | TimetableSessionException;
-      if (entry.kind === "correction") {
-        const result = await revokeRecurringClassUpdate(
-          accessToken,
-          assignment.timetableId,
-          entry.item.id,
-        );
-        item = result.correction;
-      } else {
-        const result = await revokeSessionException(
-          accessToken,
-          assignment.timetableId,
-          entry.item.id,
-        );
-        item = result.exception;
-      }
-      const undo: UndoState = {
-        kind: entry.kind,
-        id: item.id,
-        updatedAt: item.updatedAt ?? item.createdAt,
-'''
-          if old not in text:
-              raise SystemExit('expected revoke block not found')
-          text = text.replace(old, new)
+          text = text[:start] + replacement + text[end:]
+          text = text.replace('        updatedAt: item.updatedAt,\n', '        updatedAt: item.updatedAt ?? item.createdAt,\n')
           path.write_text(text)
           PY
       - name: Format changed files
