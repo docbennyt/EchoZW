@@ -23,12 +23,7 @@ import { createClient as createSupabaseBrowserClient } from "./utils/supabase/cl
 const currentPath = () => window.location.pathname;
 
 type SetupStatus =
-  | "checking"
-  | "ready"
-  | "updating"
-  | "success"
-  | "invalid"
-  | "error";
+  "checking" | "ready" | "updating" | "success" | "invalid" | "error";
 
 function setAuthPageMetadata(path: string) {
   document.title =
@@ -168,9 +163,7 @@ export function AuthSetupPage() {
     const supabase = supabaseRef.current;
     if (!supabase) {
       setStatus("error");
-      setMessage(
-        "Account setup is temporarily unavailable. Please try again.",
-      );
+      setMessage("Account setup is temporarily unavailable. Please try again.");
       return;
     }
 
@@ -237,7 +230,10 @@ export function AuthSetupPage() {
                 {message}
               </p>
               {intent === "recovery" ? (
-                <a className="czw-button czw-button-primary" href="/admin/login">
+                <a
+                  className="czw-button czw-button-primary"
+                  href="/admin/login"
+                >
                   Request another reset
                 </a>
               ) : null}
