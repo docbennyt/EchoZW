@@ -182,17 +182,18 @@ export type TimetableCorrectionDirective = {
   notes: string | null;
   reason: string;
   provenance: string | null;
-  creatorRole: "superadmin" | "class_rep";
+  creatorRole?: "superadmin" | "class_rep";
   active: boolean;
-  mutationKey: string | null;
-  semanticFingerprint: string | null;
-  revision: number;
-  supersedesId: string | null;
-  replacedById: string | null;
-  revokedAt: string | null;
-  supersededAt: string | null;
+  /** Mutation metadata is present on DR-53 management endpoints but optional on legacy/public timetable payloads. */
+  mutationKey?: string | null;
+  semanticFingerprint?: string | null;
+  revision?: number;
+  supersedesId?: string | null;
+  replacedById?: string | null;
+  revokedAt?: string | null;
+  supersededAt?: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 };
 
 export type TimetableSessionException = {
@@ -212,17 +213,18 @@ export type TimetableSessionException = {
   notes: string | null;
   reason: string | null;
   provenance: string | null;
-  creatorRole: "superadmin" | "class_rep";
+  creatorRole?: "superadmin" | "class_rep";
   active: boolean;
-  mutationKey: string | null;
-  semanticFingerprint: string | null;
-  revision: number;
-  supersedesId: string | null;
-  replacedById: string | null;
-  revokedAt: string | null;
-  supersededAt: string | null;
+  /** Mutation metadata is present on DR-53 management endpoints but optional on legacy/public timetable payloads. */
+  mutationKey?: string | null;
+  semanticFingerprint?: string | null;
+  revision?: number;
+  supersedesId?: string | null;
+  replacedById?: string | null;
+  revokedAt?: string | null;
+  supersededAt?: string | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 };
 
 export type PublicTimetable = {
