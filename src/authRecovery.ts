@@ -7,6 +7,8 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const PASSWORD_RESET_SENT_MESSAGE =
   "If an account exists for that email, a password reset link has been sent.";
 export const PASSWORD_RESET_INVALID_MESSAGE =
+  "This password reset link is invalid or has expired. Request a new one.";
+export const RECOVERY_INVALID_MESSAGE =
   "This password reset link is no longer valid. Request a new one.";
 export const INVITE_INVALID_MESSAGE =
   "We couldn't verify this CalenderZW invitation. Ask the administrator to resend it.";
