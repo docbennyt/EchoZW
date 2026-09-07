@@ -17,6 +17,7 @@ import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
 import {
   getStaticSeoMetadata,
   isKnownSpaPath,
+  isSensitiveAuthSpaPath,
   noindexMetadataForPath,
 } from "../src/domain/seo.js";
 import { handleAdminRequest } from "./adminApi.js";
@@ -219,11 +220,16 @@ async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
   }
 
   const responseBody = injectSpaMetadata(html, metadata);
+  const cacheControl = isSensitiveAuthSpaPath(pathname)
+    ? "private, no-store"
+    : statusCode === 404
+      ? "no-store"
+      : "public, max-age=300";
 
   res.writeHead(statusCode, {
     "Content-Type": "text/html; charset=utf-8",
     "Content-Length": Buffer.byteLength(responseBody),
-    "Cache-Control": statusCode === 404 ? "no-store" : "public, max-age=300",
+    "Cache-Control": cacheControl,
   });
 
   if (req.method === "HEAD") {
