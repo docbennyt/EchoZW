@@ -22,8 +22,8 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply narrow TypeScript compatibility fixes
-        shell: python {0}
         run: |
+          python3 - <<'PY'
           from pathlib import Path
           path = Path('src/ClassRepCorrectionSafetyEnhancement.tsx')
           text = path.read_text()
@@ -79,6 +79,7 @@ jobs:
               raise SystemExit('expected revoke block not found')
           text = text.replace(old, new)
           path.write_text(text)
+          PY
       - name: Format changed files
         run: npx prettier --write src/ClassRepCorrectionSafetyEnhancement.tsx src/api/pilotTypes.ts src/api/correctionMutations.ts
       - name: Commit fixes
