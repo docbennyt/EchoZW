@@ -1,8 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   AdminAuthError,
+  requireOperationalAdmin,
+  requireStaffManager,
   requireStaffUser,
-  requireSuperadmin,
   requireTimetableEditor,
   sendAdminAuthError,
   type AuthDependencies,
@@ -37,7 +38,11 @@ function logAdminFailure(scope: "session" | "admin-api", error: unknown) {
         event: "auth.staff_session",
         scope,
         code:
-          code === "FORBIDDEN" || code === "SUPERADMIN_REQUIRED"
+          code === "FORBIDDEN" ||
+          code === "SUPERADMIN_REQUIRED" ||
+          code === "FOUNDER_REQUIRED" ||
+          code === "OPERATIONAL_ADMIN_REQUIRED" ||
+          code === "STAFF_MANAGER_REQUIRED"
             ? "AUTH_STAFF_SESSION_FORBIDDEN"
             : "AUTH_STAFF_SESSION_UNAVAILABLE",
       }),
@@ -86,8 +91,8 @@ export async function handleAdminRequest(
 
   if (requestUrl.pathname.startsWith("/api/admin/staff")) {
     try {
-      const { user } = await requireSuperadmin(req, deps);
-      if (await handleStaffAdminApi(req, res, user)) return true;
+      const context = await requireStaffManager(req, deps);
+      if (await handleStaffAdminApi(req, res, context)) return true;
       sendJson(res, 501, {
         error: {
           code: "NOT_IMPLEMENTED",
@@ -128,11 +133,11 @@ export async function handleAdminRequest(
 
   if (requestUrl.pathname.startsWith("/api/admin/")) {
     try {
-      const { user } = await requireSuperadmin(req, deps);
+      const context = await requireOperationalAdmin(req, deps);
       if (await handleAdminAnalyticsApi(req, res)) return true;
       if (await handleGrowthInboxAdminApi(req, res)) return true;
-      if (await handleSourceGatewayAdminApi(req, res, user)) return true;
-      if (await handlePilotAdminApi(req, res, user)) return true;
+      if (await handleSourceGatewayAdminApi(req, res, context.user)) return true;
+      if (await handlePilotAdminApi(req, res, context.user)) return true;
       sendJson(res, 501, {
         error: {
           code: "NOT_IMPLEMENTED",
