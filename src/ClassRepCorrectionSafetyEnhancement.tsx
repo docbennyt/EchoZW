@@ -1,12 +1,12 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, LoaderCircle, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  LoaderCircle,
+  RotateCcw,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import {
   fetchAdminSession,
   type AdminSessionAssignment,
@@ -97,9 +97,16 @@ function localDateInput() {
 
 function newMutationKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}-4${Math.random()
-    .toString(16)
-    .slice(2)}`;
+  if (!globalThis.crypto?.getRandomValues) {
+    throw new Error("This browser cannot create a secure timetable update key.");
+  }
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex
+    .slice(6, 8)
+    .join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
 function defaultRecurringForm(): RecurringFormState {
@@ -155,8 +162,7 @@ function updateLabel(entry: UpdateEntry) {
     const when = item.weekday ? weekdayLabels[item.weekday] : "Recurring";
     return `${course} · ${when}${item.startTime ? ` ${item.startTime.slice(0, 5)}` : ""}`;
   }
-  const item = entry.item;
-  return `${item.courseCode || item.stableSessionKey || "Class update"} · ${item.exceptionDate}${item.startTime ? ` ${item.startTime.slice(0, 5)}` : ""}`;
+  return `${entry.item.courseCode || entry.item.stableSessionKey || "Class update"} · ${entry.item.exceptionDate}${entry.item.startTime ? ` ${entry.item.startTime.slice(0, 5)}` : ""}`;
 }
 
 function outcomeMessage(outcome: string, saved: string) {
@@ -171,7 +177,10 @@ function outcomeMessage(outcome: string, saved: string) {
 
 function mutationErrorMessage(error: unknown) {
   if (error instanceof CorrectionMutationError) {
-    if (error.code === "STALE_CORRECTION_EDIT" || error.code === "STALE_EXCEPTION_EDIT") {
+    if (
+      error.code === "STALE_CORRECTION_EDIT" ||
+      error.code === "STALE_EXCEPTION_EDIT"
+    ) {
       return "A newer change exists. Refresh the class updates and review it before editing again.";
     }
     if (error.code === "UNDO_CONFLICT") {
@@ -184,7 +193,9 @@ function mutationErrorMessage(error: unknown) {
     : "Could not save this class update. Your input is still here — retry when ready.";
 }
 
-function correctionFormFromItem(item: TimetableCorrectionDirective): RecurringFormState {
+function correctionFormFromItem(
+  item: TimetableCorrectionDirective,
+): RecurringFormState {
   return {
     stableSessionKey: item.stableSessionKey ?? "",
     action: item.action,
@@ -215,13 +226,7 @@ function extraFormFromItem(item: TimetableSessionException): ExtraFormState {
   };
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="dr53-field">
       <span>{label}</span>
@@ -307,15 +312,18 @@ export function ClassRepCorrectionWorkspace({
 
   useEffect(() => {
     let active = true;
-    void refresh()
-      .catch((error) => {
-        if (active) setMessage(mutationErrorMessage(error));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const timeoutId = window.setTimeout(() => {
+      void refresh()
+        .catch((error) => {
+          if (active) setMessage(mutationErrorMessage(error));
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    }, 0);
     return () => {
       active = false;
+      window.clearTimeout(timeoutId);
     };
   }, [refresh]);
 
@@ -354,8 +362,10 @@ export function ClassRepCorrectionWorkspace({
       ...current,
       stableSessionKey,
       action: stableSessionKey ? "modify" : "add",
-      courseCode: selected?.courseCode ?? (stableSessionKey ? "" : current.courseCode),
-      courseName: selected?.courseName ?? (stableSessionKey ? "" : current.courseName),
+      courseCode:
+        selected?.courseCode ?? (stableSessionKey ? "" : current.courseCode),
+      courseName:
+        selected?.courseName ?? (stableSessionKey ? "" : current.courseName),
       weekday: selected?.weekday ?? current.weekday,
       startTime: selected?.startTime.slice(0, 5) ?? current.startTime,
       endTime: selected?.endTime.slice(0, 5) ?? current.endTime,
@@ -402,8 +412,7 @@ export function ClassRepCorrectionWorkspace({
       await completeMutation(text);
     } catch (error) {
       setMessage(mutationErrorMessage(error));
-      // Deliberately retain both form values and the same mutation key so a
-      // retry after a timeout/network failure cannot create another row.
+      // Form values and the mutation key are deliberately retained for retry.
     } finally {
       recurringPendingRef.current = false;
       setSavingRecurring(false);
@@ -481,7 +490,9 @@ export function ClassRepCorrectionWorkspace({
       };
       setUndoState(undo);
       window.sessionStorage.setItem(UNDO_KEY, JSON.stringify(undo));
-      await completeMutation(`Removed update — ${undo.label}. Undo is available for 10 minutes.`);
+      await completeMutation(
+        `Removed update — ${undo.label}. Undo is available for 10 minutes.`,
+      );
     } catch (error) {
       setMessage(mutationErrorMessage(error));
     } finally {
@@ -605,7 +616,7 @@ export function ClassRepCorrectionWorkspace({
         </div>
       ) : null}
 
-      {undoState && undoState.expiresAt > Date.now() ? (
+      {undoState ? (
         <div className="dr53-undo" role="status">
           <span>Removed: {undoState.label}</span>
           <button
@@ -762,7 +773,9 @@ export function ClassRepCorrectionWorkspace({
         >
           <div className="dr53-card-title">
             <div>
-              <h3>{editingCorrection ? "Edit recurring update" : "Update timetable"}</h3>
+              <h3>
+                {editingCorrection ? "Edit recurring update" : "Update timetable"}
+              </h3>
               <p>Recurring correction for this assigned class.</p>
             </div>
             {editingCorrection ? (
@@ -788,8 +801,12 @@ export function ClassRepCorrectionWorkspace({
             >
               <option value="">Add new recurring class</option>
               {timetable?.sessions.map((session) => (
-                <option key={session.stableSessionKey} value={session.stableSessionKey}>
-                  {session.courseCode} · {weekdayLabels[session.weekday]} {session.startTime.slice(0, 5)}
+                <option
+                  key={session.stableSessionKey}
+                  value={session.stableSessionKey}
+                >
+                  {session.courseCode} · {weekdayLabels[session.weekday]}{" "}
+                  {session.startTime.slice(0, 5)}
                 </option>
               ))}
             </select>
@@ -960,7 +977,10 @@ export function ClassRepCorrectionWorkspace({
         <div className="dr53-card-title">
           <div>
             <h3>Active class updates</h3>
-            <p>Audit-preserving correction layer; official source evidence is untouched.</p>
+            <p>
+              Audit-preserving correction layer; official source evidence is
+              untouched.
+            </p>
           </div>
           <button
             className="dr53-text-button"
@@ -985,7 +1005,10 @@ export function ClassRepCorrectionWorkspace({
                   : "Keep until removed"
                 : "Date-specific update";
             return (
-              <article className="dr53-update-row" key={`${entry.kind}:${item.id}`}>
+              <article
+                className="dr53-update-row"
+                key={`${entry.kind}:${item.id}`}
+              >
                 <div className="dr53-update-copy">
                   <strong>{updateLabel(entry)}</strong>
                   <span>
@@ -993,9 +1016,11 @@ export function ClassRepCorrectionWorkspace({
                       ? `${entry.item.action} · ${policy}`
                       : `${entry.item.exceptionType} · ${policy}`}
                   </span>
+                  <span>{item.courseName || "Course name not recorded"}</span>
                   <small>{item.reason || "No reason recorded"}</small>
                   <small>
-                    {item.creatorRole || "staff"} · revision {item.revision || 1} · {new Date(item.createdAt).toLocaleString("en-ZW")}
+                    {item.creatorRole || "staff"} · revision {item.revision || 1} ·{" "}
+                    {new Date(item.createdAt).toLocaleString("en-ZW")}
                   </small>
                 </div>
                 <div className="dr53-row-actions">
@@ -1024,9 +1049,13 @@ export function ClassRepCorrectionWorkspace({
 function findClassRepMount() {
   const root = document.querySelector<HTMLElement>("main.admin-page .pilot-stack");
   if (!root) return null;
-  const surfaces = [...root.querySelectorAll<HTMLElement>(":scope > .pilot-surface")];
+  const surfaces = [
+    ...root.querySelectorAll<HTMLElement>(":scope > .pilot-surface"),
+  ];
   const byTitle = (title: string) =>
-    surfaces.find((surface) => surface.querySelector("h2")?.textContent?.trim() === title);
+    surfaces.find(
+      (surface) => surface.querySelector("h2")?.textContent?.trim() === title,
+    );
   const legacy = [
     byTitle("Add Extra Class"),
     byTitle("Update Timetable"),
@@ -1047,7 +1076,9 @@ function findClassRepMount() {
 export function ClassRepCorrectionSafetyEnhancement() {
   const [mount, setMount] = useState<HTMLElement | null>(null);
   const [accessToken, setAccessToken] = useState("");
-  const [assignment, setAssignment] = useState<AdminSessionAssignment | null>(null);
+  const [assignment, setAssignment] = useState<AdminSessionAssignment | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!window.location.pathname.startsWith("/admin")) return;
@@ -1084,7 +1115,7 @@ export function ClassRepCorrectionSafetyEnhancement() {
         });
         observer.observe(document.body, { childList: true, subtree: true });
       } catch {
-        // The existing admin access UI owns auth/recovery messaging.
+        // Existing admin access UI owns auth and recovery messaging.
       }
     }
 
