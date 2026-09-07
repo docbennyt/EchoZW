@@ -119,7 +119,9 @@ describe("staff repository founder and Admin safety", () => {
 
     expect(staffLookup.update).not.toHaveBeenCalled();
     expect(auditBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "staff.privilege_escalation_rejected" }),
+      expect.objectContaining({
+        action: "staff.privilege_escalation_rejected",
+      }),
     );
   });
 
@@ -155,7 +157,10 @@ describe("staff repository founder and Admin safety", () => {
     ).resolves.toBeUndefined();
 
     expect(updateBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ active: false, disabled_at: expect.any(String) }),
+      expect.objectContaining({
+        active: false,
+        disabled_at: expect.any(String),
+      }),
     );
     expect(auditBuilder.insert).toHaveBeenCalledWith(
       expect.objectContaining({ action: "admin.deactivated" }),
