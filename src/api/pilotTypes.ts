@@ -113,7 +113,8 @@ export type StaffMember = {
   userId: string;
   email: string | null;
   displayName: string | null;
-  role: "superadmin" | "class_rep";
+  role: "superadmin" | "admin" | "class_rep";
+  isFounder: boolean;
   active: boolean;
   invitedAt: string | null;
   lastInvitedAt: string | null;
@@ -182,7 +183,7 @@ export type TimetableCorrectionDirective = {
   notes: string | null;
   reason: string;
   provenance: string | null;
-  creatorRole?: "superadmin" | "class_rep";
+  creatorRole?: "superadmin" | "admin" | "class_rep";
   active: boolean;
   /** Mutation metadata is present on DR-53 management endpoints but optional on legacy/public timetable payloads. */
   mutationKey?: string | null;
@@ -213,7 +214,7 @@ export type TimetableSessionException = {
   notes: string | null;
   reason: string | null;
   provenance: string | null;
-  creatorRole?: "superadmin" | "class_rep";
+  creatorRole?: "superadmin" | "admin" | "class_rep";
   active: boolean;
   /** Mutation metadata is present on DR-53 management endpoints but optional on legacy/public timetable payloads. */
   mutationKey?: string | null;
