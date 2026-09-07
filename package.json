@@ -17,7 +17,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "prettier --write server/sourcePublication.ts server/sourcePublicationCli.ts tests/sourcePublication.test.ts tests/sourcePublicationContracts.test.ts tests/sourcePublicationMigration.test.ts && git diff -- server/sourcePublication.ts server/sourcePublicationCli.ts tests/sourcePublication.test.ts tests/sourcePublicationContracts.test.ts tests/sourcePublicationMigration.test.ts && exit 1"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
