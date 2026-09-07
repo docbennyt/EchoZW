@@ -515,7 +515,10 @@ export function buildSourcePublicationPlan(
     }
 
     if (item.outcome === "matched" || item.outcome === "changed") {
-      if (item.currentSessions.length !== 1 || item.sourceCandidates.length !== 1) {
+      if (
+        item.currentSessions.length !== 1 ||
+        item.sourceCandidates.length !== 1
+      ) {
         blockers.push({
           code: "RECONCILIATION_INPUT_MISMATCH",
           itemId: item.id,
@@ -554,7 +557,10 @@ export function buildSourcePublicationPlan(
     }
 
     if (item.outcome === "source_only") {
-      if (item.sourceCandidates.length !== 1 || item.currentSessions.length !== 0) {
+      if (
+        item.sourceCandidates.length !== 1 ||
+        item.currentSessions.length !== 0
+      ) {
         blockers.push({
           code: "RECONCILIATION_INPUT_MISMATCH",
           itemId: item.id,
@@ -602,7 +608,10 @@ export function buildSourcePublicationPlan(
     }
 
     if (item.outcome === "current_only") {
-      if (item.currentSessions.length !== 1 || item.sourceCandidates.length !== 0) {
+      if (
+        item.currentSessions.length !== 1 ||
+        item.sourceCandidates.length !== 0
+      ) {
         blockers.push({
           code: "RECONCILIATION_INPUT_MISMATCH",
           itemId: item.id,
@@ -634,7 +643,8 @@ export function buildSourcePublicationPlan(
   }
   if (
     currentSessionCount > 0 &&
-    removalCount / currentSessionCount > SOURCE_PUBLICATION_POLICY.maxRemovalRatio
+    removalCount / currentSessionCount >
+      SOURCE_PUBLICATION_POLICY.maxRemovalRatio
   ) {
     blockers.push({
       code: "BLAST_RADIUS_REMOVAL_RATIO",
@@ -653,10 +663,12 @@ export function buildSourcePublicationPlan(
   const summary = {
     additions: orderedOperations.filter((entry) => entry.kind === "add").length,
     blockers: blockers.length,
-    removals: orderedOperations.filter((entry) => entry.kind === "remove").length,
+    removals: orderedOperations.filter((entry) => entry.kind === "remove")
+      .length,
     unchanged: orderedOperations.filter((entry) => entry.kind === "unchanged")
       .length,
-    updates: orderedOperations.filter((entry) => entry.kind === "update").length,
+    updates: orderedOperations.filter((entry) => entry.kind === "update")
+      .length,
     warnings: warnings.length,
   };
 
