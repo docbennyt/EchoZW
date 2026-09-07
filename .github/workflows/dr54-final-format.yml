@@ -1,0 +1,33 @@
+name: DR-54 final one-shot formatter
+
+on:
+  push:
+    branches:
+      - DR-54-founder-protected-admin
+    paths:
+      - .github/workflows/dr54-final-format.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: DR-54-founder-protected-admin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write tests/founderAdminTeamUi.test.ts
+      - name: Commit formatter output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/founderAdminTeamUi.test.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "DR-54 apply exact Prettier output"
+          git push origin HEAD:DR-54-founder-protected-admin
