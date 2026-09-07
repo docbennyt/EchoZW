@@ -47,6 +47,14 @@ type ErrorBody = {
   };
 };
 
+type GoogleCalendarSyncResult = {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+  unavailable?: boolean;
+  skipped?: boolean;
+};
+
 export class CorrectionMutationError extends Error {
   constructor(
     message: string,
@@ -108,6 +116,7 @@ export function createRecurringClassUpdate(
   return correctionFetch<{
     correction: TimetableCorrectionDirective;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/corrections`, {
     accessToken,
     method: "POST",
@@ -127,6 +136,7 @@ export function editRecurringClassUpdate(
   return correctionFetch<{
     correction: TimetableCorrectionDirective;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/corrections/${correctionId}`, {
     accessToken,
     method: "PATCH",
@@ -143,6 +153,7 @@ export function revokeRecurringClassUpdate(
   return correctionFetch<{
     correction: TimetableCorrectionDirective;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/corrections/${correctionId}`, {
     accessToken,
     method: "DELETE",
@@ -158,6 +169,7 @@ export function restoreRecurringClassUpdate(
   return correctionFetch<{
     correction: TimetableCorrectionDirective;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/corrections/${correctionId}`, {
     accessToken,
     method: "POST",
@@ -174,6 +186,7 @@ export function createExtraClassUpdate(
   return correctionFetch<{
     exception: TimetableSessionException;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/exceptions`, {
     accessToken,
     method: "POST",
@@ -193,6 +206,7 @@ export function editSessionException(
   return correctionFetch<{
     exception: TimetableSessionException;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/exceptions/${exceptionId}`, {
     accessToken,
     method: "PATCH",
@@ -209,6 +223,7 @@ export function revokeSessionException(
   return correctionFetch<{
     exception: TimetableSessionException;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/exceptions/${exceptionId}`, {
     accessToken,
     method: "DELETE",
@@ -224,6 +239,7 @@ export function restoreSessionException(
   return correctionFetch<{
     exception: TimetableSessionException;
     mutationOutcome: TimetableMutationOutcome;
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/exceptions/${exceptionId}`, {
     accessToken,
     method: "POST",
@@ -238,6 +254,7 @@ export function dedupeRecurringClassUpdates(
 ) {
   return correctionFetch<{
     dedupeResult: { keptId: string | null; revokedCount: number };
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/corrections/dedupe`, {
     accessToken,
     method: "POST",
@@ -252,6 +269,7 @@ export function dedupeSessionExceptions(
 ) {
   return correctionFetch<{
     dedupeResult: { keptId: string | null; revokedCount: number };
+    googleCalendarSync?: GoogleCalendarSyncResult;
   }>(`/api/admin/timetables/${timetableId}/exceptions/dedupe`, {
     accessToken,
     method: "POST",
