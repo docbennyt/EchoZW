@@ -32,7 +32,9 @@ describe("guarded source publication migration", () => {
     expect(migration).toContain("source_snapshot_id uuid references");
     expect(migration).toContain("source_parse_run_id uuid references");
     expect(migration).toContain("source_reconciliation_id uuid references");
-    expect(migration).toContain("previous_published_version_id uuid references");
+    expect(migration).toContain(
+      "previous_published_version_id uuid references",
+    );
     expect(migration).toContain("publication_plan_hash text");
     expect(migration).toContain("publication_mode text");
   });
@@ -42,9 +44,13 @@ describe("guarded source publication migration", () => {
       "create or replace function public.publish_guarded_source_reconciliation",
     );
     expect(migration).toContain("from public.timetable_source_publications sp");
-    expect(migration).toContain("from public.timetable_source_reconciliations sr");
+    expect(migration).toContain(
+      "from public.timetable_source_reconciliations sr",
+    );
     expect(migration).toContain("from public.timetables t");
-    expect((migration.match(/for update;/g) ?? []).length).toBeGreaterThanOrEqual(3);
+    expect(
+      (migration.match(/for update;/g) ?? []).length,
+    ).toBeGreaterThanOrEqual(3);
     expect(migration).toContain("SOURCE_PUBLICATION_STALE_BASE");
     expect(migration).toContain("SOURCE_PUBLICATION_PLAN_HASH_MISMATCH");
     expect(migration).toContain("SOURCE_PUBLICATION_PLAN_INPUT_MISMATCH");
@@ -58,7 +64,9 @@ describe("guarded source publication migration", () => {
   });
 
   it("validates the complete session set before changing the published pointer", () => {
-    const validationPosition = migration.indexOf("SOURCE_PUBLICATION_SESSION_INVALID");
+    const validationPosition = migration.indexOf(
+      "SOURCE_PUBLICATION_SESSION_INVALID",
+    );
     const duplicatePosition = migration.indexOf(
       "SOURCE_PUBLICATION_DUPLICATE_STABLE_KEY",
     );
