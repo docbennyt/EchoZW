@@ -64,7 +64,9 @@ function client() {
   return createSupabaseAdminClient(repositoryEnv ?? process.env);
 }
 
-export function staffMutationActor(context: StaffAuthContext): StaffMutationActor {
+export function staffMutationActor(
+  context: StaffAuthContext,
+): StaffMutationActor {
   return {
     userId: context.user.id,
     staffUserId: context.staff.id,
@@ -209,7 +211,11 @@ function assertCanManageClassReps(actor: StaffMutationActor) {
   }
 }
 
-async function assertFounder(actor: StaffMutationActor, action: string, targetId?: string) {
+async function assertFounder(
+  actor: StaffMutationActor,
+  action: string,
+  targetId?: string,
+) {
   if (
     actor.role !== "superadmin" ||
     !actor.isFounder ||
@@ -542,7 +548,8 @@ export async function inviteAdmin(input: {
 
   await audit({
     actorId: input.actor.userId,
-    action: existing?.role === "admin" ? "admin.invite_resent" : "admin.role_granted",
+    action:
+      existing?.role === "admin" ? "admin.invite_resent" : "admin.role_granted",
     entityType: "staff_user",
     entityId: String(staff?.id),
     metadata: {
@@ -588,7 +595,10 @@ export async function resendStaffInvite(input: {
   );
   await audit({
     actorId: input.actor.userId,
-    action: staff.role === "admin" ? "admin.invite_resent" : "class_rep.invite_resent",
+    action:
+      staff.role === "admin"
+        ? "admin.invite_resent"
+        : "class_rep.invite_resent",
     entityType: "staff_user",
     entityId: input.staffUserId,
   });
@@ -694,7 +704,11 @@ export async function setStaffActive(input: {
   }
 
   if (staff.role === "admin") {
-    await assertFounder(input.actor, "change_admin_active_state", input.staffUserId);
+    await assertFounder(
+      input.actor,
+      "change_admin_active_state",
+      input.staffUserId,
+    );
   } else {
     assertCanManageClassReps(input.actor);
   }
@@ -775,7 +789,8 @@ export async function setStaffRole(input: {
 
   await audit({
     actorId: input.actor.userId,
-    action: input.role === "admin" ? "admin.role_granted" : "admin.role_revoked",
+    action:
+      input.role === "admin" ? "admin.role_granted" : "admin.role_revoked",
     entityType: "staff_user",
     entityId: input.staffUserId,
     metadata: {

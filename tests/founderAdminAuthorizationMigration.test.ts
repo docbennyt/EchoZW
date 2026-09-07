@@ -22,7 +22,9 @@ describe("founder-protected Admin authorization migration", () => {
 
   it("fails safely rather than guessing when founder data is ambiguous", () => {
     expect(migration).toContain("CZWFOUNDER_AMBIGUOUS");
-    expect(migration).toContain("multiple superadmins require explicit operator resolution");
+    expect(migration).toContain(
+      "multiple superadmins require explicit operator resolution",
+    );
     expect(migration).toContain(
       "multiple active legacy admins require explicit operator resolution",
     );

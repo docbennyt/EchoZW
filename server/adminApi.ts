@@ -136,7 +136,8 @@ export async function handleAdminRequest(
       const context = await requireOperationalAdmin(req, deps);
       if (await handleAdminAnalyticsApi(req, res)) return true;
       if (await handleGrowthInboxAdminApi(req, res)) return true;
-      if (await handleSourceGatewayAdminApi(req, res, context.user)) return true;
+      if (await handleSourceGatewayAdminApi(req, res, context.user))
+        return true;
       if (await handlePilotAdminApi(req, res, context.user)) return true;
       sendJson(res, 501, {
         error: {

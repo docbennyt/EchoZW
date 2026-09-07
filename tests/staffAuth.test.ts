@@ -165,7 +165,8 @@ describe("staff authorization helpers", () => {
       requireStaffUser(request(), {
         createUserClient: () =>
           userClient({ id: "user-1", email: "user@example.test" }),
-        createAdminClient: () => staffClient({ staff: null, legacyAdmin: null }),
+        createAdminClient: () =>
+          staffClient({ staff: null, legacyAdmin: null }),
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",

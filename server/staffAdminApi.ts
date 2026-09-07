@@ -112,7 +112,9 @@ export async function handleStaffAdminApi(
       return true;
     }
 
-    const roleMatch = url.pathname.match(/^\/api\/admin\/staff\/([^/]+)\/role$/);
+    const roleMatch = url.pathname.match(
+      /^\/api\/admin\/staff\/([^/]+)\/role$/,
+    );
     if (req.method === "PATCH" && roleMatch) {
       const parsed = roleSchema.parse(await readJson(req));
       await setStaffRole({
