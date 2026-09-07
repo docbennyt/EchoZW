@@ -81,7 +81,7 @@ A recovery callback may arrive as:
 CalenderZW removes the code from the visible URL and explicitly calls:
 
 ```ts
-supabase.auth.exchangeCodeForSession(code)
+supabase.auth.exchangeCodeForSession(code);
 ```
 
 before validating the session.
@@ -103,7 +103,7 @@ or:
 CalenderZW calls:
 
 ```ts
-supabase.auth.verifyOtp({ token_hash, type })
+supabase.auth.verifyOtp({ token_hash, type });
 ```
 
 and, after a valid session is established, uses replace navigation to the approved internal destination.
