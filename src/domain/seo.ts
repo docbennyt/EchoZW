@@ -94,10 +94,21 @@ const noindexRouteMetadata: Record<string, SeoRouteMetadata> = {
   },
 };
 
+const sensitiveAuthSpaPaths = new Set([
+  "/account/update-password",
+  "/auth/callback",
+  "/auth/confirm",
+  "/admin/login",
+]);
+
 export function getStaticSeoMetadata(pathname: string) {
   return (
     staticRouteMetadata[pathname] ?? noindexRouteMetadata[pathname] ?? null
   );
+}
+
+export function isSensitiveAuthSpaPath(pathname: string) {
+  return sensitiveAuthSpaPaths.has(pathname);
 }
 
 export function isKnownSpaPath(pathname: string) {
