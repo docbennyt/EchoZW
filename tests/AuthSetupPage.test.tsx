@@ -127,4 +127,30 @@ describe("AuthSetupPage", () => {
     });
     expect(JSON.stringify(track.mock.calls)).not.toContain("test-access");
   });
+
+  it("never renders password fields when the Supabase browser client cannot initialize", async () => {
+    createSupabaseClient.mockImplementation(() => {
+      throw Object.assign(new Error("runtime config unavailable"), {
+        code: "AUTH_CLIENT_CONFIG_MISSING",
+      });
+    });
+    window.history.replaceState({}, "", "/account/update-password");
+
+    render(<AuthSetupPage />);
+
+    expect(
+      await screen.findByText(
+        "Account setup is temporarily unavailable. Please try again.",
+      ),
+    ).toHaveAttribute("role", "alert");
+    expect(screen.queryByLabelText(/^New password$/i)).toBeNull();
+    expect(screen.queryByLabelText(/^Confirm new password$/i)).toBeNull();
+    expect(track).toHaveBeenCalledWith("auth_client_error", {
+      reason: "AUTH_CLIENT_CONFIG_MISSING",
+      path: "/account/update-password",
+    });
+    expect(JSON.stringify(track.mock.calls)).not.toContain(
+      "runtime config unavailable",
+    );
+  });
 });
