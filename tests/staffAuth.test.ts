@@ -1,8 +1,9 @@
 import type { IncomingMessage } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import {
+  requireFounderSuperadmin,
+  requireOperationalAdmin,
   requireStaffUser,
-  requireSuperadmin,
   requireTimetableEditor,
 } from "../server/supabase/auth";
 
@@ -29,8 +30,9 @@ function staffClient(input: {
   staff?: {
     id: string;
     user_id: string;
-    role: "superadmin" | "class_rep";
+    role: "superadmin" | "admin" | "class_rep";
     active: boolean;
+    is_founder?: boolean;
   } | null;
   legacyAdmin?: { user_id: string; active: boolean } | null;
   assignment?: { id: string; active: boolean } | null;
@@ -60,11 +62,11 @@ function staffClient(input: {
 }
 
 describe("staff authorization helpers", () => {
-  it("returns active superadmin staff with global permissions", async () => {
+  it("returns the protected founder with root and operational permissions", async () => {
     await expect(
       requireStaffUser(request(), {
         createUserClient: () =>
-          userClient({ id: "user-1", email: "admin@example.test" }),
+          userClient({ id: "user-1", email: "founder@example.test" }),
         createAdminClient: () =>
           staffClient({
             staff: {
@@ -72,21 +74,54 @@ describe("staff authorization helpers", () => {
               user_id: "user-1",
               role: "superadmin",
               active: true,
+              is_founder: true,
             },
           }),
       }),
     ).resolves.toMatchObject({
-      user: { id: "user-1", email: "admin@example.test" },
-      staff: { id: "staff-1", role: "superadmin" },
+      user: { id: "user-1", email: "founder@example.test" },
+      staff: { id: "staff-1", role: "superadmin", isFounder: true },
       permissions: {
-        canManageStaff: true,
+        canManageAdmins: true,
+        canManageClassReps: true,
         canManageAllTimetables: true,
+        canManageFounderAuthority: true,
       },
       assignments: [],
     });
   });
 
-  it("falls back to legacy active admin_users as superadmin during migration", async () => {
+  it("gives Admin broad operational access without founder authority", async () => {
+    await expect(
+      requireOperationalAdmin(request(), {
+        createUserClient: () =>
+          userClient({ id: "admin-user", email: "admin@example.test" }),
+        createAdminClient: () =>
+          staffClient({
+            staff: {
+              id: "staff-admin",
+              user_id: "admin-user",
+              role: "admin",
+              active: true,
+              is_founder: false,
+            },
+          }),
+      }),
+    ).resolves.toMatchObject({
+      staff: { role: "admin", isFounder: false },
+      permissions: {
+        canManageInstitutions: true,
+        canManageAllTimetables: true,
+        canManageSources: true,
+        canViewOperationalAnalytics: true,
+        canManageClassReps: true,
+        canManageAdmins: false,
+        canManageFounderAuthority: false,
+      },
+    });
+  });
+
+  it("never infers founder authority from the legacy admin_users fallback", async () => {
     await expect(
       requireStaffUser(request(), {
         createUserClient: () =>
@@ -98,9 +133,31 @@ describe("staff authorization helpers", () => {
           }),
       }),
     ).resolves.toMatchObject({
-      staff: { id: "legacy-admin", role: "superadmin" },
-      permissions: { canManageStaff: true },
+      staff: { id: "legacy-admin", role: "admin", isFounder: false },
+      permissions: {
+        canManageAllTimetables: true,
+        canManageAdmins: false,
+        canManageFounderAuthority: false,
+      },
     });
+  });
+
+  it("rejects an unmarked superadmin instead of treating the role string as founder proof", async () => {
+    await expect(
+      requireStaffUser(request(), {
+        createUserClient: () => userClient({ id: "unsafe-root" }),
+        createAdminClient: () =>
+          staffClient({
+            staff: {
+              id: "staff-unsafe",
+              user_id: "unsafe-root",
+              role: "superadmin",
+              active: true,
+              is_founder: false,
+            },
+          }),
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN", status: 403 });
   });
 
   it("rejects normal authenticated users without staff or legacy admin authorization", async () => {
@@ -108,8 +165,7 @@ describe("staff authorization helpers", () => {
       requireStaffUser(request(), {
         createUserClient: () =>
           userClient({ id: "user-1", email: "user@example.test" }),
-        createAdminClient: () =>
-          staffClient({ staff: null, legacyAdmin: null }),
+        createAdminClient: () => staffClient({ staff: null, legacyAdmin: null }),
       }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -117,11 +173,32 @@ describe("staff authorization helpers", () => {
     });
   });
 
-  it("requires superadmin role for staff management", async () => {
+  it("requires durable founder authority for root-only operations", async () => {
     await expect(
-      requireSuperadmin(request(), {
+      requireFounderSuperadmin(request(), {
         createUserClient: () =>
-          userClient({ id: "rep-user", email: "rep@example.test" }),
+          userClient({ id: "admin-user", email: "admin@example.test" }),
+        createAdminClient: () =>
+          staffClient({
+            staff: {
+              id: "staff-admin",
+              user_id: "admin-user",
+              role: "admin",
+              active: true,
+              is_founder: false,
+            },
+          }),
+      }),
+    ).rejects.toMatchObject({
+      code: "FOUNDER_REQUIRED",
+      status: 403,
+    });
+  });
+
+  it("blocks Class Reps from global operational Admin access", async () => {
+    await expect(
+      requireOperationalAdmin(request(), {
+        createUserClient: () => userClient({ id: "rep-user" }),
         createAdminClient: () =>
           staffClient({
             staff: {
@@ -129,16 +206,39 @@ describe("staff authorization helpers", () => {
               user_id: "rep-user",
               role: "class_rep",
               active: true,
+              is_founder: false,
             },
           }),
       }),
     ).rejects.toMatchObject({
-      code: "SUPERADMIN_REQUIRED",
+      code: "OPERATIONAL_ADMIN_REQUIRED",
       status: 403,
     });
   });
 
-  it("allows a class rep to edit only an assigned timetable", async () => {
+  it("allows an Admin to edit any timetable without a Class Rep assignment", async () => {
+    await expect(
+      requireTimetableEditor(request(), "timetable-1", {
+        createUserClient: () => userClient({ id: "admin-user" }),
+        createAdminClient: () =>
+          staffClient({
+            staff: {
+              id: "staff-admin",
+              user_id: "admin-user",
+              role: "admin",
+              active: true,
+              is_founder: false,
+            },
+            assignment: null,
+          }),
+      }),
+    ).resolves.toMatchObject({
+      staff: { role: "admin" },
+      permissions: { canEditAllTimetables: true },
+    });
+  });
+
+  it("allows a Class Rep to edit only an assigned timetable", async () => {
     await expect(
       requireTimetableEditor(request(), "timetable-1", {
         createUserClient: () =>
@@ -150,6 +250,7 @@ describe("staff authorization helpers", () => {
               user_id: "rep-user",
               role: "class_rep",
               active: true,
+              is_founder: false,
             },
             assignment: { id: "assignment-1", active: true },
           }),
@@ -163,11 +264,10 @@ describe("staff authorization helpers", () => {
     });
   });
 
-  it("blocks class reps from unassigned timetables", async () => {
+  it("blocks Class Reps from unassigned timetables", async () => {
     await expect(
       requireTimetableEditor(request(), "other-timetable", {
-        createUserClient: () =>
-          userClient({ id: "rep-user", email: "rep@example.test" }),
+        createUserClient: () => userClient({ id: "rep-user" }),
         createAdminClient: () =>
           staffClient({
             staff: {
@@ -175,6 +275,7 @@ describe("staff authorization helpers", () => {
               user_id: "rep-user",
               role: "class_rep",
               active: true,
+              is_founder: false,
             },
             assignment: null,
           }),
