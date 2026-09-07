@@ -47,8 +47,9 @@ function staffClient(data: {
   staff?: {
     id: string;
     user_id: string;
-    role: "superadmin" | "class_rep";
+    role: "superadmin" | "admin" | "class_rep";
     active: boolean;
+    is_founder?: boolean;
   } | null;
   legacyAdmin?: { user_id?: string; active?: boolean } | null;
 }) {
@@ -103,6 +104,24 @@ function routeRequest(path: string, authorization = "Bearer valid") {
   } as IncomingMessage;
 }
 
+const operationalPermissions = {
+  canManageStaff: true,
+  canManageAdmins: false,
+  canManageClassReps: true,
+  canManageInstitutions: true,
+  canManageProgrammes: true,
+  canManageClassGroups: true,
+  canManageAcademicPeriods: true,
+  canManageAllTimetables: true,
+  canEditAllTimetables: true,
+  canPublishAllTimetables: true,
+  canManageSources: true,
+  canViewOperationalAnalytics: true,
+  canManageFounderAuthority: false,
+  canEditAssignedTimetables: true,
+  canPublishAssignedTimetables: true,
+};
+
 describe("admin authentication helpers", () => {
   it("rejects missing Authorization with AUTH_REQUIRED", async () => {
     await expect(requireAuthenticatedUser(request())).rejects.toMatchObject({
@@ -144,7 +163,7 @@ describe("admin authentication helpers", () => {
     });
   });
 
-  it("rejects inactive admin rows with FORBIDDEN", async () => {
+  it("rejects inactive legacy admin rows with FORBIDDEN", async () => {
     await expect(
       requireAdmin(request("Bearer valid"), {
         createUserClient: () =>
@@ -158,7 +177,7 @@ describe("admin authentication helpers", () => {
     });
   });
 
-  it("returns the authenticated user for active admins", async () => {
+  it("returns the authenticated user for active operational admins", async () => {
     await expect(
       requireAdmin(request("Bearer valid"), {
         createUserClient: () =>
@@ -223,7 +242,7 @@ describe("admin API routes", () => {
     expect(body().error.code).toBe("FORBIDDEN");
   });
 
-  it("returns a minimal safe user object for active admins", async () => {
+  it("returns an operational Admin session without inferring founder authority from legacy access", async () => {
     const { res, body } = response();
     await handleAdminRequest(request("Bearer valid"), res, {
       createUserClient: () =>
@@ -242,25 +261,18 @@ describe("admin API routes", () => {
       },
       staff: {
         id: "admin-1",
-        role: "superadmin",
+        role: "admin",
+        isFounder: false,
         displayName: null,
         email: "admin@example.test",
       },
-      permissions: {
-        canManageStaff: true,
-        canManageInstitutions: true,
-        canManageProgrammes: true,
-        canManageClassGroups: true,
-        canManageAllTimetables: true,
-        canEditAssignedTimetables: true,
-        canPublishAssignedTimetables: true,
-      },
+      permissions: operationalPermissions,
       assignments: [],
     });
     expect(JSON.stringify(body())).not.toMatch(/token|password|service/i);
   });
 
-  it("returns 403 when a class rep calls a global admin API route", async () => {
+  it("returns 403 when a Class Rep calls a global operational API route", async () => {
     const { res, body } = response();
     await handleAdminRequest(routeRequest("/api/admin/institutions"), res, {
       createUserClient: () =>
@@ -272,12 +284,13 @@ describe("admin API routes", () => {
             user_id: "rep-user",
             role: "class_rep",
             active: true,
+            is_founder: false,
           },
         }),
     });
 
     expect(res.statusCode).toBe(403);
-    expect(body().error.code).toBe("SUPERADMIN_REQUIRED");
+    expect(body().error.code).toBe("OPERATIONAL_ADMIN_REQUIRED");
   });
 
   it("returns a safe 500 response when privileged config is missing", async () => {
