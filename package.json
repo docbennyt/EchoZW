@@ -16,7 +16,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "prettier --write server/correctionsRepository.ts src/api/correctionMutations.ts src/ClassRepCorrectionSafetyEnhancement.tsx tests/ClassRepCorrectionSafetyEnhancement.test.tsx tests/correctionMutationHardeningMigration.test.ts && git diff -- server/correctionsRepository.ts src/api/correctionMutations.ts src/ClassRepCorrectionSafetyEnhancement.tsx tests/ClassRepCorrectionSafetyEnhancement.test.tsx tests/correctionMutationHardeningMigration.test.ts && exit 1"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
