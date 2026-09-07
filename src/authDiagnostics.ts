@@ -1,4 +1,5 @@
 import { track } from "./analytics";
+import type { AuthRedirectFailureCode } from "./authRecovery";
 
 export type BrowserAuthFailureCode =
   | "AUTH_CLIENT_CONFIG_MISSING"
@@ -6,7 +7,8 @@ export type BrowserAuthFailureCode =
   | "AUTH_PASSWORD_REJECTED"
   | "AUTH_RECOVERY_REQUEST_FAILED"
   | "AUTH_STAFF_SESSION_FORBIDDEN"
-  | "AUTH_STAFF_SESSION_UNAVAILABLE";
+  | "AUTH_STAFF_SESSION_UNAVAILABLE"
+  | AuthRedirectFailureCode;
 
 export function browserAuthFailureCode(error: unknown): BrowserAuthFailureCode {
   if (

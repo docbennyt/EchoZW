@@ -86,12 +86,29 @@ const noindexRouteMetadata: Record<string, SeoRouteMetadata> = {
     canonicalPath: "/auth/callback",
     robots: "noindex, nofollow",
   },
+  "/auth/confirm": {
+    title: "Complete CalenderZW account setup",
+    description: "Verify a CalenderZW invitation or password recovery request.",
+    canonicalPath: "/auth/confirm",
+    robots: "noindex, nofollow",
+  },
 };
+
+const sensitiveAuthSpaPaths = new Set([
+  "/account/update-password",
+  "/auth/callback",
+  "/auth/confirm",
+  "/admin/login",
+]);
 
 export function getStaticSeoMetadata(pathname: string) {
   return (
     staticRouteMetadata[pathname] ?? noindexRouteMetadata[pathname] ?? null
   );
+}
+
+export function isSensitiveAuthSpaPath(pathname: string) {
+  return sensitiveAuthSpaPaths.has(pathname);
 }
 
 export function isKnownSpaPath(pathname: string) {
