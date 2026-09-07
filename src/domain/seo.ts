@@ -86,6 +86,12 @@ const noindexRouteMetadata: Record<string, SeoRouteMetadata> = {
     canonicalPath: "/auth/callback",
     robots: "noindex, nofollow",
   },
+  "/auth/confirm": {
+    title: "Complete CalenderZW account setup",
+    description: "Verify a CalenderZW invitation or password recovery request.",
+    canonicalPath: "/auth/confirm",
+    robots: "noindex, nofollow",
+  },
 };
 
 export function getStaticSeoMetadata(pathname: string) {
