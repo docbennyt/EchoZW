@@ -187,11 +187,11 @@ export function AuthSetupPage() {
   }
 
   const copy = setupCopy(intent);
+  const hasValidAuthClient = supabaseRef.current !== null;
   const showForm =
     status === "ready" ||
     status === "updating" ||
-    status === "success" ||
-    status === "error";
+    (status === "error" && hasValidAuthClient);
 
   return (
     <div className="czw-app-shell">
@@ -240,7 +240,7 @@ export function AuthSetupPage() {
             </>
           ) : null}
 
-          {showForm && status !== "success" ? (
+          {showForm ? (
             <form onSubmit={submitPassword}>
               <label>
                 <span>New password</span>
