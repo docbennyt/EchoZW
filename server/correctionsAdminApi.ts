@@ -199,9 +199,10 @@ export async function handleCorrectionsAdminApi(
         actor,
         semanticFingerprint: parsed.semanticFingerprint,
       });
-      const googleCalendarSync = dedupeResult.revokedCount > 0
-        ? await syncGoogleCalendars(timetableId)
-        : skippedGoogleSync();
+      const googleCalendarSync =
+        dedupeResult.revokedCount > 0
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
       sendJson(res, 200, { dedupeResult, googleCalendarSync });
       return true;
     }
@@ -304,9 +305,10 @@ export async function handleCorrectionsAdminApi(
         actor,
         semanticFingerprint: parsed.semanticFingerprint,
       });
-      const googleCalendarSync = dedupeResult.revokedCount > 0
-        ? await syncGoogleCalendars(timetableId)
-        : skippedGoogleSync();
+      const googleCalendarSync =
+        dedupeResult.revokedCount > 0
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
       sendJson(res, 200, { dedupeResult, googleCalendarSync });
       return true;
     }
