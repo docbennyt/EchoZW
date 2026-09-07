@@ -1,0 +1,425 @@
+[data-dr53-legacy="true"] {
+  display: none !important;
+}
+
+#czw-dr53-correction-workspace {
+  min-width: 0;
+}
+
+.dr53-workspace {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.dr53-heading,
+.dr53-card,
+.dr53-message,
+.dr53-undo,
+.dr53-duplicate-banner {
+  border: 1px solid rgba(17, 94, 70, 0.14);
+  border-radius: 20px;
+  background: #fffef9;
+  box-shadow: 0 14px 34px rgba(30, 54, 47, 0.07);
+}
+
+.dr53-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(36, 139, 97, 0.11),
+      transparent 42%
+    ),
+    #fffef9;
+}
+
+.dr53-heading h2,
+.dr53-card h3 {
+  margin: 0;
+  color: #17362c;
+}
+
+.dr53-heading h2 {
+  margin-top: 7px;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.dr53-heading p,
+.dr53-card-title p,
+.dr53-muted {
+  margin: 7px 0 0;
+  color: #62736c;
+  line-height: 1.55;
+}
+
+.dr53-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #126a49;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dr53-class-pill {
+  flex: 0 0 auto;
+  max-width: 42%;
+  overflow: hidden;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: #eaf5ef;
+  color: #185b43;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dr53-message,
+.dr53-undo,
+.dr53-duplicate-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 15px;
+}
+
+.dr53-message {
+  border-color: rgba(20, 125, 83, 0.2);
+  background: #f1faf5;
+  color: #165d43;
+  font-weight: 650;
+}
+
+.dr53-undo,
+.dr53-duplicate-banner {
+  justify-content: space-between;
+}
+
+.dr53-undo {
+  background: #fff9e8;
+  border-color: rgba(155, 112, 20, 0.2);
+  color: #6f561f;
+}
+
+.dr53-undo button,
+.dr53-duplicate-banner button,
+.dr53-row-actions button,
+.dr53-text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 54, 44, 0.16);
+  border-radius: 11px;
+  background: #fff;
+  color: #214b3d;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.dr53-undo button:disabled,
+.dr53-duplicate-banner button:disabled,
+.dr53-row-actions button:disabled,
+.dr53-text-button:disabled,
+.dr53-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.dr53-duplicate-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.dr53-duplicate-banner {
+  border-color: rgba(171, 91, 35, 0.24);
+  background: #fff7ed;
+}
+
+.dr53-duplicate-banner > div {
+  display: grid;
+  gap: 2px;
+}
+
+.dr53-duplicate-banner strong {
+  color: #8a481e;
+}
+
+.dr53-duplicate-banner span {
+  color: #765c4b;
+  font-size: 0.88rem;
+}
+
+.dr53-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.dr53-card {
+  min-width: 0;
+  padding: 20px;
+}
+
+.dr53-card-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dr53-card-title h3 {
+  font-size: 1.08rem;
+}
+
+.dr53-text-button {
+  min-height: 34px;
+  padding: 5px 9px;
+  background: transparent;
+}
+
+.dr53-field {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  min-width: 0;
+}
+
+.dr53-field > span,
+.dr53-policy legend {
+  color: #38554b;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.dr53-field input,
+.dr53-field select,
+.dr53-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cedbd5;
+  border-radius: 11px;
+  background: #fff;
+  color: #17362c;
+  font: inherit;
+}
+
+.dr53-field textarea {
+  resize: vertical;
+}
+
+.dr53-field input:focus-visible,
+.dr53-field select:focus-visible,
+.dr53-field textarea:focus-visible,
+.dr53-primary:focus-visible,
+.dr53-row-actions button:focus-visible,
+.dr53-text-button:focus-visible,
+.dr53-undo button:focus-visible,
+.dr53-duplicate-banner button:focus-visible {
+  outline: 3px solid rgba(33, 136, 94, 0.2);
+  outline-offset: 2px;
+  border-color: #21885e;
+}
+
+.dr53-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.dr53-policy {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid #dbe4df;
+  border-radius: 12px;
+}
+
+.dr53-policy label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #425d53;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.dr53-policy input {
+  margin-top: 3px;
+}
+
+.dr53-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #18734f;
+  color: white;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dr53-spin {
+  animation: dr53-spin 0.8s linear infinite;
+}
+
+@keyframes dr53-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.dr53-updates {
+  display: grid;
+  gap: 4px;
+}
+
+.dr53-update-list {
+  display: grid;
+  gap: 10px;
+}
+
+.dr53-update-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #e1e8e4;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.dr53-update-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.dr53-update-copy strong,
+.dr53-update-copy span,
+.dr53-update-copy small {
+  overflow-wrap: anywhere;
+}
+
+.dr53-update-copy strong {
+  color: #183d31;
+}
+
+.dr53-update-copy span {
+  color: #486259;
+  font-size: 0.88rem;
+}
+
+.dr53-update-copy small {
+  color: #71827b;
+  line-height: 1.4;
+}
+
+.dr53-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.dr53-row-actions .dr53-danger {
+  border-color: rgba(174, 58, 47, 0.2);
+  color: #9d3c34;
+}
+
+@media (max-width: 860px) {
+  .dr53-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dr53-heading {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .dr53-workspace {
+    gap: 13px;
+  }
+
+  .dr53-heading,
+  .dr53-card {
+    border-radius: 16px;
+  }
+
+  .dr53-heading {
+    display: grid;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .dr53-class-pill {
+    max-width: 100%;
+    width: fit-content;
+  }
+
+  .dr53-card {
+    padding: 15px;
+  }
+
+  .dr53-two-col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .dr53-card-title,
+  .dr53-update-row,
+  .dr53-undo,
+  .dr53-duplicate-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dr53-row-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .dr53-row-actions button,
+  .dr53-undo button,
+  .dr53-duplicate-banner button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  .dr53-card,
+  .dr53-heading {
+    padding: 13px;
+  }
+
+  .dr53-row-actions {
+    grid-template-columns: 1fr;
+  }
+}

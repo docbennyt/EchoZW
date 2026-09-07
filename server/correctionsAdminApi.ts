@@ -1,9 +1,16 @@
+import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import {
   createRecurringCorrection,
   createSessionException,
+  dedupeCorrections,
+  dedupeExceptions,
   listTimetableCorrections,
+  replaceRecurringCorrection,
+  replaceSessionException,
+  restoreCorrection,
+  restoreException,
   revokeCorrection,
   revokeException,
 } from "./correctionsRepository.js";
@@ -46,6 +53,24 @@ const exceptionSchema = z.object({
   provenance: z.string().trim().nullable().optional(),
 });
 
+const editCorrectionSchema = correctionSchema.extend({
+  expectedUpdatedAt: z.string().datetime({ offset: true }),
+});
+
+const editExceptionSchema = exceptionSchema.extend({
+  expectedUpdatedAt: z.string().datetime({ offset: true }),
+});
+
+const undoSchema = z.object({
+  expectedUpdatedAt: z.string().datetime({ offset: true }),
+});
+
+const dedupeSchema = z.object({
+  semanticFingerprint: z.string().trim().min(16).max(256),
+});
+
+const idempotencyKeySchema = z.string().uuid();
+
 function sendJson(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(body));
@@ -58,6 +83,25 @@ async function readJson(req: IncomingMessage) {
   }
   const raw = Buffer.concat(chunks).toString("utf8").trim();
   return raw ? (JSON.parse(raw) as unknown) : {};
+}
+
+function mutationKey(req: IncomingMessage) {
+  const headerValue = req.headers["idempotency-key"];
+  const raw = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  if (!raw) {
+    // Backward compatibility for an older UI build. New clients always send the
+    // key; the semantic database guard still protects exact duplicate saves.
+    return randomUUID();
+  }
+  const parsed = idempotencyKeySchema.safeParse(raw.trim());
+  if (!parsed.success) {
+    throw new PilotApiError(
+      "INVALID_IDEMPOTENCY_KEY",
+      "Start a new save and try again.",
+      422,
+    );
+  }
+  return parsed.data;
 }
 
 function sendCorrectionError(res: ServerResponse, error: unknown) {
@@ -100,6 +144,10 @@ async function syncGoogleCalendars(timetableId: string) {
   }
 }
 
+function skippedGoogleSync() {
+  return { attempted: 0, succeeded: 0, failed: 0, skipped: true };
+}
+
 export async function handleCorrectionsAdminApi(
   req: IncomingMessage,
   res: ServerResponse,
@@ -122,29 +170,104 @@ export async function handleCorrectionsAdminApi(
     if (req.method === "POST" && correctionsMatch) {
       const timetableId = decodeURIComponent(correctionsMatch[1]);
       const parsed = correctionSchema.parse(await readJson(req));
-      const correction = await createRecurringCorrection({
+      const result = await createRecurringCorrection({
         timetableId,
         actor,
+        mutationKey: mutationKey(req),
         ...parsed,
       });
-      const googleCalendarSync = await syncGoogleCalendars(timetableId);
-      sendJson(res, 201, { correction, googleCalendarSync });
+      const changed = result.mutationOutcome === "created";
+      const googleCalendarSync = changed
+        ? await syncGoogleCalendars(timetableId)
+        : skippedGoogleSync();
+      sendJson(res, changed ? 201 : 200, {
+        correction: result.item,
+        mutationOutcome: result.mutationOutcome,
+        googleCalendarSync,
+      });
       return true;
     }
 
-    const revokeCorrectionMatch = url.pathname.match(
+    const dedupeCorrectionsMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([^/]+)\/corrections\/dedupe$/,
+    );
+    if (req.method === "POST" && dedupeCorrectionsMatch) {
+      const timetableId = decodeURIComponent(dedupeCorrectionsMatch[1]);
+      const parsed = dedupeSchema.parse(await readJson(req));
+      const dedupeResult = await dedupeCorrections({
+        timetableId,
+        actor,
+        semanticFingerprint: parsed.semanticFingerprint,
+      });
+      const googleCalendarSync =
+        dedupeResult.revokedCount > 0
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
+      sendJson(res, 200, { dedupeResult, googleCalendarSync });
+      return true;
+    }
+
+    const correctionItemMatch = url.pathname.match(
       /^\/api\/admin\/timetables\/([^/]+)\/corrections\/([^/]+)$/,
     );
-    if (req.method === "DELETE" && revokeCorrectionMatch) {
-      const timetableId = decodeURIComponent(revokeCorrectionMatch[1]);
-      await revokeCorrection({
-        timetableId,
-        correctionId: decodeURIComponent(revokeCorrectionMatch[2]),
-        actor,
-      });
-      const googleCalendarSync = await syncGoogleCalendars(timetableId);
-      sendJson(res, 200, { ok: true, googleCalendarSync });
-      return true;
+    if (correctionItemMatch) {
+      const timetableId = decodeURIComponent(correctionItemMatch[1]);
+      const correctionId = decodeURIComponent(correctionItemMatch[2]);
+      if (req.method === "PATCH") {
+        const parsed = editCorrectionSchema.parse(await readJson(req));
+        const { expectedUpdatedAt, ...replacement } = parsed;
+        const result = await replaceRecurringCorrection({
+          timetableId,
+          correctionId,
+          expectedUpdatedAt,
+          actor,
+          mutationKey: mutationKey(req),
+          ...replacement,
+        });
+        const changed = result.mutationOutcome === "updated";
+        const googleCalendarSync = changed
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
+        sendJson(res, 200, {
+          correction: result.item,
+          mutationOutcome: result.mutationOutcome,
+          googleCalendarSync,
+        });
+        return true;
+      }
+      if (req.method === "DELETE") {
+        const result = await revokeCorrection({
+          timetableId,
+          correctionId,
+          actor,
+        });
+        const changed = result.mutationOutcome === "revoked";
+        const googleCalendarSync = changed
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
+        sendJson(res, 200, {
+          correction: result.item,
+          mutationOutcome: result.mutationOutcome,
+          googleCalendarSync,
+        });
+        return true;
+      }
+      if (req.method === "POST") {
+        const parsed = undoSchema.parse(await readJson(req));
+        const result = await restoreCorrection({
+          timetableId,
+          correctionId,
+          expectedUpdatedAt: parsed.expectedUpdatedAt,
+          actor,
+        });
+        const googleCalendarSync = await syncGoogleCalendars(timetableId);
+        sendJson(res, 200, {
+          correction: result.item,
+          mutationOutcome: result.mutationOutcome,
+          googleCalendarSync,
+        });
+        return true;
+      }
     }
 
     const exceptionsMatch = url.pathname.match(
@@ -153,29 +276,104 @@ export async function handleCorrectionsAdminApi(
     if (req.method === "POST" && exceptionsMatch) {
       const timetableId = decodeURIComponent(exceptionsMatch[1]);
       const parsed = exceptionSchema.parse(await readJson(req));
-      const exception = await createSessionException({
+      const result = await createSessionException({
         timetableId,
         actor,
+        mutationKey: mutationKey(req),
         ...parsed,
       });
-      const googleCalendarSync = await syncGoogleCalendars(timetableId);
-      sendJson(res, 201, { exception, googleCalendarSync });
+      const changed = result.mutationOutcome === "created";
+      const googleCalendarSync = changed
+        ? await syncGoogleCalendars(timetableId)
+        : skippedGoogleSync();
+      sendJson(res, changed ? 201 : 200, {
+        exception: result.item,
+        mutationOutcome: result.mutationOutcome,
+        googleCalendarSync,
+      });
       return true;
     }
 
-    const revokeExceptionMatch = url.pathname.match(
+    const dedupeExceptionsMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([^/]+)\/exceptions\/dedupe$/,
+    );
+    if (req.method === "POST" && dedupeExceptionsMatch) {
+      const timetableId = decodeURIComponent(dedupeExceptionsMatch[1]);
+      const parsed = dedupeSchema.parse(await readJson(req));
+      const dedupeResult = await dedupeExceptions({
+        timetableId,
+        actor,
+        semanticFingerprint: parsed.semanticFingerprint,
+      });
+      const googleCalendarSync =
+        dedupeResult.revokedCount > 0
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
+      sendJson(res, 200, { dedupeResult, googleCalendarSync });
+      return true;
+    }
+
+    const exceptionItemMatch = url.pathname.match(
       /^\/api\/admin\/timetables\/([^/]+)\/exceptions\/([^/]+)$/,
     );
-    if (req.method === "DELETE" && revokeExceptionMatch) {
-      const timetableId = decodeURIComponent(revokeExceptionMatch[1]);
-      await revokeException({
-        timetableId,
-        exceptionId: decodeURIComponent(revokeExceptionMatch[2]),
-        actor,
-      });
-      const googleCalendarSync = await syncGoogleCalendars(timetableId);
-      sendJson(res, 200, { ok: true, googleCalendarSync });
-      return true;
+    if (exceptionItemMatch) {
+      const timetableId = decodeURIComponent(exceptionItemMatch[1]);
+      const exceptionId = decodeURIComponent(exceptionItemMatch[2]);
+      if (req.method === "PATCH") {
+        const parsed = editExceptionSchema.parse(await readJson(req));
+        const { expectedUpdatedAt, ...replacement } = parsed;
+        const result = await replaceSessionException({
+          timetableId,
+          exceptionId,
+          expectedUpdatedAt,
+          actor,
+          mutationKey: mutationKey(req),
+          ...replacement,
+        });
+        const changed = result.mutationOutcome === "updated";
+        const googleCalendarSync = changed
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
+        sendJson(res, 200, {
+          exception: result.item,
+          mutationOutcome: result.mutationOutcome,
+          googleCalendarSync,
+        });
+        return true;
+      }
+      if (req.method === "DELETE") {
+        const result = await revokeException({
+          timetableId,
+          exceptionId,
+          actor,
+        });
+        const changed = result.mutationOutcome === "revoked";
+        const googleCalendarSync = changed
+          ? await syncGoogleCalendars(timetableId)
+          : skippedGoogleSync();
+        sendJson(res, 200, {
+          exception: result.item,
+          mutationOutcome: result.mutationOutcome,
+          googleCalendarSync,
+        });
+        return true;
+      }
+      if (req.method === "POST") {
+        const parsed = undoSchema.parse(await readJson(req));
+        const result = await restoreException({
+          timetableId,
+          exceptionId,
+          expectedUpdatedAt: parsed.expectedUpdatedAt,
+          actor,
+        });
+        const googleCalendarSync = await syncGoogleCalendars(timetableId);
+        sendJson(res, 200, {
+          exception: result.item,
+          mutationOutcome: result.mutationOutcome,
+          googleCalendarSync,
+        });
+        return true;
+      }
     }
   } catch (error) {
     sendCorrectionError(res, error);

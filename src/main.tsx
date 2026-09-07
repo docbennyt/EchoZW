@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
 import { AuthSetupPage } from "./AuthSetupPage";
+import { ClassRepCorrectionSafetyEnhancement } from "./ClassRepCorrectionSafetyEnhancement";
 import { FinderDemandPrompt } from "./FinderDemandPrompt";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
@@ -28,6 +29,7 @@ import "./studentOnboardingAcceleration.css";
 import "./growthCapturePages.css";
 import "./growthInboxPage.css";
 import "./pilotOfferEnhancement.css";
+import "./classRepCorrectionSafetyEnhancement.css";
 
 function currentPath() {
   return window.location.pathname;
@@ -113,6 +115,7 @@ function RootApp() {
     <>
       <AppV2 />
       {path === "/find" || path === "/find/" ? <FinderDemandPrompt /> : null}
+      <ClassRepCorrectionSafetyEnhancement />
       <MarketingEnhancements />
       <PilotOfferEnhancement />
     </>
