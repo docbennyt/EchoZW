@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
+import { AuthSetupPage } from "./AuthSetupPage";
 import { FinderDemandPrompt } from "./FinderDemandPrompt";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
@@ -13,6 +14,7 @@ import {
 } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import { StudentOnboardingAcceleration } from "./StudentOnboardingAcceleration";
+import { AUTH_CONFIRM_PATH, PASSWORD_RESET_PATH } from "./authRecovery";
 import { googleCalendarFailureRecoveryPath } from "./domain/googleCalendarHandoff";
 import "./styles.css";
 import "./appV2.css";
@@ -73,6 +75,10 @@ function RootApp() {
   }, [calendarRecoveryPath]);
 
   if (calendarRecoveryPath) return null;
+
+  if (path === PASSWORD_RESET_PATH || path === AUTH_CONFIRM_PATH) {
+    return <AuthSetupPage />;
+  }
 
   if (path === "/request" || path === "/request/") {
     return <TimetableRequestPage />;
