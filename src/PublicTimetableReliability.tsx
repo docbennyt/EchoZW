@@ -35,6 +35,11 @@ import {
 } from "./domain/subscriberContact";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
+import {
+  buildClassSharePayload,
+  readClassShareSource,
+  type ClassShareSource,
+} from "./domain/shareAttribution";
 
 const weekdayLabels = [
   "",
@@ -223,14 +228,6 @@ function timezoneCopy(timeZone: string) {
   return `Times shown in ${timeZone}.`;
 }
 
-function sharePayload(timetable: PublicTimetable, publicUrl: string) {
-  return {
-    title: `${formatClassGroupLabel(timetable.classGroup)} timetable`,
-    text: `${formatClassGroupLabel(timetable.classGroup)} timetable is published on CalenderZW. View the current timetable and subscribe to your calendar.`,
-    url: publicUrl,
-  };
-}
-
 export function courseToneClass(courseCode: string) {
   let hash = 0;
   for (const character of courseCode.trim().toUpperCase()) {
@@ -321,6 +318,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const primaryCtaRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const onboardingCompletionTrackedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -414,6 +412,10 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const publicUrl = timetable
     ? `${window.location.origin}/t/${encodeURIComponent(timetable.publicSlug)}`
     : "";
+  const shareSource = useMemo(
+    () => readClassShareSource(window.location.href),
+    [],
+  );
   const browserTimeZone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || "device timezone";
 
@@ -507,6 +509,49 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     });
   }, [dialogOpen, onboardingStep, timetable]);
 
+  useEffect(() => {
+    if (!timetable || !shareSource) return;
+    track("shared_link_opened", {
+      publicSlug: timetable.publicSlug,
+      source: shareSource,
+    });
+  }, [shareSource, timetable]);
+
+  useEffect(() => {
+    if (
+      !dialogOpen ||
+      !timetable ||
+      !calendarDelivery ||
+      onboardingStep !== "success" ||
+      onboardingCompletionTrackedRef.current
+    ) {
+      return;
+    }
+    onboardingCompletionTrackedRef.current = true;
+    track("onboarding_completed", {
+      publicSlug: timetable.publicSlug,
+      provider: calendarDelivery.provider,
+      reminderPreset,
+    });
+    track("share_prompt_viewed", {
+      publicSlug: timetable.publicSlug,
+      source: "onboarding_success",
+    });
+    if (shareSource) {
+      track("shared_link_onboarding_completed", {
+        publicSlug: timetable.publicSlug,
+        source: shareSource,
+      });
+    }
+  }, [
+    calendarDelivery,
+    dialogOpen,
+    onboardingStep,
+    reminderPreset,
+    shareSource,
+    timetable,
+  ]);
+
   const closeDialog = useCallback(() => {
     if (
       dialogOpen &&
@@ -523,8 +568,10 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   }, [dialogOpen, onboardingStep, timetable]);
 
   const openDialog = useCallback(() => {
+    onboardingCompletionTrackedRef.current = false;
     setCalendarError("");
     setCopyStatus("");
+    setShareStatus("");
     setCalendarDelivery(null);
     setSelectedProvider(null);
     setContactSkipped(false);
@@ -534,7 +581,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     setDialogOpen(true);
     track("calendar_cta_clicked", { publicSlug: timetable?.publicSlug });
     track("onboarding_opened", { publicSlug: timetable?.publicSlug });
-  }, [timetable?.publicSlug]);
+    if (shareSource) {
+      track("shared_link_onboarding_started", {
+        publicSlug: timetable?.publicSlug,
+        source: shareSource,
+      });
+    }
+  }, [shareSource, timetable?.publicSlug]);
 
   function continueFromReminders() {
     if (!timetable) return;
@@ -684,33 +737,80 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     }
   }
 
-  async function shareTimetable() {
+  function classSharePayload(source: ClassShareSource) {
+    if (!timetable) return null;
+    return buildClassSharePayload({
+      classLabel: formatClassGroupLabel(timetable.classGroup),
+      publicUrl,
+      source,
+    });
+  }
+
+  async function shareTimetable(source: ClassShareSource = "class_share") {
     if (!timetable) return;
-    const payload = sharePayload(timetable, publicUrl);
+    const payload = classSharePayload(source);
+    if (!payload) return;
     setShareStatus("");
     try {
       if (navigator.share) {
-        await navigator.share(payload);
+        await navigator.share({
+          title: payload.title,
+          text: payload.text,
+          url: payload.url,
+        });
         track("timetable_shared", {
           method: "web-share",
+          source,
           publicSlug: timetable.publicSlug,
         });
         return;
       }
-      await copyText(publicUrl);
-      setShareStatus("Public timetable link copied.");
+      await copyText(payload.message);
+      setShareStatus("Class message copied — ready to paste into your group.");
       track("timetable_shared", {
-        method: "copy-link",
+        method: "copy-message",
+        source,
         publicSlug: timetable.publicSlug,
       });
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      try {
-        await copyText(publicUrl);
-        setShareStatus("Public timetable link copied.");
-      } catch {
-        setShareStatus(publicUrl);
-      }
+      setShareStatus(
+        "Sharing was cancelled. Your calendar setup is unchanged.",
+      );
+    }
+  }
+
+  async function copyClassLink(source: ClassShareSource) {
+    if (!timetable) return;
+    const payload = classSharePayload(source);
+    if (!payload) return;
+    try {
+      await copyText(payload.url);
+      setShareStatus("Public class link copied.");
+      track("timetable_shared", {
+        method: "copy-link",
+        source,
+        publicSlug: timetable.publicSlug,
+      });
+    } catch {
+      setShareStatus(payload.url);
+    }
+  }
+
+  async function copyClassMessage(source: ClassShareSource) {
+    if (!timetable) return;
+    const payload = classSharePayload(source);
+    if (!payload) return;
+    try {
+      await copyText(payload.message);
+      setShareStatus("Class message copied — ready to paste into your group.");
+      track("timetable_shared", {
+        method: "copy-message",
+        source,
+        publicSlug: timetable.publicSlug,
+      });
+    } catch {
+      setShareStatus(payload.url);
     }
   }
 
@@ -1060,12 +1160,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             <button
               type="button"
               className="pt-button pt-button-primary"
-              onClick={() => {
-                track("share_prompt_viewed", {
-                  publicSlug: currentTimetable.publicSlug,
-                });
-                setOnboardingStep("success");
-              }}
+              onClick={() => setOnboardingStep("success")}
             >
               Continue
             </button>
@@ -1097,29 +1192,58 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               </dd>
             </div>
           </dl>
-          <div className="pt-dialog-actions split">
+          <div className="pt-share-panel">
+            <div>
+              <strong>Help your classmates stay on track too.</strong>
+              <p>
+                Share the public class page. It never includes your private
+                subscription URL, and opening the link does not subscribe
+                someone automatically.
+              </p>
+            </div>
             <button
               type="button"
               className="pt-button pt-button-primary"
+              onClick={() => void shareTimetable("onboarding_success")}
+            >
+              <Share2 size={18} aria-hidden="true" />
+              Share to class group
+            </button>
+            <div className="pt-share-fallbacks">
+              <button
+                type="button"
+                className="pt-button pt-button-secondary"
+                onClick={() => void copyClassMessage("onboarding_success")}
+              >
+                <Copy size={17} aria-hidden="true" />
+                Copy class message
+              </button>
+              <button
+                type="button"
+                className="pt-button pt-button-secondary"
+                onClick={() => void copyClassLink("onboarding_success")}
+              >
+                <Link2 size={17} aria-hidden="true" />
+                Copy class link
+              </button>
+            </div>
+            <small>Optional — your calendar setup is already complete.</small>
+          </div>
+          {shareStatus ? (
+            <p className="pt-status-message" role="status">
+              {shareStatus}
+            </p>
+          ) : null}
+          <div className="pt-dialog-actions">
+            <button
+              type="button"
+              className="pt-button pt-button-secondary"
               onClick={() => {
-                track("onboarding_completed", {
-                  publicSlug: currentTimetable.publicSlug,
-                  provider: calendarDelivery.provider,
-                  reminderPreset,
-                });
                 setDialogOpen(false);
                 setCalendarDelivery(null);
               }}
             >
               Done
-            </button>
-            <button
-              type="button"
-              className="pt-button pt-button-secondary"
-              onClick={() => void shareTimetable()}
-            >
-              <Share2 size={18} aria-hidden="true" />
-              Share with classmates
             </button>
           </div>
         </div>
@@ -1234,7 +1358,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               <button
                 type="button"
                 className="pt-button pt-button-secondary"
-                onClick={() => void shareTimetable()}
+                onClick={() => void shareTimetable("class_share")}
               >
                 <Share2 size={18} aria-hidden="true" />
                 Share with classmates

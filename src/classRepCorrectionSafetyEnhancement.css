@@ -341,7 +341,7 @@
   border-radius: 18px;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 0.8fr) auto;
   padding: 0.75rem;
   position: sticky;
   top: 5.2rem;
@@ -381,6 +381,64 @@
   background: transparent;
   border-color: var(--dr57-line);
   color: var(--dr57-text-2);
+}
+
+.dr47-distribution-kit {
+  align-items: center;
+  background: rgba(98, 215, 170, 0.055);
+  border: 1px solid rgba(98, 215, 170, 0.18);
+  border-radius: 14px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+}
+
+.dr47-distribution-kit > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.dr47-distribution-kit strong {
+  color: var(--dr57-brand-strong);
+  font-size: 0.84rem;
+}
+
+.dr47-distribution-kit span {
+  color: var(--dr57-text-3);
+  font-size: 0.76rem;
+}
+
+.dr47-distribution-kit[data-blocked="true"] {
+  background: rgba(247, 199, 98, 0.07);
+  border-color: rgba(247, 199, 98, 0.2);
+}
+
+.dr47-distribution-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.dr47-distribution-actions button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--dr57-line-strong);
+  border-radius: 10px;
+  color: var(--dr57-text-2);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  gap: 0.4rem;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.dr47-distribution-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .dr57-message {
@@ -968,6 +1026,16 @@
     display: none;
   }
 
+  .dr47-distribution-kit {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dr47-distribution-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
   .dr57-next-card {
     min-height: 15rem;
   }
@@ -1032,6 +1100,10 @@
     gap: 0.45rem;
     min-height: 3.1rem;
     padding: 0.65rem 0.55rem;
+  }
+
+  .dr47-distribution-actions {
+    grid-template-columns: 1fr;
   }
 
   .dr57-session {
