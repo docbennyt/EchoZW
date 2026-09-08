@@ -3,6 +3,13 @@ export const ANALYTICS_EVENT_NAMES = [
   "pilot_offer_viewed",
   "pilot_cta_clicked",
   "future_price_viewed",
+  "pricing_viewed",
+  "pricing_cta_clicked",
+  "checkout_started",
+  "checkout_method_family",
+  "checkout_completed",
+  "checkout_failed",
+  "entitlement_created",
   "finder_opened",
   "finder_search_started",
   "institution_selected",
@@ -91,6 +98,10 @@ export const ANALYTICS_PROPERTY_KEYS = [
   "programmeId",
   "classGroupId",
   "failureClass",
+  "planCode",
+  "currency",
+  "amountMinor",
+  "methodFamily",
 ] as const;
 
 const eventNameSet = new Set<string>(ANALYTICS_EVENT_NAMES);

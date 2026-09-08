@@ -23,6 +23,7 @@ import {
 import { handleAdminRequest } from "./adminApi.js";
 import { handleAnalyticsRequest } from "./analyticsApi.js";
 import { handleGrowthCaptureRequest } from "./growthCaptureApi.js";
+import { handlePaymentRequest } from "./paymentApi.js";
 import { handleHealthRequest } from "./healthApi.js";
 import {
   attachRequestLogging,
@@ -316,6 +317,7 @@ const server = createServer(async (req, res) => {
     if (await handleAdminRequest(req, res)) return;
     if (await handleAnalyticsRequest(req, res, process.env)) return;
     if (await handleGrowthCaptureRequest(req, res, process.env)) return;
+    if (await handlePaymentRequest(req, res, process.env)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
     if (await handleSourceSnapshotRequest(req, res, process.env)) return;
     if (await handlePilotCalendarRequest(req, res, process.env, "production"))
