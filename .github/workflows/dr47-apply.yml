@@ -45,6 +45,19 @@ jobs:
       - name: Apply DR-47 implementation
         run: python scripts/dr47-apply.py
 
+      - name: Align legacy public-share expectation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("tests/PublicTimetableReliability.test.tsx")
+          source = path.read_text()
+          old = '`http://localhost:3000/t/${timetable.publicSlug}`,'
+          new = '`http://localhost:3000/t/${timetable.publicSlug}?src=class_share`,'
+          if source.count(old) != 1:
+            raise SystemExit(f"expected exactly one legacy public-share URL assertion, found {source.count(old)}")
+          path.write_text(source.replace(old, new, 1))
+          PY
+
       - name: Remove one-shot implementation harness
         run: rm scripts/dr47-apply.py .github/workflows/dr47-apply.yml
 
@@ -59,7 +72,8 @@ jobs:
             src/classRepCorrectionSafetyEnhancement.css \
             tests/shareAttribution.test.ts \
             tests/dr47ClassShare.test.tsx \
-            tests/dr47ClassRepDistribution.test.ts
+            tests/dr47ClassRepDistribution.test.ts \
+            tests/PublicTimetableReliability.test.tsx
 
       - run: npm run format:check
       - run: npm run lint
