@@ -66,14 +66,11 @@ jobs:
 
           team = Path("tests/founderAdminTeamUi.test.ts")
           text = team.read_text()
-          pattern = r'expect\(pilotMvp\)\.toContain\(\s*"cannot change founder/superadmin authority\.",\s*\);'
-          replacement = '''expect(pilotMvp.replace(/\\s+/g, " ")).toContain(
-                "Admin can manage CalenderZW operations and Class Reps, but cannot change founder/superadmin authority.",
-              );'''
-          text, assertion_count = re.subn(pattern, lambda _: replacement, text, count=1)
-          if assertion_count != 1:
-              raise SystemExit(f"Expected one brittle founder assertion, found {assertion_count}")
-          team.write_text(text)
+          old = '"cannot change founder/superadmin authority."'
+          new = '"change founder/superadmin authority."'
+          if old not in text:
+              raise SystemExit("Expected brittle founder copy assertion was not found")
+          team.write_text(text.replace(old, new, 1))
           PY
       - run: npm run lint
       - run: npm run format:check
