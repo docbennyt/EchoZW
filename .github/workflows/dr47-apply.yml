@@ -23,6 +23,25 @@ jobs:
 
       - run: npm ci
 
+      - name: Tighten unique CSS anchor
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("scripts/dr47-apply.py")
+          source = path.read_text()
+          source = source.replace(
+              "    '''.pt-sticky-cta {''',",
+              "    '''.pt-sticky-cta {\\n  position: fixed;''',",
+              1,
+          )
+          source = source.replace(
+              "\\n\\n.pt-sticky-cta {''',",
+              "\\n\\n.pt-sticky-cta {\\n  position: fixed;''',",
+              1,
+          )
+          path.write_text(source)
+          PY
+
       - name: Apply DR-47 implementation
         run: python scripts/dr47-apply.py
 
