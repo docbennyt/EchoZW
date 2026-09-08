@@ -3,12 +3,15 @@ import { describe, expect, it } from "vitest";
 
 const cockpit = readFileSync("src/FounderOperationsCockpit.tsx", "utf8");
 const styles = readFileSync("src/founderOperationsCockpit.css", "utf8");
+const compactCockpit = cockpit.replace(/\s+/g, " ");
 
 describe("DR-45 founder operations cockpit", () => {
   it("puts operational signal before setup CRUD and keeps metric semantics explicit", () => {
     expect(cockpit).toContain("7-day pilot command center");
     expect(cockpit).toContain("Know what needs attention before opening CRUD.");
-    expect(cockpit).toContain("Activation is update-enabled subscriptions divided by timetable viewers.");
+    expect(compactCockpit).toContain(
+      "Activation is update-enabled subscriptions divided by timetable viewers.",
+    );
     expect(cockpit).toContain("Feed observed");
     expect(cockpit).toContain("this is not proof of an active human user");
     expect(cockpit).not.toContain("Active users");

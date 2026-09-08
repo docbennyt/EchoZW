@@ -81,7 +81,11 @@ function PulseCard({
   emphasis?: boolean;
 }) {
   return (
-    <article className={emphasis ? "foc-pulse-card foc-pulse-emphasis" : "foc-pulse-card"}>
+    <article
+      className={
+        emphasis ? "foc-pulse-card foc-pulse-emphasis" : "foc-pulse-card"
+      }
+    >
       <span>{label}</span>
       <strong>{value}</strong>
       <small>{detail}</small>
@@ -126,7 +130,8 @@ export function FounderOperationsCockpit({
     return () => window.clearTimeout(timeoutId);
   }, [refresh]);
 
-  const operations: FounderOperationsOverview | null = overview?.operations ?? null;
+  const operations: FounderOperationsOverview | null =
+    overview?.operations ?? null;
   const pulse = operations?.pilotPulse;
   const funnel = overview?.funnel ?? [];
   const firstStagePeople = funnel[0]?.people ?? 0;
@@ -147,11 +152,14 @@ export function FounderOperationsCockpit({
             <Sparkles size={15} aria-hidden="true" />
             7-day pilot command center
           </div>
-          <h1 id="operations-heading">Know what needs attention before opening CRUD.</h1>
+          <h1 id="operations-heading">
+            Know what needs attention before opening CRUD.
+          </h1>
           <p>
-            Adoption, subscription health and timetable trust in one privacy-safe
-            operational view. Counts come from CalenderZW first-party data; no raw
-            phone, email or private feed token is returned here.
+            Adoption, subscription health and timetable trust in one
+            privacy-safe operational view. Counts come from CalenderZW
+            first-party data; no raw phone, email or private feed token is
+            returned here.
           </p>
           <div className="foc-hero-actions">
             <a className="foc-primary-action" href="/admin/team">
@@ -184,7 +192,13 @@ export function FounderOperationsCockpit({
           </div>
           <div>
             <span>Data refreshed</span>
-            <strong>{overview ? formatTime(overview.refreshedAt) : loading ? "Loading…" : "Unavailable"}</strong>
+            <strong>
+              {overview
+                ? formatTime(overview.refreshedAt)
+                : loading
+                  ? "Loading…"
+                  : "Unavailable"}
+            </strong>
           </div>
           <p>
             <ShieldCheck size={16} aria-hidden="true" />
@@ -210,7 +224,10 @@ export function FounderOperationsCockpit({
             <span className="foc-eyebrow">Pilot pulse</span>
             <h2 id="pulse-heading">What moved this week</h2>
           </div>
-          <p>Activation is update-enabled subscriptions divided by timetable viewers.</p>
+          <p>
+            Activation is update-enabled subscriptions divided by timetable
+            viewers.
+          </p>
         </div>
         <div className="foc-pulse-grid" aria-busy={loading}>
           <PulseCard
@@ -231,7 +248,9 @@ export function FounderOperationsCockpit({
           />
           <PulseCard
             label="Activation conversion"
-            value={loading ? "…" : formatPercent(pulse?.activationConversion ?? null)}
+            value={
+              loading ? "…" : formatPercent(pulse?.activationConversion ?? null)
+            }
             detail="Shown only from the defined first-party activation metric."
           />
           <PulseCard
@@ -257,7 +276,10 @@ export function FounderOperationsCockpit({
         </div>
       </section>
 
-      <section className="foc-section foc-funnel-section" aria-labelledby="funnel-heading">
+      <section
+        className="foc-section foc-funnel-section"
+        aria-labelledby="funnel-heading"
+      >
         <div className="foc-section-heading">
           <div>
             <span className="foc-eyebrow">Activation funnel</span>
@@ -270,20 +292,29 @@ export function FounderOperationsCockpit({
         </div>
         {smallSample ? (
           <p className="foc-sample-note">
-            Small sample: use the counts as directional evidence, not a stable conversion benchmark.
+            Small sample: use the counts as directional evidence, not a stable
+            conversion benchmark.
           </p>
         ) : null}
         {!loading && funnel.length === 0 ? (
-          <EmptyState>No onboarding funnel events in this 7-day window yet.</EmptyState>
+          <EmptyState>
+            No onboarding funnel events in this 7-day window yet.
+          </EmptyState>
         ) : (
           <ol className="foc-funnel-list" aria-busy={loading}>
             {funnel.map((stage, index) => {
               const maximum = Math.max(firstStagePeople, 1);
-              const width = Math.max(4, Math.min(100, (stage.people / maximum) * 100));
+              const width = Math.max(
+                4,
+                Math.min(100, (stage.people / maximum) * 100),
+              );
               return (
                 <li key={`${stage.stage}-${index}`}>
                   <div className="foc-funnel-label">
-                    <span>{funnelLabels[stage.stage] ?? stage.stage.replaceAll("_", " ")}</span>
+                    <span>
+                      {funnelLabels[stage.stage] ??
+                        stage.stage.replaceAll("_", " ")}
+                    </span>
                     <strong>{stage.people}</strong>
                   </div>
                   <div className="foc-funnel-track" aria-hidden="true">
@@ -326,17 +357,33 @@ export function FounderOperationsCockpit({
                     </span>
                   </div>
                   <div className="foc-health-metrics">
-                    <span><strong>{row.activeSubscriptions}</strong> active records</span>
-                    <span><strong>{row.updateEnabledSubscriptions}</strong> update-enabled</span>
-                    <span><strong>{row.oneTimeIcsDownloads}</strong> one-time ICS</span>
-                    <span><strong>{row.contactableSubscriptions}</strong> contact-consented</span>
+                    <span>
+                      <strong>{row.activeSubscriptions}</strong> active records
+                    </span>
+                    <span>
+                      <strong>{row.updateEnabledSubscriptions}</strong>{" "}
+                      update-enabled
+                    </span>
+                    <span>
+                      <strong>{row.oneTimeIcsDownloads}</strong> one-time ICS
+                    </span>
+                    <span>
+                      <strong>{row.contactableSubscriptions}</strong>{" "}
+                      contact-consented
+                    </span>
                   </div>
                   <div className="foc-provider-line">
-                    {Object.entries(row.providerMix).map(([provider, count]) => (
-                      <span key={provider}>{labelProvider(provider)} {count}</span>
-                    ))}
+                    {Object.entries(row.providerMix).map(
+                      ([provider, count]) => (
+                        <span key={provider}>
+                          {labelProvider(provider)} {count}
+                        </span>
+                      ),
+                    )}
                   </div>
-                  <small>Last feed observed: {formatTime(row.lastFeedObservedAt)}</small>
+                  <small>
+                    Last feed observed: {formatTime(row.lastFeedObservedAt)}
+                  </small>
                 </article>
               ))}
             </div>
@@ -355,11 +402,16 @@ export function FounderOperationsCockpit({
           ) : (
             <div className="foc-trust-list" aria-busy={loading}>
               {trustRows.slice(0, 6).map((row) => (
-                <article key={row.timetableId} className={row.warnings.length ? "has-warning" : "is-clear"}>
+                <article
+                  key={row.timetableId}
+                  className={row.warnings.length ? "has-warning" : "is-clear"}
+                >
                   <div className="foc-row-title">
                     <div>
                       <strong>{row.label}</strong>
-                      <span>Published {formatTime(row.currentPublishedAt)}</span>
+                      <span>
+                        Published {formatTime(row.currentPublishedAt)}
+                      </span>
                     </div>
                     {row.warnings.length ? (
                       <CircleAlert size={18} aria-label="Needs attention" />
@@ -369,7 +421,9 @@ export function FounderOperationsCockpit({
                   </div>
                   {row.warnings.length ? (
                     <ul>
-                      {row.warnings.map((warning) => <li key={warning}>{warning}</li>)}
+                      {row.warnings.map((warning) => (
+                        <li key={warning}>{warning}</li>
+                      ))}
                     </ul>
                   ) : (
                     <p>No current trust warning.</p>
@@ -378,7 +432,9 @@ export function FounderOperationsCockpit({
                     <span>{row.unresolvedSourceReviews} source reviews</span>
                     <span>{row.pinnedCorrections} pinned corrections</span>
                     <span>{row.pendingExceptions} date exceptions</span>
-                    <span>{row.hasClassRep ? "Class Rep assigned" : "No Class Rep"}</span>
+                    <span>
+                      {row.hasClassRep ? "Class Rep assigned" : "No Class Rep"}
+                    </span>
                   </div>
                 </article>
               ))}
@@ -393,27 +449,46 @@ export function FounderOperationsCockpit({
             <span className="foc-eyebrow">Class Rep operations</span>
             <h2 id="team-ops-heading">Keep class truth covered</h2>
           </div>
-          <a href="/admin/team">Open Team <ArrowRight size={15} aria-hidden="true" /></a>
+          <a href="/admin/team">
+            Open Team <ArrowRight size={15} aria-hidden="true" />
+          </a>
         </div>
         <div className="foc-shortcuts">
           <a href="/admin/team">
             <Users size={18} aria-hidden="true" />
-            <strong>{loading ? "…" : (operations?.classRepOperations.activeClassReps ?? 0)}</strong>
+            <strong>
+              {loading
+                ? "…"
+                : (operations?.classRepOperations.activeClassReps ?? 0)}
+            </strong>
             <span>Active Class Reps</span>
           </a>
           <a href="/admin/team">
             <ShieldCheck size={18} aria-hidden="true" />
-            <strong>{loading ? "…" : (operations?.classRepOperations.assignedTimetables ?? 0)}</strong>
+            <strong>
+              {loading
+                ? "…"
+                : (operations?.classRepOperations.assignedTimetables ?? 0)}
+            </strong>
             <span>Assigned timetables</span>
           </a>
           <a href="/admin/timetables">
             <CircleAlert size={18} aria-hidden="true" />
-            <strong>{loading ? "…" : (operations?.classRepOperations.unassignedPublishedTimetables ?? 0)}</strong>
+            <strong>
+              {loading
+                ? "…"
+                : (operations?.classRepOperations
+                    .unassignedPublishedTimetables ?? 0)}
+            </strong>
             <span>Published without rep</span>
           </a>
           <a href="/admin/team">
             <Activity size={18} aria-hidden="true" />
-            <strong>{loading ? "…" : (operations?.classRepOperations.recentCorrections ?? 0)}</strong>
+            <strong>
+              {loading
+                ? "…"
+                : (operations?.classRepOperations.recentCorrections ?? 0)}
+            </strong>
             <span>Recent corrections</span>
           </a>
         </div>

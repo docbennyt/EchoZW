@@ -5,7 +5,11 @@
 
 .foc-hero {
   background:
-    radial-gradient(circle at 84% 12%, rgba(242, 184, 75, 0.24), transparent 19rem),
+    radial-gradient(
+      circle at 84% 12%,
+      rgba(242, 184, 75, 0.24),
+      transparent 19rem
+    ),
     linear-gradient(135deg, #102c27, #17423a 55%, #215c50);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;

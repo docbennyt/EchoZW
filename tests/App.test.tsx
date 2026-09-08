@@ -651,7 +651,9 @@ describe("public student flow", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("admin@example.test")).toBeInTheDocument();
-    expect(screen.getByText(/Get a class timetable live/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Know what needs attention before opening CRUD/i),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Lecture CRUD/i)).toBeNull();
   });
 
