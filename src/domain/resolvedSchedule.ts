@@ -1,9 +1,11 @@
 import type {
+  AcademicSchedulePause,
   PublicTimetable,
   PublicTimetableSession,
   TimetableCorrectionDirective,
   TimetableSessionException,
 } from "../api/pilotTypes.js";
+import { getApplicableAcademicPause } from "./academicPause.js";
 import { zonedDateTimeToUtc } from "./timezone.js";
 
 export type ResolvedScheduleSession = PublicTimetableSession & {
@@ -11,6 +13,8 @@ export type ResolvedScheduleSession = PublicTimetableSession & {
   correctionId?: string;
   exceptionId?: string;
   occurrenceDate?: string;
+  /** Stable recurring identity before a moved exception creates a one-off key. */
+  originStableSessionKey?: string;
 };
 
 export type ResolvedScheduleOccurrence = {
@@ -19,6 +23,15 @@ export type ResolvedScheduleOccurrence = {
   end: Date;
   dateKey: string;
   recurring: boolean;
+};
+
+export type SuppressedScheduleOccurrence = ResolvedScheduleOccurrence & {
+  pause: AcademicSchedulePause;
+};
+
+export type ResolvedScheduleForDate = {
+  occurrences: ResolvedScheduleOccurrence[];
+  suppressed: SuppressedScheduleOccurrence[];
 };
 
 const weekdayShortToTimetable: Record<string, number> = {
@@ -89,9 +102,11 @@ function materializeCorrection(
     return null;
   }
 
+  const stableSessionKey =
+    correction.stableSessionKey || stableCorrectionKey(correction);
   return {
-    stableSessionKey:
-      correction.stableSessionKey || stableCorrectionKey(correction),
+    stableSessionKey,
+    originStableSessionKey: stableSessionKey,
     courseCode: correction.courseCode,
     courseName: correction.courseName,
     weekday: correction.weekday,
@@ -111,7 +126,11 @@ export function resolveRecurringSessions(
 ): ResolvedScheduleSession[] {
   const sessions = new Map<string, ResolvedScheduleSession>();
   for (const session of timetable.sessions) {
-    sessions.set(session.stableSessionKey, { ...session, source: "published" });
+    sessions.set(session.stableSessionKey, {
+      ...session,
+      source: "published",
+      originStableSessionKey: session.stableSessionKey,
+    });
   }
 
   const corrections = (timetable.corrections ?? [])
@@ -132,6 +151,7 @@ export function resolveRecurringSessions(
       sessions.set(targetKey, {
         ...materialized,
         stableSessionKey: targetKey,
+        originStableSessionKey: targetKey,
       });
       continue;
     }
@@ -159,8 +179,10 @@ function buildExtraSession(
   ) {
     return null;
   }
+  const stableSessionKey = `extra-${exception.id}`;
   const session: ResolvedScheduleSession = {
-    stableSessionKey: `extra-${exception.id}`,
+    stableSessionKey,
+    originStableSessionKey: stableSessionKey,
     courseCode: exception.courseCode,
     courseName: exception.courseName,
     weekday: weekdayForLocalDate(exception.exceptionDate, timeZone),
@@ -200,6 +222,8 @@ function movedOccurrence(
     session: {
       ...session,
       stableSessionKey: `${session.stableSessionKey}-moved-${exception.id}`,
+      originStableSessionKey:
+        session.originStableSessionKey ?? session.stableSessionKey,
       startTime,
       endTime,
       source: "exception" as const,
@@ -214,7 +238,7 @@ function movedOccurrence(
   };
 }
 
-export function resolveScheduleForDate(
+function buildUnpausedScheduleForDate(
   timetable: PublicTimetable,
   dateKey: string,
 ): ResolvedScheduleOccurrence[] {
@@ -262,6 +286,39 @@ export function resolveScheduleForDate(
   return occurrences.sort(
     (left, right) => left.start.getTime() - right.start.getTime(),
   );
+}
+
+export function resolveScheduleForDateDetailed(
+  timetable: PublicTimetable,
+  dateKey: string,
+): ResolvedScheduleForDate {
+  const occurrences: ResolvedScheduleOccurrence[] = [];
+  const suppressed: SuppressedScheduleOccurrence[] = [];
+
+  for (const occurrence of buildUnpausedScheduleForDate(timetable, dateKey)) {
+    const pause = getApplicableAcademicPause(timetable.pauses, {
+      start: occurrence.start,
+      end: occurrence.end,
+      dateKey: occurrence.dateKey,
+      stableSessionKey:
+        occurrence.session.originStableSessionKey ??
+        occurrence.session.stableSessionKey,
+    });
+    if (pause) {
+      suppressed.push({ ...occurrence, pause });
+    } else {
+      occurrences.push(occurrence);
+    }
+  }
+
+  return { occurrences, suppressed };
+}
+
+export function resolveScheduleForDate(
+  timetable: PublicTimetable,
+  dateKey: string,
+): ResolvedScheduleOccurrence[] {
+  return resolveScheduleForDateDetailed(timetable, dateKey).occurrences;
 }
 
 export function getResolvedUpcomingOccurrences(

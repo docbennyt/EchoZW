@@ -912,14 +912,23 @@ function AnalyticsOverviewPage({ accessToken }: { accessToken: string }) {
 
 function AdminOverview({
   accessToken,
+  institutions,
+  programmes,
+  classGroups,
   timetables,
 }: {
   accessToken: string;
+  institutions: AdminInstitution[];
+  programmes: AdminProgramme[];
+  classGroups: AdminClassGroup[];
   timetables: AdminTimetableSummary[];
 }) {
   return (
     <FounderOperationsCockpit
       accessToken={accessToken}
+      institutions={institutions}
+      programmes={programmes}
+      classGroups={classGroups}
       timetables={timetables}
     />
   );
@@ -3954,6 +3963,9 @@ export function AdminMvpScreen({ path }: { path: string }) {
           {path === "/admin" ? (
             <AdminOverview
               accessToken={accessToken}
+              institutions={data.institutions}
+              programmes={data.programmes}
+              classGroups={data.classGroups}
               timetables={data.timetables}
             />
           ) : null}

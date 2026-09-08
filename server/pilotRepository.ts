@@ -19,6 +19,7 @@ import type {
   TimetableCorrectionDirective,
   TimetableSessionException,
 } from "../src/api/pilotTypes.js";
+import { listActiveAcademicPausesForTimetable } from "./academicPauseRepository.js";
 
 type JsonRecord = Record<string, unknown>;
 type QueryResult<T> = { data: T | null; error: { message?: string } | null };
@@ -1804,7 +1805,7 @@ async function getPublishedTimetable(filter: {
   let query = client
     .from("timetables")
     .select(
-      "id, public_slug, current_published_version_id, institutions(name, timezone), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)",
+      "id, public_slug, current_published_version_id, institution_id, programme_id, cohort_id, institutions(name, short_name, timezone), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)",
     )
     .not("current_published_version_id", "is", null);
   if (filter.publicSlug) query = query.eq("public_slug", filter.publicSlug);
@@ -1896,6 +1897,14 @@ async function getPublishedTimetable(filter: {
   const period = asSingle(
     timetableRecord.academic_periods as JsonRecord | JsonRecord[] | null,
   );
+  const pauses = await listActiveAcademicPausesForTimetable({
+    timetableId: String(timetableRecord.id),
+    institutionId: String(timetableRecord.institution_id),
+    programmeId: String(timetableRecord.programme_id),
+    cohortId: String(timetableRecord.cohort_id),
+    startsOn: period?.starts_on ? String(period.starts_on) : null,
+    endsOn: period?.ends_on ? String(period.ends_on) : null,
+  });
 
   return {
     timetableId: String(timetableRecord.id),
@@ -1942,6 +1951,7 @@ async function getPublishedTimetable(filter: {
     exceptions: (exceptions ?? []).map((row: unknown) =>
       mapPublicException(row as JsonRecord),
     ),
+    pauses,
   } satisfies PublicTimetable;
 }
 

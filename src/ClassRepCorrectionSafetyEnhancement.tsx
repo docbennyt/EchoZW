@@ -40,6 +40,10 @@ import {
   type SessionExceptionInput,
 } from "./api/correctionMutations";
 import { fetchPublicTimetable } from "./api/publicTimetable";
+import {
+  ActiveAcademicPauseNotice,
+  ClassRepAcademicPauseAction,
+} from "./ClassRepAcademicPauseControl";
 import type {
   PublicTimetable,
   TimetableCorrectionDirective,
@@ -739,6 +743,14 @@ export function ClassRepCorrectionWorkspace({
         </div>
       ) : null}
 
+      <ActiveAcademicPauseNotice
+        accessToken={accessToken}
+        assignment={assignment}
+        timetable={timetable}
+        onRefresh={refresh}
+        onMessage={setMessage}
+      />
+
       <div className="dr57-live-grid">
         <article className="dr57-card dr57-next-card">
           <span className="dr57-card-label">
@@ -844,6 +856,13 @@ export function ClassRepCorrectionWorkspace({
         >
           <CalendarPlus size={18} /> Add extra class
         </button>
+        <ClassRepAcademicPauseAction
+          accessToken={accessToken}
+          assignment={assignment}
+          timetable={timetable}
+          onRefresh={refresh}
+          onMessage={setMessage}
+        />
         {assignment.publicSlug ? (
           <a
             className="dr57-action ghost"

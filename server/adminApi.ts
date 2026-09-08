@@ -8,6 +8,7 @@ import {
   sendAdminAuthError,
   type AuthDependencies,
 } from "./supabase/auth.js";
+import { handleAcademicPauseAdminApi } from "./academicPauseAdminApi.js";
 import { handleCorrectionsAdminApi } from "./correctionsAdminApi.js";
 import { handlePilotAdminApi } from "./pilotAdminApi.js";
 import { handleStaffAdminApi } from "./staffAdminApi.js";
@@ -107,21 +108,23 @@ export async function handleAdminRequest(
   }
 
   const scopedTimetableMatch = requestUrl.pathname.match(
-    /^\/api\/admin\/timetables\/([^/]+)(?:\/corrections(?:\/[^/]+)?|\/exceptions(?:\/[^/]+)?)$/,
+    /^\/api\/admin\/timetables\/([^/]+)(?:\/corrections(?:\/[^/]+)?|\/exceptions(?:\/[^/]+)?|\/pauses(?:\/preview|\/[^/]+)?)$/,
   );
   if (scopedTimetableMatch) {
     try {
-      const context = await requireTimetableEditor(
-        req,
-        decodeURIComponent(scopedTimetableMatch[1]),
-        deps,
-      );
-      if (await handleCorrectionsAdminApi(req, res, context)) return true;
+      const timetableId = decodeURIComponent(scopedTimetableMatch[1]);
+      const context = await requireTimetableEditor(req, timetableId, deps);
+      if (requestUrl.pathname.includes("/pauses")) {
+        if (await handleAcademicPauseAdminApi(req, res, context, timetableId)) {
+          return true;
+        }
+      } else if (await handleCorrectionsAdminApi(req, res, context)) {
+        return true;
+      }
       sendJson(res, 501, {
         error: {
           code: "NOT_IMPLEMENTED",
-          message:
-            "This timetable correction operation is not implemented yet.",
+          message: "This timetable operation is not implemented yet.",
         },
       });
     } catch (error) {
@@ -134,6 +137,9 @@ export async function handleAdminRequest(
   if (requestUrl.pathname.startsWith("/api/admin/")) {
     try {
       const context = await requireOperationalAdmin(req, deps);
+      if (requestUrl.pathname.startsWith("/api/admin/academic-pauses")) {
+        if (await handleAcademicPauseAdminApi(req, res, context)) return true;
+      }
       if (await handleAdminAnalyticsApi(req, res)) return true;
       if (await handleGrowthInboxAdminApi(req, res)) return true;
       if (await handleSourceGatewayAdminApi(req, res, context.user))
