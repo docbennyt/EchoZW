@@ -406,7 +406,7 @@ describe("public timetable reliability UX", () => {
       level: 1,
       name: "BTech Computer Science",
     });
-    expect(observerCallback).not.toBeNull();
+    await waitFor(() => expect(observerCallback).not.toBeNull());
 
     act(() => {
       observerCallback?.(
