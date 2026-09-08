@@ -26,12 +26,36 @@ const REQUIRED_SCHEMA_PROBES: RequiredRestProbe[] = [
     path: "/rest/v1/class_rep_assignments?select=id&limit=0",
   },
   {
-    object: "timetable_correction_directives",
-    path: "/rest/v1/timetable_correction_directives?select=id&limit=0",
+    object: "timetable_correction_directives.DR53 mutation fields",
+    path: "/rest/v1/timetable_correction_directives?select=id,mutation_key,semantic_fingerprint,revision,supersedes_id,replaced_by_id&limit=0",
   },
   {
-    object: "timetable_session_exceptions.correction fields",
-    path: "/rest/v1/timetable_session_exceptions?select=timetable_id,stable_session_key,exception_date,exception_type,replacement_starts_at,replacement_ends_at,start_time,end_time,active,creator_staff_user_id&limit=0",
+    object: "timetable_session_exceptions.DR53 mutation fields",
+    path: "/rest/v1/timetable_session_exceptions?select=timetable_id,stable_session_key,exception_date,exception_type,replacement_starts_at,replacement_ends_at,start_time,end_time,active,creator_staff_user_id,mutation_key,semantic_fingerprint,revision,supersedes_id,replaced_by_id,updated_at&limit=0",
+  },
+  {
+    object: "timetable_correction_semantic_fingerprint RPC",
+    path: "/rest/v1/rpc/timetable_correction_semantic_fingerprint",
+  },
+  {
+    object: "timetable_exception_semantic_fingerprint RPC",
+    path: "/rest/v1/rpc/timetable_exception_semantic_fingerprint",
+  },
+  {
+    object: "replace_timetable_correction_update RPC",
+    path: "/rest/v1/rpc/replace_timetable_correction_update",
+  },
+  {
+    object: "replace_timetable_exception_update RPC",
+    path: "/rest/v1/rpc/replace_timetable_exception_update",
+  },
+  {
+    object: "dedupe_timetable_correction_group RPC",
+    path: "/rest/v1/rpc/dedupe_timetable_correction_group",
+  },
+  {
+    object: "dedupe_timetable_exception_group RPC",
+    path: "/rest/v1/rpc/dedupe_timetable_exception_group",
   },
   {
     object: "subscriber_profiles",
