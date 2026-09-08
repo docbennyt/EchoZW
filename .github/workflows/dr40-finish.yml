@@ -23,8 +23,40 @@ jobs:
 
       - run: npm ci
 
-      - name: Normalize DR-40 files
+      - name: Correct semantic ICS assertions and normalize DR-40 files
         run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tests/dr40ExistingSubscriptionPropagation.test.ts")
+          source = path.read_text()
+          anchor = '''function count(value: string, needle: string) {
+            return value.split(needle).length - 1;
+          }
+          '''
+          helper = '''function count(value: string, needle: string) {
+            return value.split(needle).length - 1;
+          }
+
+          function unfoldIcs(value: string) {
+            return value.replace(/\\r\\n[ \\t]/g, "");
+          }
+          '''
+          if "function unfoldIcs" not in source:
+            if anchor not in source:
+              raise SystemExit("DR-40 count helper anchor not found")
+            source = source.replace(anchor, helper, 1)
+
+          replacements = {
+            'expect(before.body).toContain(\n      `CalenderZW timetable:': 'expect(unfoldIcs(before.body)).toContain(\n      `CalenderZW timetable:',
+            'expect(after.body).toContain(\n      `CalenderZW timetable:': 'expect(unfoldIcs(after.body)).toContain(\n      `CalenderZW timetable:',
+            'expect(result.body).toContain(\n      `CalenderZW timetable:': 'expect(unfoldIcs(result.body)).toContain(\n      `CalenderZW timetable:',
+          }
+          for old, new in replacements.items():
+            if old in source:
+              source = source.replace(old, new)
+          path.write_text(source)
+          PY
           npx prettier --write tests/dr40ExistingSubscriptionPropagation.test.ts docs/DR-40_EXISTING_SUBSCRIPTION_PROPAGATION.md
           rm .github/workflows/dr40-finish.yml
 
