@@ -19,514 +19,109 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Wire DR-58 human controls
+      - name: Wire DR-58 controls
         shell: bash
         run: |
           python <<'PY'
           from pathlib import Path
 
-          repo = Path('.')
+          def patch(path, old, new, label):
+              file = Path(path)
+              text = file.read_text()
+              if new in text:
+                  return
+              if old not in text:
+                  raise SystemExit(f"{label}: expected anchor not found")
+              file.write_text(text.replace(old, new, 1))
 
-          # 1. Mount the Class Rep pause surface in the existing cockpit.
-          path = repo / 'src/ClassRepCorrectionSafetyEnhancement.tsx'
+          path = Path("src/ClassRepCorrectionSafetyEnhancement.tsx")
           text = path.read_text()
-          marker = 'import { fetchPublicTimetable } from "./api/publicTimetable";\n'
-          addition = marker + 'import {\n  ActiveAcademicPauseNotice,\n  ClassRepAcademicPauseAction,\n} from "./ClassRepAcademicPauseControl";\n'
-          if 'ClassRepAcademicPauseAction' not in text:
-              text = text.replace(marker, addition)
-
-          marker = '      <div className="dr57-live-grid">\n'
-          notice = '''      <ActiveAcademicPauseNotice\n        accessToken={accessToken}\n        assignment={assignment}\n        timetable={timetable}\n        onRefresh={refresh}\n        onMessage={setMessage}\n      />\n\n'''
+          import_anchor = 'import { fetchPublicTimetable } from "./api/publicTimetable";\n'
+          if 'from "./ClassRepAcademicPauseControl"' not in text:
+              text = text.replace(import_anchor, import_anchor + 'import {\n  ActiveAcademicPauseNotice,\n  ClassRepAcademicPauseAction,\n} from "./ClassRepAcademicPauseControl";\n', 1)
           if '<ActiveAcademicPauseNotice' not in text:
-              text = text.replace(marker, notice + marker)
-
-          marker = '        {assignment.publicSlug ? (\n'
-          action = '''        <ClassRepAcademicPauseAction\n          accessToken={accessToken}\n          assignment={assignment}\n          timetable={timetable}\n          onRefresh={refresh}\n          onMessage={setMessage}\n        />\n'''
-          action_bar = text.find('<div className="dr57-action-bar"')
-          public_link = text.find(marker, action_bar)
-          if '<ClassRepAcademicPauseAction' not in text and public_link != -1:
-              text = text[:public_link] + action + text[public_link:]
+              anchor = '      <div className="dr57-live-grid">\n'
+              notice = '      <ActiveAcademicPauseNotice\n        accessToken={accessToken}\n        assignment={assignment}\n        timetable={timetable}\n        onRefresh={refresh}\n        onMessage={setMessage}\n      />\n\n'
+              if anchor not in text:
+                  raise SystemExit("Class Rep pause notice anchor missing")
+              text = text.replace(anchor, notice + anchor, 1)
+          if '<ClassRepAcademicPauseAction' not in text:
+              action_bar = text.find('<div className="dr57-action-bar"')
+              public_anchor = '        {assignment.publicSlug ? (\n'
+              public_index = text.find(public_anchor, action_bar)
+              if action_bar < 0 or public_index < 0:
+                  raise SystemExit("Class Rep action bar anchor missing")
+              action = '        <ClassRepAcademicPauseAction\n          accessToken={accessToken}\n          assignment={assignment}\n          timetable={timetable}\n          onRefresh={refresh}\n          onMessage={setMessage}\n        />\n'
+              text = text[:public_index] + action + text[public_index:]
           path.write_text(text)
 
-          # 2. Add broad pause list support to the repository and API.
-          path = repo / 'server/academicPauseRepository.ts'
-          text = path.read_text()
-          anchor = 'export async function listAcademicPausesForTimetable(timetableId: string) {'
-          broad_list = '''export async function listAcademicPauses() {\n  const { data, error } = await client()\n    .from("academic_schedule_pauses")\n    .select("*")\n    .order("created_at", { ascending: false });\n  if (isMissingPauseSchema(error)) return [];\n  if (error) {\n    throw new AcademicPauseRepositoryError(\n      "DATABASE_UNAVAILABLE",\n      "Could not load academic pause rules.",\n      503,\n      error,\n    );\n  }\n  return (data ?? []).map((row) => mapPause(row as JsonRecord));\n}\n\n'''
-          if 'export async function listAcademicPauses()' not in text:
-              text = text.replace(anchor, broad_list + anchor)
-          path.write_text(text)
-
-          path = repo / 'server/academicPauseAdminApi.ts'
-          text = path.read_text()
-          text = text.replace(
-              '  listAcademicPausesForTimetable,\n',
-              '  listAcademicPauses,\n  listAcademicPausesForTimetable,\n',
+          patch(
+              "server/academicPauseRepository.ts",
+              'export async function listAcademicPausesForTimetable(timetableId: string) {',
+              'export async function listAcademicPauses() {\n  const { data, error } = await client()\n    .from("academic_schedule_pauses")\n    .select("*")\n    .order("created_at", { ascending: false });\n  if (isMissingPauseSchema(error)) return [];\n  if (error) {\n    throw new AcademicPauseRepositoryError(\n      "DATABASE_UNAVAILABLE",\n      "Could not load academic pause rules.",\n      503,\n      error,\n    );\n  }\n  return (data ?? []).map((row) => mapPause(row as JsonRecord));\n}\n\nexport async function listAcademicPausesForTimetable(timetableId: string) {',
+              "repository broad list",
           )
-          anchor = '    if (\n      req.method === "POST" &&\n      url.pathname === "/api/admin/academic-pauses/preview"\n    ) {'
-          broad_get = '''    if (\n      req.method === "GET" &&\n      url.pathname === "/api/admin/academic-pauses"\n    ) {\n      sendJson(res, 200, { pauses: await listAcademicPauses() });\n      return true;\n    }\n'''
+
+          path = Path("server/academicPauseAdminApi.ts")
+          text = path.read_text()
+          if '  listAcademicPauses,\n' not in text:
+              text = text.replace('  listAcademicPausesForTimetable,\n', '  listAcademicPauses,\n  listAcademicPausesForTimetable,\n', 1)
+          broad_get = '    if (\n      req.method === "GET" &&\n      url.pathname === "/api/admin/academic-pauses"\n    ) {\n      sendJson(res, 200, { pauses: await listAcademicPauses() });\n      return true;\n    }\n'
           if 'pauses: await listAcademicPauses()' not in text:
-              text = text.replace(anchor, broad_get + anchor)
+              anchor = '    if (\n      req.method === "POST" &&\n      url.pathname === "/api/admin/academic-pauses/preview"\n    ) {'
+              if anchor not in text:
+                  raise SystemExit("broad API anchor missing")
+              text = text.replace(anchor, broad_get + anchor, 1)
           path.write_text(text)
 
-          # 3. Complete browser client for Admin list/resume.
-          path = repo / 'src/api/academicPauses.ts'
-          text = path.read_text()
-          anchor = 'export function previewBroadPause(accessToken: string, input: BroadPauseInput) {'
-          additions = '''export function listAcademicPauses(accessToken: string) {\n  return adminFetch<{ pauses: AdminAcademicSchedulePause[] }>(\n    "/api/admin/academic-pauses",\n    { accessToken },\n  );\n}\n\nexport function deactivateBroadPause(accessToken: string, pauseId: string) {\n  return adminFetch<{\n    pause: AdminAcademicSchedulePause;\n    googleCalendarSync: {\n      attempted: number;\n      succeeded: number;\n      failed: number;\n    };\n  }>(`/api/admin/academic-pauses/${encodeURIComponent(pauseId)}`, {\n    method: "DELETE",\n    accessToken,\n  });\n}\n\n'''
-          if 'export function listAcademicPauses(' not in text:
-              text = text.replace(anchor, additions + anchor)
-          path.write_text(text)
-
-          # 4. Admin broad pause control.
-          (repo / 'src/AdminAcademicPauseControl.tsx').write_text(r'''import { useEffect, useMemo, useState } from "react";
-import { Dialog } from "@base-ui/react/dialog";
-import { CalendarOff, CheckCircle2, Play, X } from "lucide-react";
-import {
-  createBroadPause,
-  deactivateBroadPause,
-  listAcademicPauses,
-  previewBroadPause,
-  type BroadPauseInput,
-} from "./api/academicPauses";
-import type {
-  AcademicPauseImpact,
-  AcademicPauseReason,
-  AcademicPauseScope,
-  AdminAcademicSchedulePause,
-  AdminClassGroup,
-  AdminInstitution,
-  AdminProgramme,
-  AdminTimetableSummary,
-} from "./api/pilotTypes";
-import "./classRepAcademicPauseControl.css";
-
-const reasons: Array<{ value: AcademicPauseReason; label: string }> = [
-  { value: "sim_break", label: "Sim Break" },
-  { value: "graduation", label: "Graduation" },
-  { value: "swot_week", label: "SWOT week" },
-  { value: "holiday", label: "Holiday" },
-  { value: "closure", label: "Campus closure" },
-  { value: "other", label: "Other" },
-];
-
-type BroadScope = Exclude<AcademicPauseScope, "session">;
-
-type Props = {
-  accessToken: string;
-  institutions: AdminInstitution[];
-  programmes: AdminProgramme[];
-  classGroups: AdminClassGroup[];
-  timetables: AdminTimetableSummary[];
-};
-
-function todayKey() {
-  const now = new Date();
-  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 10);
-}
-
-export function AdminAcademicPauseControl({
-  accessToken,
-  institutions,
-  programmes,
-  classGroups,
-  timetables,
-}: Props) {
-  const [open, setOpen] = useState(false);
-  const [scopeType, setScopeType] = useState<BroadScope>("institution");
-  const [targetId, setTargetId] = useState(institutions[0]?.id ?? "");
-  const [startsOn, setStartsOn] = useState(todayKey);
-  const [endsOn, setEndsOn] = useState(todayKey);
-  const [reason, setReason] = useState<AcademicPauseReason>("other");
-  const [label, setLabel] = useState("");
-  const [provenance, setProvenance] = useState("");
-  const [preview, setPreview] = useState<AcademicPauseImpact | null>(null);
-  const [pauses, setPauses] = useState<AdminAcademicSchedulePause[]>([]);
-  const [busy, setBusy] = useState<"preview" | "save" | string>("");
-  const [message, setMessage] = useState("");
-
-  const targets = useMemo(() => {
-    if (scopeType === "institution") {
-      return institutions.map((item) => ({ id: item.id, label: item.shortName || item.name }));
-    }
-    if (scopeType === "programme") {
-      return programmes.map((item) => ({ id: item.id, label: `${item.name} · ${item.institutionName}` }));
-    }
-    if (scopeType === "cohort") {
-      return classGroups.map((item) => ({ id: item.id, label: `${item.label} · ${item.programmeName}` }));
-    }
-    return timetables.map((item) => ({ id: item.id, label: `${item.classGroupLabel} · ${item.academicPeriodName}` }));
-  }, [classGroups, institutions, programmes, scopeType, timetables]);
-
-  const refresh = async () => {
-    const result = await listAcademicPauses(accessToken);
-    setPauses(result.pauses ?? []);
-  };
-
-  useEffect(() => {
-    const timeout = window.setTimeout(() => void refresh().catch(() => undefined), 0);
-    return () => window.clearTimeout(timeout);
-  }, [accessToken]);
-
-  const chooseScope = (next: BroadScope) => {
-    setScopeType(next);
-    setPreview(null);
-    const first =
-      next === "institution"
-        ? institutions[0]?.id
-        : next === "programme"
-          ? programmes[0]?.id
-          : next === "cohort"
-            ? classGroups[0]?.id
-            : timetables[0]?.id;
-    setTargetId(first ?? "");
-  };
-
-  const input = (): BroadPauseInput => ({
-    scopeType,
-    institutionId: scopeType === "institution" ? targetId : null,
-    programmeId: scopeType === "programme" ? targetId : null,
-    cohortId: scopeType === "cohort" ? targetId : null,
-    timetableId: scopeType === "timetable" ? targetId : null,
-    stableSessionKey: null,
-    startsOn,
-    endsOn,
-    allDay: true,
-    reason,
-    label,
-    provenance: provenance || null,
-  });
-
-  const active = pauses.filter((pause) => pause.active);
-
-  return (
-    <section className="dr58-admin-panel" aria-labelledby="dr58-admin-title">
-      <div className="dr58-admin-heading">
-        <div>
-          <span className="foc-eyebrow">Academic calendar</span>
-          <h2 id="dr58-admin-title">No-lecture periods</h2>
-          <p>Pause lectures without deleting timetable truth. Calendar subscriptions resolve from the same rule.</p>
-        </div>
-        <button className="foc-primary-action" type="button" onClick={() => setOpen(true)}>
-          <CalendarOff size={17} /> Add pause
-        </button>
-      </div>
-
-      {message ? <div className="dr58-impact" role="status">{message}</div> : null}
-      {active.length ? (
-        <div className="dr58-admin-list">
-          {active.slice(0, 8).map((pause) => (
-            <article key={pause.id}>
-              <div>
-                <strong>{pause.label}</strong>
-                <span>{pause.scopeType.replaceAll("_", " ")} · {pause.startsOn} → {pause.endsOn}</span>
-              </div>
-              <button
-                type="button"
-                disabled={busy === pause.id}
-                onClick={() => {
-                  setBusy(pause.id);
-                  void deactivateBroadPause(accessToken, pause.id)
-                    .then(async () => {
-                      setMessage(`Classes resumed — ${pause.label}.`);
-                      await refresh();
-                    })
-                    .catch((error) => setMessage(error instanceof Error ? error.message : "Could not resume classes."))
-                    .finally(() => setBusy(""));
-                }}
-              >
-                <Play size={14} /> {busy === pause.id ? "Resuming…" : "Resume"}
-              </button>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <p className="dr58-admin-empty">No active academic pauses.</p>
-      )}
-
-      <Dialog.Root open={open} onOpenChange={(next) => !busy && setOpen(next)}>
-        <Dialog.Portal>
-          <Dialog.Backdrop className="dr57-dialog-backdrop" />
-          <Dialog.Viewport className="dr57-dialog-viewport">
-            <Dialog.Popup className="dr57-dialog dr58-dialog">
-              <div className="dr57-dialog-header">
-                <div>
-                  <Dialog.Title>Add no-lecture period</Dialog.Title>
-                  <Dialog.Description>Preview the exact impact before suppressing lectures.</Dialog.Description>
-                </div>
-                <Dialog.Close className="dr57-dialog-close" aria-label="Close academic pause" disabled={Boolean(busy)}>
-                  <X size={18} />
-                </Dialog.Close>
-              </div>
-
-              <div className="dr57-form">
-                <label className="dr57-field">
-                  <span>Scope</span>
-                  <select value={scopeType} onChange={(event) => chooseScope(event.target.value as BroadScope)}>
-                    <option value="institution">Institution</option>
-                    <option value="programme">Programme</option>
-                    <option value="cohort">Class group</option>
-                    <option value="timetable">Timetable</option>
-                  </select>
-                </label>
-                <label className="dr57-field">
-                  <span>Target</span>
-                  <select required value={targetId} onChange={(event) => { setTargetId(event.target.value); setPreview(null); }}>
-                    {targets.map((target) => <option key={target.id} value={target.id}>{target.label}</option>)}
-                  </select>
-                </label>
-                <div className="dr57-two-col">
-                  <label className="dr57-field"><span>From</span><input required type="date" value={startsOn} onChange={(event) => { setStartsOn(event.target.value); setPreview(null); }} /></label>
-                  <label className="dr57-field"><span>Until</span><input required type="date" min={startsOn} value={endsOn} onChange={(event) => { setEndsOn(event.target.value); setPreview(null); }} /></label>
-                </div>
-                <label className="dr57-field">
-                  <span>Reason</span>
-                  <select value={reason} onChange={(event) => { setReason(event.target.value as AcademicPauseReason); setPreview(null); }}>
-                    {reasons.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                  </select>
-                </label>
-                <label className="dr57-field"><span>Student-facing label</span><input required value={label} placeholder="e.g. Sim Break" onChange={(event) => { setLabel(event.target.value); setPreview(null); }} /></label>
-                <label className="dr57-field"><span>Source note</span><input value={provenance} placeholder="e.g. Registrar notice" onChange={(event) => { setProvenance(event.target.value); setPreview(null); }} /></label>
-
-                {preview ? (
-                  <div className="dr58-impact" role="status">
-                    <CheckCircle2 size={18} />
-                    <div>
-                      <strong>{preview.newlySuppressedLectureCount} lectures across {preview.affectedTimetableCount} timetable{preview.affectedTimetableCount === 1 ? "" : "s"}</strong>
-                      <span>Recurring timetable records stay intact and restore automatically after {endsOn}.</span>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="dr57-form-actions">
-                  <button type="button" className="secondary" disabled={!targetId || !label || Boolean(busy)} onClick={() => {
-                    setBusy("preview");
-                    setMessage("");
-                    void previewBroadPause(accessToken, input())
-                      .then((result) => setPreview(result.impact))
-                      .catch((error) => setMessage(error instanceof Error ? error.message : "Could not preview pause."))
-                      .finally(() => setBusy(""));
-                  }}>{busy === "preview" ? "Checking…" : "Preview impact"}</button>
-                  <button type="button" disabled={!preview || Boolean(busy)} onClick={() => {
-                    setBusy("save");
-                    void createBroadPause(accessToken, input())
-                      .then(async (result) => {
-                        setMessage(`Paused — ${result.impact.newlySuppressedLectureCount} lectures suppressed across ${result.impact.affectedTimetableCount} timetable${result.impact.affectedTimetableCount === 1 ? "" : "s"}.`);
-                        setOpen(false);
-                        setPreview(null);
-                        setLabel("");
-                        await refresh();
-                      })
-                      .catch((error) => setMessage(error instanceof Error ? error.message : "Could not save pause."))
-                      .finally(() => setBusy(""));
-                  }}><CalendarOff size={16} /> {busy === "save" ? "Pausing…" : "Confirm pause"}</button>
-                </div>
-              </div>
-            </Dialog.Popup>
-          </Dialog.Viewport>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </section>
-  );
-}
-''')
-
-          # 5. Shared pause styles. Light-first-safe via inherited variables/current surfaces.
-          (repo / 'src/classRepAcademicPauseControl.css').write_text(r'''.dr58-active-pauses,
-.dr58-admin-panel {
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--surface, #ffffff) 96%, transparent);
-  box-shadow: 0 18px 50px rgb(15 23 42 / 8%);
-}
-
-.dr58-active-pauses {
-  margin: 0 0 18px;
-  padding: 16px;
-}
-
-.dr58-active-pauses-heading,
-.dr58-admin-heading,
-.dr58-active-pause-list article,
-.dr58-admin-list article {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.dr58-active-pauses-heading span,
-.dr58-active-pause-list span,
-.dr58-admin-list span {
-  display: block;
-  opacity: 0.68;
-  font-size: 0.82rem;
-}
-
-.dr58-active-pause-list,
-.dr58-admin-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.dr58-active-pause-list article,
-.dr58-admin-list article {
-  padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, currentColor 11%, transparent);
-  border-radius: 14px;
-}
-
-.dr58-active-pause-list button,
-.dr58-admin-list button {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 40px;
-  padding: 0 13px;
-  border-radius: 11px;
-}
-
-.dr58-admin-panel {
-  margin: 20px 0;
-  padding: 22px;
-}
-
-.dr58-admin-heading h2 {
-  margin: 5px 0 4px;
-}
-
-.dr58-admin-heading p,
-.dr58-admin-empty {
-  margin: 0;
-  opacity: 0.72;
-}
-
-.dr58-dialog {
-  max-width: 640px;
-}
-
-.dr58-impact {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 13px 14px;
-  border: 1px solid color-mix(in srgb, #0f766e 34%, transparent);
-  border-radius: 14px;
-  background: color-mix(in srgb, #ccfbf1 34%, transparent);
-}
-
-.dr58-impact span {
-  display: block;
-  margin-top: 3px;
-  opacity: 0.72;
-}
-
-.dr58-error {
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: color-mix(in srgb, #fee2e2 58%, transparent);
-}
-
-@media (max-width: 720px) {
-  .dr58-active-pauses-heading,
-  .dr58-admin-heading,
-  .dr58-active-pause-list article,
-  .dr58-admin-list article {
-    align-items: flex-start;
-  }
-
-  .dr58-admin-heading {
-    flex-direction: column;
-  }
-
-  .dr58-active-pause-list article,
-  .dr58-admin-list article {
-    gap: 10px;
-  }
-}
-''')
-
-          # 6. Mount broad control in Founder cockpit.
-          path = repo / 'src/FounderOperationsCockpit.tsx'
-          text = path.read_text()
-          import_marker = 'import { fetchAnalyticsOverview } from "./api/adminAnalytics";\n'
-          if 'AdminAcademicPauseControl' not in text:
-              text = text.replace(import_marker, import_marker + 'import { AdminAcademicPauseControl } from "./AdminAcademicPauseControl";\n')
-          text = text.replace(
-              'import type { AdminTimetableSummary } from "./api/pilotTypes";',
-              'import type {\n  AdminClassGroup,\n  AdminInstitution,\n  AdminProgramme,\n  AdminTimetableSummary,\n} from "./api/pilotTypes";',
+          patch(
+              "src/api/academicPauses.ts",
+              'export function previewBroadPause(accessToken: string, input: BroadPauseInput) {',
+              'export function listAcademicPauses(accessToken: string) {\n  return adminFetch<{ pauses: AdminAcademicSchedulePause[] }>(\n    "/api/admin/academic-pauses",\n    { accessToken },\n  );\n}\n\nexport function deactivateBroadPause(accessToken: string, pauseId: string) {\n  return adminFetch<{\n    pause: AdminAcademicSchedulePause;\n    googleCalendarSync: {\n      attempted: number;\n      succeeded: number;\n      failed: number;\n    };\n  }>(`/api/admin/academic-pauses/${encodeURIComponent(pauseId)}`, {\n    method: "DELETE",\n    accessToken,\n  });\n}\n\nexport function previewBroadPause(accessToken: string, input: BroadPauseInput) {',
+              "browser broad pause client",
           )
-          old = '''export function FounderOperationsCockpit({\n  accessToken,\n  timetables,\n}: {\n  accessToken: string;\n  timetables: AdminTimetableSummary[];\n}) {'''
-          new = '''export function FounderOperationsCockpit({\n  accessToken,\n  institutions,\n  programmes,\n  classGroups,\n  timetables,\n}: {\n  accessToken: string;\n  institutions: AdminInstitution[];\n  programmes: AdminProgramme[];\n  classGroups: AdminClassGroup[];\n  timetables: AdminTimetableSummary[];\n}) {'''
-          text = text.replace(old, new)
-          section_marker = '      <section className="foc-section" aria-labelledby="pulse-heading">\n'
-          control = '''      <AdminAcademicPauseControl\n        accessToken={accessToken}\n        institutions={institutions}\n        programmes={programmes}\n        classGroups={classGroups}\n        timetables={timetables}\n      />\n\n'''
-          if '<AdminAcademicPauseControl' not in text:
-              text = text.replace(section_marker, control + section_marker)
-          path.write_text(text)
 
-          # 7. Pass loaded hierarchy into AdminOverview -> Founder cockpit.
-          path = repo / 'src/pilotMvp.tsx'
+          path = Path("src/FounderOperationsCockpit.tsx")
           text = path.read_text()
-          old = '''function AdminOverview({\n  accessToken,\n  timetables,\n}: {\n  accessToken: string;\n  timetables: AdminTimetableSummary[];\n}) {\n  return (\n    <FounderOperationsCockpit\n      accessToken={accessToken}\n      timetables={timetables}\n    />\n  );\n}'''
-          new = '''function AdminOverview({\n  accessToken,\n  institutions,\n  programmes,\n  classGroups,\n  timetables,\n}: {\n  accessToken: string;\n  institutions: AdminInstitution[];\n  programmes: AdminProgramme[];\n  classGroups: AdminClassGroup[];\n  timetables: AdminTimetableSummary[];\n}) {\n  return (\n    <FounderOperationsCockpit\n      accessToken={accessToken}\n      institutions={institutions}\n      programmes={programmes}\n      classGroups={classGroups}\n      timetables={timetables}\n    />\n  );\n}'''
-          if old not in text:
-              raise SystemExit('AdminOverview signature changed; refusing unsafe patch')
-          text = text.replace(old, new)
-          old_call = '''            <AdminOverview\n              accessToken={accessToken}\n              timetables={data.timetables}\n            />'''
-          new_call = '''            <AdminOverview\n              accessToken={accessToken}\n              institutions={data.institutions}\n              programmes={data.programmes}\n              classGroups={data.classGroups}\n              timetables={data.timetables}\n            />'''
-          if old_call not in text:
-              raise SystemExit('AdminOverview call changed; refusing unsafe patch')
-          text = text.replace(old_call, new_call)
+          if 'AdminAcademicPauseControl' not in text:
+              text = text.replace('import { fetchAnalyticsOverview } from "./api/adminAnalytics";\n', 'import { fetchAnalyticsOverview } from "./api/adminAnalytics";\nimport { AdminAcademicPauseControl } from "./AdminAcademicPauseControl";\n', 1)
+          old_types = 'import type { AdminTimetableSummary } from "./api/pilotTypes";'
+          new_types = 'import type {\n  AdminClassGroup,\n  AdminInstitution,\n  AdminProgramme,\n  AdminTimetableSummary,\n} from "./api/pilotTypes";'
+          if old_types in text:
+              text = text.replace(old_types, new_types, 1)
+          old_sig = 'export function FounderOperationsCockpit({\n  accessToken,\n  timetables,\n}: {\n  accessToken: string;\n  timetables: AdminTimetableSummary[];\n}) {'
+          new_sig = 'export function FounderOperationsCockpit({\n  accessToken,\n  institutions,\n  programmes,\n  classGroups,\n  timetables,\n}: {\n  accessToken: string;\n  institutions: AdminInstitution[];\n  programmes: AdminProgramme[];\n  classGroups: AdminClassGroup[];\n  timetables: AdminTimetableSummary[];\n}) {'
+          if new_sig not in text:
+              if old_sig not in text:
+                  raise SystemExit("Founder cockpit signature anchor missing")
+              text = text.replace(old_sig, new_sig, 1)
+          if '<AdminAcademicPauseControl' not in text:
+              anchor = '      <section className="foc-section" aria-labelledby="pulse-heading">\n'
+              control = '      <AdminAcademicPauseControl\n        accessToken={accessToken}\n        institutions={institutions}\n        programmes={programmes}\n        classGroups={classGroups}\n        timetables={timetables}\n      />\n\n'
+              if anchor not in text:
+                  raise SystemExit("Founder control mount anchor missing")
+              text = text.replace(anchor, control + anchor, 1)
           path.write_text(text)
 
-          # 8. Source-level boundary/integration regression coverage.
-          (repo / 'tests/academicPauseControls.test.ts').write_text(r'''import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
-
-function source(path: string) {
-  return readFileSync(resolve(process.cwd(), path), "utf8");
-}
-
-describe("DR-58 academic pause controls", () => {
-  it("mounts pause controls into both Class Rep and Founder operational surfaces", () => {
-    const classRep = source("src/ClassRepCorrectionSafetyEnhancement.tsx");
-    const founder = source("src/FounderOperationsCockpit.tsx");
-    expect(classRep).toContain("<ClassRepAcademicPauseAction");
-    expect(classRep).toContain("<ActiveAcademicPauseNotice");
-    expect(founder).toContain("<AdminAcademicPauseControl");
-  });
-
-  it("keeps broad pause routes behind operational-admin auth and scoped routes behind timetable-editor auth", () => {
-    const routes = source("server/adminApi.ts");
-    expect(routes).toContain("requireTimetableEditor(req, timetableId, deps)");
-    expect(routes).toContain("requireOperationalAdmin(req, deps)");
-    expect(routes).toContain('requestUrl.pathname.startsWith("/api/admin/academic-pauses")');
-  });
-
-  it("restricts Class Reps to their assigned timetable or session", () => {
-    const repository = source("server/academicPauseRepository.ts");
-    expect(repository).toContain('input.scopeType !== "timetable" && input.scopeType !== "session"');
-    expect(repository).toContain("This timetable is not assigned to your Class Rep account.");
-    expect(repository).toContain("Class Reps cannot resume institution or programme pauses.");
-  });
-
-  it("supports Admin listing and resuming broad pauses", () => {
-    const api = source("server/academicPauseAdminApi.ts");
-    const client = source("src/api/academicPauses.ts");
-    expect(api).toContain("pauses: await listAcademicPauses()");
-    expect(client).toContain("listAcademicPauses");
-    expect(client).toContain("deactivateBroadPause");
-  });
-});
-''')
+          path = Path("src/pilotMvp.tsx")
+          text = path.read_text()
+          old_overview = 'function AdminOverview({\n  accessToken,\n  timetables,\n}: {\n  accessToken: string;\n  timetables: AdminTimetableSummary[];\n}) {\n  return (\n    <FounderOperationsCockpit\n      accessToken={accessToken}\n      timetables={timetables}\n    />\n  );\n}'
+          new_overview = 'function AdminOverview({\n  accessToken,\n  institutions,\n  programmes,\n  classGroups,\n  timetables,\n}: {\n  accessToken: string;\n  institutions: AdminInstitution[];\n  programmes: AdminProgramme[];\n  classGroups: AdminClassGroup[];\n  timetables: AdminTimetableSummary[];\n}) {\n  return (\n    <FounderOperationsCockpit\n      accessToken={accessToken}\n      institutions={institutions}\n      programmes={programmes}\n      classGroups={classGroups}\n      timetables={timetables}\n    />\n  );\n}'
+          if new_overview not in text:
+              if old_overview not in text:
+                  raise SystemExit("AdminOverview signature anchor missing")
+              text = text.replace(old_overview, new_overview, 1)
+          old_call = '            <AdminOverview\n              accessToken={accessToken}\n              timetables={data.timetables}\n            />'
+          new_call = '            <AdminOverview\n              accessToken={accessToken}\n              institutions={data.institutions}\n              programmes={data.programmes}\n              classGroups={data.classGroups}\n              timetables={data.timetables}\n            />'
+          if new_call not in text:
+              if old_call not in text:
+                  raise SystemExit("AdminOverview call anchor missing")
+              text = text.replace(old_call, new_call, 1)
+          path.write_text(text)
           PY
       - name: Remove one-shot workflow before verification
         run: rm .github/workflows/dr58-finish.yml
-      - name: Format changed application files
+      - name: Format DR-58 files
         run: npx prettier --write src/ClassRepAcademicPauseControl.tsx src/ClassRepCorrectionSafetyEnhancement.tsx src/AdminAcademicPauseControl.tsx src/classRepAcademicPauseControl.css src/FounderOperationsCockpit.tsx src/pilotMvp.tsx src/api/academicPauses.ts server/academicPauseAdminApi.ts server/academicPauseRepository.ts tests/academicPauseControls.test.ts
       - run: npm run lint
       - run: npm run format:check
@@ -537,9 +132,5 @@ describe("DR-58 academic pause controls", () => {
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "feat: finish DR-58 academic pause controls"
-            git push origin HEAD:DR-58-academic-pause-calendar
-          fi
+          git commit -m "feat: finish DR-58 academic pause controls"
+          git push origin HEAD:DR-58-academic-pause-calendar
