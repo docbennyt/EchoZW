@@ -22,8 +22,16 @@
   --dr57-warning: #f7c762;
   --dr57-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
   background:
-    radial-gradient(circle at 8% -10%, rgba(98, 215, 170, 0.12), transparent 30rem),
-    radial-gradient(circle at 92% 2%, rgba(242, 184, 75, 0.07), transparent 24rem),
+    radial-gradient(
+      circle at 8% -10%,
+      rgba(98, 215, 170, 0.12),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 92% 2%,
+      rgba(242, 184, 75, 0.07),
+      transparent 24rem
+    ),
     var(--dr57-bg);
   color: var(--dr57-text);
   min-height: 100vh;
@@ -148,7 +156,11 @@
 }
 
 .dr57-card {
-  background: linear-gradient(180deg, rgba(21, 27, 24, 0.96), rgba(15, 20, 18, 0.96));
+  background: linear-gradient(
+    180deg,
+    rgba(21, 27, 24, 0.96),
+    rgba(15, 20, 18, 0.96)
+  );
   border: 1px solid var(--dr57-line);
   border-radius: 18px;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025);
@@ -163,7 +175,11 @@
 }
 
 .dr57-next-card::after {
-  background: radial-gradient(circle, rgba(98, 215, 170, 0.22), transparent 68%);
+  background: radial-gradient(
+    circle,
+    rgba(98, 215, 170, 0.22),
+    transparent 68%
+  );
   content: "";
   height: 18rem;
   pointer-events: none;

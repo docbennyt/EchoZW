@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ClassRepCorrectionWorkspace } from "../src/ClassRepCorrectionSafetyEnhancement";
 import type {
@@ -133,7 +139,9 @@ describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Add extra class" }));
-    const dialog = await screen.findByRole("dialog", { name: "Add extra class" });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Add extra class",
+    });
     expect(within(dialog).getByLabelText("Date")).toBeInTheDocument();
     expect(within(dialog).getByLabelText("Course code")).toBeInTheDocument();
     expect(
@@ -163,7 +171,9 @@ describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
 
     await screen.findByText("No active corrections or extra classes.");
     fireEvent.click(screen.getByRole("button", { name: "Update timetable" }));
-    const dialog = await screen.findByRole("dialog", { name: "Update timetable" });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Update timetable",
+    });
     fireEvent.change(within(dialog).getByLabelText("Course code"), {
       target: { value: "ICS1103" },
     });
@@ -177,7 +187,9 @@ describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
       target: { value: "Missing from master timetable" },
     });
 
-    const save = within(dialog).getByRole("button", { name: "Save correction" });
+    const save = within(dialog).getByRole("button", {
+      name: "Save correction",
+    });
     fireEvent.click(save);
     fireEvent.click(save);
 
@@ -207,7 +219,9 @@ describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
 
     await screen.findByText("No active corrections or extra classes.");
     fireEvent.click(screen.getByRole("button", { name: "Update timetable" }));
-    const dialog = await screen.findByRole("dialog", { name: "Update timetable" });
+    const dialog = await screen.findByRole("dialog", {
+      name: "Update timetable",
+    });
     const courseCode = within(dialog).getByLabelText("Course code");
     const courseName = within(dialog).getByLabelText("Course name");
     const reason = within(dialog).getByLabelText("Reason");
@@ -219,13 +233,17 @@ describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
       target: { value: "Missing from master timetable" },
     });
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "Save correction" }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Save correction" }),
+    );
     await screen.findByText("Network unavailable");
 
     expect(courseCode).toHaveValue("ICS1103");
     const firstKey = vi.mocked(createRecurringClassUpdate).mock.calls[0][2];
 
-    fireEvent.click(within(dialog).getByRole("button", { name: "Save correction" }));
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Save correction" }),
+    );
     await screen.findByText(/retry reused the original save/i);
 
     const secondKey = vi.mocked(createRecurringClassUpdate).mock.calls[1][2];

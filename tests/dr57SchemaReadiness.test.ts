@@ -38,7 +38,9 @@ describe("DR-57 Class Rep mutation schema readiness", () => {
     ]) {
       expect(
         calls.some(
-          (call) => call.url.includes(`/rest/v1/rpc/${rpc}`) && call.method === "OPTIONS",
+          (call) =>
+            call.url.includes(`/rest/v1/rpc/${rpc}`) &&
+            call.method === "OPTIONS",
         ),
       ).toBe(true);
     }
