@@ -205,6 +205,10 @@ function count(value: string, needle: string) {
   return value.split(needle).length - 1;
 }
 
+function unfoldIcs(value: string) {
+  return value.replace(/\r\n[ \t]/g, "");
+}
+
 const existingSubscription = {
   id: "sub-existing",
   timetable_id: "tt-cs1",
@@ -252,7 +256,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
     expect(before.body).toContain("LOCATION:N109");
     expect(before.body).toContain("SEQUENCE:1");
     expect(before.body).toContain("LAST-MODIFIED:20260809T080000Z");
-    expect(before.body).toContain(
+    expect(unfoldIcs(before.body)).toContain(
       `CalenderZW timetable: ${PUBLIC_ORIGIN}/t/${PUBLIC_SLUG}`,
     );
     expect(before.body).toContain("TRIGGER:-PT30M");
@@ -287,7 +291,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
     expect(after.body).toContain("SEQUENCE:2");
     expect(after.body).toContain("LAST-MODIFIED:20260810T093000Z");
     expect(after.body).toContain("TRIGGER:-PT30M");
-    expect(after.body).toContain(
+    expect(unfoldIcs(after.body)).toContain(
       `CalenderZW timetable: ${PUBLIC_ORIGIN}/t/${PUBLIC_SLUG}`,
     );
 
@@ -435,12 +439,10 @@ describe("DR-40 existing calendar subscription propagation", () => {
     expect(result.body).not.toContain(
       `UID:${STABLE_HIT1101}@calender.aido.co.zw`,
     );
-    expect(count(result.body, "UID:correction-corr-add-ics1200@calender.aido.co.zw")).toBe(
-      1,
-    );
-    expect(result.body).toContain(
-      "EXDATE;TZID=Africa/Harare:20260915T140000",
-    );
+    expect(
+      count(result.body, "UID:correction-corr-add-ics1200@calender.aido.co.zw"),
+    ).toBe(1);
+    expect(result.body).toContain("EXDATE;TZID=Africa/Harare:20260915T140000");
     const uids = uidValues(result.body);
     expect(new Set(uids).size).toBe(uids.length);
   });
@@ -461,7 +463,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
 
     expect(result.statusCode).toBe(200);
     expect(result.body).toContain("BEGIN:VCALENDAR\r\n");
-    expect(result.body).toContain(
+    expect(unfoldIcs(result.body)).toContain(
       `CalenderZW timetable: ${PUBLIC_ORIGIN}/t/${PUBLIC_SLUG}`,
     );
     expect(result.body).not.toContain(privateToken as string);
