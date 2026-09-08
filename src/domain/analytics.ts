@@ -27,6 +27,9 @@ export const ANALYTICS_EVENT_NAMES = [
   "onboarding_completed",
   "onboarding_abandoned",
   "share_prompt_viewed",
+  "shared_link_opened",
+  "shared_link_onboarding_started",
+  "shared_link_onboarding_completed",
   "calendar_drawer_opened",
   "reminder_preset_selected",
   "calendar_provider_selected",
@@ -170,6 +173,7 @@ const engagedEvents = new Set<AnalyticsEventName>([
   "share_prompt_viewed",
   "timetable_shared",
   "share_link_opened",
+  "shared_link_opened",
 ]);
 
 const providerSelectedEvents = new Set<AnalyticsEventName>([

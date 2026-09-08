@@ -937,6 +937,39 @@ button.pt-method:hover {
   text-align: right;
 }
 
+.pt-share-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(21, 61, 50, 0.16);
+  border-radius: 14px;
+  background: var(--pt-sage-soft);
+}
+
+.pt-share-panel > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.pt-share-panel strong {
+  color: var(--pt-forest);
+  font-size: 15px;
+}
+
+.pt-share-panel p,
+.pt-share-panel small {
+  margin: 0;
+  color: var(--pt-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.pt-share-fallbacks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .pt-sticky-cta {
   position: fixed;
   z-index: 120;
@@ -1042,6 +1075,10 @@ button.pt-method:hover {
   .pt-primary-actions .pt-button {
     width: 100%;
     min-height: 50px;
+  }
+
+  .pt-share-fallbacks {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .pt-section-heading {

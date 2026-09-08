@@ -394,7 +394,7 @@ describe("public timetable reliability UX", () => {
     const payload = share.mock.calls[0]?.[0];
     expect(payload).toBeDefined();
     expect(payload?.url).toBe(
-      `http://localhost:3000/t/${timetable.publicSlug}`,
+      `http://localhost:3000/t/${timetable.publicSlug}?src=class_share`,
     );
     expect(payload?.url).not.toContain("/calendar/feed/");
     expect(payload?.url).not.toContain("private-token");

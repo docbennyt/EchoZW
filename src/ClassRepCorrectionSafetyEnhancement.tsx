@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { track } from "./analytics";
 import { Dialog } from "@base-ui/react/dialog";
 import {
   CalendarClock,
@@ -7,6 +8,7 @@ import {
   CalendarPlus,
   CheckCircle2,
   ChevronDown,
+  Copy,
   Clock3,
   ExternalLink,
   LoaderCircle,
@@ -14,6 +16,7 @@ import {
   Pencil,
   RefreshCw,
   RotateCcw,
+  Share2,
   ShieldCheck,
   Sparkles,
   Trash2,
@@ -50,6 +53,7 @@ import {
   getUpcomingOccurrences,
 } from "./domain/publicTimetable";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
+import { buildClassSharePayload } from "./domain/shareAttribution";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
 
 const weekdayLabels = [
@@ -230,6 +234,13 @@ function mutationErrorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "Could not save this class update. Your input is still here — retry when ready.";
+}
+
+async function copyClassShareText(value: string) {
+  if (!navigator.clipboard?.writeText) {
+    throw new Error("Clipboard copy is unavailable.");
+  }
+  await navigator.clipboard.writeText(value);
 }
 
 function correctionFormFromItem(
@@ -674,6 +685,66 @@ export function ClassRepCorrectionWorkspace({
   const visibleEntries = showAllUpdates
     ? orderedEntries
     : orderedEntries.slice(0, 5);
+  const classDistributionBlocked =
+    !assignment.publicSlug || !timetable || duplicateGroups.length > 0;
+
+  function classDistributionPayload() {
+    if (!assignment.publicSlug) return null;
+    return buildClassSharePayload({
+      classLabel: assignment.classGroupLabel,
+      publicUrl: `${window.location.origin}/t/${encodeURIComponent(assignment.publicSlug)}`,
+      source: "class_rep",
+    });
+  }
+
+  async function distributeClass(
+    action: "share" | "copy-message" | "copy-link",
+  ) {
+    if (classDistributionBlocked) {
+      setMessage(
+        duplicateGroups.length > 0
+          ? "Resolve the duplicate class-truth warning before broad sharing."
+          : "Publish and load the class timetable before sharing it.",
+      );
+      return;
+    }
+    const payload = classDistributionPayload();
+    if (!payload) return;
+    setMessage("");
+    try {
+      if (action === "share" && navigator.share) {
+        await navigator.share({
+          title: payload.title,
+          text: payload.text,
+          url: payload.url,
+        });
+        track("timetable_shared", {
+          method: "web-share",
+          source: "class_rep",
+          publicSlug: assignment.publicSlug,
+        });
+        setMessage("Class share sheet opened with the public timetable link.");
+        return;
+      }
+      const value = action === "copy-link" ? payload.url : payload.message;
+      await copyClassShareText(value);
+      track("timetable_shared", {
+        method: action === "copy-link" ? "copy-link" : "copy-message",
+        source: "class_rep",
+        publicSlug: assignment.publicSlug,
+      });
+      setMessage(
+        action === "copy-link"
+          ? "Public class link copied."
+          : "Class-ready message copied — paste it into the class group.",
+      );
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setMessage(
+        "Could not share just now. The public timetable is unchanged.",
+      );
+    }
+  }
 
   return (
     <section className="dr57-workspace" aria-labelledby="dr57-workspace-title">
@@ -845,16 +916,58 @@ export function ClassRepCorrectionWorkspace({
           <CalendarPlus size={18} /> Add extra class
         </button>
         {assignment.publicSlug ? (
-          <a
-            className="dr57-action ghost"
-            href={`/t/${assignment.publicSlug}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <ExternalLink size={17} /> View public
-          </a>
+          <>
+            <button
+              className="dr57-action secondary dr47-share-action"
+              type="button"
+              disabled={classDistributionBlocked}
+              onClick={() => void distributeClass("share")}
+            >
+              <Share2 size={17} /> Share with class
+            </button>
+            <a
+              className="dr57-action ghost"
+              href={`/t/${assignment.publicSlug}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink size={17} /> View public
+            </a>
+          </>
         ) : null}
       </div>
+
+      {assignment.publicSlug ? (
+        <div
+          className="dr47-distribution-kit"
+          data-blocked={classDistributionBlocked ? "true" : "false"}
+        >
+          <div>
+            <strong>Class distribution</strong>
+            <span>
+              {classDistributionBlocked
+                ? "Resolve class-truth warnings before broad sharing."
+                : "Public link only — never a student's private calendar feed."}
+            </span>
+          </div>
+          <div className="dr47-distribution-actions">
+            <button
+              type="button"
+              disabled={classDistributionBlocked}
+              onClick={() => void distributeClass("copy-message")}
+            >
+              <Copy size={15} /> Copy class message
+            </button>
+            <button
+              type="button"
+              disabled={classDistributionBlocked}
+              onClick={() => void distributeClass("copy-link")}
+            >
+              <ExternalLink size={15} /> Copy public link
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="dr57-main-grid">
         <article className="dr57-card dr57-section">
