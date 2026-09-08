@@ -109,6 +109,20 @@ jobs:
           elif new_shell_assertion not in app_test:
               raise SystemExit("admin shell assertion anchor missing")
           app_test_path.write_text(app_test)
+
+          reliability_test_path = Path("tests/PublicTimetableReliability.test.tsx")
+          reliability_test = reliability_test_path.read_text()
+          eager_observer_assertion = '    expect(observerCallback).not.toBeNull();'
+          stable_observer_assertion = '    await waitFor(() => expect(observerCallback).not.toBeNull());'
+          if eager_observer_assertion in reliability_test:
+              reliability_test = reliability_test.replace(
+                  eager_observer_assertion,
+                  stable_observer_assertion,
+                  1,
+              )
+          elif stable_observer_assertion not in reliability_test:
+              raise SystemExit("IntersectionObserver test assertion anchor missing")
+          reliability_test_path.write_text(reliability_test)
           PY
 
       - name: Format touched files
@@ -119,6 +133,7 @@ jobs:
           src/founderOperationsCockpit.css
           tests/founderOperationsCockpit.test.ts
           tests/App.test.tsx
+          tests/PublicTimetableReliability.test.tsx
 
       - name: Remove one-shot workflow before final verification
         run: git rm .github/workflows/dr45-wire.yml
