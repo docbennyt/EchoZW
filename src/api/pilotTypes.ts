@@ -158,6 +158,57 @@ export type PublicTimetableSession = {
   notes: string | null;
 };
 
+export type AcademicPauseScope =
+  | "institution"
+  | "programme"
+  | "cohort"
+  | "timetable"
+  | "session";
+
+export type AcademicPauseReason =
+  | "sim_break"
+  | "graduation"
+  | "swot_week"
+  | "holiday"
+  | "closure"
+  | "other";
+
+/**
+ * Privacy-safe pause rule returned with a published timetable. Broad scope IDs and
+ * staff provenance are intentionally omitted: the resolver only needs scope
+ * specificity, the stable recurring key for session scope, and the time window.
+ */
+export type AcademicSchedulePause = {
+  id: string;
+  scopeType: AcademicPauseScope;
+  stableSessionKey: string | null;
+  startsOn: string;
+  endsOn: string;
+  allDay: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+  reason: AcademicPauseReason;
+  label: string;
+  active: boolean;
+  createdAt: string;
+};
+
+export type AdminAcademicSchedulePause = AcademicSchedulePause & {
+  institutionId: string | null;
+  programmeId: string | null;
+  cohortId: string | null;
+  timetableId: string | null;
+  provenance: string | null;
+  creatorRole: "superadmin" | "admin" | "class_rep";
+  disabledAt: string | null;
+  updatedAt: string;
+};
+
+export type AcademicPauseImpact = {
+  affectedTimetableCount: number;
+  newlySuppressedLectureCount: number;
+};
+
 export type TimetableMutationOutcome =
   | "created"
   | "replayed"
@@ -244,6 +295,7 @@ export type PublicTimetable = {
   sessions: PublicTimetableSession[];
   corrections?: TimetableCorrectionDirective[];
   exceptions?: TimetableSessionException[];
+  pauses?: AcademicSchedulePause[];
 };
 
 export type PublishTimetableResponse = {
