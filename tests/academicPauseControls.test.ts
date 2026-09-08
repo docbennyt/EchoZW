@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -43,5 +43,10 @@ describe("DR-58 academic pause controls", () => {
     expect(api).toContain("pauses: await listAcademicPauses()");
     expect(client).toContain("listAcademicPauses");
     expect(client).toContain("deactivateBroadPause");
+  });
+
+  it("does not leave one-shot DR-58 wiring workflows in the review branch", () => {
+    expect(existsSync(resolve(process.cwd(), ".github/workflows/dr58-finish.yml"))).toBe(false);
+    expect(existsSync(resolve(process.cwd(), ".github/workflows/dr58-apply.yml"))).toBe(false);
   });
 });
