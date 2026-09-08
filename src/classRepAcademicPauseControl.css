@@ -1,0 +1,113 @@
+.dr58-active-pauses,
+.dr58-admin-panel {
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface, #ffffff) 96%, transparent);
+  box-shadow: 0 18px 50px rgb(15 23 42 / 8%);
+}
+
+.dr58-active-pauses {
+  margin: 0 0 18px;
+  padding: 16px;
+}
+
+.dr58-active-pauses-heading,
+.dr58-admin-heading,
+.dr58-active-pause-list article,
+.dr58-admin-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dr58-active-pauses-heading span,
+.dr58-active-pause-list span,
+.dr58-admin-list span {
+  display: block;
+  opacity: 0.68;
+  font-size: 0.82rem;
+}
+
+.dr58-active-pause-list,
+.dr58-admin-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.dr58-active-pause-list article,
+.dr58-admin-list article {
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, currentColor 11%, transparent);
+  border-radius: 14px;
+}
+
+.dr58-active-pause-list button,
+.dr58-admin-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 11px;
+}
+
+.dr58-admin-panel {
+  margin: 20px 0;
+  padding: 22px;
+}
+
+.dr58-admin-heading h2 {
+  margin: 5px 0 4px;
+}
+
+.dr58-admin-heading p,
+.dr58-admin-empty {
+  margin: 0;
+  opacity: 0.72;
+}
+
+.dr58-dialog {
+  max-width: 640px;
+}
+
+.dr58-impact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, #0f766e 34%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, #ccfbf1 34%, transparent);
+}
+
+.dr58-impact span {
+  display: block;
+  margin-top: 3px;
+  opacity: 0.72;
+}
+
+.dr58-error {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #fee2e2 58%, transparent);
+}
+
+@media (max-width: 720px) {
+  .dr58-active-pauses-heading,
+  .dr58-admin-heading,
+  .dr58-active-pause-list article,
+  .dr58-admin-list article {
+    align-items: flex-start;
+  }
+
+  .dr58-admin-heading {
+    flex-direction: column;
+  }
+
+  .dr58-active-pause-list article,
+  .dr58-admin-list article {
+    gap: 10px;
+  }
+}
