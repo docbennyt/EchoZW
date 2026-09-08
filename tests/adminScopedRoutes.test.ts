@@ -9,7 +9,11 @@ const handlerMocks = vi.hoisted(() => ({
     res.end(JSON.stringify({ ok: true }));
     return true;
   }),
-  staff: vi.fn(),
+  staff: vi.fn(async (_req, res: ServerResponse) => {
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ ok: true }));
+    return true;
+  }),
   analytics: vi.fn(async (_req, res: ServerResponse) => {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ ok: true }));
@@ -79,8 +83,9 @@ function userClient(user?: { id: string; email?: string }) {
 function adminClient(input: {
   staff?: {
     id: string;
-    role: "superadmin" | "class_rep";
+    role: "superadmin" | "admin" | "class_rep";
     active: boolean;
+    is_founder?: boolean;
   } | null;
   assignment?: { id: string; active: boolean } | null;
   legacyAdmin?: { user_id: string; active: boolean } | null;
@@ -109,7 +114,7 @@ function adminClient(input: {
 }
 
 describe("role-scoped admin route gates", () => {
-  it("returns 401 for unauthenticated class-rep correction attempts", async () => {
+  it("returns 401 for unauthenticated Class Rep correction attempts", async () => {
     const { res, body } = response();
     await handleAdminRequest(
       request("POST", "/api/admin/timetables/tt-a/corrections", ""),
@@ -136,7 +141,7 @@ describe("role-scoped admin route gates", () => {
     expect(body().error.code).toBe("FORBIDDEN");
   });
 
-  it("allows a class rep assigned to timetable A to reach correction handling for A", async () => {
+  it("allows a Class Rep assigned to timetable A to reach correction handling for A", async () => {
     const { res, body } = response();
     await handleAdminRequest(
       request("POST", "/api/admin/timetables/tt-a/corrections"),
@@ -145,7 +150,12 @@ describe("role-scoped admin route gates", () => {
         createUserClient: () => userClient({ id: "rep-user" }),
         createAdminClient: () =>
           adminClient({
-            staff: { id: "staff-rep", role: "class_rep", active: true },
+            staff: {
+              id: "staff-rep",
+              role: "class_rep",
+              active: true,
+              is_founder: false,
+            },
             assignment: { id: "assignment-a", active: true },
           }),
       },
@@ -155,7 +165,7 @@ describe("role-scoped admin route gates", () => {
     expect(body()).toEqual({ ok: true });
   });
 
-  it("blocks a class rep from unassigned timetable correction APIs", async () => {
+  it("blocks a Class Rep from unassigned timetable correction APIs", async () => {
     const { res, body } = response();
     await handleAdminRequest(
       request("POST", "/api/admin/timetables/tt-b/corrections"),
@@ -164,7 +174,12 @@ describe("role-scoped admin route gates", () => {
         createUserClient: () => userClient({ id: "rep-user" }),
         createAdminClient: () =>
           adminClient({
-            staff: { id: "staff-rep", role: "class_rep", active: true },
+            staff: {
+              id: "staff-rep",
+              role: "class_rep",
+              active: true,
+              is_founder: false,
+            },
             assignment: null,
           }),
       },
@@ -174,22 +189,29 @@ describe("role-scoped admin route gates", () => {
     expect(body().error.code).toBe("TIMETABLE_ACCESS_DENIED");
   });
 
-  it("blocks a class rep from inviting staff", async () => {
+  it("blocks a Class Rep from staff management", async () => {
+    handlerMocks.staff.mockClear();
     const { res, body } = response();
     await handleAdminRequest(request("POST", "/api/admin/staff/invite"), res, {
       createUserClient: () => userClient({ id: "rep-user" }),
       createAdminClient: () =>
         adminClient({
-          staff: { id: "staff-rep", role: "class_rep", active: true },
+          staff: {
+            id: "staff-rep",
+            role: "class_rep",
+            active: true,
+            is_founder: false,
+          },
         }),
     });
 
     expect(res.statusCode).toBe(403);
-    expect(body().error.code).toBe("SUPERADMIN_REQUIRED");
+    expect(body().error.code).toBe("STAFF_MANAGER_REQUIRED");
     expect(handlerMocks.staff).not.toHaveBeenCalled();
   });
 
-  it("blocks a class rep from founder analytics APIs", async () => {
+  it("blocks a Class Rep from operational analytics APIs", async () => {
+    handlerMocks.analytics.mockClear();
     const { res, body } = response();
     await handleAdminRequest(
       request("GET", "/api/admin/analytics/overview"),
@@ -198,17 +220,23 @@ describe("role-scoped admin route gates", () => {
         createUserClient: () => userClient({ id: "rep-user" }),
         createAdminClient: () =>
           adminClient({
-            staff: { id: "staff-rep", role: "class_rep", active: true },
+            staff: {
+              id: "staff-rep",
+              role: "class_rep",
+              active: true,
+              is_founder: false,
+            },
           }),
       },
     );
 
     expect(res.statusCode).toBe(403);
-    expect(body().error.code).toBe("SUPERADMIN_REQUIRED");
+    expect(body().error.code).toBe("OPERATIONAL_ADMIN_REQUIRED");
     expect(handlerMocks.analytics).not.toHaveBeenCalled();
   });
 
-  it("allows a superadmin to reach founder analytics APIs", async () => {
+  it("allows an operational Admin to reach global analytics", async () => {
+    handlerMocks.analytics.mockClear();
     const { res, body } = response();
     await handleAdminRequest(
       request("GET", "/api/admin/analytics/overview"),
@@ -217,7 +245,12 @@ describe("role-scoped admin route gates", () => {
         createUserClient: () => userClient({ id: "admin-user" }),
         createAdminClient: () =>
           adminClient({
-            staff: { id: "staff-admin", role: "superadmin", active: true },
+            staff: {
+              id: "staff-admin",
+              role: "admin",
+              active: true,
+              is_founder: false,
+            },
           }),
       },
     );
@@ -225,5 +258,50 @@ describe("role-scoped admin route gates", () => {
     expect(res.statusCode).toBe(200);
     expect(body()).toEqual({ ok: true });
     expect(handlerMocks.analytics).toHaveBeenCalled();
+  });
+
+  it("allows an operational Admin to reach Class Rep team management", async () => {
+    handlerMocks.staff.mockClear();
+    const { res, body } = response();
+    await handleAdminRequest(request("GET", "/api/admin/staff"), res, {
+      createUserClient: () => userClient({ id: "admin-user" }),
+      createAdminClient: () =>
+        adminClient({
+          staff: {
+            id: "staff-admin",
+            role: "admin",
+            active: true,
+            is_founder: false,
+          },
+        }),
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(body()).toEqual({ ok: true });
+    expect(handlerMocks.staff).toHaveBeenCalled();
+  });
+
+  it("allows the protected founder to reach operational APIs", async () => {
+    handlerMocks.analytics.mockClear();
+    const { res, body } = response();
+    await handleAdminRequest(
+      request("GET", "/api/admin/analytics/overview"),
+      res,
+      {
+        createUserClient: () => userClient({ id: "founder-user" }),
+        createAdminClient: () =>
+          adminClient({
+            staff: {
+              id: "staff-founder",
+              role: "superadmin",
+              active: true,
+              is_founder: true,
+            },
+          }),
+      },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(body()).toEqual({ ok: true });
   });
 });

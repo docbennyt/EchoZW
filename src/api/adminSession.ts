@@ -3,11 +3,12 @@ export type AdminSessionUser = {
   email: string | null;
 };
 
-export type StaffRole = "superadmin" | "class_rep";
+export type StaffRole = "superadmin" | "admin" | "class_rep";
 
 export type AdminSessionStaff = {
   id: string;
   role: StaffRole;
+  isFounder: boolean;
   displayName: string | null;
   email: string | null;
 };
@@ -24,10 +25,18 @@ export type AdminSessionAssignment = {
 
 export type AdminSessionPermissions = {
   canManageStaff: boolean;
+  canManageAdmins: boolean;
+  canManageClassReps: boolean;
   canManageInstitutions: boolean;
   canManageProgrammes: boolean;
   canManageClassGroups: boolean;
+  canManageAcademicPeriods: boolean;
   canManageAllTimetables: boolean;
+  canEditAllTimetables: boolean;
+  canPublishAllTimetables: boolean;
+  canManageSources: boolean;
+  canViewOperationalAnalytics: boolean;
+  canManageFounderAuthority: boolean;
   canEditAssignedTimetables: boolean;
   canPublishAssignedTimetables: boolean;
 };
@@ -46,7 +55,10 @@ function isAdminSessionStaff(value: unknown): value is AdminSessionStaff {
   const candidate = value as Partial<AdminSessionStaff>;
   return (
     typeof candidate.id === "string" &&
-    (candidate.role === "superadmin" || candidate.role === "class_rep") &&
+    (candidate.role === "superadmin" ||
+      candidate.role === "admin" ||
+      candidate.role === "class_rep") &&
+    typeof candidate.isFounder === "boolean" &&
     (typeof candidate.displayName === "string" ||
       candidate.displayName === null) &&
     (typeof candidate.email === "string" || candidate.email === null)
@@ -60,10 +72,18 @@ function isAdminSessionPermissions(
   const candidate = value as Partial<AdminSessionPermissions>;
   return (
     typeof candidate.canManageStaff === "boolean" &&
+    typeof candidate.canManageAdmins === "boolean" &&
+    typeof candidate.canManageClassReps === "boolean" &&
     typeof candidate.canManageInstitutions === "boolean" &&
     typeof candidate.canManageProgrammes === "boolean" &&
     typeof candidate.canManageClassGroups === "boolean" &&
+    typeof candidate.canManageAcademicPeriods === "boolean" &&
     typeof candidate.canManageAllTimetables === "boolean" &&
+    typeof candidate.canEditAllTimetables === "boolean" &&
+    typeof candidate.canPublishAllTimetables === "boolean" &&
+    typeof candidate.canManageSources === "boolean" &&
+    typeof candidate.canViewOperationalAnalytics === "boolean" &&
+    typeof candidate.canManageFounderAuthority === "boolean" &&
     typeof candidate.canEditAssignedTimetables === "boolean" &&
     typeof candidate.canPublishAssignedTimetables === "boolean"
   );

@@ -399,7 +399,21 @@ export function inviteClassRep(
   );
 }
 
-export function resendClassRepInvite(accessToken: string, staffUserId: string) {
+export function inviteAdmin(
+  accessToken: string,
+  input: { email: string; displayName: string },
+) {
+  return adminFetch<{ invite: { staffUserId: string } }>(
+    "/api/admin/staff/invite-admin",
+    {
+      method: "POST",
+      accessToken,
+      body: input,
+    },
+  );
+}
+
+export function resendStaffInvite(accessToken: string, staffUserId: string) {
   return adminFetch<{ ok: true }>(
     `/api/admin/staff/${staffUserId}/resend-invite`,
     {
@@ -408,6 +422,8 @@ export function resendClassRepInvite(accessToken: string, staffUserId: string) {
     },
   );
 }
+
+export const resendClassRepInvite = resendStaffInvite;
 
 export function assignClassRep(
   accessToken: string,
@@ -446,6 +462,18 @@ export function setStaffActive(
     method: "PATCH",
     accessToken,
     body: { active },
+  });
+}
+
+export function setStaffRole(
+  accessToken: string,
+  staffUserId: string,
+  role: "admin" | "class_rep",
+) {
+  return adminFetch<{ ok: true }>(`/api/admin/staff/${staffUserId}/role`, {
+    method: "PATCH",
+    accessToken,
+    body: { role },
   });
 }
 

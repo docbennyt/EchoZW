@@ -5,6 +5,9 @@ import { createSupabaseUserClient } from "./userClient.js";
 export type AdminAuthErrorCode =
   | "AUTH_REQUIRED"
   | "FORBIDDEN"
+  | "OPERATIONAL_ADMIN_REQUIRED"
+  | "STAFF_MANAGER_REQUIRED"
+  | "FOUNDER_REQUIRED"
   | "SUPERADMIN_REQUIRED"
   | "TIMETABLE_ACCESS_DENIED"
   | "AUTH_CONFIGURATION_ERROR"
@@ -25,14 +28,22 @@ export type AuthenticatedUser = {
   email: string | null;
 };
 
-export type StaffRole = "superadmin" | "class_rep";
+export type StaffRole = "superadmin" | "admin" | "class_rep";
 
 export type StaffPermissions = {
   canManageStaff: boolean;
+  canManageAdmins: boolean;
+  canManageClassReps: boolean;
   canManageInstitutions: boolean;
   canManageProgrammes: boolean;
   canManageClassGroups: boolean;
+  canManageAcademicPeriods: boolean;
   canManageAllTimetables: boolean;
+  canEditAllTimetables: boolean;
+  canPublishAllTimetables: boolean;
+  canManageSources: boolean;
+  canViewOperationalAnalytics: boolean;
+  canManageFounderAuthority: boolean;
   canEditAssignedTimetables: boolean;
   canPublishAssignedTimetables: boolean;
 };
@@ -40,6 +51,7 @@ export type StaffPermissions = {
 export type StaffUser = {
   id: string;
   role: StaffRole;
+  isFounder: boolean;
   displayName: string | null;
   email: string | null;
 };
@@ -107,6 +119,7 @@ type StaffUserRow = {
   user_id?: string;
   role?: StaffRole;
   active?: boolean;
+  is_founder?: boolean;
   display_name?: string | null;
   email?: string | null;
 };
@@ -128,6 +141,7 @@ function isStaffUserRow(
     Boolean(value) &&
     typeof (value as StaffUserRow).id === "string" &&
     ((value as StaffUserRow).role === "superadmin" ||
+      (value as StaffUserRow).role === "admin" ||
       (value as StaffUserRow).role === "class_rep") &&
     typeof (value as StaffUserRow).active === "boolean"
   );
@@ -139,16 +153,30 @@ function isActiveLegacyAdminRow(
   return Boolean(value) && (value as AdminUserRow).active === true;
 }
 
-function permissionsForRole(role: StaffRole): StaffPermissions {
-  const isSuperadmin = role === "superadmin";
+export function permissionsForRole(
+  role: StaffRole,
+  isFounder = false,
+): StaffPermissions {
+  const isFounderSuperadmin = role === "superadmin" && isFounder;
+  const isOperationalAdmin = isFounderSuperadmin || role === "admin";
+  const isClassRep = role === "class_rep";
+
   return {
-    canManageStaff: isSuperadmin,
-    canManageInstitutions: isSuperadmin,
-    canManageProgrammes: isSuperadmin,
-    canManageClassGroups: isSuperadmin,
-    canManageAllTimetables: isSuperadmin,
-    canEditAssignedTimetables: isSuperadmin || role === "class_rep",
-    canPublishAssignedTimetables: isSuperadmin || role === "class_rep",
+    canManageStaff: isOperationalAdmin,
+    canManageAdmins: isFounderSuperadmin,
+    canManageClassReps: isOperationalAdmin,
+    canManageInstitutions: isOperationalAdmin,
+    canManageProgrammes: isOperationalAdmin,
+    canManageClassGroups: isOperationalAdmin,
+    canManageAcademicPeriods: isOperationalAdmin,
+    canManageAllTimetables: isOperationalAdmin,
+    canEditAllTimetables: isOperationalAdmin,
+    canPublishAllTimetables: isOperationalAdmin,
+    canManageSources: isOperationalAdmin,
+    canViewOperationalAnalytics: isOperationalAdmin,
+    canManageFounderAuthority: isFounderSuperadmin,
+    canEditAssignedTimetables: isOperationalAdmin || isClassRep,
+    canPublishAssignedTimetables: isOperationalAdmin || isClassRep,
   };
 }
 
@@ -160,7 +188,7 @@ function staffContext(
   return {
     user,
     staff,
-    permissions: permissionsForRole(staff.role),
+    permissions: permissionsForRole(staff.role, staff.isFounder),
     assignments,
   };
 }
@@ -326,14 +354,6 @@ export async function requireAuthenticatedUser(
   return normalizeUser(data.user);
 }
 
-export async function requireAdmin(
-  req: IncomingMessage,
-  deps: AuthDependencies = {},
-): Promise<AuthenticatedUser> {
-  const context = await requireSuperadmin(req, deps);
-  return context.user;
-}
-
 export async function requireStaffUser(
   req: IncomingMessage,
   deps: AuthDependencies = {},
@@ -343,7 +363,7 @@ export async function requireStaffUser(
 
   const { data, error } = await adminClient
     .from("staff_users")
-    .select("id, user_id, role, active, display_name, email")
+    .select("id, user_id, role, active, is_founder, display_name, email")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -363,22 +383,36 @@ export async function requireStaffUser(
         403,
       );
     }
+    const isFounder = data.is_founder === true;
+    if (data.role === "superadmin" && !isFounder) {
+      throw new AdminAuthError(
+        "FORBIDDEN",
+        "CalenderZW founder authorization requires the protected root marker.",
+        403,
+      );
+    }
     return staffContext(
       user,
       {
         id: data.id,
         role: data.role,
+        isFounder,
         displayName: data.display_name ?? null,
         email: data.email ?? user.email,
       },
-      await listActiveAssignments(data.id, adminClient),
+      data.role === "class_rep"
+        ? await listActiveAssignments(data.id, adminClient)
+        : [],
     );
   }
 
+  // Legacy admin_users remains a transition-only operational fallback. Root/founder
+  // authority is never inferred from this legacy table after DR-54.
   if (await lookupActiveLegacyAdmin(user, adminClient)) {
     return staffContext(user, {
       id: user.id,
-      role: "superadmin",
+      role: "admin",
+      isFounder: false,
       displayName: null,
       email: user.email,
     });
@@ -391,19 +425,70 @@ export async function requireStaffUser(
   );
 }
 
-export async function requireSuperadmin(
+export async function requireOperationalAdmin(
   req: IncomingMessage,
   deps: AuthDependencies = {},
 ): Promise<StaffAuthContext> {
   const context = await requireStaffUser(req, deps);
-  if (context.staff.role !== "superadmin") {
+  if (!context.permissions.canManageAllTimetables) {
     throw new AdminAuthError(
-      "SUPERADMIN_REQUIRED",
-      "Superadmin access is required.",
+      "OPERATIONAL_ADMIN_REQUIRED",
+      "Operational Admin access is required.",
       403,
     );
   }
   return context;
+}
+
+export async function requireStaffManager(
+  req: IncomingMessage,
+  deps: AuthDependencies = {},
+): Promise<StaffAuthContext> {
+  const context = await requireStaffUser(req, deps);
+  if (!context.permissions.canManageClassReps) {
+    throw new AdminAuthError(
+      "STAFF_MANAGER_REQUIRED",
+      "Staff management access is required.",
+      403,
+    );
+  }
+  return context;
+}
+
+export async function requireFounderSuperadmin(
+  req: IncomingMessage,
+  deps: AuthDependencies = {},
+): Promise<StaffAuthContext> {
+  const context = await requireStaffUser(req, deps);
+  if (
+    context.staff.role !== "superadmin" ||
+    !context.staff.isFounder ||
+    !context.permissions.canManageFounderAuthority
+  ) {
+    throw new AdminAuthError(
+      "FOUNDER_REQUIRED",
+      "Founder superadmin access is required.",
+      403,
+    );
+  }
+  return context;
+}
+
+/** @deprecated Prefer the explicit founder or operational guard for each route. */
+export async function requireSuperadmin(
+  req: IncomingMessage,
+  deps: AuthDependencies = {},
+): Promise<StaffAuthContext> {
+  return requireFounderSuperadmin(req, deps);
+}
+
+/** @deprecated Prefer requireOperationalAdmin so the required privilege is explicit. */
+export async function requireAdmin(
+  req: IncomingMessage,
+  deps: AuthDependencies = {},
+): Promise<AuthenticatedUser> {
+  const context = await requireOperationalAdmin(req, deps);
+  return context.user;
 }
 
 export async function requireTimetableEditor(
@@ -412,7 +497,7 @@ export async function requireTimetableEditor(
   deps: AuthDependencies = {},
 ): Promise<StaffAuthContext> {
   const context = await requireStaffUser(req, deps);
-  if (context.permissions.canManageAllTimetables) return context;
+  if (context.permissions.canEditAllTimetables) return context;
 
   const adminClient = createAdminLookupClient(deps);
   const { data, error } = await adminClient

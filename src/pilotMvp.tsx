@@ -42,6 +42,7 @@ import {
   createTimetableSession,
   deleteTimetableSession,
   getTimetable,
+  inviteAdmin,
   inviteClassRep,
   listAcademicPeriods,
   listClassGroups,
@@ -52,6 +53,7 @@ import {
   resendClassRepInvite,
   revokeClassRepAssignment,
   setStaffActive,
+  setStaffRole,
   publishTimetable,
   updateAcademicPeriod,
   updateClassGroup,
@@ -1220,17 +1222,23 @@ function AdminOverview({
 function TeamPage({
   accessToken,
   timetables,
+  session,
 }: {
   accessToken: string;
   timetables: AdminTimetableSummary[];
+  session: AdminSessionResponse;
 }) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
-  const [form, setForm] = useState({
+  const [classRepForm, setClassRepForm] = useState({
     email: "",
     displayName: "",
     timetableId: timetables[0]?.id ?? "",
+  });
+  const [adminForm, setAdminForm] = useState({
+    email: "",
+    displayName: "",
   });
 
   const refresh = useCallback(async () => {
@@ -1254,36 +1262,54 @@ function TeamPage({
     return () => window.clearTimeout(timeoutId);
   }, [refresh]);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submitClassRep(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
     try {
       await inviteClassRep(accessToken, {
-        ...form,
-        timetableId: form.timetableId || timetables[0]?.id || "",
+        ...classRepForm,
+        timetableId: classRepForm.timetableId || timetables[0]?.id || "",
       });
-      setForm({
+      setClassRepForm({
         email: "",
         displayName: "",
         timetableId: timetables[0]?.id ?? "",
       });
       await refresh();
       setMessage(
-        "Class rep invitation sent. Existing users can sign in normally.",
+        "Class Rep invitation sent. Existing Supabase users reuse their current identity.",
       );
     } catch (error) {
       setMessage(
-        error instanceof Error ? error.message : "Could not invite class rep.",
+        error instanceof Error ? error.message : "Could not invite Class Rep.",
+      );
+    }
+  }
+
+  async function submitAdmin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+    try {
+      await inviteAdmin(accessToken, adminForm);
+      setAdminForm({ email: "", displayName: "" });
+      await refresh();
+      setMessage(
+        "Admin invitation sent. Existing Supabase users reuse their current identity.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not invite Admin.",
       );
     }
   }
 
   async function updateAssignment(staffUserId: string, timetableId: string) {
+    if (!timetableId) return;
     setMessage("");
     try {
       await assignClassRep(accessToken, staffUserId, timetableId);
       await refresh();
-      setMessage("Class rep assignment updated.");
+      setMessage("Class Rep assignment updated.");
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Could not update assignment.",
@@ -1302,32 +1328,161 @@ function TeamPage({
     }
   }
 
+  const admins = staff.filter((member) => member.role !== "class_rep");
+  const classReps = staff.filter((member) => member.role === "class_rep");
+  const canManageAdmins = session.permissions.canManageAdmins;
+
   return (
     <div className="pilot-stack">
       <Surface
-        title="Class Representatives"
-        subtitle="Invite trusted class reps and scope each one to a single timetable."
+        title="Admins"
+        subtitle="Operational Admins can run CalenderZW and manage Class Reps. Founder authority remains protected."
       >
-        <form className="pilot-form" onSubmit={submit}>
-          <Field label="Class rep email">
+        {canManageAdmins ? (
+          <form className="pilot-form" onSubmit={submitAdmin}>
+            <Field label="Admin email">
+              <input
+                required
+                type="email"
+                value={adminForm.email}
+                onChange={(event) =>
+                  setAdminForm((current) => ({
+                    ...current,
+                    email: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Admin name">
+              <input
+                required
+                value={adminForm.displayName}
+                onChange={(event) =>
+                  setAdminForm((current) => ({
+                    ...current,
+                    displayName: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <p className="pilot-muted">
+              Admin can manage CalenderZW operations and Class Reps, but cannot
+              change founder/superadmin authority.
+            </p>
+            <button className="primary" type="submit">
+              <Plus size={18} />
+              Invite Admin
+            </button>
+          </form>
+        ) : (
+          <p className="pilot-muted">
+            Admin privilege grants are founder-only. Your operational Admin
+            access can manage Class Reps but cannot change founder or peer Admin
+            authority.
+          </p>
+        )}
+
+        {loading ? <p>Loading Admins...</p> : null}
+        <div className="pilot-card-list">
+          {admins.map((member) => (
+            <article key={member.id} className="pilot-card">
+              <div className="pilot-card-meta">
+                <strong>
+                  {member.displayName || member.email || member.userId}
+                </strong>
+                <span>
+                  {member.isFounder ? "Founder · Superadmin" : "Admin"}
+                </span>
+                <span>{member.active ? "Active" : "Disabled"}</span>
+                <span>
+                  {member.acceptedAt
+                    ? "Setup complete"
+                    : member.lastInvitedAt
+                      ? `Setup sent ${formatTimestamp(member.lastInvitedAt)}`
+                      : "Setup pending"}
+                </span>
+                {member.isFounder ? (
+                  <span className="status confirmed">
+                    Protected root authority
+                  </span>
+                ) : null}
+              </div>
+              {!member.isFounder && canManageAdmins ? (
+                <div className="pilot-card-actions">
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={() =>
+                      void action(
+                        () => resendClassRepInvite(accessToken, member.id),
+                        "Admin setup invitation resent.",
+                      )
+                    }
+                  >
+                    Resend invitation
+                  </button>
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={() =>
+                      void action(
+                        () =>
+                          setStaffActive(
+                            accessToken,
+                            member.id,
+                            !member.active,
+                          ),
+                        member.active
+                          ? "Admin disabled."
+                          : "Admin reactivated.",
+                      )
+                    }
+                  >
+                    {member.active ? "Disable" : "Reactivate"}
+                  </button>
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={() =>
+                      void action(
+                        () => setStaffRole(accessToken, member.id, "class_rep"),
+                        "Admin role revoked. Assign a timetable before reactivating this account as a Class Rep.",
+                      )
+                    }
+                  >
+                    Revoke Admin role
+                  </button>
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      </Surface>
+
+      <Surface
+        title="Class Reps"
+        subtitle="Invite trusted Class Reps and scope each one to a single timetable."
+      >
+        <form className="pilot-form" onSubmit={submitClassRep}>
+          <Field label="Class Rep email">
             <input
               required
               type="email"
-              value={form.email}
+              value={classRepForm.email}
               onChange={(event) =>
-                setForm((current) => ({
+                setClassRepForm((current) => ({
                   ...current,
                   email: event.target.value,
                 }))
               }
             />
           </Field>
-          <Field label="Class rep name">
+          <Field label="Class Rep name">
             <input
               required
-              value={form.displayName}
+              value={classRepForm.displayName}
               onChange={(event) =>
-                setForm((current) => ({
+                setClassRepForm((current) => ({
                   ...current,
                   displayName: event.target.value,
                 }))
@@ -1337,9 +1492,9 @@ function TeamPage({
           <Field label="Assigned class timetable">
             <select
               required
-              value={form.timetableId || timetables[0]?.id || ""}
+              value={classRepForm.timetableId || timetables[0]?.id || ""}
               onChange={(event) =>
-                setForm((current) => ({
+                setClassRepForm((current) => ({
                   ...current,
                   timetableId: event.target.value,
                 }))
@@ -1361,25 +1516,23 @@ function TeamPage({
             Invite Class Rep
           </button>
         </form>
-        {message ? <p className="content-notice">{message}</p> : null}
-      </Surface>
 
-      <Surface
-        title="Current team"
-        subtitle="Resend, reassign, revoke, disable, or reactivate access."
-      >
-        {loading ? <p>Loading team...</p> : null}
         <div className="pilot-card-list">
-          {staff.map((member) => (
+          {classReps.map((member) => (
             <article key={member.id} className="pilot-card">
               <div className="pilot-card-meta">
                 <strong>
                   {member.displayName || member.email || member.userId}
                 </strong>
-                <span>
-                  {member.role === "superadmin" ? "Superadmin" : "Class Rep"}
-                </span>
+                <span>Class Rep</span>
                 <span>{member.active ? "Active" : "Disabled"}</span>
+                <span>
+                  {member.acceptedAt
+                    ? "Setup complete"
+                    : member.lastInvitedAt
+                      ? `Setup sent ${formatTimestamp(member.lastInvitedAt)}`
+                      : "Setup pending"}
+                </span>
                 {member.assignments.find((assignment) => assignment.active) ? (
                   <span>
                     Assigned to{" "}
@@ -1388,62 +1541,62 @@ function TeamPage({
                         ?.classGroupLabel
                     }
                   </span>
-                ) : null}
+                ) : (
+                  <span>No active timetable assignment</span>
+                )}
               </div>
-              {member.role === "class_rep" ? (
-                <div className="pilot-inline-actions">
-                  <select
-                    aria-label={`Assignment for ${member.displayName || member.email}`}
-                    defaultValue={
-                      member.assignments.find((assignment) => assignment.active)
-                        ?.timetableId ?? ""
-                    }
-                    onChange={(event) =>
-                      void updateAssignment(member.id, event.target.value)
-                    }
-                  >
-                    <option value="">Choose timetable</option>
-                    {timetables.map((timetable) => (
-                      <option key={timetable.id} value={timetable.id}>
-                        {timetable.classGroupLabel} - {timetable.programmeName}
-                      </option>
-                    ))}
-                  </select>
-                  {member.assignments
-                    .filter((assignment) => assignment.active)
-                    .map((assignment) => (
-                      <button
-                        key={assignment.id}
-                        className="secondary"
-                        type="button"
-                        onClick={() =>
-                          void action(
-                            () =>
-                              revokeClassRepAssignment(
-                                accessToken,
-                                assignment.id,
-                              ),
-                            "Assignment revoked.",
-                          )
-                        }
-                      >
-                        Revoke assignment
-                      </button>
-                    ))}
-                  <button
-                    className="secondary"
-                    type="button"
-                    onClick={() =>
-                      void action(
-                        () => resendClassRepInvite(accessToken, member.id),
-                        "Invitation resent.",
-                      )
-                    }
-                  >
-                    Resend invitation
-                  </button>
-                </div>
-              ) : null}
+              <div className="pilot-inline-actions">
+                <select
+                  aria-label={`Assignment for ${member.displayName || member.email}`}
+                  defaultValue={
+                    member.assignments.find((assignment) => assignment.active)
+                      ?.timetableId ?? ""
+                  }
+                  onChange={(event) =>
+                    void updateAssignment(member.id, event.target.value)
+                  }
+                >
+                  <option value="">Choose timetable</option>
+                  {timetables.map((timetable) => (
+                    <option key={timetable.id} value={timetable.id}>
+                      {timetable.classGroupLabel} - {timetable.programmeName}
+                    </option>
+                  ))}
+                </select>
+                {member.assignments
+                  .filter((assignment) => assignment.active)
+                  .map((assignment) => (
+                    <button
+                      key={assignment.id}
+                      className="secondary"
+                      type="button"
+                      onClick={() =>
+                        void action(
+                          () =>
+                            revokeClassRepAssignment(
+                              accessToken,
+                              assignment.id,
+                            ),
+                          "Assignment revoked.",
+                        )
+                      }
+                    >
+                      Revoke assignment
+                    </button>
+                  ))}
+                <button
+                  className="secondary"
+                  type="button"
+                  onClick={() =>
+                    void action(
+                      () => resendClassRepInvite(accessToken, member.id),
+                      "Class Rep invitation resent.",
+                    )
+                  }
+                >
+                  Resend invitation
+                </button>
+              </div>
               <div className="pilot-card-actions">
                 <button
                   className="secondary"
@@ -1453,8 +1606,8 @@ function TeamPage({
                       () =>
                         setStaffActive(accessToken, member.id, !member.active),
                       member.active
-                        ? "Staff member disabled."
-                        : "Staff member reactivated.",
+                        ? "Class Rep disabled."
+                        : "Class Rep reactivated.",
                     )
                   }
                 >
@@ -1464,6 +1617,7 @@ function TeamPage({
             </article>
           ))}
         </div>
+        {message ? <p className="content-notice">{message}</p> : null}
       </Surface>
     </div>
   );
@@ -3998,8 +4152,9 @@ export function AdminMvpScreen({ path }: { path: string }) {
     "Create and publish class timetables.",
   );
   const { status, user, session, accessToken, signOut } = useAdminAccess();
-  const isSuperadmin = session?.staff.role === "superadmin";
-  const data = useAdminData(accessToken, isSuperadmin);
+  const canManageAllTimetables =
+    session?.permissions.canManageAllTimetables ?? false;
+  const data = useAdminData(accessToken, canManageAllTimetables);
 
   if (status === "forbidden") {
     return (
@@ -4023,7 +4178,7 @@ export function AdminMvpScreen({ path }: { path: string }) {
     return null;
   }
 
-  if (status !== "authorized" || !accessToken) {
+  if (status !== "authorized" || !accessToken || !session) {
     return (
       <main className="page admin-page">
         <section className="pilot-page-hero">
@@ -4100,7 +4255,11 @@ export function AdminMvpScreen({ path }: { path: string }) {
             <AnalyticsOverviewPage accessToken={accessToken} />
           ) : null}
           {path === "/admin/team" ? (
-            <TeamPage accessToken={accessToken} timetables={data.timetables} />
+            <TeamPage
+              accessToken={accessToken}
+              timetables={data.timetables}
+              session={session}
+            />
           ) : null}
           {path === "/admin/institutions" ? (
             <InstitutionsPage
