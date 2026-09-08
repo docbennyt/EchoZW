@@ -26,6 +26,10 @@ const REQUIRED_SCHEMA_PROBES: RequiredRestProbe[] = [
     path: "/rest/v1/class_rep_assignments?select=id&limit=0",
   },
   {
+    object: "academic_schedule_pauses",
+    path: "/rest/v1/academic_schedule_pauses?select=id&limit=0",
+  },
+  {
     object: "timetable_correction_directives.DR53 mutation fields",
     path: "/rest/v1/timetable_correction_directives?select=id,mutation_key,semantic_fingerprint,revision,supersedes_id,replaced_by_id&limit=0",
   },

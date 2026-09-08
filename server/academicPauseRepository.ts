@@ -46,11 +46,16 @@ function client() {
   return createSupabaseAdminClient();
 }
 
-function isMissingPauseSchema(error: unknown) {
+export function isMissingAcademicPauseSchemaError(error: unknown) {
   const typed = error as SupabaseErrorLike | null;
+  const message = typed?.message ?? "";
   return (
     typed?.code === "42P01" ||
-    /academic_schedule_pauses.*does not exist/i.test(typed?.message ?? "")
+    typed?.code === "PGRST205" ||
+    /academic_schedule_pauses.*(?:does not exist|schema cache|could not find)/i.test(
+      message,
+    ) ||
+    /(?:could not find|schema cache).*academic_schedule_pauses/i.test(message)
   );
 }
 
@@ -267,7 +272,7 @@ export async function createAcademicPause(input: {
     .single();
 
   if (error || !data) {
-    if (isMissingPauseSchema(error)) {
+    if (isMissingAcademicPauseSchemaError(error)) {
       throw new AcademicPauseRepositoryError(
         "PAUSE_SCHEMA_REQUIRED",
         "Academic pause support needs the DR-58 database migration before it can be used.",
@@ -312,7 +317,7 @@ export async function listActiveAcademicPausesForTimetable(input: {
   // Deployment-order safety: a web release arriving before migration 0023 must
   // not take public timetables or staff sign-in down. Mutating endpoints remain
   // fail-closed with PAUSE_SCHEMA_REQUIRED until the migration is applied.
-  if (isMissingPauseSchema(error)) return [];
+  if (isMissingAcademicPauseSchemaError(error)) return [];
   if (error) {
     throw new AcademicPauseRepositoryError(
       "DATABASE_UNAVAILABLE",
@@ -331,7 +336,7 @@ export async function listAcademicPauses() {
     .from("academic_schedule_pauses")
     .select("*")
     .order("created_at", { ascending: false });
-  if (isMissingPauseSchema(error)) return [];
+  if (isMissingAcademicPauseSchemaError(error)) return [];
   if (error) {
     throw new AcademicPauseRepositoryError(
       "DATABASE_UNAVAILABLE",
@@ -349,7 +354,7 @@ export async function listAcademicPausesForTimetable(timetableId: string) {
     .select("*")
     .eq("timetable_id", timetableId)
     .order("created_at", { ascending: false });
-  if (isMissingPauseSchema(error)) return [];
+  if (isMissingAcademicPauseSchemaError(error)) return [];
   if (error) {
     throw new AcademicPauseRepositoryError(
       "DATABASE_UNAVAILABLE",
@@ -399,7 +404,7 @@ export async function deactivateAcademicPause(input: {
     .select("*")
     .eq("id", input.pauseId)
     .maybeSingle();
-  if (isMissingPauseSchema(pauseResult.error)) {
+  if (isMissingAcademicPauseSchemaError(pauseResult.error)) {
     throw new AcademicPauseRepositoryError(
       "PAUSE_SCHEMA_REQUIRED",
       "Academic pause support is not available yet.",
