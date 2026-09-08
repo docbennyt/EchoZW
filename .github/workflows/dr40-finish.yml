@@ -1,0 +1,46 @@
+name: DR-40 finish verification
+
+on:
+  push:
+    branches:
+      - DR-40-existing-subscription-propagation
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: DR-40-existing-subscription-propagation
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Normalize DR-40 files
+        run: |
+          npx prettier --write tests/dr40ExistingSubscriptionPropagation.test.ts docs/DR-40_EXISTING_SUBSCRIPTION_PROPAGATION.md
+          rm .github/workflows/dr40-finish.yml
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+
+      - name: Commit verified DR-40 tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "test: finalize DR-40 propagation proof"
+          git push origin HEAD:DR-40-existing-subscription-propagation
