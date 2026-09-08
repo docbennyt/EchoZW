@@ -159,19 +159,10 @@ export type PublicTimetableSession = {
 };
 
 export type AcademicPauseScope =
-  | "institution"
-  | "programme"
-  | "cohort"
-  | "timetable"
-  | "session";
+  "institution" | "programme" | "cohort" | "timetable" | "session";
 
 export type AcademicPauseReason =
-  | "sim_break"
-  | "graduation"
-  | "swot_week"
-  | "holiday"
-  | "closure"
-  | "other";
+  "sim_break" | "graduation" | "swot_week" | "holiday" | "closure" | "other";
 
 /**
  * Privacy-safe pause rule returned with a published timetable. Broad scope IDs and

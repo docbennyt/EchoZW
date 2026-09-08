@@ -3,6 +3,7 @@ import type {
   PublicTimetableSession,
 } from "../api/pilotTypes.js";
 import {
+  addDaysToDateKey,
   resolveRecurringSessions,
   resolveScheduleForDate,
 } from "./resolvedSchedule.js";
@@ -238,16 +239,24 @@ export function projectPublishedTimetable(input: {
       timezone,
     );
 
-    const exDates = (timetable.exceptions ?? [])
-      .filter(
-        (exception) =>
-          exception.active &&
-          exception.stableSessionKey === session.stableSessionKey &&
-          (exception.exceptionType === "cancelled" ||
-            exception.exceptionType === "moved"),
-      )
-      .map((exception) => exception.exceptionDate)
-      .sort();
+    const exDates: string[] = [];
+    const recurrenceEndDate = timetable.endsOn as string;
+    for (
+      let occurrenceDate = firstDate;
+      occurrenceDate <= recurrenceEndDate;
+      occurrenceDate = addDaysToDateKey(occurrenceDate, 7)
+    ) {
+      const remainsActive = resolveScheduleForDate(
+        timetable,
+        occurrenceDate,
+      ).some(
+        (occurrence) =>
+          occurrence.recurring &&
+          occurrence.dateKey === occurrenceDate &&
+          occurrence.session.stableSessionKey === session.stableSessionKey,
+      );
+      if (!remainsActive) exDates.push(occurrenceDate);
+    }
 
     return {
       stableSessionKey: session.stableSessionKey,

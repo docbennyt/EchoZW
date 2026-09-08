@@ -6,7 +6,10 @@ import type {
   PublicTimetable,
 } from "../src/api/pilotTypes.js";
 import { withCandidatePause } from "../src/domain/academicPause.js";
-import { addDaysToDateKey, resolveScheduleForDate } from "../src/domain/resolvedSchedule.js";
+import {
+  addDaysToDateKey,
+  resolveScheduleForDate,
+} from "../src/domain/resolvedSchedule.js";
 import {
   AcademicPauseRepositoryError,
   createAcademicPause,
@@ -21,7 +24,13 @@ import type { StaffAuthContext } from "./supabase/auth.js";
 
 const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const pauseSchema = z.object({
-  scopeType: z.enum(["institution", "programme", "cohort", "timetable", "session"]),
+  scopeType: z.enum([
+    "institution",
+    "programme",
+    "cohort",
+    "timetable",
+    "session",
+  ]),
   institutionId: z.string().uuid().nullable().optional(),
   programmeId: z.string().uuid().nullable().optional(),
   cohortId: z.string().uuid().nullable().optional(),
@@ -32,19 +41,28 @@ const pauseSchema = z.object({
   allDay: z.boolean().default(true),
   startsAt: z.string().datetime({ offset: true }).nullable().optional(),
   endsAt: z.string().datetime({ offset: true }).nullable().optional(),
-  reason: z.enum(["sim_break", "graduation", "swot_week", "holiday", "closure", "other"]),
+  reason: z.enum([
+    "sim_break",
+    "graduation",
+    "swot_week",
+    "holiday",
+    "closure",
+    "other",
+  ]),
   label: z.string().trim().min(1).max(120),
   provenance: z.string().trim().max(500).nullable().optional(),
 });
 
-const scopedPauseSchema = pauseSchema.omit({
-  institutionId: true,
-  programmeId: true,
-  cohortId: true,
-  timetableId: true,
-}).extend({
-  scopeType: z.enum(["timetable", "session"]).default("timetable"),
-});
+const scopedPauseSchema = pauseSchema
+  .omit({
+    institutionId: true,
+    programmeId: true,
+    cohortId: true,
+    timetableId: true,
+  })
+  .extend({
+    scopeType: z.enum(["timetable", "session"]).default("timetable"),
+  });
 
 function sendJson(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
@@ -85,7 +103,9 @@ function sendError(res: ServerResponse, error: unknown) {
   });
 }
 
-function occurrenceKey(occurrence: ReturnType<typeof resolveScheduleForDate>[number]) {
+function occurrenceKey(
+  occurrence: ReturnType<typeof resolveScheduleForDate>[number],
+) {
   return `${occurrence.session.stableSessionKey}|${occurrence.start.toISOString()}|${occurrence.end.toISOString()}`;
 }
 
@@ -93,12 +113,13 @@ function candidateRule(pause: AcademicPauseInput): AcademicSchedulePause {
   return {
     id: "preview-academic-pause",
     scopeType: pause.scopeType,
-    stableSessionKey: pause.scopeType === "session" ? pause.stableSessionKey ?? null : null,
+    stableSessionKey:
+      pause.scopeType === "session" ? (pause.stableSessionKey ?? null) : null,
     startsOn: pause.startsOn,
     endsOn: pause.endsOn,
     allDay: pause.allDay,
-    startsAt: pause.allDay ? null : pause.startsAt ?? null,
-    endsAt: pause.allDay ? null : pause.endsAt ?? null,
+    startsAt: pause.allDay ? null : (pause.startsAt ?? null),
+    endsAt: pause.allDay ? null : (pause.endsAt ?? null),
     reason: pause.reason,
     label: pause.label,
     active: true,
@@ -111,21 +132,29 @@ function countNewlySuppressed(
   pause: AcademicPauseInput,
 ) {
   const withPause = withCandidatePause(timetable, candidateRule(pause));
-  const startsOn = timetable.startsOn && timetable.startsOn > pause.startsOn
-    ? timetable.startsOn
-    : pause.startsOn;
-  const endsOn = timetable.endsOn && timetable.endsOn < pause.endsOn
-    ? timetable.endsOn
-    : pause.endsOn;
+  const startsOn =
+    timetable.startsOn && timetable.startsOn > pause.startsOn
+      ? timetable.startsOn
+      : pause.startsOn;
+  const endsOn =
+    timetable.endsOn && timetable.endsOn < pause.endsOn
+      ? timetable.endsOn
+      : pause.endsOn;
   if (endsOn < startsOn) return 0;
 
   let total = 0;
-  for (let current = startsOn; current <= endsOn; current = addDaysToDateKey(current, 1)) {
+  for (
+    let current = startsOn;
+    current <= endsOn;
+    current = addDaysToDateKey(current, 1)
+  ) {
     const before = resolveScheduleForDate(timetable, current);
     const afterKeys = new Set(
       resolveScheduleForDate(withPause, current).map(occurrenceKey),
     );
-    total += before.filter((occurrence) => !afterKeys.has(occurrenceKey(occurrence))).length;
+    total += before.filter(
+      (occurrence) => !afterKeys.has(occurrenceKey(occurrence)),
+    ).length;
   }
   return total;
 }
@@ -175,7 +204,7 @@ function scopedInput(timetableId: string, body: unknown): AcademicPauseInput {
     programmeId: null,
     cohortId: null,
     stableSessionKey:
-      parsed.scopeType === "session" ? parsed.stableSessionKey ?? null : null,
+      parsed.scopeType === "session" ? (parsed.stableSessionKey ?? null) : null,
   };
 }
 
@@ -253,13 +282,19 @@ export async function handleAcademicPauseAdminApi(
       return false;
     }
 
-    if (req.method === "POST" && url.pathname === "/api/admin/academic-pauses/preview") {
+    if (
+      req.method === "POST" &&
+      url.pathname === "/api/admin/academic-pauses/preview"
+    ) {
       const pause = broadInput(await readJson(req));
       const { impact } = await previewImpact(pause);
       sendJson(res, 200, { impact });
       return true;
     }
-    if (req.method === "POST" && url.pathname === "/api/admin/academic-pauses") {
+    if (
+      req.method === "POST" &&
+      url.pathname === "/api/admin/academic-pauses"
+    ) {
       const pauseInput = broadInput(await readJson(req));
       const { impact, timetableIds } = await previewImpact(pauseInput);
       const pause = await createAcademicPause({ actor, pause: pauseInput });
@@ -267,7 +302,9 @@ export async function handleAcademicPauseAdminApi(
       sendJson(res, 201, { pause, impact, googleCalendarSync });
       return true;
     }
-    const broadItemMatch = url.pathname.match(/^\/api\/admin\/academic-pauses\/([^/]+)$/);
+    const broadItemMatch = url.pathname.match(
+      /^\/api\/admin\/academic-pauses\/([^/]+)$/,
+    );
     if (req.method === "DELETE" && broadItemMatch) {
       const pause = await deactivateAcademicPause({
         actor,

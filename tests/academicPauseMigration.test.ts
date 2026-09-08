@@ -16,7 +16,9 @@ describe("DR-58 academic pause migration", () => {
     );
     expect(migration).toContain("stable_session_key text");
     expect(migration).toContain("academic_schedule_pauses_scope_target_check");
-    expect(migration).not.toMatch(/delete\s+from\s+public\.timetable_sessions/i);
+    expect(migration).not.toMatch(
+      /delete\s+from\s+public\.timetable_sessions/i,
+    );
   });
 
   it("supports Sim Break, Graduation, SWOT and bounded closures", () => {

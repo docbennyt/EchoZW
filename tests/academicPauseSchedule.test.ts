@@ -224,8 +224,7 @@ describe("DR-58 academic pause resolution", () => {
     expect(programming?.exDates).toContain("2026-09-14");
     expect(os?.exDates).toContain("2026-09-14");
     expect(programming?.alarms.map((alarm) => alarm.minutesBefore)).toEqual([
-      1440,
-      30,
+      1440, 30,
     ]);
   });
 });

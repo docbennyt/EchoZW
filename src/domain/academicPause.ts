@@ -26,10 +26,7 @@ function boundedPauseOverlaps(
   if (!pause.startsAt || !pause.endsAt) return false;
   const pauseStart = new Date(pause.startsAt);
   const pauseEnd = new Date(pause.endsAt);
-  if (
-    Number.isNaN(pauseStart.getTime()) ||
-    Number.isNaN(pauseEnd.getTime())
-  ) {
+  if (Number.isNaN(pauseStart.getTime()) || Number.isNaN(pauseEnd.getTime())) {
     return false;
   }
   return occurrence.start < pauseEnd && occurrence.end > pauseStart;
@@ -40,7 +37,10 @@ export function pauseAppliesToOccurrence(
   occurrence: PauseCandidateOccurrence,
 ) {
   if (!pause.active) return false;
-  if (occurrence.dateKey < pause.startsOn || occurrence.dateKey > pause.endsOn) {
+  if (
+    occurrence.dateKey < pause.startsOn ||
+    occurrence.dateKey > pause.endsOn
+  ) {
     return false;
   }
   if (

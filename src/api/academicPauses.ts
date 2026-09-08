@@ -46,7 +46,11 @@ export function createTimetablePause(
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
     impact: AcademicPauseImpact;
-    googleCalendarSync: { attempted: number; succeeded: number; failed: number };
+    googleCalendarSync: {
+      attempted: number;
+      succeeded: number;
+      failed: number;
+    };
   }>(`/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses`, {
     method: "POST",
     accessToken,
@@ -68,7 +72,11 @@ export function deactivateTimetablePause(
 ) {
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
-    googleCalendarSync: { attempted: number; succeeded: number; failed: number };
+    googleCalendarSync: {
+      attempted: number;
+      succeeded: number;
+      failed: number;
+    };
   }>(
     `/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses/${encodeURIComponent(pauseId)}`,
     { method: "DELETE", accessToken },
@@ -86,7 +94,11 @@ export function createBroadPause(accessToken: string, input: BroadPauseInput) {
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
     impact: AcademicPauseImpact;
-    googleCalendarSync: { attempted: number; succeeded: number; failed: number };
+    googleCalendarSync: {
+      attempted: number;
+      succeeded: number;
+      failed: number;
+    };
   }>("/api/admin/academic-pauses", {
     method: "POST",
     accessToken,

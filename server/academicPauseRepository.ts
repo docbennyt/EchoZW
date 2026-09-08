@@ -108,7 +108,10 @@ function validateInput(input: AcademicPauseInput) {
       422,
     );
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.endsOn) || input.endsOn < input.startsOn) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(input.endsOn) ||
+    input.endsOn < input.startsOn
+  ) {
     throw new AcademicPauseRepositoryError(
       "INVALID_PAUSE_RANGE",
       "Pause end date must be on or after the start date.",
@@ -147,7 +150,11 @@ function validateInput(input: AcademicPauseInput) {
     input.timetableId,
   ].filter(Boolean).length;
   if (input.scopeType === "session") {
-    if (targetCount !== 1 || !input.timetableId || !input.stableSessionKey?.trim()) {
+    if (
+      targetCount !== 1 ||
+      !input.timetableId ||
+      !input.stableSessionKey?.trim()
+    ) {
       throw new AcademicPauseRepositoryError(
         "INVALID_PAUSE_SCOPE",
         "A session pause needs one timetable and one recurring session.",
@@ -179,10 +186,12 @@ function enforceScopeShape(input: AcademicPauseInput) {
     );
   }
   if (
-    input.scopeType !== "institution" && input.institutionId ||
-    input.scopeType !== "programme" && input.programmeId ||
-    input.scopeType !== "cohort" && input.cohortId ||
-    input.scopeType !== "timetable" && input.scopeType !== "session" && input.timetableId
+    (input.scopeType !== "institution" && input.institutionId) ||
+    (input.scopeType !== "programme" && input.programmeId) ||
+    (input.scopeType !== "cohort" && input.cohortId) ||
+    (input.scopeType !== "timetable" &&
+      input.scopeType !== "session" &&
+      input.timetableId)
   ) {
     throw new AcademicPauseRepositoryError(
       "INVALID_PAUSE_SCOPE",
@@ -243,8 +252,8 @@ export async function createAcademicPause(input: {
       starts_on: input.pause.startsOn,
       ends_on: input.pause.endsOn,
       all_day: input.pause.allDay,
-      starts_at: input.pause.allDay ? null : input.pause.startsAt ?? null,
-      ends_at: input.pause.allDay ? null : input.pause.endsAt ?? null,
+      starts_at: input.pause.allDay ? null : (input.pause.startsAt ?? null),
+      ends_at: input.pause.allDay ? null : (input.pause.endsAt ?? null),
       reason: input.pause.reason,
       label: input.pause.label.trim(),
       provenance: input.pause.provenance?.trim() || null,
