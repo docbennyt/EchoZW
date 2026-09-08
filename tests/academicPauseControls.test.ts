@@ -46,7 +46,11 @@ describe("DR-58 academic pause controls", () => {
   });
 
   it("does not leave one-shot DR-58 wiring workflows in the review branch", () => {
-    expect(existsSync(resolve(process.cwd(), ".github/workflows/dr58-finish.yml"))).toBe(false);
-    expect(existsSync(resolve(process.cwd(), ".github/workflows/dr58-apply.yml"))).toBe(false);
+    expect(
+      existsSync(resolve(process.cwd(), ".github/workflows/dr58-finish.yml")),
+    ).toBe(false);
+    expect(
+      existsSync(resolve(process.cwd(), ".github/workflows/dr58-apply.yml")),
+    ).toBe(false);
   });
 });

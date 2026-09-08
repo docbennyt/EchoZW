@@ -419,7 +419,9 @@ export function ClassRepAcademicPauseAction({
                     <div>
                       <strong>
                         {preview.newlySuppressedLectureCount} lecture
-                        {preview.newlySuppressedLectureCount === 1 ? "" : "s"}{" "}
+                        {preview.newlySuppressedLectureCount === 1
+                          ? ""
+                          : "s"}{" "}
                         will be suppressed
                       </strong>
                       <span>
