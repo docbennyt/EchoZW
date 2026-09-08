@@ -1,0 +1,39 @@
+name: DR-58 format convergence
+
+on:
+  push:
+    branches: [DR-58-academic-pause-calendar]
+
+permissions:
+  contents: write
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: DR-58-academic-pause-calendar
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Converge Prettier output
+        run: |
+          npx prettier --write src/ClassRepAcademicPauseControl.tsx tests/academicPauseControls.test.ts
+          npx prettier --write src/ClassRepAcademicPauseControl.tsx tests/academicPauseControls.test.ts
+          npx prettier --write src/ClassRepAcademicPauseControl.tsx tests/academicPauseControls.test.ts
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/dr58-format-converge.yml
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+      - name: Commit converged formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style: converge DR-58 formatting"
+          git push origin HEAD:DR-58-academic-pause-calendar
