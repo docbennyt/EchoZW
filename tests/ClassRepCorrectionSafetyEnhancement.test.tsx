@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ClassRepCorrectionWorkspace } from "../src/ClassRepCorrectionSafetyEnhancement";
 import type {
@@ -112,7 +112,38 @@ beforeEach(() => {
   vi.mocked(listClassUpdates).mockResolvedValue(emptyUpdates());
 });
 
-describe("DR-53 Class Rep correction safety workspace", () => {
+describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
+  it("keeps mutation forms behind focused quick actions instead of rendering a CRUD wall", async () => {
+    render(
+      <ClassRepCorrectionWorkspace
+        accessToken="token"
+        assignment={assignment}
+        reloadAfterMutation={false}
+      />,
+    );
+
+    await screen.findByText("No active corrections or extra classes.");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByLabelText("Course code")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Update timetable" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Add extra class" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add extra class" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add extra class" });
+    expect(within(dialog).getByLabelText("Date")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Course code")).toBeInTheDocument();
+    expect(
+      within(dialog).getByLabelText("Source note (optional)"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText("Official information policy"),
+    ).toBeNull();
+  });
+
   it("synchronously blocks repeated Save activation while one correction is pending", async () => {
     let resolveSave!: (value: ReturnType<typeof mutationResult>) => void;
     vi.mocked(createRecurringClassUpdate).mockImplementation(
@@ -131,25 +162,29 @@ describe("DR-53 Class Rep correction safety workspace", () => {
     );
 
     await screen.findByText("No active corrections or extra classes.");
-    fireEvent.change(screen.getAllByLabelText("Course code")[1], {
+    fireEvent.click(screen.getByRole("button", { name: "Update timetable" }));
+    const dialog = await screen.findByRole("dialog", { name: "Update timetable" });
+    fireEvent.change(within(dialog).getByLabelText("Course code"), {
       target: { value: "ICS1103" },
     });
-    fireEvent.change(screen.getAllByLabelText("Course name")[1], {
+    fireEvent.change(within(dialog).getByLabelText("Course name"), {
       target: { value: "Fundamental of Digital Electronics" },
     });
-    fireEvent.change(screen.getAllByLabelText("Venue")[1], {
+    fireEvent.change(within(dialog).getByLabelText("Venue"), {
       target: { value: "N110" },
     });
-    fireEvent.change(screen.getAllByLabelText("Reason")[1], {
+    fireEvent.change(within(dialog).getByLabelText("Reason"), {
       target: { value: "Missing from master timetable" },
     });
 
-    const save = screen.getByRole("button", { name: "Save correction" });
+    const save = within(dialog).getByRole("button", { name: "Save correction" });
     fireEvent.click(save);
     fireEvent.click(save);
 
     expect(createRecurringClassUpdate).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+    expect(
+      within(dialog).getByRole("button", { name: "Saving…" }),
+    ).toBeDisabled();
 
     resolveSave(mutationResult());
     await screen.findByText(
@@ -171,9 +206,11 @@ describe("DR-53 Class Rep correction safety workspace", () => {
     );
 
     await screen.findByText("No active corrections or extra classes.");
-    const courseCode = screen.getAllByLabelText("Course code")[1];
-    const courseName = screen.getAllByLabelText("Course name")[1];
-    const reason = screen.getAllByLabelText("Reason")[1];
+    fireEvent.click(screen.getByRole("button", { name: "Update timetable" }));
+    const dialog = await screen.findByRole("dialog", { name: "Update timetable" });
+    const courseCode = within(dialog).getByLabelText("Course code");
+    const courseName = within(dialog).getByLabelText("Course name");
+    const reason = within(dialog).getByLabelText("Reason");
     fireEvent.change(courseCode, { target: { value: "ICS1103" } });
     fireEvent.change(courseName, {
       target: { value: "Fundamental of Digital Electronics" },
@@ -182,13 +219,13 @@ describe("DR-53 Class Rep correction safety workspace", () => {
       target: { value: "Missing from master timetable" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Save correction" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save correction" }));
     await screen.findByText("Network unavailable");
 
     expect(courseCode).toHaveValue("ICS1103");
     const firstKey = vi.mocked(createRecurringClassUpdate).mock.calls[0][2];
 
-    fireEvent.click(screen.getByRole("button", { name: "Save correction" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save correction" }));
     await screen.findByText(/retry reused the original save/i);
 
     const secondKey = vi.mocked(createRecurringClassUpdate).mock.calls[1][2];
