@@ -19,7 +19,7 @@ export type TimetablePauseInput = {
   provenance?: string | null;
 };
 
-export type BroadPauseInput = TimetablePauseInput & {
+export type BroadPauseInput = Omit<TimetablePauseInput, "scopeType"> & {
   scopeType: "institution" | "programme" | "cohort" | "timetable" | "session";
   institutionId?: string | null;
   programmeId?: string | null;
