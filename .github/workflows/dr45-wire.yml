@@ -1,0 +1,79 @@
+name: DR-45 verified cockpit wiring
+
+on:
+  push:
+    branches:
+      - DR-45-founder-operations-cockpit
+
+permissions:
+  contents: write
+
+jobs:
+  wire-and-verify:
+    if: github.event.head_commit.message == 'ci: wire DR-45 cockpit'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: DR-45-founder-operations-cockpit
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Wire founder operations cockpit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("src/pilotMvp.tsx")
+          text = path.read_text()
+          import_line = 'import { FounderOperationsCockpit } from "./FounderOperationsCockpit";\n'
+          if import_line not in text:
+              anchor = 'import { fetchAnalyticsOverview } from "./api/adminAnalytics";\n'
+              if anchor not in text:
+                  raise SystemExit("admin analytics import anchor missing")
+              text = text.replace(anchor, anchor + import_line, 1)
+
+          pattern = re.compile(
+              r'function AdminOverview\(\{.*?\n\}\n\nfunction InstitutionsPage\(',
+              re.S,
+          )
+          replacement = '''function AdminOverview({
+            accessToken,
+            timetables,
+          }: {
+            accessToken: string;
+            timetables: AdminTimetableSummary[];
+          }) {
+            return (
+              <FounderOperationsCockpit
+                accessToken={accessToken}
+                timetables={timetables}
+              />
+            );
+          }
+
+          function InstitutionsPage('''
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f"Expected one AdminOverview block, replaced {count}")
+          path.write_text(text)
+          PY
+      - name: Format touched files
+        run: npx prettier --write src/pilotMvp.tsx src/FounderOperationsCockpit.tsx src/founderOperationsCockpit.css tests/founderOperationsCockpit.test.ts
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test
+      - run: npm run build
+      - name: Commit verified wiring and formatting
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pilotMvp.tsx src/FounderOperationsCockpit.tsx src/founderOperationsCockpit.css tests/founderOperationsCockpit.test.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "feat: wire DR-45 founder operations cockpit"
+          git push origin HEAD:DR-45-founder-operations-cockpit
