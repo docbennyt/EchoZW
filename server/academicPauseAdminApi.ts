@@ -14,6 +14,7 @@ import {
   AcademicPauseRepositoryError,
   createAcademicPause,
   deactivateAcademicPause,
+  listAcademicPauses,
   listAcademicPausesForTimetable,
   listPublishedTimetableIdsForPauseScope,
   type AcademicPauseInput,
@@ -282,6 +283,10 @@ export async function handleAcademicPauseAdminApi(
       return false;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/admin/academic-pauses") {
+      sendJson(res, 200, { pauses: await listAcademicPauses() });
+      return true;
+    }
     if (
       req.method === "POST" &&
       url.pathname === "/api/admin/academic-pauses/preview"

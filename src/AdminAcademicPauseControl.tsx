@@ -203,10 +203,7 @@ export function AdminAcademicPauseControl({
         <p className="dr58-admin-empty">No active academic pauses.</p>
       )}
 
-      <Dialog.Root
-        open={open}
-        onOpenChange={(next) => !busy && setOpen(next)}
-      >
+      <Dialog.Root open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <Dialog.Portal>
           <Dialog.Backdrop className="dr57-dialog-backdrop" />
           <Dialog.Viewport className="dr57-dialog-viewport">

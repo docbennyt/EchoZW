@@ -326,6 +326,23 @@ export async function listActiveAcademicPausesForTimetable(input: {
   );
 }
 
+export async function listAcademicPauses() {
+  const { data, error } = await client()
+    .from("academic_schedule_pauses")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (isMissingPauseSchema(error)) return [];
+  if (error) {
+    throw new AcademicPauseRepositoryError(
+      "DATABASE_UNAVAILABLE",
+      "Could not load academic pause rules.",
+      503,
+      error,
+    );
+  }
+  return (data ?? []).map((row) => mapPause(row as JsonRecord));
+}
+
 export async function listAcademicPausesForTimetable(timetableId: string) {
   const { data, error } = await client()
     .from("academic_schedule_pauses")

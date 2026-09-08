@@ -92,12 +92,16 @@ export function ActiveAcademicPauseNotice({
   if (!pauses.length) return null;
 
   return (
-    <section className="dr58-active-pauses" aria-label="Active no-lecture periods">
+    <section
+      className="dr58-active-pauses"
+      aria-label="Active no-lecture periods"
+    >
       <div className="dr58-active-pauses-heading">
         <div>
           <span>Academic calendar</span>
           <strong>
-            {pauses.length} active no-lecture {pauses.length === 1 ? "rule" : "rules"}
+            {pauses.length} active no-lecture{" "}
+            {pauses.length === 1 ? "rule" : "rules"}
           </strong>
         </div>
         <CalendarOff size={20} aria-hidden="true" />
@@ -111,7 +115,8 @@ export function ActiveAcademicPauseNotice({
               <div>
                 <strong>{pause.label}</strong>
                 <span>
-                  {pause.scopeType.replaceAll("_", " ")} · {pauseDates(pause.startsOn, pause.endsOn)}
+                  {pause.scopeType.replaceAll("_", " ")} ·{" "}
+                  {pauseDates(pause.startsOn, pause.endsOn)}
                 </span>
               </div>
               {classRepCanResume ? (
@@ -126,7 +131,9 @@ export function ActiveAcademicPauseNotice({
                       pause.id,
                     )
                       .then(async () => {
-                        onMessage(`Classes resumed — ${pause.label}. Calendar subscribers will receive the restored schedule.`);
+                        onMessage(
+                          `Classes resumed — ${pause.label}. Calendar subscribers will receive the restored schedule.`,
+                        );
                         await onRefresh();
                       })
                       .catch((error) =>
@@ -190,7 +197,9 @@ export function ClassRepAcademicPauseAction({
       setPreview(result.impact);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "Could not preview this pause.",
+        caught instanceof Error
+          ? caught.message
+          : "Could not preview this pause.",
       );
     } finally {
       setBusy("");
@@ -248,7 +257,9 @@ export function ClassRepAcademicPauseAction({
                 <div>
                   <Dialog.Title>Pause classes</Dialog.Title>
                   <Dialog.Description>
-                    Temporarily suppress lectures without deleting the recurring timetable. Existing calendar subscriptions update from the same schedule truth.
+                    Temporarily suppress lectures without deleting the recurring
+                    timetable. Existing calendar subscriptions update from the
+                    same schedule truth.
                   </Dialog.Description>
                 </div>
                 <Dialog.Close
@@ -310,11 +321,17 @@ export function ClassRepAcademicPauseAction({
                       required
                       value={form.stableSessionKey}
                       onChange={(event) =>
-                        resetPreview({ ...form, stableSessionKey: event.target.value })
+                        resetPreview({
+                          ...form,
+                          stableSessionKey: event.target.value,
+                        })
                       }
                     >
                       {timetable?.sessions.map((session) => (
-                        <option key={session.stableSessionKey} value={session.stableSessionKey}>
+                        <option
+                          key={session.stableSessionKey}
+                          value={session.stableSessionKey}
+                        >
                           {session.courseCode} · {session.startTime.slice(0, 5)}
                         </option>
                       ))}
@@ -390,17 +407,25 @@ export function ClassRepAcademicPauseAction({
                   />
                 </label>
 
-                {error ? <div className="dr58-error" role="alert">{error}</div> : null}
+                {error ? (
+                  <div className="dr58-error" role="alert">
+                    {error}
+                  </div>
+                ) : null}
 
                 {preview ? (
                   <div className="dr58-impact" role="status">
                     <CheckCircle2 size={18} aria-hidden="true" />
                     <div>
                       <strong>
-                        {preview.newlySuppressedLectureCount} lecture{preview.newlySuppressedLectureCount === 1 ? "" : "s"} will be suppressed
+                        {preview.newlySuppressedLectureCount} lecture
+                        {preview.newlySuppressedLectureCount === 1 ? "" : "s"}{" "}
+                        will be suppressed
                       </strong>
                       <span>
-                        No recurring class is deleted. The schedule restores automatically after {form.endsOn} or when you resume early.
+                        No recurring class is deleted. The schedule restores
+                        automatically after {form.endsOn} or when you resume
+                        early.
                       </span>
                     </div>
                   </div>
@@ -410,10 +435,18 @@ export function ClassRepAcademicPauseAction({
                   <button
                     type="button"
                     className="secondary"
-                    disabled={Boolean(busy) || !form.label || (scopeSession && !form.stableSessionKey)}
+                    disabled={
+                      Boolean(busy) ||
+                      !form.label ||
+                      (scopeSession && !form.stableSessionKey)
+                    }
                     onClick={() => void previewPause()}
                   >
-                    {busy === "preview" ? "Checking…" : preview ? "Refresh preview" : "Preview impact"}
+                    {busy === "preview"
+                      ? "Checking…"
+                      : preview
+                        ? "Refresh preview"
+                        : "Preview impact"}
                   </button>
                   <button
                     type="button"

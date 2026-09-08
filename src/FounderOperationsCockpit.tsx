@@ -12,7 +12,13 @@ import {
   Users,
 } from "lucide-react";
 import { fetchAnalyticsOverview } from "./api/adminAnalytics";
-import type { AdminTimetableSummary } from "./api/pilotTypes";
+import { AdminAcademicPauseControl } from "./AdminAcademicPauseControl";
+import type {
+  AdminClassGroup,
+  AdminInstitution,
+  AdminProgramme,
+  AdminTimetableSummary,
+} from "./api/pilotTypes";
 import type {
   AnalyticsOverview,
   FounderOperationsOverview,
@@ -99,9 +105,15 @@ function EmptyState({ children }: { children: React.ReactNode }) {
 
 export function FounderOperationsCockpit({
   accessToken,
+  institutions,
+  programmes,
+  classGroups,
   timetables,
 }: {
   accessToken: string;
+  institutions: AdminInstitution[];
+  programmes: AdminProgramme[];
+  classGroups: AdminClassGroup[];
   timetables: AdminTimetableSummary[];
 }) {
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
@@ -217,6 +229,14 @@ export function FounderOperationsCockpit({
           </button>
         </div>
       ) : null}
+
+      <AdminAcademicPauseControl
+        accessToken={accessToken}
+        institutions={institutions}
+        programmes={programmes}
+        classGroups={classGroups}
+        timetables={timetables}
+      />
 
       <section className="foc-section" aria-labelledby="pulse-heading">
         <div className="foc-section-heading">

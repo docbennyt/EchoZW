@@ -83,6 +83,27 @@ export function deactivateTimetablePause(
   );
 }
 
+export function listAcademicPauses(accessToken: string) {
+  return adminFetch<{ pauses: AdminAcademicSchedulePause[] }>(
+    "/api/admin/academic-pauses",
+    { accessToken },
+  );
+}
+
+export function deactivateBroadPause(accessToken: string, pauseId: string) {
+  return adminFetch<{
+    pause: AdminAcademicSchedulePause;
+    googleCalendarSync: {
+      attempted: number;
+      succeeded: number;
+      failed: number;
+    };
+  }>(`/api/admin/academic-pauses/${encodeURIComponent(pauseId)}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}
+
 export function previewBroadPause(accessToken: string, input: BroadPauseInput) {
   return adminFetch<{ impact: AcademicPauseImpact }>(
     "/api/admin/academic-pauses/preview",
