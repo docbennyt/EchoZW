@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   wire-and-verify:
-    if: github.event.head_commit.message == 'ci: wire DR-45 cockpit'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,29 +36,31 @@ jobs:
                   raise SystemExit("admin analytics import anchor missing")
               text = text.replace(anchor, anchor + import_line, 1)
 
-          pattern = re.compile(
-              r'function AdminOverview\(\{.*?\n\}\n\nfunction InstitutionsPage\(',
-              re.S,
-          )
-          replacement = '''function AdminOverview({
-            accessToken,
-            timetables,
-          }: {
-            accessToken: string;
-            timetables: AdminTimetableSummary[];
-          }) {
-            return (
-              <FounderOperationsCockpit
-                accessToken={accessToken}
-                timetables={timetables}
-              />
-            );
-          }
+          if '<FounderOperationsCockpit' not in text:
+              pattern = re.compile(
+                  r'function AdminOverview\(\{.*?\n\}\n\nfunction InstitutionsPage\(',
+                  re.S,
+              )
+              replacement = '''function AdminOverview({
+                accessToken,
+                timetables,
+              }: {
+                accessToken: string;
+                timetables: AdminTimetableSummary[];
+              }) {
+                return (
+                  <FounderOperationsCockpit
+                    accessToken={accessToken}
+                    timetables={timetables}
+                  />
+                );
+              }
 
-          function InstitutionsPage('''
-          text, count = pattern.subn(replacement, text, count=1)
-          if count != 1:
-              raise SystemExit(f"Expected one AdminOverview block, replaced {count}")
+              function InstitutionsPage('''
+              text, count = pattern.subn(replacement, text, count=1)
+              if count != 1:
+                  raise SystemExit(f"Expected one AdminOverview block, replaced {count}")
+
           path.write_text(text)
           PY
       - name: Format touched files
