@@ -12,7 +12,7 @@ jobs:
   wire-and-verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: DR-45-founder-operations-cockpit
           fetch-depth: 0
@@ -20,10 +20,12 @@ jobs:
       - name: Rebase onto current Calender
         shell: bash
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin Calender
           git rebase origin/Calender
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
