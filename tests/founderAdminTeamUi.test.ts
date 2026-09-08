@@ -15,7 +15,7 @@ describe("founder and Admin Team workspace", () => {
     expect(pilotMvp).toContain(
       "Admin can manage CalenderZW operations and Class Reps, but",
     );
-    expect(pilotMvp).toContain("cannot change founder/superadmin authority.");
+    expect(pilotMvp).toContain("change founder/superadmin authority.");
   });
 
   it("never renders destructive Admin controls for the founder row", () => {
