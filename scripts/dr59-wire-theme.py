@@ -3,12 +3,15 @@ from pathlib import Path
 
 app_path = Path("src/AppV2.tsx")
 app = app_path.read_text()
-theme_import = 'import { DashboardThemeToggle, isDashboardPath } from "./dashboardTheme";\n'
-if theme_import not in app:
+component_import = 'import { DashboardThemeToggle } from "./dashboardTheme";\n'
+contract_import = 'import { isDashboardPath } from "./dashboardThemeContract";\n'
+if component_import not in app:
     marker = 'import { FinderDiscovery } from "./FinderDiscovery";\n'
     if marker not in app:
         raise SystemExit("AppV2 import marker not found")
-    app = app.replace(marker, marker + theme_import, 1)
+    app = app.replace(marker, marker + component_import + contract_import, 1)
+elif contract_import not in app:
+    app = app.replace(component_import, component_import + contract_import, 1)
 if "<DashboardThemeToggle" not in app:
     marker = '        </nav>\n        <a className="czw-button czw-button-primary czw-nav-cta" href="/find">'
     if marker not in app:
@@ -29,7 +32,7 @@ main = main.replace(
     'import React, { useEffect, useLayoutEffect, useState } from "react";',
     1,
 )
-theme_import = 'import { syncDashboardThemeScope } from "./dashboardTheme";\n'
+theme_import = 'import { syncDashboardThemeScope } from "./dashboardThemeContract";\n'
 if theme_import not in main:
     marker = 'import { ClassRepCorrectionSafetyEnhancement } from "./ClassRepCorrectionSafetyEnhancement";\n'
     if marker not in main:
