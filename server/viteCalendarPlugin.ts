@@ -5,6 +5,7 @@ import type { Plugin } from "vite";
 import { handleAdminRequest } from "./adminApi.js";
 import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
+import { handlePaymentRequest } from "./paymentApi.js";
 import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
 import type { AuthDependencies } from "./supabase/auth.js";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
@@ -715,6 +716,10 @@ export function calendarMvpPlugin(
         next();
       });
       server.middlewares.use(async (req, res, next) => {
+        if (await handlePaymentRequest(req, res, runtimeEnv)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
         if (await handlePublicTimetableRequest(req, res)) return;
         next();
       });
@@ -738,6 +743,10 @@ export function calendarMvpPlugin(
     configurePreviewServer(server) {
       server.middlewares.use(async (req, res, next) => {
         if (await handleAdminRequest(req, res, authDeps)) return;
+        next();
+      });
+      server.middlewares.use(async (req, res, next) => {
+        if (await handlePaymentRequest(req, res, runtimeEnv)) return;
         next();
       });
       server.middlewares.use(async (req, res, next) => {

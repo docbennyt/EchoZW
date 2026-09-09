@@ -2,6 +2,12 @@ import { Check } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { track } from "./analytics";
+import { fetchPaymentCapabilities } from "./api/payments";
+import {
+  DEFAULT_SEMESTER_PLAN,
+  formatPlanPrice,
+  type PublicPaymentCapability,
+} from "./domain/payments";
 
 const SHARE_SOURCES = new Set([
   "class_share",
@@ -51,6 +57,27 @@ function PilotOffer() {
   const sectionRef = useRef<HTMLElement | null>(null);
   const trackedView = useRef(false);
   const source = useMemo(() => acquisitionSource(), []);
+  const [paymentCapability, setPaymentCapability] =
+    useState<PublicPaymentCapability | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchPaymentCapabilities()
+      .then((capability) => {
+        if (active) setPaymentCapability(capability);
+      })
+      .catch(() => {
+        // The pilot offer remains truthful when payment capability is offline.
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const plannedPrice = formatPlanPrice(
+    paymentCapability?.amountMinor ?? DEFAULT_SEMESTER_PLAN.amountMinor,
+    paymentCapability?.currency ?? DEFAULT_SEMESTER_PLAN.currency,
+  );
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -139,7 +166,7 @@ function PilotOffer() {
             </strong>
             <div className="czw-pilot-price-divider" />
             <span>Planned after pilot</span>
-            <h3>US$3 / semester</h3>
+            <h3>{plannedPrice} / semester</h3>
             <p>
               Planned founding-student price for paid launch. This is the
               current pricing hypothesis, not a payment request today.
@@ -147,6 +174,11 @@ function PilotOffer() {
             <p className="czw-pilot-payment-note">
               Local payment options planned for paid launch.
             </p>
+            <small className="czw-pilot-payment-capability">
+              {paymentCapability?.checkoutEnabled
+                ? "Hosted checkout is technically ready, but no payment is required during the pilot."
+                : "Checkout stays capability-gated until merchant readiness is verified."}
+            </small>
           </aside>
         </div>
       </div>
