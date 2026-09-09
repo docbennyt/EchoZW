@@ -1,0 +1,184 @@
+name: DR-59 Wire Theme
+
+on:
+  push:
+    branches:
+      - DR-59-dashboard-theme-system
+
+permissions:
+  contents: write
+
+jobs:
+  wire-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: DR-59-dashboard-theme-system
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Wire shared dashboard theme
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app_path = Path("src/AppV2.tsx")
+          app = app_path.read_text()
+          theme_import = 'import { DashboardThemeToggle, isDashboardPath } from "./dashboardTheme";\n'
+          if theme_import not in app:
+              marker = 'import { FinderDiscovery } from "./FinderDiscovery";\n'
+              if marker not in app:
+                  raise SystemExit("AppV2 import marker not found")
+              app = app.replace(marker, marker + theme_import, 1)
+          if '<DashboardThemeToggle' not in app:
+              marker = '''        </nav>
+          <a
+            className="czw-nav-admin"
+            href="/admin"
+            onClick={() => setMenuOpen(false)}
+          >
+            Admin
+          </a>
+        </nav>
+        <a className="czw-button czw-button-primary czw-nav-cta" href="/find">'''
+              # The admin link lives inside nav; use the final closing nav before the CTA.
+              simple_marker = '''        </nav>
+        <a className="czw-button czw-button-primary czw-nav-cta" href="/find">'''
+              if simple_marker not in app:
+                  raise SystemExit("GlobalHeader nav/CTA marker not found")
+              replacement = '''        </nav>
+        {isDashboardPath(currentPath()) ? <DashboardThemeToggle /> : null}
+        <a className="czw-button czw-button-primary czw-nav-cta" href="/find">'''
+              app = app.replace(simple_marker, replacement, 1)
+          app_path.write_text(app)
+
+          main_path = Path("src/main.tsx")
+          main = main_path.read_text()
+          main = main.replace(
+              'import React, { useEffect, useState } from "react";',
+              'import React, { useEffect, useLayoutEffect, useState } from "react";',
+              1,
+          )
+          theme_import = 'import { syncDashboardThemeScope } from "./dashboardTheme";\n'
+          if theme_import not in main:
+              marker = 'import { ClassRepCorrectionSafetyEnhancement } from "./ClassRepCorrectionSafetyEnhancement";\n'
+              if marker not in main:
+                  raise SystemExit("main.tsx import marker not found")
+              main = main.replace(marker, marker + theme_import, 1)
+          theme_css = 'import "./dashboardTheme.css";\n'
+          if theme_css not in main:
+              marker = 'import "./classRepCorrectionSafetyEnhancement.css";\n'
+              if marker not in main:
+                  raise SystemExit("main.tsx CSS marker not found")
+              main = main.replace(marker, marker + theme_css, 1)
+          sync_block = '''  useLayoutEffect(() => {
+    syncDashboardThemeScope(path);
+  }, [path]);
+'''
+          if sync_block not in main:
+              marker = '''function RootApp() {
+  const [path, setPath] = useState(currentPath);
+'''
+              if marker not in main:
+                  raise SystemExit("RootApp state marker not found")
+              main = main.replace(marker, marker + "\n" + sync_block, 1)
+          main_path.write_text(main)
+
+          index_path = Path("index.html")
+          index = index_path.read_text()
+          if "calenderzw.dashboard.theme" not in index:
+              marker = '    <meta name="theme-color" content="#153d32" />\n'
+              if marker not in index:
+                  raise SystemExit("index theme-color marker not found")
+              bootstrap = '''    <script>
+      (() => {
+        const pathname = window.location.pathname;
+        const isDashboard =
+          pathname === "/admin" ||
+          pathname.startsWith("/admin/") ||
+          pathname === "/dashboard" ||
+          pathname.startsWith("/dashboard/");
+        if (!isDashboard) return;
+
+        let theme = "light";
+        try {
+          if (window.localStorage.getItem("calenderzw.dashboard.theme") === "dark") {
+            theme = "dark";
+          }
+        } catch {
+          // Light remains the safe first-visit/default theme.
+        }
+
+        const root = document.documentElement;
+        root.dataset.dashboardSurface = "true";
+        root.dataset.dashboardTheme = theme;
+        root.style.colorScheme = theme;
+      })();
+    </script>
+'''
+              index = index.replace(marker, marker + bootstrap, 1)
+          index_path.write_text(index)
+
+          class_rep_path = Path("src/classRepCorrectionSafetyEnhancement.css")
+          class_rep = class_rep_path.read_text()
+          legacy = '''  --dr57-bg: #080b0a;
+  --dr57-surface: #0f1412;
+  --dr57-surface-2: #151b18;
+  --dr57-surface-3: #1b231f;
+  --dr57-text: #f3f7f5;
+  --dr57-text-2: #b7c3be;
+  --dr57-text-3: #7f9189;
+  --dr57-line: rgba(255, 255, 255, 0.09);
+  --dr57-line-strong: rgba(255, 255, 255, 0.16);
+  --dr57-brand: #62d7aa;
+  --dr57-brand-strong: #86ecc5;
+  --dr57-brand-soft: rgba(98, 215, 170, 0.12);
+  --dr57-gold: #f2b84b;
+  --dr57-danger: #ff7474;
+  --dr57-danger-soft: rgba(255, 116, 116, 0.11);
+  --dr57-warning: #f7c762;
+  --dr57-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);'''
+          semantic = '''  --dr57-bg: var(--dashboard-bg, #f7f4ec);
+  --dr57-surface: var(--dashboard-surface, #fffefa);
+  --dr57-surface-2: var(--dashboard-surface-2, #f1f4ee);
+  --dr57-surface-3: var(--dashboard-surface-3, #e8eee8);
+  --dr57-text: var(--dashboard-text, #14221e);
+  --dr57-text-2: var(--dashboard-text-2, #42524c);
+  --dr57-text-3: var(--dashboard-text-3, #697670);
+  --dr57-line: var(--dashboard-line, rgba(21, 61, 50, 0.14));
+  --dr57-line-strong: var(--dashboard-line-strong, rgba(21, 61, 50, 0.24));
+  --dr57-brand: var(--dashboard-brand, #17423a);
+  --dr57-brand-strong: var(--dashboard-brand-strong, #245f51);
+  --dr57-brand-soft: var(--dashboard-brand-soft, rgba(23, 66, 58, 0.09));
+  --dr57-gold: var(--dashboard-accent, #d8a830);
+  --dr57-danger: var(--dashboard-danger, #9d4138);
+  --dr57-danger-soft: var(--dashboard-danger-soft, #fff1ee);
+  --dr57-warning: var(--dashboard-warning, #8a6114);
+  --dr57-shadow: var(--dashboard-shadow, 0 22px 70px rgba(21, 61, 50, 0.12));'''
+          if legacy in class_rep:
+              class_rep = class_rep.replace(legacy, semantic, 1)
+          elif semantic not in class_rep:
+              raise SystemExit("Class Rep theme variable block drifted")
+          class_rep_path.write_text(class_rep)
+          PY
+      - name: Format changed files
+        run: npx prettier --write index.html src/AppV2.tsx src/main.tsx src/dashboardTheme.tsx src/dashboardTheme.css src/classRepCorrectionSafetyEnhancement.css tests/dashboardTheme.test.ts tests/dashboardThemeSurface.test.ts
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test
+      - run: npm run build
+      - name: Commit verified DR-59 wiring
+        run: |
+          if git diff --quiet; then
+            echo "No wiring changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html src/AppV2.tsx src/main.tsx src/dashboardTheme.tsx src/dashboardTheme.css src/classRepCorrectionSafetyEnhancement.css tests/dashboardTheme.test.ts tests/dashboardThemeSurface.test.ts
+          git commit -m "feat: wire persistent complete dashboard theming"
+          git push origin HEAD:DR-59-dashboard-theme-system
