@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { AppV2 } from "./AppV2";
 import { AuthSetupPage } from "./AuthSetupPage";
 import { ClassRepCorrectionSafetyEnhancement } from "./ClassRepCorrectionSafetyEnhancement";
+import { syncDashboardThemeScope } from "./dashboardThemeContract";
 import { FinderDemandPrompt } from "./FinderDemandPrompt";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
@@ -30,6 +31,7 @@ import "./growthCapturePages.css";
 import "./growthInboxPage.css";
 import "./pilotOfferEnhancement.css";
 import "./classRepCorrectionSafetyEnhancement.css";
+import "./dashboardTheme.css";
 
 function currentPath() {
   return window.location.pathname;
@@ -57,6 +59,10 @@ function timetableSlug(path: string) {
 
 function RootApp() {
   const [path, setPath] = useState(currentPath);
+
+  useLayoutEffect(() => {
+    syncDashboardThemeScope(path);
+  }, [path]);
   const calendarRecoveryPath =
     path === "/find"
       ? googleCalendarFailureRecoveryPath(

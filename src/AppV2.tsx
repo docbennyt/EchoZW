@@ -18,6 +18,8 @@ import { BRAND } from "./config/brand";
 import { legalConfig } from "./config/legal";
 import { AdminMvpScreen, PublicTimetableMvpScreen } from "./pilotMvp";
 import { FinderDiscovery } from "./FinderDiscovery";
+import { DashboardThemeToggle } from "./dashboardTheme";
+import { isDashboardPath } from "./dashboardThemeContract";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
 import {
   AUTH_CALLBACK_PATH,
@@ -157,6 +159,7 @@ function GlobalHeader({ transparent = false }: { transparent?: boolean }) {
             Admin
           </a>
         </nav>
+        {isDashboardPath(currentPath()) ? <DashboardThemeToggle /> : null}
         <a className="czw-button czw-button-primary czw-nav-cta" href="/find">
           Find timetable <ArrowRight size={16} aria-hidden="true" />
         </a>

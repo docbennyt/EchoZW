@@ -7,6 +7,33 @@
     <meta name="application-name" content="CalenderZW" />
     <meta name="apple-mobile-web-app-title" content="CalenderZW" />
     <meta name="theme-color" content="#153d32" />
+    <script>
+      (() => {
+        const pathname = window.location.pathname;
+        const isDashboard =
+          pathname === "/admin" ||
+          pathname.startsWith("/admin/") ||
+          pathname === "/dashboard" ||
+          pathname.startsWith("/dashboard/");
+        if (!isDashboard) return;
+
+        let theme = "light";
+        try {
+          if (
+            window.localStorage.getItem("calenderzw.dashboard.theme") === "dark"
+          ) {
+            theme = "dark";
+          }
+        } catch {
+          // Light remains the safe first-visit/default theme.
+        }
+
+        const root = document.documentElement;
+        root.dataset.dashboardSurface = "true";
+        root.dataset.dashboardTheme = theme;
+        root.style.colorScheme = theme;
+      })();
+    </script>
     <meta name="robots" content="index, follow" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

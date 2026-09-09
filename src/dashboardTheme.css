@@ -1,0 +1,544 @@
+/* DR-59 — one semantic theme contract for every staff surface and portal. */
+html[data-dashboard-surface="true"] {
+  --dashboard-bg: #f7f4ec;
+  --dashboard-surface: #fffefa;
+  --dashboard-surface-2: #f1f4ee;
+  --dashboard-surface-3: #e8eee8;
+  --dashboard-input: #fffefa;
+  --dashboard-text: #14221e;
+  --dashboard-text-2: #42524c;
+  --dashboard-text-3: #697670;
+  --dashboard-line: rgba(21, 61, 50, 0.14);
+  --dashboard-line-strong: rgba(21, 61, 50, 0.24);
+  --dashboard-brand: #17423a;
+  --dashboard-brand-strong: #245f51;
+  --dashboard-brand-soft: rgba(23, 66, 58, 0.09);
+  --dashboard-accent: #d8a830;
+  --dashboard-accent-soft: rgba(216, 168, 48, 0.13);
+  --dashboard-danger: #9d4138;
+  --dashboard-danger-soft: #fff1ee;
+  --dashboard-danger-text: #8b3027;
+  --dashboard-success: #27705d;
+  --dashboard-warning: #8a6114;
+  --dashboard-warning-soft: #fff8e8;
+  --dashboard-warning-text: #715314;
+  --dashboard-hover: rgba(23, 66, 58, 0.055);
+  --dashboard-subtle: rgba(23, 66, 58, 0.035);
+  --dashboard-header: rgba(247, 244, 236, 0.94);
+  --dashboard-backdrop: rgba(10, 18, 15, 0.5);
+  --dashboard-shadow: 0 22px 70px rgba(21, 61, 50, 0.12);
+  --dashboard-card-gradient: linear-gradient(180deg, #fffefa, #f9faf6);
+  --dashboard-hero-gradient: linear-gradient(
+    135deg,
+    #fffefa,
+    #f0f4ec 58%,
+    #e7efe8
+  );
+  --dashboard-hero-grid: rgba(21, 61, 50, 0.045);
+  --dashboard-primary-contrast: #fff;
+  --dashboard-footer-bg: #eef1e9;
+  --dashboard-footer-text: #52615a;
+  --dashboard-footer-strong: #172720;
+  --dashboard-footer-line: rgba(21, 61, 50, 0.14);
+
+  /* Existing admin/pilot tokens inherit the same contract. */
+  --ink: var(--dashboard-text);
+  --muted: var(--dashboard-text-3);
+  --line: var(--dashboard-line);
+  --surface: var(--dashboard-bg);
+  --panel: var(--dashboard-surface);
+  --brand: var(--dashboard-brand);
+  --brand-2: var(--dashboard-brand-strong);
+  --accent: var(--dashboard-accent);
+  --danger: var(--dashboard-danger);
+  --success: var(--dashboard-success);
+  --warning: var(--dashboard-warning);
+  --shadow: var(--dashboard-shadow);
+
+  /* AppV2 shell tokens inherit too. */
+  --czw-forest: var(--dashboard-brand);
+  --czw-forest-dark: #0f342b;
+  --czw-sage: #dfe9dd;
+  --czw-sage-soft: var(--dashboard-brand-soft);
+  --czw-cream: var(--dashboard-bg);
+  --czw-white: var(--dashboard-surface);
+  --czw-gold: var(--dashboard-accent);
+  --czw-gold-soft: #f7e7b3;
+  --czw-ink: var(--dashboard-text);
+  --czw-muted: var(--dashboard-text-3);
+  --czw-line: var(--dashboard-line);
+  --czw-danger: var(--dashboard-danger);
+  --czw-success: var(--dashboard-success);
+  --czw-shadow: var(--dashboard-shadow);
+
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text);
+  color-scheme: light;
+}
+
+html[data-dashboard-surface="true"][data-dashboard-theme="dark"] {
+  --dashboard-bg: #080b0a;
+  --dashboard-surface: #0f1412;
+  --dashboard-surface-2: #151b18;
+  --dashboard-surface-3: #1b231f;
+  --dashboard-input: #0b0f0d;
+  --dashboard-text: #f3f7f5;
+  --dashboard-text-2: #b7c3be;
+  --dashboard-text-3: #82928b;
+  --dashboard-line: rgba(255, 255, 255, 0.09);
+  --dashboard-line-strong: rgba(255, 255, 255, 0.16);
+  --dashboard-brand: #62d7aa;
+  --dashboard-brand-strong: #86ecc5;
+  --dashboard-brand-soft: rgba(98, 215, 170, 0.12);
+  --dashboard-accent: #f2b84b;
+  --dashboard-accent-soft: rgba(242, 184, 75, 0.1);
+  --dashboard-danger: #ff7474;
+  --dashboard-danger-soft: rgba(255, 116, 116, 0.11);
+  --dashboard-danger-text: #ffabab;
+  --dashboard-success: #62d7aa;
+  --dashboard-warning: #f7c762;
+  --dashboard-warning-soft: rgba(247, 199, 98, 0.1);
+  --dashboard-warning-text: #f9dfa5;
+  --dashboard-hover: rgba(255, 255, 255, 0.055);
+  --dashboard-subtle: rgba(255, 255, 255, 0.028);
+  --dashboard-header: rgba(8, 11, 10, 0.92);
+  --dashboard-backdrop: rgba(0, 0, 0, 0.72);
+  --dashboard-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
+  --dashboard-card-gradient: linear-gradient(
+    180deg,
+    rgba(21, 27, 24, 0.98),
+    rgba(15, 20, 18, 0.98)
+  );
+  --dashboard-hero-gradient: linear-gradient(
+    135deg,
+    #102c27,
+    #17423a 55%,
+    #215c50
+  );
+  --dashboard-hero-grid: rgba(255, 255, 255, 0.045);
+  --dashboard-primary-contrast: #062017;
+  --dashboard-footer-bg: #0b100e;
+  --dashboard-footer-text: #9fb0a9;
+  --dashboard-footer-strong: #f3f7f5;
+  --dashboard-footer-line: rgba(255, 255, 255, 0.1);
+
+  --czw-forest: #2e7d69;
+  --czw-forest-dark: #286a5b;
+  --czw-sage: #1a2923;
+  --czw-sage-soft: var(--dashboard-brand-soft);
+  --czw-gold-soft: rgba(242, 184, 75, 0.13);
+  color-scheme: dark;
+}
+
+html[data-dashboard-surface="true"] body,
+html[data-dashboard-surface="true"] #root,
+html[data-dashboard-surface="true"] .czw-app-shell,
+html[data-dashboard-surface="true"] .czw-product-page,
+html[data-dashboard-surface="true"] .czw-admin-wrap,
+html[data-dashboard-surface="true"] .app-shell {
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] body {
+  background-image: none;
+}
+
+/* Global chrome: the shell must never disagree with the dashboard beneath it. */
+html[data-dashboard-surface="true"] .czw-header,
+html[data-dashboard-surface="true"] .topbar {
+  background: var(--dashboard-header);
+  border-color: var(--dashboard-line);
+  color: var(--dashboard-text);
+  backdrop-filter: blur(20px);
+}
+
+html[data-dashboard-surface="true"] .czw-wordmark,
+html[data-dashboard-surface="true"] .czw-mark,
+html[data-dashboard-surface="true"] .czw-nav-links,
+html[data-dashboard-surface="true"] .czw-nav-admin {
+  color: var(--dashboard-text) !important;
+}
+
+html[data-dashboard-surface="true"] .czw-wordmark span,
+html[data-dashboard-surface="true"]
+  .czw-nav-links
+  a:not(.czw-nav-admin)::after {
+  color: var(--dashboard-brand);
+  background: var(--dashboard-brand);
+}
+
+html[data-dashboard-surface="true"] .czw-mark,
+html[data-dashboard-surface="true"] .czw-menu-button {
+  border-color: var(--dashboard-line-strong);
+}
+
+html[data-dashboard-surface="true"] .czw-mark::before,
+html[data-dashboard-surface="true"] .czw-mark::after {
+  background: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .czw-mark i {
+  background: var(--dashboard-line-strong);
+}
+
+html[data-dashboard-surface="true"] .czw-mark i:last-child {
+  background: var(--dashboard-brand);
+}
+
+html[data-dashboard-surface="true"] .czw-menu-button,
+html[data-dashboard-surface="true"] .czw-nav-links.is-open {
+  background: var(--dashboard-surface);
+  color: var(--dashboard-brand);
+}
+
+html[data-dashboard-surface="true"] .czw-button-secondary,
+html[data-dashboard-surface="true"] .czw-admin-wrap .secondary {
+  background: var(--dashboard-surface);
+  border-color: var(--dashboard-line);
+  color: var(--dashboard-text) !important;
+}
+
+html[data-dashboard-surface="true"] .czw-button-secondary:hover,
+html[data-dashboard-surface="true"] .czw-admin-wrap .secondary:hover {
+  background: var(--dashboard-surface-2);
+  border-color: var(--dashboard-line-strong);
+}
+
+.dashboard-theme-toggle {
+  align-items: center;
+  background: var(--dashboard-surface);
+  border: 1px solid var(--dashboard-line-strong);
+  border-radius: 999px;
+  color: var(--dashboard-text-2);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  gap: 0.42rem;
+  justify-content: center;
+  min-height: 2.55rem;
+  padding: 0.55rem 0.75rem;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.dashboard-theme-toggle:hover {
+  background: var(--dashboard-surface-2);
+  border-color: var(--dashboard-brand);
+  color: var(--dashboard-text);
+  transform: translateY(-1px);
+}
+
+.dashboard-theme-toggle:focus-visible {
+  outline: 3px solid
+    color-mix(in srgb, var(--dashboard-accent) 70%, transparent);
+  outline-offset: 3px;
+}
+
+/* Light mode means the footer is light too; dark mode keeps it dark. */
+html[data-dashboard-surface="true"] .czw-footer {
+  background: var(--dashboard-footer-bg);
+  border-top: 1px solid var(--dashboard-footer-line);
+  color: var(--dashboard-footer-strong);
+}
+
+html[data-dashboard-surface="true"] .czw-footer-brand p,
+html[data-dashboard-surface="true"] .czw-footer-links a,
+html[data-dashboard-surface="true"] .czw-footer-bottom,
+html[data-dashboard-surface="true"] .czw-compact-links {
+  color: var(--dashboard-footer-text);
+}
+
+html[data-dashboard-surface="true"] .czw-footer-links strong,
+html[data-dashboard-surface="true"] .czw-footer-bottom a,
+html[data-dashboard-surface="true"] .czw-brand-on-dark .czw-wordmark,
+html[data-dashboard-surface="true"] .czw-brand-on-dark .czw-wordmark span {
+  color: var(--dashboard-footer-strong);
+}
+
+html[data-dashboard-surface="true"] .czw-brand-on-dark .czw-mark {
+  border-color: var(--dashboard-footer-strong);
+}
+
+html[data-dashboard-surface="true"] .czw-brand-on-dark .czw-mark::before,
+html[data-dashboard-surface="true"] .czw-brand-on-dark .czw-mark::after {
+  background: var(--dashboard-footer-strong);
+}
+
+html[data-dashboard-surface="true"] .czw-footer-bottom {
+  border-color: var(--dashboard-footer-line);
+}
+
+/* Generic Admin / Founder host surfaces. */
+html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-page-hero,
+html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-surface,
+html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-card,
+html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-nav,
+html[data-dashboard-surface="true"] .czw-admin-wrap .sync-sheet,
+html[data-dashboard-surface="true"] .czw-admin-wrap .panel,
+html[data-dashboard-surface="true"] .czw-auth-card,
+html[data-dashboard-surface="true"] .czw-action-card,
+html[data-dashboard-surface="true"] .czw-readiness-table {
+  background: var(--dashboard-surface);
+  border-color: var(--dashboard-line);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-card {
+  background: var(--dashboard-surface-2);
+}
+
+html[data-dashboard-surface="true"]
+  .czw-admin-wrap
+  .pilot-nav
+  a[aria-current="page"],
+html[data-dashboard-surface="true"] .topbar nav a:hover,
+html[data-dashboard-surface="true"] .topbar nav a[aria-current="page"] {
+  background: var(--dashboard-brand-soft);
+  color: var(--dashboard-brand);
+}
+
+html[data-dashboard-surface="true"] .czw-admin-wrap input,
+html[data-dashboard-surface="true"] .czw-admin-wrap select,
+html[data-dashboard-surface="true"] .czw-admin-wrap textarea,
+html[data-dashboard-surface="true"] .czw-auth-card input,
+html[data-dashboard-surface="true"] .czw-auth-card select,
+html[data-dashboard-surface="true"] .czw-auth-card textarea {
+  background: var(--dashboard-input);
+  border-color: var(--dashboard-line-strong);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .czw-admin-wrap input::placeholder,
+html[data-dashboard-surface="true"] .czw-admin-wrap textarea::placeholder,
+html[data-dashboard-surface="true"] .czw-auth-card input::placeholder {
+  color: var(--dashboard-text-3);
+}
+
+/* Class Rep cockpit consumes the shared semantic contract instead of owning a dark theme. */
+html[data-dashboard-surface="true"] .class-rep-cockpit-page {
+  --dr57-bg: var(--dashboard-bg);
+  --dr57-surface: var(--dashboard-surface);
+  --dr57-surface-2: var(--dashboard-surface-2);
+  --dr57-surface-3: var(--dashboard-surface-3);
+  --dr57-text: var(--dashboard-text);
+  --dr57-text-2: var(--dashboard-text-2);
+  --dr57-text-3: var(--dashboard-text-3);
+  --dr57-line: var(--dashboard-line);
+  --dr57-line-strong: var(--dashboard-line-strong);
+  --dr57-brand: var(--dashboard-brand);
+  --dr57-brand-strong: var(--dashboard-brand-strong);
+  --dr57-brand-soft: var(--dashboard-brand-soft);
+  --dr57-gold: var(--dashboard-accent);
+  --dr57-danger: var(--dashboard-danger);
+  --dr57-danger-soft: var(--dashboard-danger-soft);
+  --dr57-warning: var(--dashboard-warning);
+  --dr57-shadow: var(--dashboard-shadow);
+  background:
+    radial-gradient(
+      circle at 8% -10%,
+      var(--dashboard-brand-soft),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 92% 2%,
+      var(--dashboard-accent-soft),
+      transparent 24rem
+    ),
+    var(--dashboard-bg);
+}
+
+html[data-dashboard-surface="true"] .class-rep-cockpit-page > .pilot-page-hero {
+  background: var(--dashboard-header);
+  border-color: var(--dashboard-line);
+}
+
+html[data-dashboard-surface="true"] .dr57-card {
+  background: var(--dashboard-card-gradient);
+  border-color: var(--dashboard-line);
+  box-shadow: 0 1px 0 var(--dashboard-line);
+}
+
+html[data-dashboard-surface="true"] .dr57-tomorrow-row,
+html[data-dashboard-surface="true"] .dr57-session,
+html[data-dashboard-surface="true"] .dr57-update-item,
+html[data-dashboard-surface="true"] .dr57-choice {
+  background: var(--dashboard-subtle);
+}
+
+html[data-dashboard-surface="true"] .dr57-action-bar {
+  background: color-mix(in srgb, var(--dashboard-surface) 88%, transparent);
+  border-color: var(--dashboard-line);
+}
+
+html[data-dashboard-surface="true"] .dr57-action.primary,
+html[data-dashboard-surface="true"] .dr57-form-actions .save {
+  color: var(--dashboard-primary-contrast);
+}
+
+html[data-dashboard-surface="true"] .dr57-message[data-tone="neutral"] {
+  background: var(--dashboard-subtle);
+  border-color: var(--dashboard-line);
+}
+
+html[data-dashboard-surface="true"] .dr57-message[data-tone="error"] {
+  background: var(--dashboard-danger-soft);
+  border-color: color-mix(in srgb, var(--dashboard-danger) 34%, transparent);
+  color: var(--dashboard-danger-text);
+}
+
+html[data-dashboard-surface="true"] .dr57-undo,
+html[data-dashboard-surface="true"] .dr53-duplicate-banner {
+  background: var(--dashboard-warning-soft);
+  border-color: color-mix(in srgb, var(--dashboard-warning) 30%, transparent);
+  color: var(--dashboard-warning-text);
+}
+
+html[data-dashboard-surface="true"] .dr57-dialog-backdrop {
+  background: var(--dashboard-backdrop);
+}
+
+html[data-dashboard-surface="true"] .dr57-dialog {
+  background: var(--dashboard-surface);
+  border-color: var(--dashboard-line-strong);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .dr57-field input,
+html[data-dashboard-surface="true"] .dr57-field select,
+html[data-dashboard-surface="true"] .dr57-field textarea {
+  background: var(--dashboard-input);
+  border-color: var(--dashboard-line-strong);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .dr57-public-link:hover,
+html[data-dashboard-surface="true"]
+  .class-rep-cockpit-page
+  > .pilot-page-hero
+  .secondary:hover {
+  background: var(--dashboard-hover);
+}
+
+/* Founder cockpit uses the same surfaces rather than a permanently dark hero/light card mix. */
+html[data-dashboard-surface="true"] .foc-shell {
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .foc-hero {
+  background:
+    radial-gradient(
+      circle at 84% 12%,
+      var(--dashboard-accent-soft),
+      transparent 19rem
+    ),
+    var(--dashboard-hero-gradient);
+  border-color: var(--dashboard-line);
+  box-shadow: var(--dashboard-shadow);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .foc-hero::after {
+  background-image:
+    linear-gradient(var(--dashboard-hero-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dashboard-hero-grid) 1px, transparent 1px);
+}
+
+html[data-dashboard-surface="true"] .foc-hero-copy > p,
+html[data-dashboard-surface="true"] .foc-hero-status span,
+html[data-dashboard-surface="true"] .foc-hero-status p {
+  color: var(--dashboard-text-2);
+}
+
+html[data-dashboard-surface="true"] .foc-secondary-action,
+html[data-dashboard-surface="true"] .foc-icon-button,
+html[data-dashboard-surface="true"] .foc-hero-status {
+  background: var(--dashboard-subtle);
+  border-color: var(--dashboard-line-strong);
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .foc-hero-status > div {
+  border-color: var(--dashboard-line);
+}
+
+html[data-dashboard-surface="true"] .foc-section,
+html[data-dashboard-surface="true"] .foc-pulse-card,
+html[data-dashboard-surface="true"] .foc-health-list article,
+html[data-dashboard-surface="true"] .foc-trust-list article {
+  background: var(--dashboard-surface);
+  border-color: var(--dashboard-line);
+  color: var(--dashboard-text);
+  box-shadow: none;
+}
+
+html[data-dashboard-surface="true"] .foc-pulse-card,
+html[data-dashboard-surface="true"] .foc-health-list article,
+html[data-dashboard-surface="true"] .foc-trust-list article {
+  background: var(--dashboard-surface-2);
+}
+
+html[data-dashboard-surface="true"] .foc-pulse-card strong,
+html[data-dashboard-surface="true"] .foc-funnel-label strong {
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .foc-pulse-emphasis {
+  background: var(--dashboard-brand-soft);
+  border-color: color-mix(
+    in srgb,
+    var(--dashboard-brand) 30%,
+    var(--dashboard-line)
+  );
+}
+
+html[data-dashboard-surface="true"] .foc-pulse-emphasis > span,
+html[data-dashboard-surface="true"] .foc-pulse-emphasis small,
+html[data-dashboard-surface="true"] .foc-pulse-emphasis strong {
+  color: var(--dashboard-text);
+}
+
+html[data-dashboard-surface="true"] .foc-funnel-track {
+  background: var(--dashboard-surface-3);
+}
+
+html[data-dashboard-surface="true"] .foc-sample-note {
+  background: var(--dashboard-warning-soft);
+  border-color: color-mix(in srgb, var(--dashboard-warning) 28%, transparent);
+  color: var(--dashboard-warning-text);
+}
+
+html[data-dashboard-surface="true"] .foc-error {
+  background: var(--dashboard-danger-soft);
+  border-color: color-mix(in srgb, var(--dashboard-danger) 28%, transparent);
+  color: var(--dashboard-danger-text);
+}
+
+@media (max-width: 1080px) {
+  .dashboard-theme-toggle {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-theme-toggle {
+    min-width: 2.6rem;
+    padding-inline: 0.65rem;
+  }
+
+  .dashboard-theme-toggle span {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-theme-toggle {
+    transition: none;
+  }
+}
