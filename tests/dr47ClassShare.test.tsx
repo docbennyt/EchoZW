@@ -137,10 +137,12 @@ describe("DR-47 class viral loop", () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
 
     await screen.findByRole("heading", { name: "BTech Computer Science" });
-    expect(mocks.track).toHaveBeenCalledWith("shared_link_opened", {
-      publicSlug: timetable.publicSlug,
-      source: "class_share",
-    });
+    await waitFor(() =>
+      expect(mocks.track).toHaveBeenCalledWith("shared_link_opened", {
+        publicSlug: timetable.publicSlug,
+        source: "class_share",
+      }),
+    );
 
     const success = await reachSuccess();
     expect(
