@@ -15,6 +15,8 @@ import {
   TimetableGoogleOnboardingEnhancement,
 } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
+import { initializeInstallExperience } from "./pwa/installCapability";
+import { registerCalenderZwServiceWorker } from "./pwa/serviceWorker";
 import { StudentOnboardingAcceleration } from "./StudentOnboardingAcceleration";
 import { AUTH_CONFIRM_PATH, PASSWORD_RESET_PATH } from "./authRecovery";
 import { googleCalendarFailureRecoveryPath } from "./domain/googleCalendarHandoff";
@@ -127,6 +129,9 @@ function RootApp() {
     </>
   );
 }
+
+initializeInstallExperience();
+void registerCalenderZwServiceWorker();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

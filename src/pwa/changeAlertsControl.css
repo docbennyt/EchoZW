@@ -1,0 +1,65 @@
+.pt-alert-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--brand) 16%, var(--line));
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--brand) 3%, #fff);
+}
+
+.pt-alert-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand) 10%, #fff);
+  color: var(--brand);
+}
+
+.pt-alert-copy,
+.pt-alert-card > div:nth-child(2) {
+  min-width: 0;
+}
+
+.pt-alert-card strong {
+  display: block;
+  color: var(--ink);
+}
+
+.pt-alert-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.pt-alert-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.pt-alert-card .pt-status-message {
+  display: block;
+  margin-top: 8px;
+}
+
+.pt-alert-card .pt-button {
+  white-space: nowrap;
+}
+
+@media (max-width: 680px) {
+  .pt-alert-card {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 14px;
+  }
+
+  .pt-alert-card .pt-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
