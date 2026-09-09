@@ -7,7 +7,7 @@ import {
   persistDashboardTheme,
   readDashboardTheme,
   syncDashboardThemeScope,
-} from "../src/dashboardTheme";
+} from "../src/dashboardThemeContract";
 
 function createStorage(initial?: string) {
   const values = new Map<string, string>();
