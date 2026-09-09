@@ -16,6 +16,7 @@ import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
 import { PublicShell } from "./components/site/SiteChrome";
+import { ChangeAlertsControl } from "./pwa/ChangeAlertsControl";
 import { detectDevice, type DeviceKind } from "./domain/device";
 import {
   formatClassGroupLabel,
@@ -1364,6 +1365,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 Share with classmates
               </button>
             </div>
+            <ChangeAlertsControl publicSlug={timetable.publicSlug} />
             <p className="pt-helper">
               No account needed. Subscriptions follow future CalenderZW
               timetable publications; one-time .ics imports do not.

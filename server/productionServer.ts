@@ -33,6 +33,8 @@ import {
 } from "./observability.js";
 import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
+import { handlePushNotificationRequest } from "./pushNotificationApi.js";
+import { startPushNotificationWorker } from "./pushNotificationWorker.js";
 import { getPublishedTimetableBySlug } from "./pilotRepository.js";
 import {
   buildRuntimePublicConfig,
@@ -318,6 +320,7 @@ const server = createServer(async (req, res) => {
     if (await handleAnalyticsRequest(req, res, process.env)) return;
     if (await handleGrowthCaptureRequest(req, res, process.env)) return;
     if (await handlePaymentRequest(req, res, process.env)) return;
+    if (await handlePushNotificationRequest(req, res, process.env)) return;
     if (await handlePublicTimetableRequest(req, res)) return;
     if (await handleSourceSnapshotRequest(req, res, process.env)) return;
     if (await handlePilotCalendarRequest(req, res, process.env, "production"))
@@ -345,9 +348,11 @@ const server = createServer(async (req, res) => {
 });
 
 const sourceProcessingWorker = startSourceProcessingWorker(process.env);
+const pushNotificationWorker = startPushNotificationWorker(process.env);
 
 function shutdown() {
   sourceProcessingWorker.stop();
+  pushNotificationWorker.stop();
   server.close(() => process.exit(0));
 }
 
