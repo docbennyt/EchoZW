@@ -2,6 +2,7 @@ import { Button as BaseButton } from "@base-ui/react/button";
 import { Input as BaseInput } from "@base-ui/react/input";
 import { Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { fetchAdminSession } from "./api/adminSession";
 import {
   AUTH_CONFIRM_PATH,
   authSetupIntentFromUrl,
@@ -18,12 +19,23 @@ import {
   browserAuthFailureCode,
   trackBrowserAuthFailure,
 } from "./authDiagnostics";
+import {
+  resolveStaffOnboarding,
+  type ResolvedStaffOnboarding,
+} from "./domain/staffOnboarding";
+import { StaffOnboardingFlow } from "./StaffOnboardingFlow";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
 
 const currentPath = () => window.location.pathname;
 
 type SetupStatus =
-  "checking" | "ready" | "updating" | "success" | "invalid" | "error";
+  | "checking"
+  | "ready"
+  | "updating"
+  | "success"
+  | "invalid"
+  | "access_error"
+  | "error";
 
 function setAuthPageMetadata(path: string) {
   document.title =
@@ -44,9 +56,9 @@ function setAuthPageMetadata(path: string) {
 function setupCopy(intent: AuthSetupIntent) {
   if (intent === "invite") {
     return {
-      eyebrow: "CalenderZW Class Rep",
-      title: "Finish setting up your account.",
-      body: "Create a password to manage your assigned class timetable.",
+      eyebrow: "CalenderZW team signup",
+      title: "Complete signup.",
+      body: "Create a password to finish setting up your invited CalenderZW staff account. Your role will be confirmed securely after signup.",
       action: "Create password",
       updating: "Creating password...",
       success: "Your CalenderZW account is ready.",
@@ -77,6 +89,8 @@ export function AuthSetupPage() {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [authClientReady, setAuthClientReady] = useState(false);
+  const [staffOnboarding, setStaffOnboarding] =
+    useState<ResolvedStaffOnboarding | null>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
   const supabaseRef = useRef<ReturnType<
@@ -153,6 +167,18 @@ export function AuthSetupPage() {
     };
   }, []);
 
+  async function resolveInvitedStaffAccess() {
+    const supabase = supabaseRef.current;
+    if (!supabase) throw new Error("AUTH_CLIENT_UNAVAILABLE");
+
+    const { data, error } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (error || !accessToken) throw new Error("AUTH_SESSION_UNAVAILABLE");
+
+    const session = await fetchAdminSession(accessToken);
+    return resolveStaffOnboarding(session);
+  }
+
   async function submitPassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationMessage = validateNewPassword(password, confirmation);
@@ -184,6 +210,22 @@ export function AuthSetupPage() {
 
     setPassword("");
     setConfirmation("");
+
+    if (intent === "invite") {
+      try {
+        const resolved = await resolveInvitedStaffAccess();
+        setStaffOnboarding(resolved);
+        setStatus("success");
+        setMessage("");
+      } catch {
+        setStatus("access_error");
+        setMessage(
+          "Your signup succeeded, but active CalenderZW staff access could not be confirmed. Ask your CalenderZW administrator to check the invitation, then sign in again.",
+        );
+      }
+      return;
+    }
+
     setStatus("success");
     setMessage(setupCopy(intent).success);
   }
@@ -207,98 +249,106 @@ export function AuthSetupPage() {
       </header>
       <main className="czw-auth-page">
         <section className="czw-auth-card" aria-labelledby="auth-setup-title">
-          <div className="czw-auth-icon">
-            <Lock size={22} />
-          </div>
-          <span className="czw-eyebrow">{copy.eyebrow}</span>
-          <h1 id="auth-setup-title">{copy.title}</h1>
-          <p>{copy.body}</p>
-
-          {status === "checking" ? (
-            <p className="czw-auth-message" role="status">
-              Completing account setup...
-            </p>
-          ) : null}
-
-          {status === "invalid" ? (
+          {staffOnboarding ? (
+            <StaffOnboardingFlow resolved={staffOnboarding} />
+          ) : (
             <>
-              <p
-                className="czw-auth-message"
-                ref={messageRef}
-                role="alert"
-                tabIndex={-1}
-              >
-                {message}
-              </p>
-              {intent === "recovery" ? (
-                <a
-                  className="czw-button czw-button-primary"
-                  href="/admin/login"
+              <div className="czw-auth-icon">
+                <Lock size={22} />
+              </div>
+              <span className="czw-eyebrow">{copy.eyebrow}</span>
+              <h1 id="auth-setup-title">{copy.title}</h1>
+              <p>{copy.body}</p>
+
+              {status === "checking" ? (
+                <p className="czw-auth-message" role="status">
+                  Completing account setup...
+                </p>
+              ) : null}
+
+              {status === "invalid" ? (
+                <>
+                  <p
+                    className="czw-auth-message"
+                    ref={messageRef}
+                    role="alert"
+                    tabIndex={-1}
+                  >
+                    {message}
+                  </p>
+                  {intent === "recovery" ? (
+                    <a
+                      className="czw-button czw-button-primary"
+                      href="/admin/login"
+                    >
+                      Request another reset
+                    </a>
+                  ) : null}
+                </>
+              ) : null}
+
+              {showForm ? (
+                <form onSubmit={submitPassword}>
+                  <label>
+                    <span>New password</span>
+                    <BaseInput
+                      autoComplete="new-password"
+                      minLength={MIN_PASSWORD_LENGTH}
+                      name="new-password"
+                      ref={passwordRef}
+                      required
+                      type="password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Confirm new password</span>
+                    <BaseInput
+                      autoComplete="new-password"
+                      minLength={MIN_PASSWORD_LENGTH}
+                      name="confirm-password"
+                      required
+                      type="password"
+                      value={confirmation}
+                      onChange={(event) => setConfirmation(event.target.value)}
+                    />
+                  </label>
+                  <BaseButton
+                    className="czw-button czw-button-primary"
+                    disabled={status === "updating"}
+                    type="submit"
+                  >
+                    <Lock size={17} />
+                    {status === "updating" ? copy.updating : copy.action}
+                  </BaseButton>
+                </form>
+              ) : null}
+
+              {message && status !== "invalid" ? (
+                <p
+                  className="czw-auth-message"
+                  ref={messageRef}
+                  role={status === "success" ? "status" : "alert"}
+                  tabIndex={-1}
                 >
-                  Request another reset
+                  {message}
+                </p>
+              ) : null}
+
+              {status === "success" && intent !== "invite" ? (
+                <a className="czw-button czw-button-primary" href="/admin">
+                  Continue to dashboard
                 </a>
               ) : null}
             </>
-          ) : null}
+          )}
 
-          {showForm ? (
-            <form onSubmit={submitPassword}>
-              <label>
-                <span>New password</span>
-                <BaseInput
-                  autoComplete="new-password"
-                  minLength={MIN_PASSWORD_LENGTH}
-                  name="new-password"
-                  ref={passwordRef}
-                  required
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Confirm new password</span>
-                <BaseInput
-                  autoComplete="new-password"
-                  minLength={MIN_PASSWORD_LENGTH}
-                  name="confirm-password"
-                  required
-                  type="password"
-                  value={confirmation}
-                  onChange={(event) => setConfirmation(event.target.value)}
-                />
-              </label>
-              <BaseButton
-                className="czw-button czw-button-primary"
-                disabled={status === "updating"}
-                type="submit"
-              >
-                <Lock size={17} />
-                {status === "updating" ? copy.updating : copy.action}
-              </BaseButton>
-            </form>
-          ) : null}
-
-          {message && status !== "invalid" ? (
-            <p
-              className="czw-auth-message"
-              ref={messageRef}
-              role={status === "success" ? "status" : "alert"}
-              tabIndex={-1}
-            >
-              {message}
-            </p>
-          ) : null}
-
-          {status === "success" ? (
-            <a className="czw-button czw-button-primary" href="/admin">
-              Continue to dashboard
+          {!staffOnboarding ? (
+            <a className="czw-auth-back" href="/admin/login">
+              Back to admin login
             </a>
           ) : null}
-
-          <a className="czw-auth-back" href="/admin/login">
-            Back to admin login
-          </a>
         </section>
       </main>
     </div>
