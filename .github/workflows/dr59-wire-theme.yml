@@ -24,7 +24,7 @@ jobs:
       - name: Wire shared dashboard theme
         run: python scripts/dr59-wire-theme.py
       - name: Format changed files
-        run: npx prettier --write index.html src/AppV2.tsx src/main.tsx src/dashboardTheme.tsx src/dashboardTheme.css src/classRepCorrectionSafetyEnhancement.css tests/dashboardTheme.test.ts tests/dashboardThemeSurface.test.ts
+        run: npx prettier --write index.html src/AppV2.tsx src/main.tsx src/dashboardTheme.tsx src/dashboardThemeContract.ts src/dashboardTheme.css src/classRepCorrectionSafetyEnhancement.css tests/dashboardTheme.test.ts tests/dashboardThemeSurface.test.ts
       - run: npm run lint
       - run: npm run format:check
       - run: npm run test
@@ -37,6 +37,6 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html src/AppV2.tsx src/main.tsx src/dashboardTheme.tsx src/dashboardTheme.css src/classRepCorrectionSafetyEnhancement.css tests/dashboardTheme.test.ts tests/dashboardThemeSurface.test.ts
+          git add index.html src/AppV2.tsx src/main.tsx src/dashboardTheme.tsx src/dashboardThemeContract.ts src/dashboardTheme.css src/classRepCorrectionSafetyEnhancement.css tests/dashboardTheme.test.ts tests/dashboardThemeSurface.test.ts
           git commit -m "feat: wire persistent complete dashboard theming"
           git push origin HEAD:DR-59-dashboard-theme-system
