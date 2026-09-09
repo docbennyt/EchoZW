@@ -15,7 +15,9 @@ export function isDashboardPath(pathname: string) {
   );
 }
 
-export function readDashboardTheme(storage?: StorageLike | null): DashboardTheme {
+export function readDashboardTheme(
+  storage?: StorageLike | null,
+): DashboardTheme {
   if (!storage) return "light";
   try {
     return storage.getItem(DASHBOARD_THEME_STORAGE_KEY) === "dark"
@@ -45,8 +47,9 @@ export function clearDashboardThemeScope(
 
 export function syncDashboardThemeScope(
   pathname: string,
-  storage: StorageLike | null =
-    typeof window === "undefined" ? null : window.localStorage,
+  storage: StorageLike | null = typeof window === "undefined"
+    ? null
+    : window.localStorage,
   root: ThemeRoot = document.documentElement,
 ) {
   if (!isDashboardPath(pathname)) {
@@ -61,8 +64,9 @@ export function syncDashboardThemeScope(
 
 export function persistDashboardTheme(
   theme: DashboardTheme,
-  storage: StorageLike | null =
-    typeof window === "undefined" ? null : window.localStorage,
+  storage: StorageLike | null = typeof window === "undefined"
+    ? null
+    : window.localStorage,
   root: ThemeRoot = document.documentElement,
 ) {
   try {

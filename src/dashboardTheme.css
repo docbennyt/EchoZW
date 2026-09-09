@@ -28,7 +28,12 @@ html[data-dashboard-surface="true"] {
   --dashboard-backdrop: rgba(10, 18, 15, 0.5);
   --dashboard-shadow: 0 22px 70px rgba(21, 61, 50, 0.12);
   --dashboard-card-gradient: linear-gradient(180deg, #fffefa, #f9faf6);
-  --dashboard-hero-gradient: linear-gradient(135deg, #fffefa, #f0f4ec 58%, #e7efe8);
+  --dashboard-hero-gradient: linear-gradient(
+    135deg,
+    #fffefa,
+    #f0f4ec 58%,
+    #e7efe8
+  );
   --dashboard-hero-grid: rgba(21, 61, 50, 0.045);
   --dashboard-primary-contrast: #fff;
   --dashboard-footer-bg: #eef1e9;
@@ -99,8 +104,17 @@ html[data-dashboard-surface="true"][data-dashboard-theme="dark"] {
   --dashboard-header: rgba(8, 11, 10, 0.92);
   --dashboard-backdrop: rgba(0, 0, 0, 0.72);
   --dashboard-shadow: 0 28px 80px rgba(0, 0, 0, 0.36);
-  --dashboard-card-gradient: linear-gradient(180deg, rgba(21, 27, 24, 0.98), rgba(15, 20, 18, 0.98));
-  --dashboard-hero-gradient: linear-gradient(135deg, #102c27, #17423a 55%, #215c50);
+  --dashboard-card-gradient: linear-gradient(
+    180deg,
+    rgba(21, 27, 24, 0.98),
+    rgba(15, 20, 18, 0.98)
+  );
+  --dashboard-hero-gradient: linear-gradient(
+    135deg,
+    #102c27,
+    #17423a 55%,
+    #215c50
+  );
   --dashboard-hero-grid: rgba(255, 255, 255, 0.045);
   --dashboard-primary-contrast: #062017;
   --dashboard-footer-bg: #0b100e;
@@ -147,7 +161,9 @@ html[data-dashboard-surface="true"] .czw-nav-admin {
 }
 
 html[data-dashboard-surface="true"] .czw-wordmark span,
-html[data-dashboard-surface="true"] .czw-nav-links a:not(.czw-nav-admin)::after {
+html[data-dashboard-surface="true"]
+  .czw-nav-links
+  a:not(.czw-nav-admin)::after {
   color: var(--dashboard-brand);
   background: var(--dashboard-brand);
 }
@@ -205,7 +221,11 @@ html[data-dashboard-surface="true"] .czw-admin-wrap .secondary:hover {
   justify-content: center;
   min-height: 2.55rem;
   padding: 0.55rem 0.75rem;
-  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .dashboard-theme-toggle:hover {
@@ -216,7 +236,8 @@ html[data-dashboard-surface="true"] .czw-admin-wrap .secondary:hover {
 }
 
 .dashboard-theme-toggle:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--dashboard-accent) 70%, transparent);
+  outline: 3px solid
+    color-mix(in srgb, var(--dashboard-accent) 70%, transparent);
   outline-offset: 3px;
 }
 
@@ -273,7 +294,10 @@ html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-card {
   background: var(--dashboard-surface-2);
 }
 
-html[data-dashboard-surface="true"] .czw-admin-wrap .pilot-nav a[aria-current="page"],
+html[data-dashboard-surface="true"]
+  .czw-admin-wrap
+  .pilot-nav
+  a[aria-current="page"],
 html[data-dashboard-surface="true"] .topbar nav a:hover,
 html[data-dashboard-surface="true"] .topbar nav a[aria-current="page"] {
   background: var(--dashboard-brand-soft);
@@ -317,8 +341,16 @@ html[data-dashboard-surface="true"] .class-rep-cockpit-page {
   --dr57-warning: var(--dashboard-warning);
   --dr57-shadow: var(--dashboard-shadow);
   background:
-    radial-gradient(circle at 8% -10%, var(--dashboard-brand-soft), transparent 30rem),
-    radial-gradient(circle at 92% 2%, var(--dashboard-accent-soft), transparent 24rem),
+    radial-gradient(
+      circle at 8% -10%,
+      var(--dashboard-brand-soft),
+      transparent 30rem
+    ),
+    radial-gradient(
+      circle at 92% 2%,
+      var(--dashboard-accent-soft),
+      transparent 24rem
+    ),
     var(--dashboard-bg);
 }
 
@@ -387,7 +419,10 @@ html[data-dashboard-surface="true"] .dr57-field textarea {
 }
 
 html[data-dashboard-surface="true"] .dr57-public-link:hover,
-html[data-dashboard-surface="true"] .class-rep-cockpit-page > .pilot-page-hero .secondary:hover {
+html[data-dashboard-surface="true"]
+  .class-rep-cockpit-page
+  > .pilot-page-hero
+  .secondary:hover {
   background: var(--dashboard-hover);
 }
 
@@ -398,7 +433,11 @@ html[data-dashboard-surface="true"] .foc-shell {
 
 html[data-dashboard-surface="true"] .foc-hero {
   background:
-    radial-gradient(circle at 84% 12%, var(--dashboard-accent-soft), transparent 19rem),
+    radial-gradient(
+      circle at 84% 12%,
+      var(--dashboard-accent-soft),
+      transparent 19rem
+    ),
     var(--dashboard-hero-gradient);
   border-color: var(--dashboard-line);
   box-shadow: var(--dashboard-shadow);
@@ -452,7 +491,11 @@ html[data-dashboard-surface="true"] .foc-funnel-label strong {
 
 html[data-dashboard-surface="true"] .foc-pulse-emphasis {
   background: var(--dashboard-brand-soft);
-  border-color: color-mix(in srgb, var(--dashboard-brand) 30%, var(--dashboard-line));
+  border-color: color-mix(
+    in srgb,
+    var(--dashboard-brand) 30%,
+    var(--dashboard-line)
+  );
 }
 
 html[data-dashboard-surface="true"] .foc-pulse-emphasis > span,

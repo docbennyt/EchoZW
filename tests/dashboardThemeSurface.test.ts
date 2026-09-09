@@ -17,8 +17,12 @@ describe("DR-59 complete dashboard surface theming", () => {
   it("keeps SPA route transitions synchronized and loads theme overrides last", () => {
     expect(mainSource).toContain("syncDashboardThemeScope(path)");
     expect(mainSource).toContain('import "./dashboardTheme.css"');
-    expect(mainSource.lastIndexOf('import "./dashboardTheme.css"')).toBeGreaterThan(
-      mainSource.lastIndexOf('import "./classRepCorrectionSafetyEnhancement.css"'),
+    expect(
+      mainSource.lastIndexOf('import "./dashboardTheme.css"'),
+    ).toBeGreaterThan(
+      mainSource.lastIndexOf(
+        'import "./classRepCorrectionSafetyEnhancement.css"',
+      ),
     );
   });
 

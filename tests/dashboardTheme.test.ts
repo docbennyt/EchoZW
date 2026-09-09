@@ -57,7 +57,11 @@ describe("dashboard theme contract", () => {
     const root = document.createElement("div");
     applyDashboardTheme("dark", root);
 
-    const result = syncDashboardThemeScope("/find", createStorage("dark"), root);
+    const result = syncDashboardThemeScope(
+      "/find",
+      createStorage("dark"),
+      root,
+    );
 
     expect(result).toBeNull();
     expect(root.dataset.dashboardSurface).toBeUndefined();
