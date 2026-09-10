@@ -9,6 +9,7 @@ import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
 import { FeedbackPage, TimetableRequestPage } from "./GrowthCapturePages";
 import { GrowthInboxPage } from "./GrowthInboxPage";
+import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { PilotOfferEnhancement } from "./PilotOfferEnhancement";
 import {
   MarketingEnhancements,
@@ -25,6 +26,7 @@ import "./appV2.css";
 import "./finderDiscovery.css";
 import "./publicTimetableReliability.css";
 import "./publicTimetableMatrix.css";
+import "./personalTimetablePreview.css";
 import "./googleCalendarDirect.css";
 import "./productionUxEnhancements.css";
 import "./productionUxEnhancementsPatch.css";
@@ -112,6 +114,7 @@ function RootApp() {
     return (
       <>
         <PublicTimetableReliability slug={slug} />
+        <PersonalTimetablePreview slug={slug} />
         <TimetableGoogleOnboardingEnhancement slug={slug} />
         <StudentOnboardingAcceleration slug={slug} />
         <GoogleCalendarDisconnectEntry />
