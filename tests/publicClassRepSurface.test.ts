@@ -7,7 +7,7 @@ describe("public Class Rep surface", () => {
 
     expect(finder).toContain('href="/rep/login"');
     expect(finder).toContain("Published by CalenderZW");
-    expect(finder).not.toContain('/admin/login');
+    expect(finder).not.toContain("/admin/login");
     expect(finder).not.toContain("Published from Admin");
     expect(finder).not.toContain("Admin publication");
   });
