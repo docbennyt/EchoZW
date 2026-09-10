@@ -16,7 +16,8 @@ function usePortalTarget(selector: string) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    const update = () => setTarget(document.querySelector<HTMLElement>(selector));
+    const update = () =>
+      setTarget(document.querySelector<HTMLElement>(selector));
     update();
     const observer = new MutationObserver(update);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -53,18 +54,21 @@ async function svgToPng(svg: string) {
     const image = new Image();
     await new Promise<void>((resolve, reject) => {
       image.onload = () => resolve();
-      image.onerror = () => reject(new Error("Timetable image could not be rendered."));
+      image.onerror = () =>
+        reject(new Error("Timetable image could not be rendered."));
       image.src = url;
     });
     const canvas = document.createElement("canvas");
     canvas.width = 1600;
     canvas.height = 1130;
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("Image export is unavailable in this browser.");
+    if (!context)
+      throw new Error("Image export is unavailable in this browser.");
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
-        (blob) => (blob ? resolve(blob) : reject(new Error("PNG export failed."))),
+        (blob) =>
+          blob ? resolve(blob) : reject(new Error("PNG export failed.")),
         "image/png",
         1,
       );
@@ -76,7 +80,8 @@ async function svgToPng(svg: string) {
 
 function PreviewSheet({ model }: { model: PersonalTimetableModel }) {
   const activeDays = model.days.filter((day) => day.sessions.length > 0);
-  const visibleDays = activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
+  const visibleDays =
+    activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
 
   return (
     <div className="pt-preview-sheet" data-version={model.versionNumber}>
@@ -87,7 +92,8 @@ function PreviewSheet({ model }: { model: PersonalTimetableModel }) {
             {model.programme} · {model.classGroup}
           </h3>
           <p>
-            {model.institution} · {model.academicPeriod} · v{model.versionNumber}
+            {model.institution} · {model.academicPeriod} · v
+            {model.versionNumber}
           </p>
         </div>
         <strong>{model.sourceSessionCount} weekly sessions</strong>
@@ -111,14 +117,19 @@ function PreviewSheet({ model }: { model: PersonalTimetableModel }) {
                     className={`pt-preview-session tone-${session.toneIndex} kind-${session.kind}`}
                   >
                     <time>
-                      {session.startTime.slice(0, 5)}–{session.endTime.slice(0, 5)}
+                      {session.startTime.slice(0, 5)}–
+                      {session.endTime.slice(0, 5)}
                     </time>
                     <strong>{session.courseName}</strong>
                     <span>
                       {session.courseCode}
-                      {session.venue ? ` · ${session.venue}` : " · Venue not set"}
+                      {session.venue
+                        ? ` · ${session.venue}`
+                        : " · Venue not set"}
                     </span>
-                    {session.sessionType ? <em>{session.sessionType}</em> : null}
+                    {session.sessionType ? (
+                      <em>{session.sessionType}</em>
+                    ) : null}
                   </article>
                 ))
               )}
@@ -127,8 +138,8 @@ function PreviewSheet({ model }: { model: PersonalTimetableModel }) {
         ))}
       </div>
       <footer>
-        Generated from the current published CalenderZW schedule. Nothing is added
-        to fill timetable gaps.
+        Generated from the current published CalenderZW schedule. Nothing is
+        added to fill timetable gaps.
       </footer>
     </div>
   );
@@ -182,7 +193,9 @@ export function PersonalTimetablePreview({ slug }: { slug: string }) {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const frame = window.requestAnimationFrame(() => dialogRef.current?.focus());
+    const frame = window.requestAnimationFrame(() =>
+      dialogRef.current?.focus(),
+    );
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
@@ -223,7 +236,9 @@ export function PersonalTimetablePreview({ slug }: { slug: string }) {
       });
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "PDF export could not be created.",
+        caught instanceof Error
+          ? caught.message
+          : "PDF export could not be created.",
       );
     } finally {
       setBusy(null);
@@ -246,7 +261,9 @@ export function PersonalTimetablePreview({ slug }: { slug: string }) {
       });
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "PNG export could not be created.",
+        caught instanceof Error
+          ? caught.message
+          : "PNG export could not be created.",
       );
     } finally {
       setBusy(null);
@@ -290,7 +307,9 @@ export function PersonalTimetablePreview({ slug }: { slug: string }) {
                 <div>
                   <span className="pt-kicker">Class-specific view</span>
                   <h2 id="pt-preview-title">Preview your timetable</h2>
-                  <p>Preview and exports use the same published schedule version.</p>
+                  <p>
+                    Preview and exports use the same published schedule version.
+                  </p>
                 </div>
                 <button
                   type="button"
