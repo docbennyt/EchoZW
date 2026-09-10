@@ -6,8 +6,9 @@
   position: fixed;
   inset: 0;
   z-index: 1200;
-  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
-    max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  padding: max(18px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
   background: rgba(8, 24, 20, 0.72);
   display: grid;
   place-items: center;
