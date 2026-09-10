@@ -98,7 +98,7 @@ const navigationLinks = [
   { label: "Calendar options", href: "/#options" },
   { label: "For class reps", href: "/#reps" },
   { label: "Privacy & trust", href: "/#trust" },
-  { label: "Admin", href: "/admin" },
+  { label: "Rep login", href: "/rep/login" },
 ] as const;
 
 function Shell({
@@ -275,6 +275,7 @@ function GlobalFooter() {
               <b>For students</b>
               <a href="/#reps">Class reps</a>
               <a href="/support">Support</a>
+              <a href="/rep/login">Rep login</a>
             </div>
             <div className="footer-col">
               <b>Legal</b>
@@ -1059,7 +1060,7 @@ function HomePage() {
             </div>
             <a
               className="btn btn-primary"
-              href="https://calender.aido.co.zw/admin/login"
+              href="/rep/login"
               data-event="class_rep_cta_clicked"
             >
               Set up my class <span aria-hidden="true">→</span>
@@ -1165,7 +1166,7 @@ function HomePage() {
               </a>
               <a
                 className="btn btn-secondary"
-                href="https://calender.aido.co.zw/admin/login"
+                href="/rep/login"
                 data-event="class_rep_cta_clicked"
               >
                 Set up my class
@@ -1682,7 +1683,7 @@ function AccountSettingsPage() {
   );
 }
 
-function AdminLoginPage() {
+function ClassRepLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<
@@ -1690,6 +1691,13 @@ function AdminLoginPage() {
   >("idle");
   const [message, setMessage] = useState("");
   const messageRef = useRef<HTMLParagraphElement>(null);
+
+  usePageMetadata({
+    title: "Class Rep login | CalenderZW",
+    description: "Sign in to your CalenderZW Class Rep workspace.",
+    canonicalPath: "/rep/login",
+    robots: "noindex, nofollow",
+  });
 
   useEffect(() => {
     if (message) messageRef.current?.focus();
@@ -1705,7 +1713,7 @@ function AdminLoginPage() {
       supabase = createSupabaseBrowserClient();
     } catch {
       setStatus("error");
-      setMessage("Administrator sign-in is not configured.");
+      setMessage("Class Rep sign-in is temporarily unavailable.");
       return;
     }
 
@@ -1731,12 +1739,12 @@ function AdminLoginPage() {
       if (caught instanceof Error && caught.name === "FORBIDDEN") {
         setStatus("forbidden");
         setMessage(
-          "This account does not have CalenderZW administrator access.",
+          "This account does not have active CalenderZW Class Rep access.",
         );
         return;
       }
       setStatus("error");
-      setMessage("Administrator sign-in is temporarily unavailable.");
+      setMessage("Class Rep sign-in is temporarily unavailable.");
     }
   }
 
@@ -1745,7 +1753,7 @@ function AdminLoginPage() {
     setMessage("");
     if (!isValidEmail(trimmedEmail)) {
       setStatus("error");
-      setMessage("Enter your admin email address first.");
+      setMessage("Enter your Class Rep email address first.");
       return;
     }
 
@@ -1779,11 +1787,14 @@ function AdminLoginPage() {
       <main className="page admin-page">
         <PageHeader
           icon={<Lock />}
-          title="Admin login"
-          text="Sign in with the administrator email and password provisioned in Supabase Auth."
+          title="Class Rep login"
+          text="Sign in to update your class timetable and manage schedule changes."
         />
-        <section className="action-panel" aria-labelledby="admin-login-title">
-          <h2 id="admin-login-title">Administrator sign-in</h2>
+        <section
+          className="action-panel"
+          aria-labelledby="class-rep-login-title"
+        >
+          <h2 id="class-rep-login-title">Class Rep sign-in</h2>
           <form className="admin-form" onSubmit={signIn}>
             <label>
               Email
@@ -1944,7 +1955,7 @@ function UpdatePasswordPage() {
     setPassword("");
     setConfirmation("");
     setStatus("success");
-    setMessage("Password updated. You can now continue to admin.");
+    setMessage("Password updated. You can now continue to your workspace.");
   }
 
   return (
@@ -1975,7 +1986,7 @@ function UpdatePasswordPage() {
               >
                 {message}
               </p>
-              <a className="primary" href="/admin/login">
+              <a className="primary" href="/rep/login">
                 Request another reset
               </a>
             </>
@@ -2028,12 +2039,12 @@ function UpdatePasswordPage() {
               ) : null}
               {status === "success" ? (
                 <a className="primary" href="/admin">
-                  Continue to admin
+                  Continue to workspace
                 </a>
               ) : null}
             </>
           ) : null}
-          <a href="/admin/login">Back to admin login</a>
+          <a href="/rep/login">Back to Class Rep login</a>
         </section>
       </main>
     </Shell>
@@ -2153,7 +2164,8 @@ export function App() {
   if (path === "/find" || path === "/institutions") return <FinderPage />;
   if (path === "/admin/google-verification-readiness")
     return <GoogleVerificationReadinessPage />;
-  if (path === "/admin/login") return <AdminLoginPage />;
+  if (path === "/rep/login" || path === "/admin/login")
+    return <ClassRepLoginPage />;
   if (path === "/admin") return <AdminPage />;
   if (path.startsWith("/admin/")) return <AdminPage />;
   if (path.endsWith("/history")) return <HistoryPage />;

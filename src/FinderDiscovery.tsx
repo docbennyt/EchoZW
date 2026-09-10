@@ -542,7 +542,7 @@ export function FinderDiscovery() {
             If your class already has a direct CalenderZW link, open it below.
             Otherwise your class representative can help set one up.
           </p>
-          <a href="/admin/login">Set up a class →</a>
+          <a href="/rep/login">Set up a class →</a>
         </div>
       ) : null}
     </>
@@ -577,7 +577,7 @@ export function FinderDiscovery() {
             </div>
             <div className="czw-directory-search-trust">
               <Check size={14} aria-hidden="true" />
-              Published from Admin
+              Published by CalenderZW
             </div>
           </div>
 
@@ -689,7 +689,7 @@ export function FinderDiscovery() {
                       <Check size={13} aria-hidden="true" /> Published only
                     </span>
                     <p>
-                      Every result comes from the CalenderZW Admin publication
+                      Every result comes from the current CalenderZW publication
                       state. Drafts never appear here.
                     </p>
                   </div>

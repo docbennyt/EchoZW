@@ -153,10 +153,10 @@ function GlobalHeader({ transparent = false }: { transparent?: boolean }) {
           ))}
           <a
             className="czw-nav-admin"
-            href="/admin"
+            href="/rep/login"
             onClick={() => setMenuOpen(false)}
           >
-            Admin
+            Rep login
           </a>
         </nav>
         {isDashboardPath(currentPath()) ? <DashboardThemeToggle /> : null}
@@ -218,6 +218,7 @@ function GlobalFooter({ compact = false }: { compact?: boolean }) {
                 <a href="/support">Help centre</a>
                 <a href="/support">Report a timetable problem</a>
                 <a href="/account/settings">Calendar settings</a>
+                <a href="/rep/login">Rep login</a>
               </div>
               <div>
                 <strong>Legal</strong>
@@ -490,7 +491,7 @@ function HomePage() {
                 published and easy to share.
               </p>
             </div>
-            <a className="czw-button czw-button-primary" href="/admin/login">
+            <a className="czw-button czw-button-primary" href="/rep/login">
               Set up my class <ArrowRight size={16} />
             </a>
           </div>
@@ -538,10 +539,7 @@ function HomePage() {
               <a className="czw-button czw-button-primary" href="/find">
                 Find my timetable <ArrowRight size={16} />
               </a>
-              <a
-                className="czw-button czw-button-secondary"
-                href="/admin/login"
-              >
+              <a className="czw-button czw-button-secondary" href="/rep/login">
                 Set up my class
               </a>
             </div>
@@ -1034,7 +1032,7 @@ function PublicTimetablePage({ path }: { path: string }) {
   );
 }
 
-function AdminLoginPage() {
+function ClassRepLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<
@@ -1044,9 +1042,9 @@ function AdminLoginPage() {
   const messageRef = useRef<HTMLParagraphElement>(null);
 
   usePageMetadata({
-    title: "Admin login | CalenderZW",
-    description: "Sign in to manage CalenderZW timetables.",
-    canonicalPath: "/admin/login",
+    title: "Class Rep login | CalenderZW",
+    description: "Sign in to your CalenderZW Class Rep workspace.",
+    canonicalPath: "/rep/login",
     robots: "noindex, nofollow",
   });
 
@@ -1067,7 +1065,7 @@ function AdminLoginPage() {
         path: currentPath(),
       });
       setStatus("error");
-      setMessage("Administrator sign-in is temporarily unavailable.");
+      setMessage("Class Rep sign-in is temporarily unavailable.");
       return;
     }
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -1098,7 +1096,7 @@ function AdminLoginPage() {
         });
         setStatus("forbidden");
         setMessage(
-          "This account does not have CalenderZW administrator access.",
+          "This account does not have active CalenderZW Class Rep access.",
         );
       } else {
         trackBrowserAuthFailure({
@@ -1106,7 +1104,7 @@ function AdminLoginPage() {
           path: currentPath(),
         });
         setStatus("error");
-        setMessage("Administrator sign-in is temporarily unavailable.");
+        setMessage("Class Rep sign-in is temporarily unavailable.");
       }
     }
   }
@@ -1116,7 +1114,7 @@ function AdminLoginPage() {
     setMessage("");
     if (!isValidEmail(trimmedEmail)) {
       setStatus("error");
-      setMessage("Enter your admin email address first.");
+      setMessage("Enter your Class Rep email address first.");
       return;
     }
 
@@ -1156,13 +1154,18 @@ function AdminLoginPage() {
   return (
     <PublicShell>
       <main className="czw-auth-page">
-        <section className="czw-auth-card" aria-labelledby="admin-login-title">
+        <section
+          className="czw-auth-card"
+          aria-labelledby="class-rep-login-title"
+        >
           <div className="czw-auth-icon">
             <Lock size={22} />
           </div>
-          <span className="czw-eyebrow">Admin</span>
-          <h1 id="admin-login-title">Welcome back.</h1>
-          <p>Sign in to manage CalenderZW timetables.</p>
+          <span className="czw-eyebrow">Class Rep</span>
+          <h1 id="class-rep-login-title">Class Rep login.</h1>
+          <p>
+            Sign in to update your class timetable and manage schedule changes.
+          </p>
           <form onSubmit={signIn}>
             <label>
               <span>Email</span>
@@ -1341,7 +1344,7 @@ function UpdatePasswordPage() {
     setPassword("");
     setConfirmation("");
     setStatus("success");
-    setMessage("Password updated. You can now continue to admin.");
+    setMessage("Password updated. You can now continue to your workspace.");
   }
 
   return (
@@ -1372,7 +1375,7 @@ function UpdatePasswordPage() {
               >
                 {message}
               </p>
-              <a className="czw-button czw-button-primary" href="/admin/login">
+              <a className="czw-button czw-button-primary" href="/rep/login">
                 Request another reset
               </a>
             </>
@@ -1426,13 +1429,13 @@ function UpdatePasswordPage() {
               ) : null}
               {status === "success" ? (
                 <a className="czw-button czw-button-primary" href="/admin">
-                  Continue to admin
+                  Continue to workspace
                 </a>
               ) : null}
             </>
           ) : null}
-          <a className="czw-auth-back" href="/admin/login">
-            Back to admin login
+          <a className="czw-auth-back" href="/rep/login">
+            Back to Class Rep login
           </a>
         </section>
       </main>
@@ -1690,7 +1693,8 @@ export function AppV2() {
   if (path === AUTH_CALLBACK_PATH) return <AuthCallbackPage />;
   if (path === "/admin/google-verification-readiness")
     return <GoogleVerificationReadinessPage />;
-  if (path === "/admin/login") return <AdminLoginPage />;
+  if (path === "/rep/login" || path === "/admin/login")
+    return <ClassRepLoginPage />;
   if (path === "/admin" || path.startsWith("/admin/"))
     return <AdminPage path={path} />;
   if (path.endsWith("/history")) return <HistoryPage />;

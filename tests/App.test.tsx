@@ -425,6 +425,31 @@ describe("public student flow", () => {
       footerLinks.getByRole("link", { name: "Support" }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/BSc Software Engineering/i)).toBeNull();
+
+    const header = screen.getByRole("banner");
+    expect(
+      within(header).getByRole("link", { name: "Rep login" }),
+    ).toHaveAttribute("href", "/rep/login");
+    expect(within(header).queryByRole("link", { name: /^Admin$/i })).toBeNull();
+    expect(
+      within(footer).getByRole("link", { name: "Rep login" }),
+    ).toHaveAttribute("href", "/rep/login");
+    expect(within(footer).queryByText(/^Admin$/i)).toBeNull();
+  });
+
+  it("renders the public Class Rep login alias without advertising Admin access", () => {
+    window.history.pushState({}, "", "/rep/login");
+    render(<App />);
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: /Class Rep login/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/update your class timetable/i),
+    ).toBeInTheDocument();
+    expect(document.title).toMatch(/Class Rep login/i);
+    expect(screen.queryByText(/^Admin$/i)).toBeNull();
+    expect(screen.queryByText(/administrator sign-in/i)).toBeNull();
   });
 
   it("renders an unambiguous first-viewport app identity", () => {
@@ -556,7 +581,7 @@ describe("public student flow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: /Admin login/i }),
+      await screen.findByRole("heading", { name: /Class Rep login/i }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^Email$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^Password$/i)).toBeInTheDocument();
@@ -577,9 +602,9 @@ describe("public student flow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: /Admin login/i }),
+      await screen.findByRole("heading", { name: /Class Rep login/i }),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/admin/login");
+    expect(window.location.pathname).toBe("/rep/login");
     expect(screen.queryByText(/Lecture CRUD/i)).toBeNull();
     expect(screen.queryByText(/Admin timetables/i)).toBeNull();
   });
@@ -612,10 +637,10 @@ describe("public student flow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: /Administrator access/i }),
+      await screen.findByRole("heading", { name: /Staff access/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getAllByText(/does not have CalenderZW administrator access/i)
+      screen.getAllByText(/does not have active CalenderZW staff access/i)
         .length,
     ).toBeGreaterThan(0);
     expect(screen.queryByText(/Admin access verified/i)).toBeNull();
@@ -688,9 +713,9 @@ describe("public student flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Sign out/i }));
 
     await waitFor(() => expect(signOut).toHaveBeenCalled());
-    expect(window.location.pathname).toBe("/admin/login");
+    expect(window.location.pathname).toBe("/rep/login");
     expect(
-      await screen.findByRole("heading", { name: /Admin login/i }),
+      await screen.findByRole("heading", { name: /Class Rep login/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText("admin@example.test")).toBeNull();
   });
@@ -705,7 +730,7 @@ describe("public student flow", () => {
       },
     });
 
-    window.history.pushState({}, "", "/admin/login");
+    window.history.pushState({}, "", "/rep/login");
     render(<App />);
 
     fireEvent.change(screen.getByLabelText(/^Email$/i), {
@@ -732,7 +757,7 @@ describe("public student flow", () => {
       },
     });
 
-    window.history.pushState({}, "", "/admin/login");
+    window.history.pushState({}, "", "/rep/login");
     render(<App />);
 
     fireEvent.change(screen.getByLabelText(/^Email$/i), {
@@ -824,7 +849,7 @@ describe("public student flow", () => {
       }),
     );
     expect(
-      await screen.findByRole("link", { name: /Continue to admin/i }),
+      await screen.findByRole("link", { name: /Continue to workspace/i }),
     ).toHaveAttribute("href", "/admin");
   });
 
@@ -851,7 +876,7 @@ describe("public student flow", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Request another reset/i }),
-    ).toHaveAttribute("href", "/admin/login");
+    ).toHaveAttribute("href", "/rep/login");
   });
 
   it("completes auth callback processing without granting admin client-side", async () => {
@@ -923,7 +948,7 @@ describe("public student flow", () => {
       ),
     );
 
-    window.history.pushState({}, "", "/admin/login");
+    window.history.pushState({}, "", "/rep/login");
     render(<App />);
 
     fireEvent.change(screen.getByLabelText(/^Email$/i), {
@@ -936,7 +961,7 @@ describe("public student flow", () => {
 
     expect(
       await screen.findByText(
-        "This account does not have CalenderZW administrator access.",
+        "This account does not have active CalenderZW Class Rep access.",
       ),
     ).toBeInTheDocument();
     expect(signOut).toHaveBeenCalled();
@@ -947,9 +972,9 @@ describe("public student flow", () => {
     render(<App />);
 
     expect(
-      await screen.findByRole("heading", { name: /Admin login/i }),
+      await screen.findByRole("heading", { name: /Class Rep login/i }),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe("/admin/login");
+    expect(window.location.pathname).toBe("/rep/login");
     expect(screen.queryByRole("heading", { name: "Dashboard" })).toBeNull();
     expect(screen.queryByText("1,248")).toBeNull();
   });

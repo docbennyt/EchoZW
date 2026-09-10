@@ -209,7 +209,7 @@ function useAdminAccess() {
   async function signOut() {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
-    navigate("/admin/login", true);
+    navigate("/rep/login", true);
   }
 
   return { status, user, session, accessToken, signOut };
@@ -3877,19 +3877,19 @@ export function AdminMvpScreen({ path }: { path: string }) {
         <section className="pilot-page-hero">
           <ShieldCheck size={28} />
           <div>
-            <h1>Administrator access</h1>
-            <p>This account does not have CalenderZW administrator access.</p>
+            <h1>Staff access</h1>
+            <p>This account does not have active CalenderZW staff access.</p>
           </div>
         </section>
         <Surface title="Access denied">
-          <a href="/admin/login">Return to admin login</a>
+          <a href="/rep/login">Return to Class Rep login</a>
         </Surface>
       </main>
     );
   }
 
   if (status === "login") {
-    navigate("/admin/login", true);
+    navigate("/rep/login", true);
     return null;
   }
 
