@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseConfig } from "./config";
 
 export class BrowserAuthClientInitError extends Error {
@@ -10,10 +11,15 @@ export class BrowserAuthClientInitError extends Error {
   }
 }
 
+let browserClient: SupabaseClient | null = null;
+
 export const createClient = () => {
+  if (browserClient) return browserClient;
+
   const { url, publishableKey } = getSupabaseConfig();
   try {
-    return createBrowserClient(url, publishableKey);
+    browserClient = createBrowserClient(url, publishableKey);
+    return browserClient;
   } catch (error) {
     throw new BrowserAuthClientInitError(error);
   }
