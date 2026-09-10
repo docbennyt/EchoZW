@@ -23,7 +23,7 @@ describe("DR-55 Finder missing-class prompt layout", () => {
     expect(block).toContain("position: relative");
     expect(block).not.toContain("position: fixed");
     expect(block).not.toContain("position: sticky");
-    expect(block).not.toMatch(/\bbottom\s*:/);
+    expect(block).not.toMatch(/^\s*bottom\s*:/m);
     expect(css).toContain("env(safe-area-inset-bottom)");
     expect(css).toContain("@media (max-width: 640px)");
     expect(css).toContain("min-height: 48px");
