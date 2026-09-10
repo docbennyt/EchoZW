@@ -80,7 +80,11 @@ export function buildPersonalTimetableModel(input: {
   }));
 
   for (const event of input.events) {
-    if (!Number.isInteger(event.weekday) || event.weekday < 1 || event.weekday > 7) {
+    if (
+      !Number.isInteger(event.weekday) ||
+      event.weekday < 1 ||
+      event.weekday > 7
+    ) {
       throw new Error(`Invalid personal timetable weekday: ${event.weekday}`);
     }
     if (!event.stableSessionKey.trim()) {
@@ -141,10 +145,18 @@ function pdfEscape(value: string) {
 
 function truncate(value: string, max: number) {
   const clean = ascii(value).replace(/\s+/g, " ").trim();
-  return clean.length <= max ? clean : `${clean.slice(0, Math.max(1, max - 1))}…`;
+  return clean.length <= max
+    ? clean
+    : `${clean.slice(0, Math.max(1, max - 1))}…`;
 }
 
-function pdfText(text: string, x: number, y: number, size: number, bold = false) {
+function pdfText(
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  bold = false,
+) {
   return `BT /${bold ? "F2" : "F1"} ${size} Tf ${x.toFixed(1)} ${y.toFixed(1)} Td (${pdfEscape(text)}) Tj ET`;
 }
 
@@ -154,7 +166,8 @@ export function buildPersonalTimetablePdf(model: PersonalTimetableModel) {
   const margin = 30;
   const contentWidth = pageWidth - margin * 2;
   const activeDays = model.days.filter((day) => day.sessions.length > 0);
-  const visibleDays = activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
+  const visibleDays =
+    activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
   const columnGap = 7;
   const columnWidth =
     (contentWidth - columnGap * (visibleDays.length - 1)) / visibleDays.length;
@@ -182,25 +195,37 @@ export function buildPersonalTimetablePdf(model: PersonalTimetableModel) {
 
   const top = pageHeight - 120;
   const bottom = 38;
-  const maxCards = Math.max(1, ...visibleDays.map((day) => day.sessions.length));
+  const maxCards = Math.max(
+    1,
+    ...visibleDays.map((day) => day.sessions.length),
+  );
   const cardGap = 6;
   const availableHeight = top - bottom - 28;
   const cardHeight = Math.max(
     42,
-    Math.min(76, (availableHeight - cardGap * Math.max(0, maxCards - 1)) / maxCards),
+    Math.min(
+      76,
+      (availableHeight - cardGap * Math.max(0, maxCards - 1)) / maxCards,
+    ),
   );
 
   visibleDays.forEach((day, dayIndex) => {
     const x = margin + dayIndex * (columnWidth + columnGap);
     commands.push("0.93 0.95 0.92 rg");
-    commands.push(`${x.toFixed(1)} ${(top - 20).toFixed(1)} ${columnWidth.toFixed(1)} 22 re f`);
+    commands.push(
+      `${x.toFixed(1)} ${(top - 20).toFixed(1)} ${columnWidth.toFixed(1)} 22 re f`,
+    );
     commands.push("0.09 0.24 0.20 rg");
     commands.push(pdfText(day.label, x + 7, top - 13, 9, true));
 
     day.sessions.forEach((session, sessionIndex) => {
       const y = top - 30 - sessionIndex * (cardHeight + cardGap) - cardHeight;
       if (y < bottom - 1) return;
-      commands.push(session.kind === "break" || session.kind === "free" ? "0.96 0.95 0.90 rg" : "0.97 0.98 0.96 rg");
+      commands.push(
+        session.kind === "break" || session.kind === "free"
+          ? "0.96 0.95 0.90 rg"
+          : "0.97 0.98 0.96 rg",
+      );
       commands.push(
         `${x.toFixed(1)} ${y.toFixed(1)} ${columnWidth.toFixed(1)} ${cardHeight.toFixed(1)} re f`,
       );
@@ -215,7 +240,13 @@ export function buildPersonalTimetablePdf(model: PersonalTimetableModel) {
         ),
       );
       commands.push(
-        pdfText(truncate(session.courseName, 25), x + 7, y + cardHeight - 27, 8, true),
+        pdfText(
+          truncate(session.courseName, 25),
+          x + 7,
+          y + cardHeight - 27,
+          8,
+          true,
+        ),
       );
       commands.push(
         pdfText(
@@ -283,15 +314,34 @@ export function buildPersonalTimetableSvg(model: PersonalTimetableModel) {
   const height = 1130;
   const margin = 60;
   const activeDays = model.days.filter((day) => day.sessions.length > 0);
-  const visibleDays = activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
+  const visibleDays =
+    activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
   const gap = 14;
-  const columnWidth = (width - margin * 2 - gap * (visibleDays.length - 1)) / visibleDays.length;
-  const palette = ["#dfe9dd", "#f7e7b3", "#dde7f2", "#eadfd8", "#e8e0ef", "#d9ece8", "#f2dfca"];
-  const maxCards = Math.max(1, ...visibleDays.map((day) => day.sessions.length));
+  const columnWidth =
+    (width - margin * 2 - gap * (visibleDays.length - 1)) / visibleDays.length;
+  const palette = [
+    "#dfe9dd",
+    "#f7e7b3",
+    "#dde7f2",
+    "#eadfd8",
+    "#e8e0ef",
+    "#d9ece8",
+    "#f2dfca",
+  ];
+  const maxCards = Math.max(
+    1,
+    ...visibleDays.map((day) => day.sessions.length),
+  );
   const cardGap = 12;
   const cardsTop = 238;
   const cardsBottom = height - 82;
-  const cardHeight = Math.max(68, Math.min(130, (cardsBottom - cardsTop - cardGap * Math.max(0, maxCards - 1)) / maxCards));
+  const cardHeight = Math.max(
+    68,
+    Math.min(
+      130,
+      (cardsBottom - cardsTop - cardGap * Math.max(0, maxCards - 1)) / maxCards,
+    ),
+  );
 
   const dayMarkup = visibleDays
     .map((day, dayIndex) => {
@@ -299,8 +349,13 @@ export function buildPersonalTimetableSvg(model: PersonalTimetableModel) {
       const sessions = day.sessions
         .map((session, sessionIndex) => {
           const y = cardsTop + sessionIndex * (cardHeight + cardGap);
-          const fill = session.kind === "free" || session.kind === "break" ? "#f6f1e4" : palette[session.toneIndex];
-          const label = session.sessionType ? `<text x="${x + 16}" y="${y + cardHeight - 16}" font-size="15" fill="#52605a">${xmlEscape(session.sessionType)}</text>` : "";
+          const fill =
+            session.kind === "free" || session.kind === "break"
+              ? "#f6f1e4"
+              : palette[session.toneIndex];
+          const label = session.sessionType
+            ? `<text x="${x + 16}" y="${y + cardHeight - 16}" font-size="15" fill="#52605a">${xmlEscape(session.sessionType)}</text>`
+            : "";
           return `<g><rect x="${x}" y="${y}" width="${columnWidth}" height="${cardHeight}" rx="14" fill="${fill}" stroke="#cfd8ce"/><text x="${x + 16}" y="${y + 28}" font-size="17" font-weight="700" fill="#153d32">${xmlEscape(session.startTime.slice(0, 5))}–${xmlEscape(session.endTime.slice(0, 5))}</text><text x="${x + 16}" y="${y + 55}" font-size="20" font-weight="700" fill="#18201d">${xmlEscape(truncate(session.courseName, 26))}</text><text x="${x + 16}" y="${y + 79}" font-size="16" fill="#52605a">${xmlEscape(session.courseCode)}${session.venue ? ` · ${xmlEscape(session.venue)}` : ""}</text>${label}</g>`;
         })
         .join("");
