@@ -1,13 +1,17 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 export function FinderDemandPrompt() {
   const [target, setTarget] = useState<HTMLElement | null>(null);
 
-  useLayoutEffect(() => {
-    setTarget(
-      document.querySelector<HTMLElement>(".czw-finder-wrap > .czw-shell"),
-    );
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setTarget(
+        document.querySelector<HTMLElement>(".czw-finder-wrap > .czw-shell"),
+      );
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   if (!target) return null;
