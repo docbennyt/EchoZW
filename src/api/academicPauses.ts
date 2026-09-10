@@ -5,6 +5,7 @@ import type {
   AdminAcademicSchedulePause,
 } from "./pilotTypes";
 import { adminFetch } from "./pilotAdmin";
+import { createClient as createSupabaseBrowserClient } from "../utils/supabase/client";
 
 export type TimetablePauseInput = {
   scopeType: "timetable" | "session";
@@ -27,18 +28,33 @@ export type BroadPauseInput = Omit<TimetablePauseInput, "scopeType"> & {
   timetableId?: string | null;
 };
 
-export function previewTimetablePause(
+async function freshAccessToken(fallback: string) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function previewTimetablePause(
   accessToken: string,
   timetableId: string,
   input: TimetablePauseInput,
 ) {
   return adminFetch<{ impact: AcademicPauseImpact }>(
     `/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses/preview`,
-    { method: "POST", accessToken, body: input },
+    {
+      method: "POST",
+      accessToken: await freshAccessToken(accessToken),
+      body: input,
+    },
   );
 }
 
-export function createTimetablePause(
+export async function createTimetablePause(
   accessToken: string,
   timetableId: string,
   input: TimetablePauseInput,
@@ -53,19 +69,22 @@ export function createTimetablePause(
     };
   }>(`/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses`, {
     method: "POST",
-    accessToken,
+    accessToken: await freshAccessToken(accessToken),
     body: input,
   });
 }
 
-export function listTimetablePauses(accessToken: string, timetableId: string) {
+export async function listTimetablePauses(
+  accessToken: string,
+  timetableId: string,
+) {
   return adminFetch<{ pauses: AdminAcademicSchedulePause[] }>(
     `/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses`,
-    { accessToken },
+    { accessToken: await freshAccessToken(accessToken) },
   );
 }
 
-export function deactivateTimetablePause(
+export async function deactivateTimetablePause(
   accessToken: string,
   timetableId: string,
   pauseId: string,
@@ -79,18 +98,24 @@ export function deactivateTimetablePause(
     };
   }>(
     `/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses/${encodeURIComponent(pauseId)}`,
-    { method: "DELETE", accessToken },
+    {
+      method: "DELETE",
+      accessToken: await freshAccessToken(accessToken),
+    },
   );
 }
 
-export function listAcademicPauses(accessToken: string) {
+export async function listAcademicPauses(accessToken: string) {
   return adminFetch<{ pauses: AdminAcademicSchedulePause[] }>(
     "/api/admin/academic-pauses",
-    { accessToken },
+    { accessToken: await freshAccessToken(accessToken) },
   );
 }
 
-export function deactivateBroadPause(accessToken: string, pauseId: string) {
+export async function deactivateBroadPause(
+  accessToken: string,
+  pauseId: string,
+) {
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
     googleCalendarSync: {
@@ -100,18 +125,28 @@ export function deactivateBroadPause(accessToken: string, pauseId: string) {
     };
   }>(`/api/admin/academic-pauses/${encodeURIComponent(pauseId)}`, {
     method: "DELETE",
-    accessToken,
+    accessToken: await freshAccessToken(accessToken),
   });
 }
 
-export function previewBroadPause(accessToken: string, input: BroadPauseInput) {
+export async function previewBroadPause(
+  accessToken: string,
+  input: BroadPauseInput,
+) {
   return adminFetch<{ impact: AcademicPauseImpact }>(
     "/api/admin/academic-pauses/preview",
-    { method: "POST", accessToken, body: input },
+    {
+      method: "POST",
+      accessToken: await freshAccessToken(accessToken),
+      body: input,
+    },
   );
 }
 
-export function createBroadPause(accessToken: string, input: BroadPauseInput) {
+export async function createBroadPause(
+  accessToken: string,
+  input: BroadPauseInput,
+) {
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
     impact: AcademicPauseImpact;
@@ -122,7 +157,7 @@ export function createBroadPause(accessToken: string, input: BroadPauseInput) {
     };
   }>("/api/admin/academic-pauses", {
     method: "POST",
-    accessToken,
+    accessToken: await freshAccessToken(accessToken),
     body: input,
   });
 }
