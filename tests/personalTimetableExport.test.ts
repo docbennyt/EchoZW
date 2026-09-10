@@ -74,10 +74,9 @@ describe("personal timetable exports", () => {
   it("builds one deterministic class-specific model and sorts sessions", () => {
     const result = model();
     expect(result.sourceSessionCount).toBe(3);
-    expect(result.days[0].sessions.map((session) => session.stableSessionKey)).toEqual([
-      "lab",
-      "lecture",
-    ]);
+    expect(
+      result.days[0].sessions.map((session) => session.stableSessionKey),
+    ).toEqual(["lab", "lecture"]);
     expect(result.days[0].sessions[0].kind).toBe("lab");
     expect(result.days[1].sessions[0].kind).toBe("break");
   });
