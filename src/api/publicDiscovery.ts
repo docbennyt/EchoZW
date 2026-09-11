@@ -1,9 +1,12 @@
 export type PublishedTimetableSummary = {
   publicSlug: string;
   institutionName: string;
+  timezone: string;
   programmeName: string;
   classGroupLabel: string;
   academicPeriodName: string;
+  startsOn: string | null;
+  endsOn: string | null;
   lastUpdated: string;
 };
 

@@ -1185,6 +1185,50 @@ export async function updateAcademicPeriod(
   return mapAcademicPeriod(data as unknown as JsonRecord);
 }
 
+export async function listPublishedTimetableDiscovery() {
+  const client = createPilotAdminClient();
+  const rows = await expectData(
+    client
+      .from("timetables")
+      .select(
+        "public_slug, updated_at, current_published_version_id, institutions(name, timezone), programmes(name), cohorts(label), academic_periods(name, starts_on, ends_on)",
+      )
+      .not("current_published_version_id", "is", null)
+      .order("updated_at", { ascending: false }),
+    "DATABASE_UNAVAILABLE",
+    "Could not load published timetable discovery data.",
+  );
+
+  return ((rows ?? []) as JsonRecord[]).map((row) => {
+    const institution = asSingle(
+      row.institutions as JsonRecord | JsonRecord[] | null,
+    );
+    const programme = asSingle(
+      row.programmes as JsonRecord | JsonRecord[] | null,
+    );
+    const cohort = asSingle(row.cohorts as JsonRecord | JsonRecord[] | null);
+    const period = asSingle(
+      row.academic_periods as JsonRecord | JsonRecord[] | null,
+    );
+
+    return {
+      publicSlug: String(row.public_slug),
+      institutionName: institution?.name ? String(institution.name) : "",
+      institutionTimezone: institution?.timezone
+        ? String(institution.timezone)
+        : "",
+      programmeName: programme?.name ? String(programme.name) : "",
+      classGroupLabel: cohort?.label ? String(cohort.label) : "",
+      academicPeriodName: period?.name ? String(period.name) : "",
+      academicPeriodStartsOn: period?.starts_on
+        ? String(period.starts_on)
+        : null,
+      academicPeriodEndsOn: period?.ends_on ? String(period.ends_on) : null,
+      lastUpdated: String(row.updated_at),
+    };
+  });
+}
+
 export async function listTimetables() {
   const client = createPilotAdminClient();
   const rows = await expectData(
