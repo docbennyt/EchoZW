@@ -8,7 +8,9 @@ function useHeroTarget() {
 
   useEffect(() => {
     const update = () => {
-      setTarget(document.querySelector<HTMLElement>(".czw-hero-copy-block"));
+      setTarget(
+        document.querySelector<HTMLElement>(".czw-hero-copy-block"),
+      );
     };
 
     update();
@@ -56,7 +58,10 @@ export function HeroTrustProof() {
   if (!heroTarget) return null;
 
   return createPortal(
-    <div className="czw-hero-trust-proof" aria-label="CalenderZW HIT pilot proof">
+    <div
+      className="czw-hero-trust-proof"
+      aria-label="CalenderZW HIT pilot proof"
+    >
       <a
         className="czw-hit-identity"
         href="https://www.hit.ac.zw/"
