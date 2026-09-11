@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   getPublishedTimetableBySlug,
-  listTimetables,
+  listPublishedTimetableDiscovery,
   PilotApiError,
 } from "./pilotRepository.js";
 import { getTimetablePublicDisplaySettings } from "./timetablePublicSettingsRepository.js";
@@ -49,16 +49,19 @@ export async function handlePublicTimetableRequest(
     requestUrl.pathname === "/api/public/timetables"
   ) {
     try {
-      const timetables = (await listTimetables())
-        .filter((timetable) => Boolean(timetable.currentPublishedVersionId))
-        .map((timetable) => ({
+      const timetables = (await listPublishedTimetableDiscovery()).map(
+        (timetable) => ({
           publicSlug: timetable.publicSlug,
           institutionName: timetable.institutionName,
+          timezone: timetable.institutionTimezone,
           programmeName: timetable.programmeName,
           classGroupLabel: timetable.classGroupLabel,
           academicPeriodName: timetable.academicPeriodName,
+          startsOn: timetable.academicPeriodStartsOn,
+          endsOn: timetable.academicPeriodEndsOn,
           lastUpdated: timetable.lastUpdated,
-        }));
+        }),
+      );
       sendJson(
         res,
         200,

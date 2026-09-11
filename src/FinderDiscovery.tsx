@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  ExternalLink,
   Grid2X2,
   List,
   Search,
@@ -17,6 +16,7 @@ import {
   fetchPublishedTimetables,
   type PublishedTimetableSummary,
 } from "./api/publicDiscovery";
+import { chooseAcademicPeriod } from "./domain/finderPeriodSelection";
 
 const SORT_OPTIONS = [
   "Recently updated",
@@ -26,6 +26,7 @@ const SORT_OPTIONS = [
 
 type SortOption = (typeof SORT_OPTIONS)[number];
 type ViewMode = "grid" | "list";
+type FinderStatus = "loading" | "ready" | "error";
 
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) =>
@@ -51,7 +52,11 @@ function openPath(path: string) {
 }
 
 function useDesktopDirectory() {
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    () =>
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(min-width: 900px)").matches,
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -123,6 +128,228 @@ function SelectField({
   );
 }
 
+function FinderLoadState({
+  status,
+  timetableCount,
+}: {
+  status: FinderStatus;
+  timetableCount: number;
+}) {
+  if (status === "loading") {
+    return (
+      <div className="czw-finder-loading" role="status">
+        <span />
+        <span />
+        <span />
+        <p>Loading published timetables…</p>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="czw-finder-error" role="alert">
+        <strong>We couldn’t load published timetables.</strong>
+        <p>Refresh and try again. Draft timetables are never shown here.</p>
+      </div>
+    );
+  }
+
+  if (timetableCount === 0) {
+    return (
+      <div className="czw-finder-empty">
+        <strong>No published timetables are listed yet.</strong>
+        <p>
+          Your class representative can publish a timetable before students use
+          this finder.
+        </p>
+        <a href="/rep/login">Set up a class →</a>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ExactFinder({
+  timetables,
+  status,
+}: {
+  timetables: PublishedTimetableSummary[];
+  status: FinderStatus;
+}) {
+  const [institution, setInstitution] = useState<string | null>(null);
+  const [programme, setProgramme] = useState<string | null>(null);
+  const [classGroup, setClassGroup] = useState<string | null>(null);
+  const [period, setPeriod] = useState<string | null>(null);
+  const [referenceNow] = useState(() => new Date());
+
+  const institutions = useMemo(
+    () => unique(timetables.map((item) => item.institutionName)),
+    [timetables],
+  );
+  const programmes = useMemo(
+    () =>
+      unique(
+        timetables
+          .filter((item) => item.institutionName === institution)
+          .map((item) => item.programmeName),
+      ),
+    [institution, timetables],
+  );
+  const classes = useMemo(
+    () =>
+      unique(
+        timetables
+          .filter(
+            (item) =>
+              item.institutionName === institution &&
+              item.programmeName === programme,
+          )
+          .map((item) => item.classGroupLabel),
+      ),
+    [institution, programme, timetables],
+  );
+  const candidates = useMemo(
+    () =>
+      timetables.filter(
+        (item) =>
+          item.institutionName === institution &&
+          item.programmeName === programme &&
+          item.classGroupLabel === classGroup,
+      ),
+    [classGroup, institution, programme, timetables],
+  );
+  const periods = useMemo(
+    () => unique(candidates.map((item) => item.academicPeriodName)),
+    [candidates],
+  );
+  const preferredPeriod = useMemo(
+    () => chooseAcademicPeriod(candidates, referenceNow),
+    [candidates, referenceNow],
+  );
+
+  const effectivePeriod = period ?? preferredPeriod.selectedPeriodName;
+
+  const selectedTimetable = useMemo(() => {
+    if (effectivePeriod) {
+      return (
+        candidates.find(
+          (item) => item.academicPeriodName === effectivePeriod,
+        ) ?? null
+      );
+    }
+    return candidates.length === 1 ? candidates[0] : null;
+  }, [candidates, effectivePeriod]);
+
+  const periodNote = useMemo(() => {
+    if (!classGroup || candidates.length === 0) return null;
+    if (preferredPeriod.reason === "single") {
+      return "Only one published academic period is available for this class.";
+    }
+    if (preferredPeriod.reason === "current") {
+      return "The academic period containing today’s institution-local date was selected. You can choose another published period.";
+    }
+    if (preferredPeriod.reason === "overlap") {
+      return "More than one published academic period contains today’s date. Choose the period your class is using.";
+    }
+    if (preferredPeriod.reason === "ambiguous") {
+      return "No published academic period contains today’s date. Choose the period explicitly.";
+    }
+    return null;
+  }, [candidates.length, classGroup, preferredPeriod.reason]);
+
+  function submitFinder(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedTimetable) return;
+    openPath(`/t/${selectedTimetable.publicSlug}`);
+  }
+
+  return (
+    <section className="czw-finder-card" aria-labelledby="finder-card-title">
+      <div className="czw-finder-card-heading">
+        <span className="czw-finder-icon" aria-hidden="true">
+          <Search size={18} />
+        </span>
+        <div>
+          <h2 id="finder-card-title">Find your exact class</h2>
+          <p>
+            Institution → Programme → Class → Academic period. Only published
+            timetables can appear.
+          </p>
+        </div>
+      </div>
+
+      <FinderLoadState status={status} timetableCount={timetables.length} />
+
+      {status === "ready" && timetables.length > 0 ? (
+        <form className="czw-finder-form" onSubmit={submitFinder}>
+          <SelectField
+            label="Institution"
+            placeholder="Choose your university"
+            value={institution}
+            values={institutions}
+            onValueChange={(value) => {
+              setInstitution(value);
+              setProgramme(null);
+              setClassGroup(null);
+              setPeriod(null);
+            }}
+          />
+          <SelectField
+            label="Programme"
+            placeholder="Choose your programme"
+            value={programme}
+            values={programmes}
+            disabled={!institution}
+            onValueChange={(value) => {
+              setProgramme(value);
+              setClassGroup(null);
+              setPeriod(null);
+            }}
+          />
+          <div className="czw-finder-two-col">
+            <SelectField
+              label="Class"
+              placeholder="Choose your class"
+              value={classGroup}
+              values={classes}
+              disabled={!programme}
+              onValueChange={(value) => {
+                setClassGroup(value);
+                setPeriod(null);
+              }}
+            />
+            <div>
+              <SelectField
+                label="Academic period"
+                placeholder="Choose academic period"
+                value={effectivePeriod}
+                values={periods}
+                disabled={!classGroup || periods.length <= 1}
+                onValueChange={setPeriod}
+              />
+              {periodNote ? (
+                <p className="czw-period-note" role="status">
+                  {periodNote}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          <Button
+            className="czw-button czw-button-primary czw-finder-submit"
+            type="submit"
+            disabled={!selectedTimetable}
+            focusableWhenDisabled
+          >
+            View timetable <ArrowRight size={17} aria-hidden="true" />
+          </Button>
+        </form>
+      ) : null}
+    </section>
+  );
+}
+
 function TimetableThumbnail() {
   return (
     <div className="czw-timetable-thumbnail" aria-hidden="true">
@@ -185,50 +412,6 @@ function TimetableCard({
   );
 }
 
-function SharedLinkForm({
-  sharedLink,
-  linkError,
-  onSharedLinkChange,
-  onSubmit,
-  compact = false,
-}: {
-  sharedLink: string;
-  linkError: string;
-  onSharedLinkChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  compact?: boolean;
-}) {
-  return (
-    <form
-      className="czw-shared-link-form"
-      data-compact={compact || undefined}
-      onSubmit={onSubmit}
-    >
-      <label htmlFor={compact ? "czw-shared-link-desktop" : "czw-shared-link"}>
-        Timetable link or slug
-      </label>
-      <div>
-        <Input
-          id={compact ? "czw-shared-link-desktop" : "czw-shared-link"}
-          value={sharedLink}
-          onChange={(event) => onSharedLinkChange(event.target.value)}
-          placeholder="calender.aido.co.zw/t/…"
-          aria-describedby={linkError ? "czw-link-error" : undefined}
-        />
-        <Button type="submit" className="czw-link-open-button">
-          <ExternalLink size={17} aria-hidden="true" />
-          <span>Open</span>
-        </Button>
-      </div>
-      {linkError ? (
-        <p id="czw-link-error" role="alert">
-          {linkError}
-        </p>
-      ) : null}
-    </form>
-  );
-}
-
 function QuickFilterButton({
   label,
   active,
@@ -250,20 +433,11 @@ function QuickFilterButton({
   );
 }
 
-export function FinderDiscovery() {
-  const isDesktop = useDesktopDirectory();
-  const [timetables, setTimetables] = useState<PublishedTimetableSummary[]>([]);
-  const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
-
-  // Exact-match finder state. This remains the fast mobile path.
-  const [institution, setInstitution] = useState<string | null>(null);
-  const [programme, setProgramme] = useState<string | null>(null);
-  const [classGroup, setClassGroup] = useState<string | null>(null);
-  const [period, setPeriod] = useState<string | null>(null);
-
-  // Directory browsing state. It is deliberately independent from the exact finder.
+function DesktopDirectory({
+  timetables,
+}: {
+  timetables: PublishedTimetableSummary[];
+}) {
   const [browseInstitution, setBrowseInstitution] = useState<string | null>(
     null,
   );
@@ -274,86 +448,10 @@ export function FinderDiscovery() {
   const [sortBy, setSortBy] = useState<SortOption>("Recently updated");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
-  const [sharedLink, setSharedLink] = useState("");
-  const [linkError, setLinkError] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    fetchPublishedTimetables()
-      .then((result) => {
-        if (!active) return;
-        setTimetables(result.timetables);
-        setStatus("ready");
-      })
-      .catch(() => {
-        if (!active) return;
-        setStatus("error");
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const institutions = useMemo(
     () => unique(timetables.map((item) => item.institutionName)),
     [timetables],
   );
-
-  const programmes = useMemo(
-    () =>
-      unique(
-        timetables
-          .filter((item) => item.institutionName === institution)
-          .map((item) => item.programmeName),
-      ),
-    [institution, timetables],
-  );
-
-  const classes = useMemo(
-    () =>
-      unique(
-        timetables
-          .filter(
-            (item) =>
-              item.institutionName === institution &&
-              item.programmeName === programme,
-          )
-          .map((item) => item.classGroupLabel),
-      ),
-    [institution, programme, timetables],
-  );
-
-  const periods = useMemo(
-    () =>
-      unique(
-        timetables
-          .filter(
-            (item) =>
-              item.institutionName === institution &&
-              item.programmeName === programme &&
-              item.classGroupLabel === classGroup,
-          )
-          .map((item) => item.academicPeriodName),
-      ),
-    [classGroup, institution, programme, timetables],
-  );
-
-  const selectedTimetable = useMemo(() => {
-    if (!institution || !programme || !classGroup) return null;
-    const candidates = timetables.filter(
-      (item) =>
-        item.institutionName === institution &&
-        item.programmeName === programme &&
-        item.classGroupLabel === classGroup,
-    );
-    if (period) {
-      return (
-        candidates.find((item) => item.academicPeriodName === period) ?? null
-      );
-    }
-    return candidates.length === 1 ? candidates[0] : null;
-  }, [classGroup, institution, period, programme, timetables]);
-
   const browseProgrammes = useMemo(
     () =>
       unique(
@@ -366,7 +464,6 @@ export function FinderDiscovery() {
       ),
     [browseInstitution, timetables],
   );
-
   const browseClasses = useMemo(
     () =>
       unique(
@@ -381,7 +478,6 @@ export function FinderDiscovery() {
       ),
     [browseInstitution, browseProgramme, timetables],
   );
-
   const browsePeriods = useMemo(
     () =>
       unique(
@@ -404,21 +500,22 @@ export function FinderDiscovery() {
       if (browseInstitution && item.institutionName !== browseInstitution) {
         return false;
       }
-      if (browseProgramme && item.programmeName !== browseProgramme)
+      if (browseProgramme && item.programmeName !== browseProgramme) {
         return false;
+      }
       if (browseClass && item.classGroupLabel !== browseClass) return false;
       if (browsePeriod && item.academicPeriodName !== browsePeriod)
         return false;
       if (!normalizedQuery) return true;
-      const searchable = [
+      return [
         item.institutionName,
         item.programmeName,
         item.classGroupLabel,
         item.academicPeriodName,
       ]
         .join(" ")
-        .toLocaleLowerCase();
-      return searchable.includes(normalizedQuery);
+        .toLocaleLowerCase()
+        .includes(normalizedQuery);
     });
 
     return [...filtered].sort((left, right) => {
@@ -459,43 +556,6 @@ export function FinderDiscovery() {
     query,
   );
 
-  function submitFinder(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selectedTimetable) return;
-    openPath(`/t/${selectedTimetable.publicSlug}`);
-  }
-
-  function submitSharedLink(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLinkError("");
-    const trimmed = sharedLink.trim();
-    if (!trimmed) {
-      setLinkError("Paste a CalenderZW timetable link or slug.");
-      return;
-    }
-
-    let slug = trimmed.replace(/^\/?t\//, "");
-    try {
-      const parsed = new URL(trimmed);
-      const match = parsed.pathname.match(/^\/t\/([^/]+)$/);
-      if (!match) {
-        setLinkError(
-          "That link does not look like a CalenderZW timetable link.",
-        );
-        return;
-      }
-      slug = decodeURIComponent(match[1]);
-    } catch {
-      // A plain public slug is supported as a compact fallback.
-    }
-
-    if (!slug || slug.includes("/") || slug.includes(" ")) {
-      setLinkError("Enter the final timetable slug or a full /t/ link.");
-      return;
-    }
-    openPath(`/t/${encodeURIComponent(slug)}`);
-  }
-
   function setDirectoryInstitution(value: string | null) {
     setBrowseInstitution(value);
     setBrowseProgramme(null);
@@ -517,451 +577,270 @@ export function FinderDiscovery() {
     setQuery("");
   }
 
-  const commonStatus = (
-    <>
-      {status === "loading" ? (
-        <div className="czw-finder-loading" role="status">
-          <span />
-          <span />
-          <span />
-          <p>Loading published timetables…</p>
-        </div>
-      ) : null}
-
-      {status === "error" ? (
-        <div className="czw-finder-error" role="alert">
-          <strong>We couldn’t load the timetable directory.</strong>
-          <p>You can still open a shared class link below.</p>
-        </div>
-      ) : null}
-
-      {status === "ready" && timetables.length === 0 ? (
-        <div className="czw-finder-empty">
-          <strong>No published timetables are listed yet.</strong>
-          <p>
-            If your class already has a direct CalenderZW link, open it below.
-            Otherwise your class representative can help set one up.
-          </p>
-          <a href="/rep/login">Set up a class →</a>
-        </div>
-      ) : null}
-    </>
-  );
-
-  if (isDesktop) {
-    return (
-      <div className="czw-finder-experience czw-directory-experience">
-        <section
-          className="czw-directory-desktop"
-          aria-labelledby="directory-title"
-        >
-          <div className="czw-directory-search-row">
-            <div className="czw-directory-search-box">
-              <Search size={18} aria-hidden="true" />
-              <Input
-                aria-label="Search published timetables"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by university, programme, class or academic period"
-              />
-              {query ? (
-                <Button
-                  type="button"
-                  className="czw-directory-clear-search"
-                  aria-label="Clear search"
-                  onClick={() => setQuery("")}
-                >
-                  <X size={16} aria-hidden="true" />
-                </Button>
-              ) : null}
-            </div>
-            <div className="czw-directory-search-trust">
-              <Check size={14} aria-hidden="true" />
-              Published by CalenderZW
-            </div>
-          </div>
-
-          {status !== "ready" || timetables.length === 0 ? commonStatus : null}
-
-          {status === "ready" && timetables.length > 0 ? (
-            <>
-              <nav
-                className="czw-directory-category-row"
-                aria-label="Browse by institution"
-              >
-                <strong>Institutions</strong>
-                <div>
-                  <QuickFilterButton
-                    label="All institutions"
-                    active={!browseInstitution}
-                    onClick={() => setDirectoryInstitution(null)}
-                  />
-                  {institutions.map((item) => (
-                    <QuickFilterButton
-                      key={item}
-                      label={item}
-                      active={browseInstitution === item}
-                      onClick={() => setDirectoryInstitution(item)}
-                    />
-                  ))}
-                </div>
-              </nav>
-
-              <nav
-                className="czw-directory-category-row czw-directory-category-secondary"
-                aria-label="Browse by programme"
-              >
-                <strong>Programmes</strong>
-                <div>
-                  <QuickFilterButton
-                    label="All programmes"
-                    active={!browseProgramme}
-                    onClick={() => setDirectoryProgramme(null)}
-                  />
-                  {browseProgrammes.map((item) => (
-                    <QuickFilterButton
-                      key={item}
-                      label={item}
-                      active={browseProgramme === item}
-                      onClick={() => setDirectoryProgramme(item)}
-                    />
-                  ))}
-                </div>
-              </nav>
-
-              <div className="czw-directory-layout">
-                <aside
-                  className="czw-directory-sidebar"
-                  aria-label="Timetable filters"
-                >
-                  <div className="czw-directory-sidebar-heading">
-                    <span>
-                      <SlidersHorizontal size={16} aria-hidden="true" />
-                      Filter & refine
-                    </span>
-                    {hasBrowseFilters ? (
-                      <Button
-                        type="button"
-                        className="czw-directory-reset"
-                        onClick={clearDirectoryFilters}
-                      >
-                        Clear all
-                      </Button>
-                    ) : null}
-                  </div>
-
-                  <div className="czw-directory-filter-stack">
-                    <SelectField
-                      label="Institution"
-                      placeholder="All institutions"
-                      value={browseInstitution}
-                      values={institutions}
-                      onValueChange={setDirectoryInstitution}
-                    />
-                    <SelectField
-                      label="Programme"
-                      placeholder="All programmes"
-                      value={browseProgramme}
-                      values={browseProgrammes}
-                      onValueChange={setDirectoryProgramme}
-                    />
-                    <SelectField
-                      label="Class"
-                      placeholder="All classes"
-                      value={browseClass}
-                      values={browseClasses}
-                      onValueChange={(value) => {
-                        setBrowseClass(value);
-                        setBrowsePeriod(null);
-                      }}
-                    />
-                    <SelectField
-                      label="Academic period"
-                      placeholder="All periods"
-                      value={browsePeriod}
-                      values={browsePeriods}
-                      onValueChange={setBrowsePeriod}
-                    />
-                  </div>
-
-                  <div className="czw-directory-published-only">
-                    <span className="czw-published-pill">
-                      <Check size={13} aria-hidden="true" /> Published only
-                    </span>
-                    <p>
-                      Every result comes from the current CalenderZW publication
-                      state. Drafts never appear here.
-                    </p>
-                  </div>
-
-                  <div className="czw-directory-shared-link">
-                    <strong>Have a class link?</strong>
-                    <p>
-                      Open a direct timetable without changing your filters.
-                    </p>
-                    <SharedLinkForm
-                      compact
-                      sharedLink={sharedLink}
-                      linkError={linkError}
-                      onSharedLinkChange={setSharedLink}
-                      onSubmit={submitSharedLink}
-                    />
-                  </div>
-                </aside>
-
-                <div className="czw-directory-results">
-                  <div className="czw-directory-toolbar">
-                    <div>
-                      <span className="czw-kicker">Published directory</span>
-                      <h2 id="directory-title">Published timetables</h2>
-                      <p>
-                        Showing {filteredTimetables.length} of{" "}
-                        {timetables.length}
-                        {timetables.length === 1 ? " timetable" : " timetables"}
-                      </p>
-                    </div>
-                    <div className="czw-directory-toolbar-actions">
-                      <div className="czw-directory-sort">
-                        <SelectField
-                          label="Sort"
-                          placeholder="Recently updated"
-                          value={sortBy}
-                          values={SORT_OPTIONS}
-                          onValueChange={(value) =>
-                            setSortBy(
-                              (value as SortOption | null) ??
-                                "Recently updated",
-                            )
-                          }
-                        />
-                      </div>
-                      <div
-                        className="czw-directory-view-toggle"
-                        aria-label="Result view"
-                      >
-                        <Button
-                          type="button"
-                          aria-label="Grid view"
-                          aria-pressed={viewMode === "grid"}
-                          onClick={() => setViewMode("grid")}
-                        >
-                          <Grid2X2 size={16} aria-hidden="true" />
-                        </Button>
-                        <Button
-                          type="button"
-                          aria-label="List view"
-                          aria-pressed={viewMode === "list"}
-                          onClick={() => setViewMode("list")}
-                        >
-                          <List size={17} aria-hidden="true" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {filteredTimetables.length > 0 ? (
-                    <div
-                      className="czw-discovery-grid"
-                      data-view={viewMode}
-                      aria-live="polite"
-                    >
-                      {filteredTimetables.map((timetable) => (
-                        <TimetableCard
-                          key={timetable.publicSlug}
-                          timetable={timetable}
-                          viewMode={viewMode}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="czw-directory-no-results" role="status">
-                      <Search size={22} aria-hidden="true" />
-                      <strong>
-                        No published timetables match those filters.
-                      </strong>
-                      <p>
-                        Clear one or more filters, or search using a programme,
-                        class or period name.
-                      </p>
-                      <Button
-                        type="button"
-                        className="czw-button czw-button-secondary"
-                        onClick={clearDirectoryFilters}
-                      >
-                        Clear filters
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : null}
-        </section>
-      </div>
-    );
-  }
-
   return (
-    <div className="czw-finder-experience">
-      <section className="czw-finder-card" aria-labelledby="finder-card-title">
-        <div className="czw-finder-card-heading">
-          <span className="czw-finder-icon" aria-hidden="true">
-            <Search size={18} />
-          </span>
-          <div>
-            <h2 id="finder-card-title">Choose your class</h2>
-            <p>We only show timetables that are already published.</p>
-          </div>
+    <section
+      className="czw-directory-desktop czw-directory-secondary"
+      data-priority="secondary"
+      aria-labelledby="directory-title"
+    >
+      <div className="czw-directory-intro">
+        <span className="czw-kicker">Browse published timetables</span>
+        <h2 id="directory-title">Directory</h2>
+        <p>
+          Use this only when you want to explore. The exact class finder above
+          remains the fastest route to your timetable.
+        </p>
+      </div>
+
+      <div className="czw-directory-search-row">
+        <div className="czw-directory-search-box">
+          <Search size={18} aria-hidden="true" />
+          <Input
+            aria-label="Search published timetables"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by university, programme, class or academic period"
+          />
+          {query ? (
+            <Button
+              type="button"
+              className="czw-directory-clear-search"
+              aria-label="Clear search"
+              onClick={() => setQuery("")}
+            >
+              <X size={16} aria-hidden="true" />
+            </Button>
+          ) : null}
         </div>
+        <div className="czw-directory-search-trust">
+          <Check size={14} aria-hidden="true" />
+          Published by CalenderZW
+        </div>
+      </div>
 
-        {commonStatus}
+      <nav
+        className="czw-directory-category-row"
+        aria-label="Browse by institution"
+      >
+        <strong>Institutions</strong>
+        <div>
+          <QuickFilterButton
+            label="All institutions"
+            active={!browseInstitution}
+            onClick={() => setDirectoryInstitution(null)}
+          />
+          {institutions.map((item) => (
+            <QuickFilterButton
+              key={item}
+              label={item}
+              active={browseInstitution === item}
+              onClick={() => setDirectoryInstitution(item)}
+            />
+          ))}
+        </div>
+      </nav>
 
-        {status === "ready" && timetables.length > 0 ? (
-          <form className="czw-finder-form" onSubmit={submitFinder}>
+      <nav
+        className="czw-directory-category-row czw-directory-category-secondary"
+        aria-label="Browse by programme"
+      >
+        <strong>Programmes</strong>
+        <div>
+          <QuickFilterButton
+            label="All programmes"
+            active={!browseProgramme}
+            onClick={() => setDirectoryProgramme(null)}
+          />
+          {browseProgrammes.map((item) => (
+            <QuickFilterButton
+              key={item}
+              label={item}
+              active={browseProgramme === item}
+              onClick={() => setDirectoryProgramme(item)}
+            />
+          ))}
+        </div>
+      </nav>
+
+      <div className="czw-directory-layout">
+        <aside className="czw-directory-sidebar" aria-label="Timetable filters">
+          <div className="czw-directory-sidebar-heading">
+            <span>
+              <SlidersHorizontal size={16} aria-hidden="true" />
+              Filter & refine
+            </span>
+            {hasBrowseFilters ? (
+              <Button
+                type="button"
+                className="czw-directory-reset"
+                onClick={clearDirectoryFilters}
+              >
+                Clear all
+              </Button>
+            ) : null}
+          </div>
+
+          <div className="czw-directory-filter-stack">
             <SelectField
               label="Institution"
-              placeholder="Choose your university"
-              value={institution}
+              placeholder="All institutions"
+              value={browseInstitution}
               values={institutions}
-              onValueChange={(value) => {
-                setInstitution(value);
-                setProgramme(null);
-                setClassGroup(null);
-                setPeriod(null);
-              }}
+              onValueChange={setDirectoryInstitution}
             />
             <SelectField
               label="Programme"
-              placeholder="Choose your programme"
-              value={programme}
-              values={programmes}
-              disabled={!institution}
+              placeholder="All programmes"
+              value={browseProgramme}
+              values={browseProgrammes}
+              onValueChange={setDirectoryProgramme}
+            />
+            <SelectField
+              label="Class"
+              placeholder="All classes"
+              value={browseClass}
+              values={browseClasses}
               onValueChange={(value) => {
-                setProgramme(value);
-                setClassGroup(null);
-                setPeriod(null);
+                setBrowseClass(value);
+                setBrowsePeriod(null);
               }}
             />
-            <div className="czw-finder-two-col">
-              <SelectField
-                label="Class"
-                placeholder="Choose your class"
-                value={classGroup}
-                values={classes}
-                disabled={!programme}
-                onValueChange={(value) => {
-                  setClassGroup(value);
-                  setPeriod(null);
-                }}
-              />
-              <SelectField
-                label="Academic period"
-                placeholder={
-                  periods.length <= 1 ? "Current period" : "Choose period"
-                }
-                value={period}
-                values={periods}
-                disabled={!classGroup || periods.length <= 1}
-                onValueChange={setPeriod}
-              />
-            </div>
-            <Button
-              className="czw-button czw-button-primary czw-finder-submit"
-              type="submit"
-              disabled={!selectedTimetable}
-              focusableWhenDisabled
-            >
-              View timetable <ArrowRight size={17} aria-hidden="true" />
-            </Button>
-          </form>
-        ) : null}
-
-        <div className="czw-finder-divider">
-          <span>or open a shared class link</span>
-        </div>
-        <SharedLinkForm
-          sharedLink={sharedLink}
-          linkError={linkError}
-          onSharedLinkChange={setSharedLink}
-          onSubmit={submitSharedLink}
-        />
-      </section>
-
-      {status === "ready" && timetables.length > 0 ? (
-        <section
-          className="czw-available-section"
-          aria-labelledby="available-title"
-        >
-          <div className="czw-available-heading">
-            <div>
-              <span className="czw-kicker">Available now</span>
-              <h2 id="available-title">Published timetables</h2>
-            </div>
-            <span>{filteredTimetables.length} available</span>
-          </div>
-
-          <div
-            className="czw-mobile-browse-rail"
-            aria-label="Browse institutions"
-          >
-            <QuickFilterButton
-              label="All"
-              active={!browseInstitution}
-              onClick={() => setDirectoryInstitution(null)}
+            <SelectField
+              label="Academic period"
+              placeholder="All periods"
+              value={browsePeriod}
+              values={browsePeriods}
+              onValueChange={setBrowsePeriod}
             />
-            {institutions.map((item) => (
-              <QuickFilterButton
-                key={item}
-                label={item}
-                active={browseInstitution === item}
-                onClick={() => setDirectoryInstitution(item)}
-              />
-            ))}
           </div>
 
-          {browseInstitution && browseProgrammes.length > 1 ? (
-            <div
-              className="czw-mobile-browse-rail czw-mobile-programme-rail"
-              aria-label="Browse programmes"
-            >
-              <QuickFilterButton
-                label="All programmes"
-                active={!browseProgramme}
-                onClick={() => setDirectoryProgramme(null)}
-              />
-              {browseProgrammes.map((item) => (
-                <QuickFilterButton
-                  key={item}
-                  label={item}
-                  active={browseProgramme === item}
-                  onClick={() => setDirectoryProgramme(item)}
-                />
-              ))}
+          <div className="czw-directory-published-only">
+            <span className="czw-published-pill">
+              <Check size={13} aria-hidden="true" /> Published only
+            </span>
+            <p>
+              Results come from current CalenderZW publication state. Drafts
+              never appear here.
+            </p>
+          </div>
+        </aside>
+
+        <div className="czw-directory-results">
+          <div className="czw-directory-toolbar">
+            <div>
+              <span className="czw-kicker">Published directory</span>
+              <h3>Published timetables</h3>
+              <p>
+                Showing {filteredTimetables.length} of {timetables.length}
+                {timetables.length === 1 ? " timetable" : " timetables"}
+              </p>
             </div>
-          ) : null}
+            <div className="czw-directory-toolbar-actions">
+              <div className="czw-directory-sort">
+                <SelectField
+                  label="Sort"
+                  placeholder="Recently updated"
+                  value={sortBy}
+                  values={SORT_OPTIONS}
+                  onValueChange={(value) =>
+                    setSortBy(
+                      (value as SortOption | null) ?? "Recently updated",
+                    )
+                  }
+                />
+              </div>
+              <div
+                className="czw-directory-view-toggle"
+                aria-label="Result view"
+              >
+                <Button
+                  type="button"
+                  aria-label="Grid view"
+                  aria-pressed={viewMode === "grid"}
+                  onClick={() => setViewMode("grid")}
+                >
+                  <Grid2X2 size={16} aria-hidden="true" />
+                </Button>
+                <Button
+                  type="button"
+                  aria-label="List view"
+                  aria-pressed={viewMode === "list"}
+                  onClick={() => setViewMode("list")}
+                >
+                  <List size={17} aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+          </div>
 
           {filteredTimetables.length > 0 ? (
-            <div className="czw-discovery-grid">
+            <div
+              className="czw-discovery-grid"
+              data-view={viewMode}
+              aria-live="polite"
+            >
               {filteredTimetables.map((timetable) => (
                 <TimetableCard
                   key={timetable.publicSlug}
                   timetable={timetable}
+                  viewMode={viewMode}
                 />
               ))}
             </div>
           ) : (
             <div className="czw-directory-no-results" role="status">
-              <strong>No published timetables in this category yet.</strong>
+              <Search size={22} aria-hidden="true" />
+              <strong>No published timetables match those filters.</strong>
+              <p>
+                Clear one or more filters, or search using a programme, class or
+                period name.
+              </p>
               <Button
                 type="button"
                 className="czw-button czw-button-secondary"
                 onClick={clearDirectoryFilters}
               >
-                Show all
+                Clear filters
               </Button>
             </div>
           )}
-        </section>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function FinderDiscovery() {
+  const isDesktop = useDesktopDirectory();
+  const [timetables, setTimetables] = useState<PublishedTimetableSummary[]>([]);
+  const [status, setStatus] = useState<FinderStatus>("loading");
+
+  useEffect(() => {
+    let active = true;
+    fetchPublishedTimetables()
+      .then((result) => {
+        if (!active) return;
+        setTimetables(result.timetables);
+        setStatus("ready");
+      })
+      .catch(() => {
+        if (!active) return;
+        setStatus("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <div
+      className={`czw-finder-experience${isDesktop ? " czw-directory-experience" : ""}`}
+    >
+      <div className="czw-finder-primary" data-priority="primary">
+        <ExactFinder timetables={timetables} status={status} />
+      </div>
+      {isDesktop && status === "ready" && timetables.length > 0 ? (
+        <DesktopDirectory timetables={timetables} />
       ) : null}
     </div>
   );
