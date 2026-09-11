@@ -23,7 +23,9 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply follow-up
-        run: python scripts/dr66_followup_materialize.py
+        run: |
+          python scripts/dr66_followup_materialize.py
+          python scripts/dr66_followup_fix_tests.py
       - name: Format changed files
         run: npx prettier --write src/FinderDiscovery.tsx src/AppV2.tsx src/main.tsx src/ProductionUxEnhancements.tsx src/productionUxEnhancements.css src/finderDiscovery.css src/appV2.css tests/FinderDiscovery.test.tsx tests/dr66FinderDiscoveryContract.test.ts tests/dr55FinderPromptLayout.test.ts tests/dr66ResponsiveFinderFollowup.test.ts
       - run: npm run lint
