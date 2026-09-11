@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import type { AdminTimetableSummary } from "../src/api/pilotTypes.js";
 import { INDEXABLE_STATIC_ROUTES } from "../src/domain/seo.js";
 import { listTimetables } from "./pilotRepository.js";
 
@@ -50,18 +51,22 @@ export function renderSitemap(entries: SitemapEntry[]) {
   ].join("\n");
 }
 
-export async function buildPublicSitemap() {
-  const timetableEntries = (await listTimetables())
+export function buildSitemapEntries(timetables: AdminTimetableSummary[]) {
+  const timetableEntries = timetables
     .filter((timetable) => Boolean(timetable.currentPublishedVersionId))
     .map((timetable) => ({
       path: `/t/${encodeURIComponent(timetable.publicSlug)}`,
       lastmod: timetable.lastUpdated,
     }));
 
-  return renderSitemap([
+  return [
     ...INDEXABLE_STATIC_ROUTES.map((path) => ({ path })),
     ...timetableEntries,
-  ]);
+  ] satisfies SitemapEntry[];
+}
+
+export async function buildPublicSitemap() {
+  return renderSitemap(buildSitemapEntries(await listTimetables()));
 }
 
 export async function handleSeoPublicRequest(

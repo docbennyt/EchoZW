@@ -13,13 +13,6 @@ import {
   validateGoogleOAuthProductionConfig,
 } from "../src/domain/googleOAuthConfig.js";
 import { validateLegalProductionConfig } from "../src/domain/legalValidation.js";
-import { buildPublicTimetableMetadata } from "../src/domain/publicTimetable.js";
-import {
-  getStaticSeoMetadata,
-  isKnownSpaPath,
-  isSensitiveAuthSpaPath,
-  noindexMetadataForPath,
-} from "../src/domain/seo.js";
 import { handleAdminRequest } from "./adminApi.js";
 import { handleAnalyticsRequest } from "./analyticsApi.js";
 import { handleGrowthCaptureRequest } from "./growthCaptureApi.js";
@@ -35,7 +28,6 @@ import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
 import { handlePushNotificationRequest } from "./pushNotificationApi.js";
 import { startPushNotificationWorker } from "./pushNotificationWorker.js";
-import { getPublishedTimetableBySlug } from "./pilotRepository.js";
 import {
   buildRuntimePublicConfig,
   runtimeConfigResponseHeaders,
@@ -43,7 +35,7 @@ import {
 } from "./runtimePublicConfig.js";
 import { checkSchemaCompatibility } from "./schemaCompatibility.js";
 import { handleSeoPublicRequest } from "./seoPublic.js";
-import { injectSpaMetadata } from "./spaMetadata.js";
+import { renderSpaSeoResponse } from "./spaSeo.js";
 import { handleSourceSnapshotRequest } from "./sourceSnapshotApi.js";
 import { startSourceProcessingWorker } from "./sourceProcessingWorker.js";
 import { validateSupabaseProductionConfig } from "./supabase/config.js";
@@ -191,43 +183,11 @@ async function serveFile(
 }
 
 async function serveSpaShell(req: IncomingMessage, res: ServerResponse) {
-  const requestUrl = new URL(req.url ?? "/", "http://localhost");
-  const pathname = requestUrl.pathname;
   const html = await readFile(join(distDir, "index.html"), "utf8");
-  let statusCode = isKnownSpaPath(pathname) ? 200 : 404;
-  let metadata =
-    getStaticSeoMetadata(pathname) ?? noindexMetadataForPath(pathname);
-
-  const googleConnectMatch = pathname.match(/^\/t\/([^/]+)\/google\/?$/);
-  const timetableMatch = pathname.match(/^\/t\/([^/]+)\/?$/);
-
-  if (googleConnectMatch) {
-    const slug = decodeURIComponent(googleConnectMatch[1]);
-    metadata = {
-      title: "Connect Google Calendar | CalenderZW",
-      description:
-        "Connect a published CalenderZW timetable to Google Calendar.",
-      canonicalPath: `/t/${encodeURIComponent(slug)}`,
-      robots: "noindex, nofollow",
-    };
-  } else if (timetableMatch) {
-    const slug = decodeURIComponent(timetableMatch[1]);
-    try {
-      const timetable = await getPublishedTimetableBySlug(slug);
-      metadata = buildPublicTimetableMetadata(timetable);
-      statusCode = 200;
-    } catch {
-      metadata = noindexMetadataForPath(pathname);
-      statusCode = 404;
-    }
-  }
-
-  const responseBody = injectSpaMetadata(html, metadata);
-  const cacheControl = isSensitiveAuthSpaPath(pathname)
-    ? "private, no-store"
-    : statusCode === 404
-      ? "no-store"
-      : "public, max-age=300";
+  const { statusCode, responseBody, cacheControl } = await renderSpaSeoResponse(
+    html,
+    req.url ?? "/",
+  );
 
   res.writeHead(statusCode, {
     "Content-Type": "text/html; charset=utf-8",
