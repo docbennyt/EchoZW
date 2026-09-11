@@ -1,0 +1,38 @@
+.timetable-public-settings-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.timetable-public-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border, #d9ddd6);
+  border-radius: 0.875rem;
+  background: var(--surface, #fff);
+}
+
+.timetable-public-setting > span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.timetable-public-setting small {
+  color: var(--muted-foreground, #667064);
+  line-height: 1.45;
+}
+
+.timetable-public-setting input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 480px) {
+  .timetable-public-setting {
+    align-items: flex-start;
+  }
+}

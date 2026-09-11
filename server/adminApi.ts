@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   AdminAuthError,
+  requireFounderSuperadmin,
   requireOperationalAdmin,
   requireStaffManager,
   requireStaffUser,
@@ -9,6 +10,7 @@ import {
   type AuthDependencies,
 } from "./supabase/auth.js";
 import { handleAcademicPauseAdminApi } from "./academicPauseAdminApi.js";
+import { handleTimetablePublicSettingsAdminApi } from "./timetablePublicSettingsAdminApi.js";
 import { handleCorrectionsAdminApi } from "./correctionsAdminApi.js";
 import { handlePilotAdminApi } from "./pilotAdminApi.js";
 import { handleStaffAdminApi } from "./staffAdminApi.js";
@@ -105,6 +107,26 @@ export async function handleAdminRequest(
       sendAdminAuthError(res, error);
     }
     return true;
+  }
+
+  const publicSettingsMatch = requestUrl.pathname.match(
+    /^\/api\/admin\/timetables\/([^/]+)\/public-settings$/,
+  );
+  if (publicSettingsMatch) {
+    try {
+      const timetableId = decodeURIComponent(publicSettingsMatch[1]);
+      const context = await requireFounderSuperadmin(req, deps);
+      return await handleTimetablePublicSettingsAdminApi(
+        req,
+        res,
+        context,
+        timetableId,
+      );
+    } catch (error) {
+      logAdminFailure("admin-api", error);
+      sendAdminAuthError(res, error);
+      return true;
+    }
   }
 
   const scopedTimetableMatch = requestUrl.pathname.match(

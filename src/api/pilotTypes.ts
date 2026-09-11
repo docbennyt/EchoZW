@@ -270,6 +270,11 @@ export type TimetableSessionException = {
   updatedAt?: string;
 };
 
+export type TimetablePublicDisplaySettings = {
+  showVisualPreview: boolean;
+  showChangeAlerts: boolean;
+};
+
 export type PublicTimetable = {
   timetableId: string;
   publicSlug: string;
@@ -283,6 +288,8 @@ export type PublicTimetable = {
   endsOn: string | null;
   publishedAt: string | null;
   versionNumber: number;
+  /** Always returned by the DR-62 public API; optional here only for rolling-deploy compatibility. */
+  publicDisplay?: TimetablePublicDisplaySettings;
   sessions: PublicTimetableSession[];
   corrections?: TimetableCorrectionDirective[];
   exceptions?: TimetableSessionException[];
