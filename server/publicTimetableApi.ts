@@ -4,6 +4,7 @@ import {
   listTimetables,
   PilotApiError,
 } from "./pilotRepository.js";
+import { getTimetablePublicDisplaySettings } from "./timetablePublicSettingsRepository.js";
 
 function sendJson(
   res: ServerResponse,
@@ -75,10 +76,14 @@ export async function handlePublicTimetableRequest(
   );
   if (req.method === "GET" && timetableMatch) {
     try {
+      const timetable = await getPublishedTimetableBySlug(
+        decodeURIComponent(timetableMatch[1]),
+      );
+      const publicDisplay = await getTimetablePublicDisplaySettings(
+        timetable.timetableId,
+      );
       sendJson(res, 200, {
-        timetable: await getPublishedTimetableBySlug(
-          decodeURIComponent(timetableMatch[1]),
-        ),
+        timetable: { ...timetable, publicDisplay },
       });
     } catch (error) {
       sendError(res, error);

@@ -23,6 +23,7 @@ import {
 } from "./api/adminSession";
 import { fetchAnalyticsOverview } from "./api/adminAnalytics";
 import { FounderOperationsCockpit } from "./FounderOperationsCockpit";
+import { TimetablePublicSettingsControl } from "./TimetablePublicSettingsControl";
 import type { AnalyticsOverview } from "./domain/adminAnalytics";
 import {
   fetchSourceGatewayState,
@@ -2350,9 +2351,11 @@ function TimetableEditorSkeleton() {
 export function TimetableEditorPage({
   accessToken,
   timetableId,
+  canManagePublicSettings = false,
 }: {
   accessToken: string;
   timetableId: string;
+  canManagePublicSettings?: boolean;
 }) {
   const [editor, setEditor] = useState<AdminTimetableEditor | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -2874,6 +2877,13 @@ export function TimetableEditorPage({
         ) : null}
       </Surface>
 
+      {canManagePublicSettings ? (
+        <TimetablePublicSettingsControl
+          accessToken={accessToken}
+          timetableId={editor.timetable.id}
+        />
+      ) : null}
+
       <Surface
         title="Weekly classes"
         subtitle="Add, edit, duplicate, and review recurring sessions by day."
@@ -3263,6 +3273,7 @@ function TimetablesPage({
   timetables,
   refreshAll,
   path,
+  canManagePublicSettings,
 }: {
   accessToken: string;
   institutions: AdminInstitution[];
@@ -3272,11 +3283,16 @@ function TimetablesPage({
   timetables: AdminTimetableSummary[];
   refreshAll: () => Promise<void>;
   path: string;
+  canManagePublicSettings: boolean;
 }) {
   const match = path.match(/^\/admin\/timetables\/(.+)$/);
   if (match) {
     return (
-      <TimetableEditorPage accessToken={accessToken} timetableId={match[1]} />
+      <TimetableEditorPage
+        accessToken={accessToken}
+        timetableId={match[1]}
+        canManagePublicSettings={canManagePublicSettings}
+      />
     );
   }
 
@@ -4020,6 +4036,9 @@ export function AdminMvpScreen({ path }: { path: string }) {
               timetables={data.timetables}
               refreshAll={data.refreshAll}
               path={path}
+              canManagePublicSettings={
+                session.permissions.canManageFounderAuthority
+              }
             />
           ) : null}
           {path === "/admin/source-gateway" ? (

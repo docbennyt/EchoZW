@@ -33,6 +33,7 @@ import "./productionUxEnhancementsPatch.css";
 import "./studentOnboardingAcceleration.css";
 import "./growthCapturePages.css";
 import "./growthInboxPage.css";
+import "./timetablePublicSettingsControl.css";
 import "./pilotOfferEnhancement.css";
 import "./classRepCorrectionSafetyEnhancement.css";
 import "./dashboardTheme.css";
