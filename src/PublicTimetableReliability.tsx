@@ -7,7 +7,6 @@ import {
   Link2,
   MapPin,
   Share2,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +18,11 @@ import { PublicShell } from "./components/site/SiteChrome";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
 import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { ChangeAlertsControl } from "./pwa/ChangeAlertsControl";
-import { detectDevice, type DeviceKind } from "./domain/device";
+import {
+  detectCalendarPlatform,
+  orderedCalendarDestinations,
+  type CalendarDestination,
+} from "./domain/device";
 import {
   formatClassGroupLabel,
   formatOccurrenceTime,
@@ -30,12 +33,6 @@ import {
   projectPublishedTimetable,
   type CanonicalPublishedCalendarEvent,
 } from "./domain/publishedCalendarProjection";
-import {
-  normalizeSubscriberPhone,
-  subscriberCountryOptions,
-  type SubscriberContactInput,
-  type SubscriberCountryCode,
-} from "./domain/subscriberContact";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 import {
@@ -74,26 +71,13 @@ type ReminderPresetId = "on_time" | "prepared" | "commuter" | "custom";
 type PublicCalendarProvider =
   "google_api" | "apple_subscription" | "webcal_subscription" | "ics_download";
 
-type CalendarMethod = {
-  provider: PublicCalendarProvider | null;
-  title: string;
-  description: string;
-  accent?: string;
-};
-
 type CalendarDelivery = {
   provider: PublicCalendarProvider;
   response: CreateSubscriptionResponse;
-  contactSaved: boolean;
 };
 
 type OnboardingStep =
-  | "reminders"
-  | "provider"
-  | "contact_optional"
-  | "preparing"
-  | "provider_result"
-  | "success";
+  "reminders" | "provider" | "preparing" | "provider_result";
 
 const reminderChoices: Array<{
   id: ReminderPresetId;
@@ -124,105 +108,23 @@ const reminderChoices: Array<{
   },
 ];
 
-function calendarMethodsForDevice(
-  device: DeviceKind,
-  googleEnabled: boolean,
-): CalendarMethod[] {
-  const googleMethod: CalendarMethod = {
-    provider: "google_api",
-    title: "Google Calendar",
-    description:
-      "Connect directly. CalenderZW creates a separate calendar and keeps approved timetable updates synced.",
-    accent: "Available now",
-  };
+function providerDestination(
+  provider: PublicCalendarProvider,
+): CalendarDestination {
+  if (provider === "apple_subscription") return "apple";
+  if (provider === "google_api") return "google";
+  return "advanced";
+}
 
-  if (device === "ios") {
-    const methods: CalendarMethod[] = [
-      {
-        provider: "apple_subscription",
-        title: "Apple Calendar",
-        description:
-          "Subscribe to this private feed so future CalenderZW publications can reach the same calendar.",
-        accent: "Recommended on iPhone",
-      },
-      {
-        provider: "webcal_subscription",
-        title: "Google/other subscription URL",
-        description:
-          "Copy the private HTTPS URL for Google Calendar or another calendar that supports subscriptions.",
-        accent: "Keeps published updates",
-      },
-      {
-        provider: "ics_download",
-        title: "Download one-time .ics",
-        description:
-          "Import the timetable as it is now. Future published changes will not update this file.",
-      },
-    ];
-    return googleEnabled
-      ? [methods[0], googleMethod, ...methods.slice(1)]
-      : methods;
-  }
-
-  if (device === "android") {
-    const methods: CalendarMethod[] = [
-      {
-        provider: "webcal_subscription",
-        title: "Copy subscription URL",
-        description:
-          "Use the private HTTPS URL in a calendar that supports subscribed calendars. Google Calendar may require desktop setup.",
-        accent: "Keeps published updates",
-      },
-      {
-        provider: "ics_download",
-        title: "Download one-time .ics",
-        description:
-          "Import the timetable once. Future published changes will not update the imported file.",
-      },
-    ];
-    if (googleEnabled) return [googleMethod, ...methods];
-    return [
-      ...methods,
-      {
-        provider: null,
-        title: "Google Calendar direct sync",
-        description: "Direct sync is unavailable in this deployment.",
-      },
-    ];
-  }
-
-  return googleEnabled
-    ? [
-        googleMethod,
-        {
-          provider: "webcal_subscription",
-          title: "Subscribe using calendar URL",
-          description:
-            "Copy a private HTTPS feed for Apple Calendar, Outlook, Google Calendar, or another compatible calendar client.",
-          accent: "Keeps published updates",
-        },
-        {
-          provider: "ics_download",
-          title: "Download one-time .ics",
-          description:
-            "Import the current publication once. The file itself will not receive future changes.",
-        },
-      ]
-    : [
-        {
-          provider: "webcal_subscription",
-          title: "Subscribe using calendar URL",
-          description:
-            "Copy a private HTTPS feed for Apple Calendar, Outlook, Google Calendar, or another compatible calendar client.",
-          accent: "Keeps published updates",
-        },
-        {
-          provider: "ics_download",
-          title: "Download one-time .ics",
-          description:
-            "Import the current publication once. The file itself will not receive future changes.",
-        },
-      ];
+function ProviderMark({ provider }: { provider: "apple" | "google" }) {
+  return (
+    <span
+      className={`pt-provider-mark pt-provider-mark-${provider}`}
+      aria-hidden="true"
+    >
+      <CalendarCheck size={18} />
+    </span>
+  );
 }
 
 async function fetchGoogleStatus() {
@@ -277,11 +179,6 @@ function getFocusableElements(root: HTMLElement | null) {
 
 function localTimeLabel(value: string) {
   return value.slice(0, 5);
-}
-
-function timezoneCopy(timeZone: string) {
-  if (timeZone === "Africa/Harare") return "Times shown in Harare time (CAT).";
-  return `Times shown in ${timeZone}.`;
 }
 
 export function courseToneClass(courseCode: string) {
@@ -361,12 +258,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     useState<CalendarDelivery | null>(null);
   const [onboardingStep, setOnboardingStep] =
     useState<OnboardingStep>("reminders");
-  const [selectedProvider, setSelectedProvider] =
-    useState<PublicCalendarProvider | null>(null);
-  const [contactCountry, setContactCountry] =
-    useState<SubscriberCountryCode>("ZW");
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactSkipped, setContactSkipped] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
   const [shareStatus, setShareStatus] = useState("");
   const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
@@ -376,6 +267,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onboardingCompletionTrackedRef = useRef(false);
+  const trackedReminderPresetsRef = useRef(new Set<ReminderPresetId>());
+  const reminderStepCompletedRef = useRef(false);
+  const calendarActionLockRef = useRef(false);
   const googleSearch = useMemo(
     () => new URLSearchParams(window.location.search),
     [],
@@ -471,17 +365,17 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     () => (timetable ? getTomorrowSchedule(timetable, new Date()) : null),
     [timetable],
   );
-  const deviceKind = useMemo(
+  const calendarPlatform = useMemo(
     () =>
-      detectDevice(
+      detectCalendarPlatform(
         window.navigator.userAgent,
         window.navigator.maxTouchPoints ?? 0,
       ),
     [],
   );
-  const calendarMethods = useMemo(
-    () => calendarMethodsForDevice(deviceKind, googleEnabled),
-    [deviceKind, googleEnabled],
+  const calendarDestinations = useMemo(
+    () => orderedCalendarDestinations(calendarPlatform),
+    [calendarPlatform],
   );
   const publicUrl = timetable
     ? `${window.location.origin}/t/${encodeURIComponent(timetable.publicSlug)}`
@@ -490,9 +384,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     () => readClassShareSource(window.location.href),
     [],
   );
-  const browserTimeZone =
-    Intl.DateTimeFormat().resolvedOptions().timeZone || "device timezone";
-
   const customReminderOffset = useMemo(() => {
     const hours = Number(customHours.trim() || "0");
     const minutes = Number(customMinutes.trim() || "0");
@@ -625,6 +516,11 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           provider: "google_api",
           subscriptionId: googleSubscriptionId,
         });
+        track("onboarding_completed", {
+          publicSlug: timetable.publicSlug,
+          provider: "google_api",
+          subscriptionId: googleSubscriptionId,
+        });
       }
     }
 
@@ -645,48 +541,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     });
   }, [googleFailed, timetable]);
 
-  useEffect(() => {
-    if (
-      !dialogOpen ||
-      !timetable ||
-      !calendarDelivery ||
-      onboardingStep !== "success" ||
-      onboardingCompletionTrackedRef.current
-    ) {
-      return;
-    }
-    onboardingCompletionTrackedRef.current = true;
-    track("onboarding_completed", {
-      publicSlug: timetable.publicSlug,
-      provider: calendarDelivery.provider,
-      reminderPreset,
-    });
-    track("share_prompt_viewed", {
-      publicSlug: timetable.publicSlug,
-      source: "onboarding_success",
-    });
-    if (shareSource) {
-      track("shared_link_onboarding_completed", {
-        publicSlug: timetable.publicSlug,
-        source: shareSource,
-      });
-    }
-  }, [
-    calendarDelivery,
-    dialogOpen,
-    onboardingStep,
-    reminderPreset,
-    shareSource,
-    timetable,
-  ]);
-
   const closeDialog = useCallback(() => {
-    if (
-      dialogOpen &&
-      timetable &&
-      onboardingStep !== "success" &&
-      onboardingStep !== "provider_result"
-    ) {
+    if (dialogOpen && timetable && onboardingStep !== "provider_result") {
       track("onboarding_abandoned", {
         step: onboardingStep,
         publicSlug: timetable.publicSlug,
@@ -701,10 +557,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     setCopyStatus("");
     setShareStatus("");
     setCalendarDelivery(null);
-    setSelectedProvider(null);
-    setContactSkipped(false);
-    setContactPhone("");
-    setContactCountry("ZW");
+    calendarActionLockRef.current = false;
+    trackedReminderPresetsRef.current.clear();
+    reminderStepCompletedRef.current = false;
     setOnboardingStep("reminders");
     setDialogOpen(true);
     track("calendar_cta_clicked", { publicSlug: timetable?.publicSlug });
@@ -717,30 +572,90 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     }
   }, [shareSource, timetable?.publicSlug]);
 
-  function continueFromReminders() {
+  function trackReminderChoice(
+    preset: ReminderPresetId,
+    customMinutesValue: number | null = null,
+  ) {
     if (!timetable) return;
-    if (reminderPreset === "custom" && customReminderOffset === null) {
+    if (!trackedReminderPresetsRef.current.has(preset)) {
+      trackedReminderPresetsRef.current.add(preset);
+      track("reminder_selected", {
+        preset,
+        customMinutes: preset === "custom" ? customMinutesValue : null,
+        publicSlug: timetable.publicSlug,
+      });
+    }
+    if (!reminderStepCompletedRef.current) {
+      reminderStepCompletedRef.current = true;
+      track("onboarding_step_completed", {
+        step: "reminders",
+        publicSlug: timetable.publicSlug,
+        reminderPreset: preset,
+        customMinutes: preset === "custom" ? customMinutesValue : null,
+      });
+    }
+  }
+
+  function chooseReminder(preset: ReminderPresetId) {
+    setReminderPreset(preset);
+    setCalendarError("");
+    if (preset === "custom") {
+      if (!trackedReminderPresetsRef.current.has("custom") && timetable) {
+        trackedReminderPresetsRef.current.add("custom");
+        track("reminder_selected", {
+          preset: "custom",
+          publicSlug: timetable.publicSlug,
+        });
+      }
+      return;
+    }
+    trackReminderChoice(preset);
+    setOnboardingStep("provider");
+  }
+
+  function saveCustomReminder() {
+    if (customReminderOffset === null) {
       setCalendarError("Enter at least one minute before class to continue.");
       return;
     }
     setCalendarError("");
-    track("onboarding_step_completed", {
-      step: "reminders",
-      publicSlug: timetable.publicSlug,
-      reminderPreset,
-      customMinutes:
-        reminderPreset === "custom" ? (customReminderOffset ?? 0) : null,
-    });
+    trackReminderChoice("custom", customReminderOffset);
     setOnboardingStep("provider");
   }
 
+  function trackDurableCompletion(
+    provider: PublicCalendarProvider,
+    response: CreateSubscriptionResponse,
+  ) {
+    if (!timetable || onboardingCompletionTrackedRef.current) return;
+    onboardingCompletionTrackedRef.current = true;
+    track("onboarding_completed", {
+      publicSlug: timetable.publicSlug,
+      provider,
+      reminderPreset,
+      subscriptionId: response.subscriptionId,
+    });
+    if (shareSource) {
+      track("shared_link_onboarding_completed", {
+        publicSlug: timetable.publicSlug,
+        source: shareSource,
+      });
+    }
+  }
+
   function selectProvider(provider: PublicCalendarProvider) {
-    if (!timetable) return;
-    setSelectedProvider(provider);
+    void prepareCalendar(provider);
+  }
+
+  async function prepareCalendar(provider: PublicCalendarProvider) {
+    if (!timetable || calendarActionLockRef.current) return;
+    calendarActionLockRef.current = true;
+    setCalendarBusy(provider);
     setCalendarError("");
     track("provider_selected", {
       publicSlug: timetable.publicSlug,
       provider,
+      destination: providerDestination(provider),
     });
     track("calendar_provider_selected", {
       publicSlug: timetable.publicSlug,
@@ -751,21 +666,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       publicSlug: timetable.publicSlug,
       provider,
     });
-    if (provider === "ics_download") {
-      void prepareCalendar(provider);
-      return;
-    }
-    setOnboardingStep("contact_optional");
-  }
-
-  async function prepareCalendar(
-    provider: PublicCalendarProvider,
-    subscriberContact?: SubscriberContactInput,
-  ) {
-    if (!timetable) return;
-
-    setCalendarBusy(provider);
-    setCalendarError("");
     setOnboardingStep("preparing");
     try {
       const response = await createCalendarSubscription({
@@ -777,13 +677,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             ? [customReminderOffset]
             : [],
         timezone: timetable.institutionTimezone,
-        subscriberContact,
       });
-      setCalendarDelivery({
-        provider,
-        response,
-        contactSaved: Boolean(subscriberContact) && response.contact.saved,
-      });
+      setCalendarDelivery({ provider, response });
       setCopyStatus("");
       track("subscription_created", {
         publicSlug: timetable.publicSlug,
@@ -815,6 +710,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
         triggerCalendarDownload(response.downloadUrl);
         track("ics_download_completed", { publicSlug: timetable.publicSlug });
       }
+      trackDurableCompletion(provider, response);
       setOnboardingStep("provider_result");
     } catch (error) {
       if (provider === "google_api") {
@@ -824,61 +720,17 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           reason: "prepare",
         });
       }
+      setCalendarDelivery(null);
       setCalendarError(
         error instanceof Error
           ? error.message
           : "We could not prepare your calendar just now.",
       );
-      setOnboardingStep(
-        provider === "ics_download" ? "provider" : "contact_optional",
-      );
+      setOnboardingStep("provider");
     } finally {
+      calendarActionLockRef.current = false;
       setCalendarBusy(null);
     }
-  }
-
-  function saveContactAndContinue() {
-    if (!selectedProvider) return;
-    const contact: SubscriberContactInput = {
-      countryCode: contactCountry,
-      phone: contactPhone,
-      consentUpdates: true,
-      consentSource: "calendar_onboarding",
-    };
-    try {
-      normalizeSubscriberPhone(contact);
-    } catch (error) {
-      setCalendarError(
-        error instanceof Error
-          ? error.message
-          : "Enter a valid phone number or skip this step.",
-      );
-      return;
-    }
-    setContactSkipped(false);
-    track("phone_step_completed", {
-      country: contactCountry,
-      publicSlug: timetable?.publicSlug,
-    });
-    track("onboarding_step_completed", {
-      step: "contact_optional",
-      status: "saved",
-      country: contactCountry,
-      publicSlug: timetable?.publicSlug,
-    });
-    void prepareCalendar(selectedProvider, contact);
-  }
-
-  function skipContactAndContinue() {
-    if (!selectedProvider) return;
-    setContactSkipped(true);
-    setCalendarError("");
-    track("onboarding_step_completed", {
-      step: "contact_optional",
-      status: "skipped",
-      publicSlug: timetable?.publicSlug,
-    });
-    void prepareCalendar(selectedProvider);
   }
 
   async function copySubscriptionUrl() {
@@ -938,40 +790,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     }
   }
 
-  async function copyClassLink(source: ClassShareSource) {
-    if (!timetable) return;
-    const payload = classSharePayload(source);
-    if (!payload) return;
-    try {
-      await copyText(payload.url);
-      setShareStatus("Public class link copied.");
-      track("timetable_shared", {
-        method: "copy-link",
-        source,
-        publicSlug: timetable.publicSlug,
-      });
-    } catch {
-      setShareStatus(payload.url);
-    }
-  }
-
-  async function copyClassMessage(source: ClassShareSource) {
-    if (!timetable) return;
-    const payload = classSharePayload(source);
-    if (!payload) return;
-    try {
-      await copyText(payload.message);
-      setShareStatus("Class message copied — ready to paste into your group.");
-      track("timetable_shared", {
-        method: "copy-message",
-        source,
-        publicSlug: timetable.publicSlug,
-      });
-    } catch {
-      setShareStatus(payload.url);
-    }
-  }
-
   function renderOnboardingStep() {
     if (!timetable) return null;
     const currentTimetable = timetable;
@@ -988,27 +806,21 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             aria-label="Reminder choices"
           >
             {reminderChoices.map((choice) => (
-              <label
+              <button
+                type="button"
+                role="radio"
+                aria-checked={reminderPreset === choice.id}
                 className={`pt-reminder${reminderPreset === choice.id ? " selected" : ""}`}
                 key={choice.id}
+                onClick={() => chooseReminder(choice.id)}
               >
-                <input
-                  type="radio"
-                  name="pt-reminder"
-                  value={choice.id}
-                  checked={reminderPreset === choice.id}
-                  onChange={() => {
-                    setReminderPreset(choice.id);
-                    setCalendarError("");
-                    track("reminder_selected", { preset: choice.id });
-                  }}
-                />
+                <span className="pt-reminder-radio" aria-hidden="true" />
                 <span>
                   <strong>{choice.title}</strong>
                   <small>{choice.detail}</small>
                 </span>
                 {choice.hint ? <em>{choice.hint}</em> : null}
-              </label>
+              </button>
             ))}
           </div>
 
@@ -1017,6 +829,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               <label>
                 <span>Hours before</span>
                 <input
+                  aria-label="Hours before class"
                   inputMode="numeric"
                   value={customHours}
                   onChange={(event) =>
@@ -1027,6 +840,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               <label>
                 <span>Minutes before</span>
                 <input
+                  aria-label="Minutes before class"
                   inputMode="numeric"
                   value={customMinutes}
                   onChange={(event) =>
@@ -1034,6 +848,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                   }
                 />
               </label>
+              <button
+                type="button"
+                className="pt-button pt-button-primary"
+                onClick={saveCustomReminder}
+              >
+                Save custom reminder
+              </button>
             </div>
           ) : null}
 
@@ -1041,8 +862,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             <Clock3 size={16} aria-hidden="true" />
             <span>
               Lecture times stay in {currentTimetable.institutionTimezone}.
-              Reminders only control notifications; they never move a class
-              start or end time.
+              Reminders only control notifications; they never move a class.
             </span>
           </div>
 
@@ -1051,16 +871,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               {calendarError}
             </p>
           ) : null}
-
-          <div className="pt-dialog-actions">
-            <button
-              type="button"
-              className="pt-button pt-button-primary"
-              onClick={continueFromReminders}
-            >
-              Continue
-            </button>
-          </div>
         </>
       );
     }
@@ -1068,129 +878,129 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     if (onboardingStep === "provider") {
       return (
         <div className="pt-method-section no-border">
-          <div>
-            <span className="pt-kicker">Calendar destination</span>
-            <h3>Where should the timetable go?</h3>
+          <div className="pt-provider-heading">
+            <div>
+              <span className="pt-kicker">Calendar destination</span>
+              <h3>Where should the timetable go?</h3>
+            </div>
+            <button
+              type="button"
+              className="pt-dialog-back"
+              onClick={() => {
+                setCalendarError("");
+                setOnboardingStep("reminders");
+              }}
+            >
+              Back
+            </button>
           </div>
           <div className="pt-method-list">
-            {calendarMethods.map((method) =>
-              method.provider ? (
-                <button
-                  type="button"
-                  className={`pt-method${method.provider === "google_api" ? " pt-method-google-direct" : ""}`}
-                  key={method.title}
-                  disabled={calendarBusy !== null}
-                  onClick={() => selectProvider(method.provider!)}
-                >
-                  <span
-                    className={`pt-method-icon${
-                      method.provider === "google_api"
-                        ? " pt-method-google-icon"
-                        : ""
-                    }`}
+            {calendarDestinations.map((destination) => {
+              if (destination === "google") {
+                return googleEnabled ? (
+                  <button
+                    type="button"
+                    className="pt-method pt-method-provider"
+                    key="google"
+                    disabled={calendarBusy !== null}
+                    onClick={() => selectProvider("google_api")}
                   >
-                    {method.provider === "ics_download" ? (
-                      <Download size={18} aria-hidden="true" />
-                    ) : method.provider === "google_api" ? (
-                      <CalendarCheck size={18} aria-hidden="true" />
-                    ) : (
-                      <Link2 size={18} aria-hidden="true" />
-                    )}
-                  </span>
-                  <span className="pt-method-copy">
-                    <strong>{method.title}</strong>
-                    <small>{method.description}</small>
-                  </span>
-                  {method.accent ? <em>{method.accent}</em> : null}
-                </button>
-              ) : (
-                <div className="pt-method disabled" key={method.title}>
-                  <span className="pt-method-icon">
-                    <CalendarCheck size={18} aria-hidden="true" />
-                  </span>
-                  <span className="pt-method-copy">
-                    <strong>{method.title}</strong>
-                    <small>{method.description}</small>
-                  </span>
-                </div>
-              ),
-            )}
-          </div>
-          {calendarError ? (
-            <p className="pt-error" role="alert">
-              {calendarError}
-            </p>
-          ) : null}
-        </div>
-      );
-    }
+                    <ProviderMark provider="google" />
+                    <span className="pt-method-copy">
+                      <strong>Continue with Google</strong>
+                      <small>
+                        CalenderZW creates a separate limited-scope calendar for
+                        this timetable and keeps approved updates synced.
+                      </small>
+                    </span>
+                  </button>
+                ) : (
+                  <div className="pt-method disabled" key="google">
+                    <ProviderMark provider="google" />
+                    <span className="pt-method-copy">
+                      <strong>Continue with Google</strong>
+                      <small>
+                        Direct Google sync is unavailable in this deployment.
+                      </small>
+                    </span>
+                  </div>
+                );
+              }
 
-    if (onboardingStep === "contact_optional") {
-      return (
-        <div className="pt-contact-step">
-          <h3>
-            {selectedProvider === "google_api"
-              ? "Connect Google Calendar"
-              : "Want us to be able to reach you about important timetable changes?"}
-          </h3>
-          <div className="pt-phone-grid">
-            <label>
-              <span>Country</span>
-              <select
-                value={contactCountry}
-                onChange={(event) =>
-                  setContactCountry(event.target.value as SubscriberCountryCode)
-                }
-              >
-                {subscriberCountryOptions.map((country) => (
-                  <option value={country.countryCode} key={country.countryCode}>
-                    {country.flag} {country.callingCode} {country.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Phone number</span>
-              <input
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                value={contactPhone}
-                placeholder="077 123 4567"
-                onChange={(event) => setContactPhone(event.target.value)}
-              />
-            </label>
+              if (destination === "apple") {
+                return (
+                  <button
+                    type="button"
+                    className="pt-method pt-method-provider"
+                    key="apple"
+                    disabled={calendarBusy !== null}
+                    onClick={() => selectProvider("apple_subscription")}
+                  >
+                    <ProviderMark provider="apple" />
+                    <span className="pt-method-copy">
+                      <strong>Add to Apple Calendar</strong>
+                      <small>
+                        Subscribe to a private HTTPS feed so future approved
+                        timetable publications reach the same calendar.
+                      </small>
+                    </span>
+                  </button>
+                );
+              }
+
+              return (
+                <details className="pt-advanced-options" key="advanced">
+                  <summary>Advanced options</summary>
+                  <p>
+                    Use these when direct provider handoff is not suitable.
+                    Subscription URLs stay private; ICS files are one-time
+                    imports.
+                  </p>
+                  <div className="pt-method-list pt-method-list-advanced">
+                    <button
+                      type="button"
+                      className="pt-method"
+                      disabled={calendarBusy !== null}
+                      onClick={() => selectProvider("webcal_subscription")}
+                    >
+                      <span className="pt-method-icon">
+                        <Link2 size={18} aria-hidden="true" />
+                      </span>
+                      <span className="pt-method-copy">
+                        <strong>Copy subscription URL</strong>
+                        <small>
+                          Private HTTPS subscribed-calendar URL. Compatible
+                          clients can receive future approved changes.
+                        </small>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="pt-method"
+                      disabled={calendarBusy !== null}
+                      onClick={() => selectProvider("ics_download")}
+                    >
+                      <span className="pt-method-icon">
+                        <Download size={18} aria-hidden="true" />
+                      </span>
+                      <span className="pt-method-copy">
+                        <strong>Download one-time ICS</strong>
+                        <small>
+                          Imports this publication once; future changes do not
+                          update the downloaded file.
+                        </small>
+                      </span>
+                    </button>
+                  </div>
+                </details>
+              );
+            })}
           </div>
-          <p className="pt-helper">
-            {selectedProvider === "google_api"
-              ? "Phone number is optional. Add it only if you want direct timetable alerts; no CalenderZW account is created."
-              : "This is optional. Your private calendar subscription works even if you skip this."}
-          </p>
           {calendarError ? (
             <p className="pt-error" role="alert">
               {calendarError}
             </p>
           ) : null}
-          <div className="pt-dialog-actions split">
-            <button
-              type="button"
-              className="pt-button pt-button-primary"
-              onClick={saveContactAndContinue}
-            >
-              {selectedProvider === "google_api"
-                ? "Save phone & continue to Google"
-                : "Save contact & continue"}
-            </button>
-            <button
-              type="button"
-              className="pt-button pt-button-secondary"
-              onClick={skipContactAndContinue}
-            >
-              {selectedProvider === "google_api"
-                ? "Continue to Google without phone"
-                : "Skip for now"}
-            </button>
-          </div>
         </div>
       );
     }
@@ -1200,7 +1010,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
         <div className="pt-preparing" role="status">
           <CalendarCheck size={28} aria-hidden="true" />
           <h3>Preparing your calendar</h3>
-          <p>Keeping this setup inside the sheet.</p>
+          <p>Creating the requested calendar handoff securely.</p>
         </div>
       );
     }
@@ -1215,7 +1025,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             <>
               <p>
                 Your private HTTPS subscription is ready for Apple Calendar.
-                Keep this URL private.
+                Keep the subscription URL private.
               </p>
               {appleDeepLink ? (
                 <a
@@ -1245,9 +1055,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           {calendarDelivery.provider === "webcal_subscription" ? (
             <>
               <p>
-                Copy this private HTTPS subscribed-calendar URL for Google
-                Calendar or another compatible calendar. This is not direct
-                Google account sync.
+                Copy this private HTTPS subscribed-calendar URL into a
+                compatible calendar. This is not direct Google account sync.
               </p>
               <button
                 type="button"
@@ -1257,35 +1066,27 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 <Copy size={18} aria-hidden="true" />
                 Copy subscription URL
               </button>
-              <ol className="pt-instructions">
-                <li>Copy the private HTTPS URL.</li>
-                <li>In Google Calendar, add a calendar from URL.</li>
-                <li>Share the public class page with classmates.</li>
-              </ol>
             </>
           ) : null}
 
           {calendarDelivery.provider === "ics_download" ? (
             <>
               <p>
-                One-time import. Future timetable changes will not automatically
-                update this file.
+                One-time import complete. Future timetable changes will not
+                automatically update this file.
               </p>
               {calendarDelivery.response.downloadUrl ? (
                 <button
                   type="button"
-                  className="pt-button pt-button-primary"
-                  onClick={() => {
+                  className="pt-button pt-button-secondary"
+                  onClick={() =>
                     triggerCalendarDownload(
                       calendarDelivery.response.downloadUrl as string,
-                    );
-                    track("ics_download_started", {
-                      publicSlug: currentTimetable.publicSlug,
-                    });
-                  }}
+                    )
+                  }
                 >
                   <Download size={18} aria-hidden="true" />
-                  Download one-time ICS
+                  Download again
                 </button>
               ) : null}
             </>
@@ -1300,22 +1101,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 value={calendarDelivery.response.feedUrl}
                 onFocus={(event) => event.currentTarget.select()}
               />
-              <details className="pt-subscription-details">
-                <summary>Having trouble?</summary>
-                {calendarDelivery.provider === "apple_subscription" ? (
-                  <ol>
-                    <li>Open Calendar on your iPhone.</li>
-                    <li>Add a subscription calendar and paste this URL.</li>
-                    <li>Share the class page, never this private URL.</li>
-                  </ol>
-                ) : (
-                  <ol>
-                    <li>Copy the private HTTPS URL above.</li>
-                    <li>In Google Calendar, add a calendar from URL.</li>
-                    <li>Share the public class page with classmates.</li>
-                  </ol>
-                )}
-              </details>
             </div>
           ) : null}
 
@@ -1329,78 +1114,17 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               {warning}
             </p>
           ))}
-          <div className="pt-dialog-actions">
-            <button
-              type="button"
-              className="pt-button pt-button-primary"
-              onClick={() => setOnboardingStep("success")}
-            >
-              Continue
-            </button>
-          </div>
-        </div>
-      );
-    }
 
-    if (onboardingStep === "success" && calendarDelivery) {
-      return (
-        <div className="pt-result-step">
-          <span className="pt-kicker">Done</span>
-          <h3>You're on track.</h3>
-          <dl className="pt-summary-list">
-            <div>
-              <dt>Provider</dt>
-              <dd>{calendarDelivery.response.provider}</dd>
-            </div>
-            <div>
-              <dt>Reminder</dt>
-              <dd>{reminderPreset}</dd>
-            </div>
-            <div>
-              <dt>Contact</dt>
-              <dd>
-                {calendarDelivery.contactSaved && !contactSkipped
-                  ? "Saved"
-                  : "Not added"}
-              </dd>
-            </div>
-          </dl>
-          <div className="pt-share-panel">
-            <div>
-              <strong>Help your classmates stay on track too.</strong>
-              <p>
-                Share the public class page. It never includes your private
-                subscription URL, and opening the link does not subscribe
-                someone automatically.
-              </p>
-            </div>
+          <div className="pt-share-panel pt-share-panel-result">
+            <strong>Share the public class page, not your private feed.</strong>
             <button
               type="button"
-              className="pt-button pt-button-primary"
+              className="pt-button pt-button-secondary"
               onClick={() => void shareTimetable("onboarding_success")}
             >
               <Share2 size={18} aria-hidden="true" />
-              Share to class group
+              Share with classmates
             </button>
-            <div className="pt-share-fallbacks">
-              <button
-                type="button"
-                className="pt-button pt-button-secondary"
-                onClick={() => void copyClassMessage("onboarding_success")}
-              >
-                <Copy size={17} aria-hidden="true" />
-                Copy class message
-              </button>
-              <button
-                type="button"
-                className="pt-button pt-button-secondary"
-                onClick={() => void copyClassLink("onboarding_success")}
-              >
-                <Link2 size={17} aria-hidden="true" />
-                Copy class link
-              </button>
-            </div>
-            <small>Optional — your calendar setup is already complete.</small>
           </div>
           {shareStatus ? (
             <p className="pt-status-message" role="status">
@@ -1437,134 +1161,131 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       ? "Choose your reminders"
       : onboardingStep === "provider"
         ? "Choose calendar destination"
-        : onboardingStep === "contact_optional"
-          ? "Add optional contact"
-          : onboardingStep === "preparing"
-            ? "Preparing your calendar"
-            : onboardingStep === "provider_result"
-              ? "Calendar ready"
-              : "You're on track";
+        : onboardingStep === "preparing"
+          ? "Preparing your calendar"
+          : "Calendar ready";
 
   return (
     <PublicShell compactFooter className="pt-app">
       <main className="pt-shell pt-main">
         <section className="pt-hero" aria-labelledby="pt-title">
-          <div className="pt-hero-card">
-            <div className="pt-kicker-row">
-              <span className="pt-kicker">Current published timetable</span>
-              <span className="pt-version">v{timetable.versionNumber}</span>
-            </div>
-            <p className="pt-institution">{timetable.institution}</p>
-            <h1 id="pt-title">{timetable.programme}</h1>
-            <div className="pt-identity-row">
-              <strong>{formatClassGroupLabel(timetable.classGroup)}</strong>
-              <span>{timetable.academicPeriod}</span>
-            </div>
-            <div className="pt-trust-row">
-              <span>
-                <ShieldCheck size={16} aria-hidden="true" />
-                Published by CalenderZW
-              </span>
-              <span>
+          <div className="pt-hero-card pt-conversion-card">
+            <header className="pt-class-header">
+              <div className="pt-kicker-row">
+                <span className="pt-kicker">{timetable.institution}</span>
+                <span className="pt-version">v{timetable.versionNumber}</span>
+              </div>
+              <h1 id="pt-title">{timetable.programme}</h1>
+              <div className="pt-identity-row">
+                <strong>{formatClassGroupLabel(timetable.classGroup)}</strong>
+                <span>{timetable.academicPeriod}</span>
+              </div>
+              <p className="pt-updated-line">
                 Updated{" "}
                 {formatPublishedTimestamp(
                   timetable.publishedAt,
                   timetable.institutionTimezone,
                 )}
-              </span>
-            </div>
+              </p>
+            </header>
 
-            <article className="pt-next-card">
-              <span className="pt-next-label">Next class</span>
-              {nextClass ? (
-                <>
-                  <strong className="pt-next-time">
-                    {nextClass.relativeLabel} ·{" "}
-                    {formatOccurrenceTime(
-                      nextClass.start,
-                      timetable.institutionTimezone,
-                    )}
-                  </strong>
-                  <h2>{nextClass.session.courseName}</h2>
-                  <p>{nextClass.session.courseCode}</p>
-                  <span className="pt-location">
-                    <MapPin size={16} aria-hidden="true" />
-                    {nextClass.session.venue || "Venue not set"}
-                    {nextClass.session.lecturer
-                      ? ` · ${nextClass.session.lecturer}`
-                      : ""}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <strong>No upcoming classes</strong>
-                  <p>
-                    No more published sessions fall inside this academic period.
-                  </p>
-                </>
-              )}
-            </article>
+            <div className="pt-conversion-grid">
+              <div className="pt-conversion-main">
+                <article className="pt-next-card">
+                  <span className="pt-next-label">Next class</span>
+                  {nextClass ? (
+                    <>
+                      <strong className="pt-next-time">
+                        {nextClass.relativeLabel} ·{" "}
+                        {formatOccurrenceTime(
+                          nextClass.start,
+                          timetable.institutionTimezone,
+                        )}
+                      </strong>
+                      <h2>{nextClass.session.courseName}</h2>
+                      <p>{nextClass.session.courseCode}</p>
+                      <span className="pt-location">
+                        <MapPin size={16} aria-hidden="true" />
+                        {nextClass.session.venue || "Venue not set"}
+                        {nextClass.session.lecturer
+                          ? ` · ${nextClass.session.lecturer}`
+                          : ""}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <strong>No upcoming classes</strong>
+                      <p>
+                        No more published sessions fall inside this academic
+                        period.
+                      </p>
+                    </>
+                  )}
+                </article>
 
-            <div className="pt-timezone-note" role="note">
-              <Clock3 size={16} aria-hidden="true" />
-              <div>
-                <strong>{timezoneCopy(timetable.institutionTimezone)}</strong>
-                {browserTimeZone !== timetable.institutionTimezone ? (
-                  <span>
-                    Your calendar is configured for {browserTimeZone}; it may
-                    show the equivalent instant in that timezone.
-                  </span>
+                <div className="pt-primary-actions">
+                  <button
+                    ref={primaryCtaRef}
+                    type="button"
+                    className="pt-button pt-button-primary"
+                    onClick={openDialog}
+                  >
+                    <CalendarCheck size={18} aria-hidden="true" />
+                    Add to Calendar
+                  </button>
+                  <button
+                    type="button"
+                    className="pt-button pt-button-secondary"
+                    onClick={() => void shareTimetable("class_share")}
+                  >
+                    <Share2 size={18} aria-hidden="true" />
+                    Share with classmates
+                  </button>
+                </div>
+
+                {timetable.publicDisplay?.showVisualPreview === true ? (
+                  <PersonalTimetablePreview slug={slug} timetable={timetable} />
+                ) : null}
+
+                {googleSuccess ? (
+                  <div className="pt-google-connected-note" role="status">
+                    <div>
+                      <strong>Google Calendar connected</strong>
+                      <small>
+                        Future approved timetable updates can sync to the same
+                        Google calendar.
+                      </small>
+                    </div>
+                    <a href={GOOGLE_CALENDAR_HOME_URL}>Open Google Calendar</a>
+                  </div>
+                ) : null}
+                {googleFailed ? (
+                  <div className="pt-google-failed-note" role="alert">
+                    Google Calendar was not connected. Retry through Add to
+                    Calendar.
+                  </div>
                 ) : null}
               </div>
+
+              <aside
+                className="pt-conversion-support"
+                aria-label="Calendar setup details"
+              >
+                <GoogleCalendarDisconnectEntry
+                  connected={googleSuccess}
+                  subscriptionId={googleSubscriptionId}
+                />
+                {timetable.publicDisplay?.showChangeAlerts === true ? (
+                  <ChangeAlertsControl publicSlug={timetable.publicSlug} />
+                ) : null}
+                <p className="pt-helper">
+                  No student account is required. Subscriptions can follow
+                  future approved timetable publications; one-time ICS imports
+                  cannot.
+                </p>
+              </aside>
             </div>
 
-            <div className="pt-primary-actions">
-              <button
-                ref={primaryCtaRef}
-                type="button"
-                className="pt-button pt-button-primary"
-                onClick={openDialog}
-              >
-                <CalendarCheck size={18} aria-hidden="true" />
-                Subscribe to calendar
-              </button>
-              <button
-                type="button"
-                className="pt-button pt-button-secondary"
-                onClick={() => void shareTimetable("class_share")}
-              >
-                <Share2 size={18} aria-hidden="true" />
-                Share with classmates
-              </button>
-              <PersonalTimetablePreview slug={slug} timetable={timetable} />
-              <GoogleCalendarDisconnectEntry
-                connected={googleSuccess}
-                subscriptionId={googleSubscriptionId}
-              />
-            </div>
-            {googleSuccess ? (
-              <div className="pt-google-connected-note" role="status">
-                <div>
-                  <strong>Google Calendar connected</strong>
-                  <small>
-                    Future approved CalenderZW timetable updates can sync to the
-                    same Google calendar.
-                  </small>
-                </div>
-                <a href={GOOGLE_CALENDAR_HOME_URL}>Open Google Calendar</a>
-              </div>
-            ) : null}
-            {googleFailed ? (
-              <div className="pt-google-failed-note" role="alert">
-                Google Calendar was not connected. Retry through Subscribe to
-                calendar.
-              </div>
-            ) : null}
-            <ChangeAlertsControl publicSlug={timetable.publicSlug} />
-            <p className="pt-helper">
-              No account needed. Subscriptions follow future CalenderZW
-              timetable publications; one-time .ics imports do not.
-            </p>
             {shareStatus ? (
               <p className="pt-status-message" role="status">
                 {shareStatus}
@@ -1711,7 +1432,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             onClick={openDialog}
           >
             <CalendarCheck size={18} aria-hidden="true" />
-            Subscribe to calendar
+            Add to Calendar
           </button>
         </div>
       ) : null}
@@ -1733,13 +1454,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           >
             <div className="pt-dialog-header">
               <div>
-                <span className="pt-kicker">Subscribe to calendar</span>
+                <span className="pt-kicker">Add to Calendar</span>
                 <h2 id="pt-dialog-title">{dialogTitle}</h2>
               </div>
               <button
                 type="button"
                 className="pt-icon-button"
-                aria-label="Close calendar subscription dialog"
+                aria-label="Close Add to Calendar dialog"
                 onClick={closeDialog}
               >
                 <X size={20} aria-hidden="true" />

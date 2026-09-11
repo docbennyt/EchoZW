@@ -43,3 +43,30 @@ export function orderedProvidersForDevice(
   }
   return ["google_api", "apple_subscription", "ics_download"];
 }
+
+export type CalendarPlatform =
+  "ios" | "macos" | "android" | "windows" | "linux" | "unknown";
+export type CalendarDestination = "apple" | "google" | "advanced";
+
+export function detectCalendarPlatform(
+  userAgent: string,
+  maxTouchPoints = 0,
+): CalendarPlatform {
+  const ua = userAgent.toLowerCase();
+  const isiPadDesktopUa =
+    ua.includes("macintosh") && maxTouchPoints > 1 && ua.includes("safari");
+  if (/iphone|ipad|ipod/.test(ua) || isiPadDesktopUa) return "ios";
+  if (ua.includes("android")) return "android";
+  if (ua.includes("windows")) return "windows";
+  if (ua.includes("macintosh") || ua.includes("mac os x")) return "macos";
+  if (ua.includes("linux")) return "linux";
+  return "unknown";
+}
+
+export function orderedCalendarDestinations(
+  platform: CalendarPlatform,
+): CalendarDestination[] {
+  return platform === "ios" || platform === "macos"
+    ? ["apple", "google", "advanced"]
+    : ["google", "apple", "advanced"];
+}

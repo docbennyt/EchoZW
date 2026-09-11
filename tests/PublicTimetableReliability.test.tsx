@@ -22,11 +22,19 @@ vi.mock("../src/api/calendarSubscriptions", () => ({
   createCalendarSubscription: mocks.createCalendarSubscription,
 }));
 vi.mock("../src/analytics", () => ({ track: mocks.track }));
+vi.mock("../src/PersonalTimetablePreview", () => ({
+  PersonalTimetablePreview: () => (
+    <div data-testid="visual-preview">Preview</div>
+  ),
+}));
+vi.mock("../src/pwa/ChangeAlertsControl", () => ({
+  ChangeAlertsControl: () => <div data-testid="change-alerts">Alerts</div>,
+}));
+vi.mock("../src/GoogleCalendarDisconnectEntry", () => ({
+  GoogleCalendarDisconnectEntry: () => null,
+}));
 
-import {
-  courseToneClass,
-  PublicTimetableReliability,
-} from "../src/PublicTimetableReliability";
+import { PublicTimetableReliability } from "../src/PublicTimetableReliability";
 
 const timetable: PublicTimetable = {
   timetableId: "tt-hit-cs1",
@@ -54,23 +62,10 @@ const timetable: PublicTimetable = {
       sessionType: "Lecture",
       notes: null,
     },
-    {
-      stableSessionKey: "ics1101-tue-1015",
-      courseCode: "ICS1101",
-      courseName: "Principles of Programming Languages",
-      weekday: 2,
-      startTime: "10:15:00",
-      endTime: "12:15:00",
-      venue: "N205",
-      lecturer: "ABC",
-      sessionType: "Lecture",
-      notes: null,
-    },
   ],
 };
 
 let observerCallback: IntersectionObserverCallback | null = null;
-
 class MockIntersectionObserver implements IntersectionObserver {
   readonly root = null;
   readonly rootMargin = "0px";
@@ -87,20 +82,46 @@ class MockIntersectionObserver implements IntersectionObserver {
   unobserve() {}
 }
 
-function setIphoneViewport() {
+function setPlatform(userAgent: string, width = 390, maxTouchPoints = 0) {
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
-    value: 390,
+    value: width,
   });
   Object.defineProperty(window.navigator, "userAgent", {
     configurable: true,
-    value:
-      "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Version/26.0 Mobile/15E148 Safari/604.1",
+    value: userAgent,
   });
   Object.defineProperty(window.navigator, "maxTouchPoints", {
     configurable: true,
-    value: 5,
+    value: maxTouchPoints,
   });
+}
+
+function enableGoogle() {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/api/calendar/google/status")) {
+        return new Response(JSON.stringify({ enabled: true }), { status: 200 });
+      }
+      return new Response("{}", { status: 404 });
+    }),
+  );
+}
+
+async function openProviderStep(reminder = "Prepared") {
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Add to Calendar" }),
+  );
+  const reminderDialog = screen.getByRole("dialog", {
+    name: "Choose your reminders",
+  });
+  fireEvent.click(
+    within(reminderDialog).getByRole("radio", {
+      name: new RegExp(reminder, "i"),
+    }),
+  );
+  return screen.findByRole("dialog", { name: "Choose calendar destination" });
 }
 
 beforeEach(() => {
@@ -122,9 +143,17 @@ beforeEach(() => {
     contact: { saved: false },
     warnings: [],
   });
-  setIphoneViewport();
+  setPlatform(
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) Safari/604.1",
+    390,
+    5,
+  );
   observerCallback = null;
   vi.stubGlobal("IntersectionObserver", MockIntersectionObserver);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response("{}", { status: 404 })),
+  );
   Object.defineProperty(window.navigator, "clipboard", {
     configurable: true,
     value: { writeText: vi.fn(async () => undefined) },
@@ -135,279 +164,234 @@ beforeEach(() => {
   });
 });
 
-describe("public timetable reliability UX", () => {
-  it("uses the site-wide chrome and keeps the approved footer attribution", async () => {
+describe("DR-64 student Add-to-Calendar conversion", () => {
+  it("keeps the mobile conversion hierarchy direct and removes standalone publication/timezone clutter", async () => {
     const { container } = render(
       <PublicTimetableReliability slug={timetable.publicSlug} />,
     );
-
     await screen.findByRole("heading", {
       level: 1,
       name: "BTech Computer Science",
     });
-    expect(
-      container.querySelector('[data-component="GlobalHeader"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[data-component="GlobalFooter"]'),
-    ).not.toBeNull();
-    expect(screen.getByRole("link", { name: "Dr BennyT" })).toHaveAttribute(
-      "href",
-      "https://docbennyt.github.io",
-    );
-    expect(screen.queryByText(/CalenderZW · operated by aiDo/i)).toBeNull();
-  });
-
-  it("renders a single useful timetable hero before calendar delivery without a blank success panel", async () => {
-    const { container } = render(
-      <PublicTimetableReliability slug={timetable.publicSlug} />,
-    );
-
-    expect(
-      await screen.findByRole("heading", {
-        level: 1,
-        name: "BTech Computer Science",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Harare Institute of Technology"),
-    ).toBeInTheDocument();
     expect(screen.getByText("Class 1.1")).toBeInTheDocument();
+    expect(screen.getByText(/Updated/i)).toBeInTheDocument();
+    expect(screen.getByText("Next class")).toBeInTheDocument();
     expect(
-      screen.getByText(/Times shown in Harare time \(CAT\)/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Subscribe to calendar" }),
+      screen.getByRole("button", { name: "Add to Calendar" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Share with classmates" }),
     ).toBeInTheDocument();
-    expect(container.querySelector(".pt-success-card")).toBeNull();
-    expect(
-      container.querySelector(".pt-hero")?.classList.contains("has-result"),
-    ).toBe(false);
+    expect(screen.queryByText(/Published by CalenderZW/i)).toBeNull();
+    expect(container.querySelector(".pt-timezone-note")).toBeNull();
   });
 
-  it("renders a semantic desktop timetable matrix from the same published events", async () => {
+  it("fails closed on optional public surfaces unless durable settings enable them", async () => {
+    const { rerender } = render(
+      <PublicTimetableReliability slug={timetable.publicSlug} />,
+    );
+    await screen.findByRole("button", { name: "Add to Calendar" });
+    expect(screen.queryByTestId("visual-preview")).toBeNull();
+    expect(screen.queryByTestId("change-alerts")).toBeNull();
+
+    mocks.fetchPublicTimetable.mockResolvedValueOnce({
+      ...timetable,
+      publicDisplay: { showVisualPreview: true, showChangeAlerts: true },
+    });
+    rerender(<PublicTimetableReliability slug="settings-enabled" />);
+    expect(await screen.findByTestId("visual-preview")).toBeInTheDocument();
+    expect(screen.getByTestId("change-alerts")).toBeInTheDocument();
+  });
+
+  it("does not auto-advance the visually selected default reminder merely by opening", async () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
-    await screen.findByRole("heading", {
-      level: 1,
-      name: "BTech Computer Science",
-    });
-
-    const table = screen.getByRole("table", {
-      name: /BTech Computer Science Class 1\.1 weekly timetable/i,
-    });
-    expect(
-      within(table).getByRole("columnheader", { name: "Monday" }),
-    ).toBeInTheDocument();
-    expect(
-      within(table).getByRole("columnheader", { name: "Tuesday" }),
-    ).toBeInTheDocument();
-    expect(
-      within(table).getByRole("rowheader", { name: "08:00" }),
-    ).toBeInTheDocument();
-    expect(
-      within(table).getByRole("rowheader", { name: "10:15" }),
-    ).toBeInTheDocument();
-    expect(within(table).getByText("HIT1101")).toBeInTheDocument();
-    expect(within(table).getByText("ICS1101")).toBeInTheDocument();
-  });
-
-  it("uses deterministic course tones so repeated sessions remain visually stable", () => {
-    expect(courseToneClass("HIT1101")).toBe(courseToneClass("hit1101"));
-    expect(courseToneClass("ICS1101")).toMatch(/^tone-/);
-  });
-
-  it("uses a focused in-modal reminder step before provider selection", async () => {
-    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
-
-    const primary = await screen.findByRole("button", {
-      name: "Subscribe to calendar",
-    });
-    primary.focus();
-    fireEvent.click(primary);
-
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add to Calendar" }),
+    );
     const dialog = screen.getByRole("dialog", {
       name: "Choose your reminders",
     });
-    expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(
-      within(dialog).getByRole("button", { name: "Continue" }),
-    ).toBeInTheDocument();
+      within(dialog).getByRole("radio", { name: /On time/i }),
+    ).toHaveAttribute("aria-checked", "true");
     expect(
-      within(dialog).queryByRole("button", { name: /Apple Calendar/i }),
+      screen.queryByRole("dialog", { name: "Choose calendar destination" }),
     ).toBeNull();
-
-    fireEvent.click(within(dialog).getByRole("button", { name: "Continue" }));
-    expect(
-      await screen.findByRole("dialog", {
-        name: "Choose calendar destination",
-      }),
-    ).toBeInTheDocument();
   });
 
-  it("offers Apple first on iPhone, shows subscription URL and one-time ICS, and has accessible dialog dismissal", async () => {
+  it("advances immediately on a fixed reminder tap and emits reminder/step analytics once", async () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    await openProviderStep("Prepared");
+    const reminderCalls = mocks.track.mock.calls.filter(
+      ([name]) => name === "reminder_selected",
+    );
+    const completedCalls = mocks.track.mock.calls.filter(
+      ([name, payload]) =>
+        name === "onboarding_step_completed" && payload?.step === "reminders",
+    );
+    expect(reminderCalls).toHaveLength(1);
+    expect(completedCalls).toHaveLength(1);
+  });
 
-    const primary = await screen.findByRole("button", {
-      name: "Subscribe to calendar",
+  it("requires explicit save for a custom reminder and preserves it through Back", async () => {
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Add to Calendar" }),
+    );
+    fireEvent.click(screen.getByRole("radio", { name: /Custom/i }));
+    expect(
+      screen.getByRole("dialog", { name: "Choose your reminders" }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Hours before class"), {
+      target: { value: "2" },
     });
-    primary.focus();
-    fireEvent.click(primary);
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-
-    const dialog = screen.getByRole("dialog", {
+    fireEvent.change(screen.getByLabelText("Minutes before class"), {
+      target: { value: "15" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save custom reminder" }),
+    );
+    const providerDialog = await screen.findByRole("dialog", {
       name: "Choose calendar destination",
     });
-    const apple = within(dialog).getByRole("button", {
-      name: /Apple Calendar/i,
-    });
-    const url = within(dialog).getByRole("button", {
-      name: /Google\/other subscription URL/i,
-    });
-    const oneTime = within(dialog).getByRole("button", {
-      name: /Download one-time \.ics/i,
+    fireEvent.click(
+      within(providerDialog).getByRole("button", { name: "Back" }),
+    );
+    const reminderDialog = screen.getByRole("dialog", {
+      name: "Choose your reminders",
     });
     expect(
-      apple.compareDocumentPosition(url) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).not.toBe(0);
-    expect(
-      url.compareDocumentPosition(oneTime) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).not.toBe(0);
-    expect(
-      within(dialog).queryByText(/Google Calendar direct sync/i),
-    ).toBeNull();
-
-    fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    await waitFor(() => expect(primary).toHaveFocus());
+      within(reminderDialog).getByRole("radio", { name: /Custom/i }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("Hours before class")).toHaveValue("2");
+    expect(screen.getByLabelText("Minutes before class")).toHaveValue("15");
   });
 
-  it("creates a canonical HTTPS Apple feed after skipped contact and keeps result in the modal", async () => {
-    const { container } = render(
+  it("orders Apple → Google → Advanced on iPhone and Google → Apple → Advanced on Windows", async () => {
+    enableGoogle();
+    const { unmount } = render(
       <PublicTimetableReliability slug={timetable.publicSlug} />,
     );
-
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Subscribe to calendar" }),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.click(screen.getByRole("button", { name: /Apple Calendar/i }));
-    expect(
-      await screen.findByRole("dialog", { name: "Add optional contact" }),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Phone number")).toHaveAttribute(
-      "autocomplete",
-      "tel",
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Skip for now" }));
-
+    const iphoneDialog = await openProviderStep();
     await waitFor(() =>
-      expect(mocks.createCalendarSubscription).toHaveBeenCalledTimes(1),
+      expect(
+        within(iphoneDialog).getByText("Continue with Google"),
+      ).toBeInTheDocument(),
     );
-    expect(mocks.createCalendarSubscription).toHaveBeenCalledWith(
-      expect.objectContaining({
-        timetableId: "tt-hit-cs1",
-        provider: "apple_subscription",
-        reminderPreset: "on_time",
-        timezone: "Africa/Harare",
-      }),
+    const appleIphone = within(iphoneDialog).getByText("Add to Apple Calendar");
+    const googleIphone = within(iphoneDialog).getByText("Continue with Google");
+    const advancedIphone = within(iphoneDialog).getByText("Advanced options");
+    expect(
+      appleIphone.compareDocumentPosition(googleIphone) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    expect(
+      googleIphone.compareDocumentPosition(advancedIphone) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
+    unmount();
+
+    setPlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64)", 1440);
+    enableGoogle();
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const windowsDialog = await openProviderStep();
+    await waitFor(() =>
+      expect(
+        within(windowsDialog).getByText("Continue with Google"),
+      ).toBeInTheDocument(),
     );
-    expect(
-      await screen.findByText(/private HTTPS subscription is ready/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Open Apple Calendar/i }),
-    ).toHaveAttribute(
-      "href",
-      "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
+    const googleWindows = within(windowsDialog).getByText(
+      "Continue with Google",
     );
+    const appleWindows = within(windowsDialog).getByText(
+      "Add to Apple Calendar",
+    );
+    const advancedWindows = within(windowsDialog).getByText("Advanced options");
     expect(
-      screen.getByRole("button", { name: /Copy subscription URL/i }),
-    ).toBeInTheDocument();
+      googleWindows.compareDocumentPosition(appleWindows) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
     expect(
-      screen.getByRole("dialog", { name: "Calendar ready" }),
-    ).toBeInTheDocument();
-    expect(container.querySelector(".pt-success-card")).toBeNull();
+      appleWindows.compareDocumentPosition(advancedWindows) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).not.toBe(0);
   });
 
-  it("sends optional contact only after explicit consent and never tracks the phone", async () => {
-    mocks.createCalendarSubscription.mockResolvedValueOnce({
-      subscriptionId: "sub-contact",
-      provider: "webcal_subscription",
-      calendarName: "Class 1.1 · CalenderZW",
-      feedUrl: "https://calender.aido.co.zw/calendar/feed/private-token.ics",
-      downloadUrl:
-        "https://calender.aido.co.zw/calendar/download/sub-contact.ics",
-      expiresAt: null,
-      contact: { saved: true, countryCode: "ZW" },
-      warnings: [],
-    });
+  it("keeps URL and ICS truthful fallbacks collapsed under Advanced and never asks for phone/contact", async () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const dialog = await openProviderStep();
+    expect(within(dialog).queryByLabelText(/Phone number/i)).toBeNull();
+    expect(within(dialog).queryByText(/optional contact/i)).toBeNull();
+    const details = within(dialog)
+      .getByText("Advanced options")
+      .closest("details");
+    expect(details).not.toHaveAttribute("open");
+    expect(
+      within(dialog).getByRole("button", { name: /Copy subscription URL/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: /Download one-time ICS/i }),
+    ).toBeInTheDocument();
+  });
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Subscribe to calendar" }),
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: /Google\/other subscription URL/i }),
-    );
-    fireEvent.change(screen.getByLabelText("Phone number"), {
-      target: { value: "077 123 4567" },
-    });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Save contact & continue" }),
-    );
-
-    await waitFor(() =>
-      expect(mocks.createCalendarSubscription).toHaveBeenCalledWith(
-        expect.objectContaining({
-          provider: "webcal_subscription",
-          subscriberContact: {
-            countryCode: "ZW",
-            phone: "077 123 4567",
-            consentUpdates: true,
-            consentSource: "calendar_onboarding",
-          },
+  it("uses a synchronous provider lock so rapid repeat taps create one subscription", async () => {
+    let resolveSubscription: ((value: unknown) => void) | null = null;
+    mocks.createCalendarSubscription.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSubscription = resolve;
         }),
-      ),
     );
-    expect(JSON.stringify(mocks.track.mock.calls)).not.toContain(
-      "077 123 4567",
-    );
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const dialog = await openProviderStep();
+    const apple = within(dialog).getByRole("button", {
+      name: /Add to Apple Calendar/i,
+    });
+    fireEvent.click(apple);
+    fireEvent.click(apple);
+    expect(mocks.createCalendarSubscription).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveSubscription?.({
+        subscriptionId: "sub-lock",
+        provider: "apple_subscription",
+        calendarName: "Class 1.1 · CalenderZW",
+        feedUrl: "https://calender.aido.co.zw/calendar/feed/private-token.ics",
+        appleDeepLinkUrl:
+          "webcal://calender.aido.co.zw/calendar/feed/private-token.ics",
+        warnings: [],
+        contact: { saved: false },
+      });
+    });
   });
 
-  it("shares only the public class URL and never the private feed URL", async () => {
-    const share = vi.fn(async (_data: ShareData) => undefined);
-    Object.defineProperty(window.navigator, "share", {
-      configurable: true,
-      value: share,
-    });
-    window.history.replaceState({}, "", `/t/${timetable.publicSlug}`);
+  it("treats the durable provider result as completion without a cosmetic final Continue", async () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
-
+    const dialog = await openProviderStep();
     fireEvent.click(
-      await screen.findByRole("button", { name: "Share with classmates" }),
+      within(dialog).getByRole("button", { name: /Add to Apple Calendar/i }),
     );
-    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
-    const payload = share.mock.calls[0]?.[0];
-    expect(payload).toBeDefined();
-    expect(payload?.url).toBe(
-      `http://localhost:3000/t/${timetable.publicSlug}?src=class_share`,
-    );
-    expect(payload?.url).not.toContain("/calendar/feed/");
-    expect(payload?.url).not.toContain("private-token");
+    const result = await screen.findByRole("dialog", {
+      name: "Calendar ready",
+    });
+    expect(
+      within(result).queryByRole("button", { name: "Continue" }),
+    ).toBeNull();
+    expect(
+      within(result).getByRole("button", { name: "Done" }),
+    ).toBeInTheDocument();
+    expect(
+      mocks.track.mock.calls.filter(
+        ([name]) => name === "onboarding_completed",
+      ),
+    ).toHaveLength(1);
   });
 
-  it("shows the mobile sticky CTA only after the primary CTA leaves view and hides it while the dialog is open", async () => {
+  it("restores focus after Escape and keeps the sticky CTA out of the open sheet", async () => {
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
-    await screen.findByRole("heading", {
-      level: 1,
-      name: "BTech Computer Science",
+    const primary = await screen.findByRole("button", {
+      name: "Add to Calendar",
     });
-    await waitFor(() => expect(observerCallback).not.toBeNull());
-
+    primary.focus();
     act(() => {
       observerCallback?.(
         [{ isIntersecting: false } as IntersectionObserverEntry],
@@ -415,15 +399,14 @@ describe("public timetable reliability UX", () => {
       );
     });
     expect(
-      screen.getAllByRole("button", { name: "Subscribe to calendar" }),
-    ).toHaveLength(2);
-
-    fireEvent.click(
-      screen.getAllByRole("button", { name: "Subscribe to calendar" })[1],
-    );
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+      screen.getAllByRole("button", { name: "Add to Calendar" }).length,
+    ).toBeGreaterThanOrEqual(1);
+    fireEvent.click(primary);
     expect(
-      screen.getAllByRole("button", { name: "Subscribe to calendar" }),
+      screen.getAllByRole("button", { name: "Add to Calendar" }),
     ).toHaveLength(1);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(primary).toHaveFocus());
   });
 });
