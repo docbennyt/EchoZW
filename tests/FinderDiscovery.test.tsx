@@ -65,9 +65,7 @@ describe("DR-66 FinderDiscovery responsive hierarchy", () => {
       await waitFor(() =>
         expect(mocks.fetchPublishedTimetables).toHaveBeenCalledTimes(1),
       );
-      expect(
-        screen.queryByLabelText("Search published timetables"),
-      ).toBeNull();
+      expect(screen.queryByLabelText("Search published timetables")).toBeNull();
       expect(screen.queryByText(/Timetable link or slug/i)).toBeNull();
     },
   );
