@@ -47,7 +47,9 @@ describe("DR-66 finder discovery contract", () => {
     expect(responsiveUx).toContain("position: sticky");
     expect(responsiveUx).toContain(".czw-active-filter-chip");
     expect(responsiveUx).toContain(".czw-finder-demand-prompt");
-    expect(responsiveUx).toContain("grid-template-columns: repeat(3, minmax(0, 1fr))");
+    expect(responsiveUx).toContain(
+      "grid-template-columns: repeat(3, minmax(0, 1fr))",
+    );
   });
 
   it("keeps the exact mobile task in the required field order", () => {
