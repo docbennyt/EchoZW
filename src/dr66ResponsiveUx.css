@@ -1,5 +1,5 @@
 /* DR-66 responsive finder correction.
-   Mobile is a focused exact-class task; desktop is a single browse/filter system. */
+   Mobile is a focused exact-class task; desktop is a premium results directory. */
 
 .czw-pilot-proof[hidden] {
   display: none !important;
@@ -105,7 +105,6 @@
   line-height: 1.3;
 }
 
-/* The directory is never part of the mobile task-completion experience. */
 .czw-directory-desktop {
   display: none;
 }
@@ -154,9 +153,10 @@
   }
 }
 
-/* Desktop gets one discovery system: search + four filters + timetable cards. */
+/* Desktop: one canonical filter state expressed as a facet rail + results toolbar. */
 @media (min-width: 1024px) {
-  .czw-finder-experience {
+  .czw-finder-experience,
+  .czw-directory-experience {
     gap: 0;
   }
 
@@ -166,19 +166,91 @@
 
   .czw-directory-desktop {
     display: block !important;
+    width: 100%;
   }
 
-  .czw-directory-intro,
-  .czw-directory-category-row,
-  .czw-directory-search-trust,
-  .czw-directory-sidebar-heading,
-  .czw-directory-published-only,
-  .czw-directory-toolbar-actions {
-    display: none !important;
+  .czw-directory-layout {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    align-items: start;
+    gap: 24px;
+    border: 0;
+    background: transparent;
+  }
+
+  .czw-directory-sidebar {
+    min-width: 0;
+    padding: 20px 18px 22px;
+    border: 1px solid var(--czw-line);
+    border-radius: 12px;
+    background: rgba(255, 254, 250, 0.76);
+    box-shadow: 0 10px 28px rgba(21, 61, 50, 0.045);
+    position: sticky;
+    top: 92px;
+  }
+
+  .czw-directory-sidebar-heading {
+    min-height: 32px;
+    margin: 0 0 18px;
+    padding: 0 0 14px;
+    border-bottom: 1px solid var(--czw-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .czw-directory-sidebar-heading > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--czw-ink);
+    font-size: 12px;
+    font-weight: 820;
+  }
+
+  .czw-directory-reset {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--czw-forest);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .czw-directory-filter-stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .czw-directory-sidebar .czw-select-label {
+    margin-bottom: 7px;
+    color: #55635c;
+    font-size: 10px;
+    font-weight: 820;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+  }
+
+  .czw-directory-sidebar .czw-select-trigger {
+    width: 100%;
+    min-height: 46px;
+    border-radius: 8px;
+    border-color: #cbd3cd;
+    background: #fff;
+    font-size: 12px;
+  }
+
+  .czw-directory-results {
+    min-width: 0;
+    padding: 0;
   }
 
   .czw-directory-search-row {
-    margin: 0 0 14px;
+    margin: 0 0 16px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -187,82 +259,107 @@
 
   .czw-directory-search-box {
     min-height: 54px;
-    border-radius: 11px;
-    border-color: #c9d2cb;
-    box-shadow: 0 7px 24px rgba(21, 61, 50, 0.045);
-  }
-
-  .czw-directory-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 16px;
-    border: 0;
-    background: transparent;
-  }
-
-  .czw-directory-sidebar {
-    padding: 0;
-    border: 0;
-    background: transparent;
-  }
-
-  .czw-directory-filter-stack {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .czw-directory-sidebar .czw-select-trigger {
-    min-height: 48px;
-    border-radius: 9px;
+    border: 1px solid #c8d1ca;
+    border-radius: 10px;
     background: #fff;
-  }
-
-  .czw-directory-sidebar .czw-select-label {
-    margin-bottom: 6px;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.055em;
-  }
-
-  .czw-directory-results {
-    padding: 0;
+    box-shadow: 0 8px 22px rgba(21, 61, 50, 0.04);
   }
 
   .czw-directory-toolbar {
-    margin: 2px 0 14px;
-    padding: 0;
-    border: 0;
-    background: transparent;
+    margin: 0 0 18px;
+    padding: 0 0 15px;
+    border-bottom: 1px solid var(--czw-line);
+    display: grid;
+    gap: 11px;
   }
 
-  .czw-directory-toolbar .czw-kicker {
-    display: none;
+  .czw-directory-result-summary h2 {
+    margin: 0 0 4px;
+    color: var(--czw-ink);
+    font-size: 20px;
+    line-height: 1.2;
+    letter-spacing: -0.035em;
   }
 
-  .czw-directory-toolbar h3 {
-    margin: 0 0 3px;
-    font-size: 16px;
-  }
-
-  .czw-directory-toolbar p {
+  .czw-directory-result-summary p {
     margin: 0;
     color: var(--czw-muted);
     font-size: 11px;
+    line-height: 1.45;
   }
 
-  .czw-discovery-grid,
-  .czw-discovery-grid[data-view="list"] {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+  .czw-directory-active-filters {
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
   }
 
-  .czw-discovery-grid[data-view="list"] .czw-discovery-card {
-    grid-template-columns: 1fr;
+  .czw-active-filter-chip {
+    min-height: 30px;
+    padding: 0 9px 0 10px;
+    border: 1px solid #c8d2ca;
+    border-radius: 999px;
+    background: #fff;
+    color: #425149;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 760;
+    cursor: pointer;
   }
 
-  .czw-discovery-grid[data-view="list"] .czw-timetable-thumbnail {
-    min-height: 142px;
-    border-right: 0;
+  .czw-active-filter-chip:hover {
+    border-color: #aebdb2;
+    background: var(--czw-sage-soft);
+    color: var(--czw-forest);
+  }
+
+  .czw-directory-clear-all {
+    min-height: 30px;
+    padding: 0 3px;
+    border: 0;
+    background: transparent;
+    color: var(--czw-forest);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 820;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .czw-directory-all-results {
+    color: #77817b;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .czw-discovery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .czw-discovery-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    border-radius: 13px;
+  }
+
+  .czw-timetable-thumbnail {
+    min-height: 150px;
+  }
+
+  .czw-discovery-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
   }
 
   .czw-discovery-card .czw-published-pill {
@@ -270,14 +367,45 @@
   }
 
   .czw-discovery-card-meta {
+    min-height: 17px;
+    margin-bottom: 12px;
     justify-content: flex-end;
-    min-height: 18px;
+  }
+
+  .czw-discovery-details {
+    margin-bottom: 12px;
+  }
+
+  .czw-card-link {
+    margin-top: auto;
+  }
+
+  .czw-finder-wrap .czw-finder-demand-prompt {
+    width: calc(100% - 284px);
+    margin-top: 32px;
+    margin-right: 0;
+    margin-bottom: 52px;
+    margin-left: 284px;
+    padding: 18px 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(21, 61, 50, 0.045);
   }
 }
 
-@media (min-width: 1024px) and (max-width: 1180px) {
-  .czw-discovery-grid,
-  .czw-discovery-grid[data-view="list"] {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 1240px) {
+  .czw-discovery-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1120px) {
+  .czw-directory-layout {
+    grid-template-columns: 236px minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .czw-finder-wrap .czw-finder-demand-prompt {
+    width: calc(100% - 256px);
+    margin-left: 256px;
   }
 }
