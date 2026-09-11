@@ -1,6 +1,6 @@
 import { Button } from "@base-ui/react/button";
 import { Input } from "@base-ui/react/input";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PublicShell } from "./components/site/SiteChrome";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
@@ -36,10 +36,15 @@ function Field({
 export function TimetableRequestPage() {
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState("");
+  const submittingRef = useRef(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const consentContact = form.get("consentContact") === "on";
     setState("submitting");
     setMessage("");
@@ -57,13 +62,15 @@ export function TimetableRequestPage() {
         email: form.get("email"),
         consentContact,
       });
-      event.currentTarget.reset();
+      formElement.reset();
       setState("success");
     } catch (error) {
       setState("error");
       setMessage(
         error instanceof Error ? error.message : "Could not send request.",
       );
+    } finally {
+      submittingRef.current = false;
     }
   }
 
@@ -193,10 +200,15 @@ export function TimetableRequestPage() {
 export function FeedbackPage() {
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState("");
+  const submittingRef = useRef(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    if (submittingRef.current) return;
+
+    submittingRef.current = true;
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setState("submitting");
     setMessage("");
     try {
@@ -211,13 +223,15 @@ export function FeedbackPage() {
         consentContact: form.get("consentContact") === "on",
         testimonialPermission: form.get("testimonialPermission") === "on",
       });
-      event.currentTarget.reset();
+      formElement.reset();
       setState("success");
     } catch (error) {
       setState("error");
       setMessage(
         error instanceof Error ? error.message : "Could not send feedback.",
       );
+    } finally {
+      submittingRef.current = false;
     }
   }
 
