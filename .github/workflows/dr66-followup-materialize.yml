@@ -1,0 +1,43 @@
+name: DR-66 follow-up materialize
+
+on:
+  push:
+    branches:
+      - DR-66-responsive-finder-trust-followup
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: DR-66-responsive-finder-trust-followup
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply follow-up
+        run: python scripts/dr66_followup_materialize.py
+      - name: Format changed files
+        run: npx prettier --write src/FinderDiscovery.tsx src/AppV2.tsx src/main.tsx src/ProductionUxEnhancements.tsx src/productionUxEnhancements.css src/finderDiscovery.css src/appV2.css tests/FinderDiscovery.test.tsx tests/dr66FinderDiscoveryContract.test.ts tests/dr55FinderPromptLayout.test.ts tests/dr66ResponsiveFinderFollowup.test.ts
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run test
+      - run: npm run build
+      - name: Commit verified implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src tests public
+          if git diff --cached --quiet; then
+            echo "No implementation changes to commit"
+            exit 0
+          fi
+          git commit -m "fix: split finder UX by device intent (DR-66)"
+          git push origin HEAD:DR-66-responsive-finder-trust-followup
