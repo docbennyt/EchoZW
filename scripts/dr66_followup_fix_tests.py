@@ -25,14 +25,23 @@ replace_once(
       expect(screen.getAllByText("Academic period").length).toBeGreaterThan(0);''',
 )
 
-replace_once(
-    "tests/FinderDiscovery.test.tsx",
-    'expect(screen.getByText("Current period")).toBeInTheDocument();',
-    '''expect(screen.queryByText("Current period")).toBeNull();
+# Older verifier snapshots asserted a visible "Current period" helper. The
+# clarified mobile UX intentionally removes that extra copy. Patch only when
+# such an assertion exists so this materializer stays compatible with the
+# current merged DR-66 tests.
+test_path = ROOT / "tests/FinderDiscovery.test.tsx"
+test_text = test_path.read_text()
+current_period_assertion = 'expect(screen.getByText("Current period")).toBeInTheDocument();'
+if current_period_assertion in test_text:
+    test_text = test_text.replace(
+        current_period_assertion,
+        '''expect(screen.queryByText("Current period")).toBeNull();
     expect(
       screen.getByRole("button", { name: /View timetable/i }),
     ).toBeEnabled();''',
-)
+        1,
+    )
+    test_path.write_text(test_text)
 
 layout = ROOT / "tests/dr55FinderPromptLayout.test.ts"
 layout.write_text(r'''import { readFileSync } from "node:fs";
