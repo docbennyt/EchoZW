@@ -85,14 +85,13 @@ function setIphone() {
 
 async function reachSuccess() {
   fireEvent.click(
-    await screen.findByRole("button", { name: "Subscribe to calendar" }),
+    await screen.findByRole("button", { name: "Add to Calendar" }),
   );
-  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-  fireEvent.click(screen.getByRole("button", { name: /Apple Calendar/i }));
-  fireEvent.click(await screen.findByRole("button", { name: "Skip for now" }));
-  const ready = await screen.findByRole("dialog", { name: "Calendar ready" });
-  fireEvent.click(within(ready).getByRole("button", { name: "Continue" }));
-  return screen.findByRole("dialog", { name: "You're on track" });
+  fireEvent.click(screen.getByRole("radio", { name: /On time/i }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: /Add to Apple Calendar/i }),
+  );
+  return screen.findByRole("dialog", { name: "Calendar ready" });
 }
 
 beforeEach(() => {
@@ -146,10 +145,12 @@ describe("DR-47 class viral loop", () => {
 
     const success = await reachSuccess();
     expect(
-      within(success).getByText("Help your classmates stay on track too."),
+      within(success).getByText(
+        "Share the public class page, not your private feed.",
+      ),
     ).toBeInTheDocument();
     expect(
-      within(success).getByText(/calendar setup is already complete/i),
+      within(success).getByText(/private HTTPS subscription is ready/i),
     ).toBeInTheDocument();
     expect(mocks.track).toHaveBeenCalledWith(
       "shared_link_onboarding_started",
@@ -165,7 +166,7 @@ describe("DR-47 class viral loop", () => {
     );
 
     fireEvent.click(
-      within(success).getByRole("button", { name: "Share to class group" }),
+      within(success).getByRole("button", { name: "Share with classmates" }),
     );
     await waitFor(() => expect(nativeShare).toHaveBeenCalledTimes(1));
     const payload = nativeShare.mock.calls[0][0] as {

@@ -1234,3 +1234,158 @@ button.pt-method:hover {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* DR-64: conversion-first public timetable hierarchy. */
+.pt-conversion-card {
+  display: grid;
+  gap: 20px;
+}
+
+.pt-class-header {
+  display: grid;
+  gap: 8px;
+}
+
+.pt-class-header h1 {
+  margin: 0;
+}
+
+.pt-updated-line {
+  margin: 0;
+  color: var(--pt-muted, #69756f);
+  font-size: 12px;
+}
+
+.pt-conversion-grid,
+.pt-conversion-main,
+.pt-conversion-support {
+  display: grid;
+  gap: 16px;
+}
+
+.pt-conversion-support {
+  align-content: start;
+}
+
+.pt-provider-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pt-dialog-back {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--pt-forest, #153d32);
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.pt-reminder {
+  width: 100%;
+  border: 1px solid var(--pt-line, #d8dfda);
+  background: #fff;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pt-reminder-radio {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #aab6af;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  box-shadow: inset 0 0 0 4px #fff;
+}
+
+.pt-reminder[aria-checked="true"] .pt-reminder-radio {
+  background: var(--pt-forest, #153d32);
+  border-color: var(--pt-forest, #153d32);
+}
+
+.pt-provider-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid #e0e4e1;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pt-provider-mark-google,
+.pt-provider-mark-apple {
+  color: var(--pt-forest, #153d32);
+  background: var(--pt-sage-soft, #f2f7f4);
+}
+
+.pt-advanced-options {
+  border: 1px solid var(--pt-line, #d8dfda);
+  border-radius: 12px;
+  background: #fafbf9;
+}
+
+.pt-advanced-options > summary {
+  min-height: 50px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.pt-advanced-options > p {
+  margin: 0;
+  padding: 0 14px 12px;
+  color: var(--pt-muted, #69756f);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.pt-method-list-advanced {
+  padding: 0 12px 12px;
+}
+
+.pt-share-panel-result {
+  margin-top: 18px;
+}
+
+@media (min-width: 900px) {
+  .pt-hero-card.pt-conversion-card {
+    max-width: none;
+    padding: clamp(28px, 3vw, 40px);
+  }
+
+  .pt-conversion-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.65fr);
+    align-items: start;
+    gap: clamp(22px, 3vw, 40px);
+  }
+
+  .pt-conversion-support {
+    padding: 18px;
+    border: 1px solid var(--pt-line, #d8dfda);
+    border-radius: 14px;
+    background: #fafbf9;
+  }
+}
+
+@media (max-width: 899px) {
+  .pt-conversion-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pt-conversion-support {
+    padding-top: 2px;
+  }
+}
