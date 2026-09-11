@@ -8,6 +8,7 @@ import { FinderDemandPrompt } from "./FinderDemandPrompt";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { FeedbackPage, TimetableRequestPage } from "./GrowthCapturePages";
 import { GrowthInboxPage } from "./GrowthInboxPage";
+import { HeroTrustProof } from "./HeroTrustProof";
 import { PilotOfferEnhancement } from "./PilotOfferEnhancement";
 import { MarketingEnhancements } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
@@ -18,6 +19,7 @@ import { googleCalendarFailureRecoveryPath } from "./domain/googleCalendarHandof
 import "./styles.css";
 import "./appV2.css";
 import "./finderDiscovery.css";
+import "./dr66ResponsiveUx.css";
 import "./publicTimetableReliability.css";
 import "./publicTimetableMatrix.css";
 import "./personalTimetablePreview.css";
@@ -112,6 +114,7 @@ function RootApp() {
   return (
     <>
       <AppV2 />
+      <HeroTrustProof />
       {path === "/find" || path === "/find/" ? <FinderDemandPrompt /> : null}
       <ClassRepCorrectionSafetyEnhancement />
       <MarketingEnhancements />
