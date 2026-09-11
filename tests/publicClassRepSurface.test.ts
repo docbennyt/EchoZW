@@ -21,7 +21,9 @@ describe("public Class Rep surface", () => {
     expect(app).toContain('<a href="/rep/login">Rep login</a>');
 
     expect(finder).toContain('href="/rep/login"');
-    expect(finder).toContain("Published by CalenderZW");
+    expect(finder).toContain(
+      "Showing matching published class timetables from CalenderZW.",
+    );
     expect(finder).not.toContain('href="/admin/login"');
     expect(finder).not.toContain("Published from Admin");
     expect(finder).not.toContain("Admin publication");
