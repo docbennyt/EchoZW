@@ -8,9 +8,7 @@ function useHeroTarget() {
 
   useEffect(() => {
     const update = () => {
-      setTarget(
-        document.querySelector<HTMLElement>(".czw-hero-copy-block"),
-      );
+      setTarget(document.querySelector<HTMLElement>(".czw-hero-copy-block"));
     };
 
     update();
