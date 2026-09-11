@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 const repository = readFileSync("server/pilotRepository.ts", "utf8");
 const publicApi = readFileSync("server/publicTimetableApi.ts", "utf8");
 const finder = readFileSync("src/FinderDiscovery.tsx", "utf8");
+const responsiveUx = readFileSync("src/dr66ResponsiveUx.css", "utf8");
+const heroProof = readFileSync("src/HeroTrustProof.tsx", "utf8");
 
 describe("DR-66 finder discovery contract", () => {
   it("serves only published rows with real academic-period date truth", () => {
@@ -27,21 +29,20 @@ describe("DR-66 finder discovery contract", () => {
     expect(finder).not.toContain("czw-available-section");
   });
 
-  it("keeps the exact finder primary and the desktop directory explicitly secondary", () => {
-    expect(finder).toContain('data-priority="primary"');
-    expect(finder).toContain('data-priority="secondary"');
-    const routeOwner = finder.slice(
-      finder.indexOf("export function FinderDiscovery"),
+  it("uses the post-merge responsive contract: mobile exact finder, desktop directory", () => {
+    expect(responsiveUx).toContain("@media (max-width: 1023.98px)");
+    expect(responsiveUx).toContain("@media (min-width: 1024px)");
+    expect(responsiveUx).toContain(".czw-finder-primary");
+    expect(responsiveUx).toContain("display: none !important");
+    expect(responsiveUx).toContain(".czw-directory-desktop");
+    expect(responsiveUx).toContain(
+      "grid-template-columns: repeat(4, minmax(0, 1fr))",
     );
-    expect(routeOwner.indexOf("<ExactFinder")).toBeGreaterThan(-1);
-    expect(routeOwner.indexOf("<DesktopDirectory")).toBeGreaterThan(-1);
-    expect(routeOwner.indexOf("<ExactFinder")).toBeLessThan(
-      routeOwner.indexOf("<DesktopDirectory"),
-    );
-    expect(finder).toContain('isDesktop && status === "ready"');
+    expect(responsiveUx).toContain(".czw-directory-category-row");
+    expect(responsiveUx).toContain(".czw-directory-toolbar-actions");
   });
 
-  it("keeps the exact task in the required field order", () => {
+  it("keeps the exact mobile task in the required field order", () => {
     const exactStart = finder.indexOf("function ExactFinder");
     const exactEnd = finder.indexOf("function TimetableThumbnail");
     const exact = finder.slice(exactStart, exactEnd);
@@ -55,5 +56,12 @@ describe("DR-66 finder discovery contract", () => {
     expect(programme).toBeLessThan(classGroup);
     expect(classGroup).toBeLessThan(period);
     expect(period).toBeLessThan(submit);
+  });
+
+  it("uses real HIT identity and published timetable data instead of fabricated social proof", () => {
+    expect(heroProof).toContain("https://portal.hit.ac.zw/img/HITlogo.png");
+    expect(heroProof).toContain("fetchPublishedTimetables");
+    expect(heroProof).toContain("publishedCount");
+    expect(heroProof).not.toContain("18+ active calendar connections");
   });
 });
