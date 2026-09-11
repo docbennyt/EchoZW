@@ -2,7 +2,6 @@ import { Download, Eye, FileImage, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { track } from "./analytics";
-import { fetchPublicTimetable } from "./api/publicTimetable";
 import type { PublicTimetable } from "./api/pilotTypes";
 import {
   buildPersonalTimetableModel,
@@ -11,21 +10,6 @@ import {
   type PersonalTimetableModel,
 } from "./domain/personalTimetableExport";
 import { projectPublishedTimetable } from "./domain/publishedCalendarProjection";
-
-function usePortalTarget(selector: string) {
-  const [target, setTarget] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const update = () =>
-      setTarget(document.querySelector<HTMLElement>(selector));
-    update();
-    const observer = new MutationObserver(update);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [selector]);
-
-  return target;
-}
 
 function safeFilename(value: string) {
   const result = value
@@ -145,30 +129,19 @@ function PreviewSheet({ model }: { model: PersonalTimetableModel }) {
   );
 }
 
-export function PersonalTimetablePreview({ slug }: { slug: string }) {
-  const actionTarget = usePortalTarget(".pt-primary-actions");
-  const [timetable, setTimetable] = useState<PublicTimetable | null>(null);
+export function PersonalTimetablePreview({
+  slug,
+  timetable,
+}: {
+  slug: string;
+  timetable: PublicTimetable;
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"pdf" | "png" | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    void fetchPublicTimetable(slug)
-      .then((result) => {
-        if (active) setTimetable(result);
-      })
-      .catch(() => {
-        if (active) setTimetable(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [slug]);
-
   const model = useMemo(() => {
-    if (!timetable) return null;
     try {
       const projection = projectPublishedTimetable({
         timetable,
@@ -270,21 +243,6 @@ export function PersonalTimetablePreview({ slug }: { slug: string }) {
     }
   }
 
-  const action = actionTarget
-    ? createPortal(
-        <button
-          type="button"
-          className="pt-button pt-button-secondary pt-preview-open"
-          onClick={openPreview}
-          disabled={!model}
-        >
-          <Eye size={18} aria-hidden="true" />
-          Preview timetable
-        </button>,
-        actionTarget,
-      )
-    : null;
-
   const dialog =
     open && model
       ? createPortal(
@@ -356,16 +314,21 @@ export function PersonalTimetablePreview({ slug }: { slug: string }) {
 
   return (
     <>
-      {action}
+      <button
+        type="button"
+        className="pt-button pt-button-secondary pt-preview-open"
+        onClick={openPreview}
+        disabled={!model}
+      >
+        <Eye size={18} aria-hidden="true" />
+        Preview timetable
+      </button>
+      {!open && error ? (
+        <p className="pt-preview-inline-error" role="alert">
+          {error}
+        </p>
+      ) : null}
       {dialog}
-      {!open && error && actionTarget
-        ? createPortal(
-            <p className="pt-preview-inline-error" role="alert">
-              {error}
-            </p>,
-            actionTarget,
-          )
-        : null}
     </>
   );
 }

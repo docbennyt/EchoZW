@@ -1,30 +1,17 @@
 import { Unplug } from "lucide-react";
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 
-export function GoogleCalendarDisconnectEntry() {
-  const [target, setTarget] = useState<HTMLElement | null>(null);
+export function GoogleCalendarDisconnectEntry({
+  connected,
+  subscriptionId,
+}: {
+  connected: boolean;
+  subscriptionId: string | null;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const search = new URLSearchParams(window.location.search);
-  const connected = search.get("calendar") === "google-success";
-  const subscriptionId = search.get("subscriptionId");
 
-  useEffect(() => {
-    if (!connected || !subscriptionId) return;
-    const findTarget = () => {
-      const nextTarget = document.querySelector<HTMLElement>(
-        ".pt-primary-actions",
-      );
-      if (nextTarget) setTarget(nextTarget);
-    };
-    findTarget();
-    const observer = new MutationObserver(findTarget);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [connected, subscriptionId]);
-
-  if (!connected || !subscriptionId || !target) return null;
+  if (!connected || !subscriptionId) return null;
 
   async function disconnect() {
     if (busy) return;
@@ -61,7 +48,7 @@ export function GoogleCalendarDisconnectEntry() {
     }
   }
 
-  return createPortal(
+  return (
     <>
       <button
         type="button"
@@ -77,7 +64,6 @@ export function GoogleCalendarDisconnectEntry() {
           {error}
         </p>
       ) : null}
-    </>,
-    target,
+    </>
   );
 }

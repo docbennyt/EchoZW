@@ -6,19 +6,13 @@ import { ClassRepCorrectionSafetyEnhancement } from "./ClassRepCorrectionSafetyE
 import { syncDashboardThemeScope } from "./dashboardThemeContract";
 import { FinderDemandPrompt } from "./FinderDemandPrompt";
 import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
-import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
 import { FeedbackPage, TimetableRequestPage } from "./GrowthCapturePages";
 import { GrowthInboxPage } from "./GrowthInboxPage";
-import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { PilotOfferEnhancement } from "./PilotOfferEnhancement";
-import {
-  MarketingEnhancements,
-  TimetableGoogleOnboardingEnhancement,
-} from "./ProductionUxEnhancements";
+import { MarketingEnhancements } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import { initializeInstallExperience } from "./pwa/installCapability";
 import { registerCalenderZwServiceWorker } from "./pwa/serviceWorker";
-import { StudentOnboardingAcceleration } from "./StudentOnboardingAcceleration";
 import { AUTH_CONFIRM_PATH, PASSWORD_RESET_PATH } from "./authRecovery";
 import { googleCalendarFailureRecoveryPath } from "./domain/googleCalendarHandoff";
 import "./styles.css";
@@ -112,15 +106,7 @@ function RootApp() {
 
   const slug = timetableSlug(path);
   if (slug) {
-    return (
-      <>
-        <PublicTimetableReliability slug={slug} />
-        <PersonalTimetablePreview slug={slug} />
-        <TimetableGoogleOnboardingEnhancement slug={slug} />
-        <StudentOnboardingAcceleration slug={slug} />
-        <GoogleCalendarDisconnectEntry />
-      </>
-    );
+    return <PublicTimetableReliability slug={slug} />;
   }
 
   return (
