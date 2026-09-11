@@ -27,14 +27,18 @@ import "./founderOperationsCockpit.css";
 
 const funnelLabels: Record<string, string> = {
   timetable_viewed: "Viewed timetable",
-  onboarding_opened: "Subscribe opened",
-  reminders_complete: "Reminders complete",
-  reminder_complete: "Reminders complete",
-  phone_step_completed: "Contact complete",
-  contact_complete: "Contact complete",
+  add_to_calendar_started: "Add to Calendar started",
+  reminder_selected: "Reminder selected",
   provider_selected: "Provider selected",
-  subscription_created: "Subscription created",
-  onboarding_completed: "Onboarding done",
+  provider_handoff_prepared: "Provider handoff / preparation",
+  verified_activation: "Verified activation",
+  onboarding_opened: "Legacy subscribe opened",
+  reminders_complete: "Legacy reminders complete",
+  reminder_complete: "Legacy reminders complete",
+  phone_step_completed: "Legacy contact complete",
+  contact_complete: "Legacy contact complete",
+  subscription_created: "Legacy subscription prepared",
+  onboarding_completed: "Legacy onboarding done",
 };
 
 const providerLabels: Record<string, string> = {
@@ -145,7 +149,7 @@ export function FounderOperationsCockpit({
   const operations: FounderOperationsOverview | null =
     overview?.operations ?? null;
   const pulse = operations?.pilotPulse;
-  const funnel = overview?.funnel ?? [];
+  const funnel = overview?.conversionFunnel ?? [];
   const firstStagePeople = funnel[0]?.people ?? 0;
   const smallSample = firstStagePeople > 0 && firstStagePeople < 5;
   const trustRows = [...(operations?.timetableTrust ?? [])].sort(
@@ -245,8 +249,10 @@ export function FounderOperationsCockpit({
             <h2 id="pulse-heading">What moved this week</h2>
           </div>
           <p>
-            Activation is update-enabled subscriptions divided by timetable
-            viewers.
+            Verified activation requires successful Google calendar creation or
+            sync evidence, or an observed update-enabled feed request. Creating
+            a subscription record or opening a provider does not count as
+            verified activation.
           </p>
         </div>
         <div className="foc-pulse-grid" aria-busy={loading}>
@@ -256,37 +262,70 @@ export function FounderOperationsCockpit({
             detail="Unique analytics identities that viewed a timetable."
           />
           <PulseCard
-            label="Onboarding done"
-            value={loading ? "…" : (pulse?.onboardingCompletions ?? 0)}
-            detail="Reached the final calendar onboarding success state."
+            label="Add-to-Calendar starts"
+            value={loading ? "…" : (pulse?.addToCalendarStarts ?? 0)}
+            detail="Students who explicitly opened the Add-to-Calendar flow."
           />
           <PulseCard
-            label="Update-enabled"
-            value={loading ? "…" : (pulse?.updateEnabledSubscriptions ?? 0)}
-            detail="Google, Apple, webcal or Outlook connections that can receive changes."
+            label="Reminder choices"
+            value={loading ? "…" : (pulse?.reminderSelections ?? 0)}
+            detail="Unique students with explicit reminder-selection evidence."
+          />
+          <PulseCard
+            label="Provider selections"
+            value={loading ? "…" : (pulse?.providerSelections ?? 0)}
+            detail="Unique students who chose a calendar destination."
+          />
+          <PulseCard
+            label="Provider handoffs"
+            value={loading ? "…" : (pulse?.providerHandoffs ?? 0)}
+            detail="Provider preparation or handoff evidence; not activation proof."
+          />
+          <PulseCard
+            label="Google connections completed"
+            value={loading ? "…" : (pulse?.googleConnectionsCompleted ?? 0)}
+            detail="Successful Google calendar creation/sync evidence."
             emphasis
           />
           <PulseCard
-            label="Activation conversion"
+            label="Verified activations"
+            value={loading ? "…" : (pulse?.verifiedActivations ?? 0)}
+            detail="Strict funnel completions backed by Google success or feed-observed evidence."
+            emphasis
+          />
+          <PulseCard
+            label="Verified conversion"
             value={
-              loading ? "…" : formatPercent(pulse?.activationConversion ?? null)
+              loading
+                ? "…"
+                : formatPercent(pulse?.verifiedActivationConversion ?? null)
             }
-            detail="Shown only from the defined first-party activation metric."
+            detail="Verified activations divided by timetable viewers in the strict primary funnel."
+          />
+          <PulseCard
+            label="Update-enabled records"
+            value={loading ? "…" : (pulse?.updateEnabledSubscriptions ?? 0)}
+            detail="Active Google, Apple, webcal or Outlook records created in this window; preparation only."
           />
           <PulseCard
             label="Feed observed"
             value={loading ? "…" : (pulse?.feedObservedSubscriptions ?? 0)}
-            detail="A calendar client requested a feed; this is not proof of an active human user."
+            detail="A calendar client requested an update-enabled feed in this window; stronger than row creation, but not proof of a human view."
           />
           <PulseCard
-            label="One-time ICS"
+            label="One-time ICS downloads"
             value={loading ? "…" : (pulse?.oneTimeIcsDownloads ?? 0)}
-            detail="Prepared file imports that will not receive future timetable changes."
+            detail="Completed file downloads that will not receive future timetable changes."
           />
           <PulseCard
-            label="Subscriptions created"
+            label="Subscription records prepared"
             value={loading ? "…" : (pulse?.calendarSubscriptionsCreated ?? 0)}
-            detail="Calendar subscription rows successfully committed."
+            detail="Calendar subscription rows created in this window. This is preparation, not verified activation."
+          />
+          <PulseCard
+            label="Google failed / cancelled"
+            value={loading ? "…" : (pulse?.googleConnectionFailures ?? 0)}
+            detail="Google OAuth or direct-sync failure evidence kept separate from successful connection counts."
           />
           <PulseCard
             label="Shares"
@@ -302,7 +341,7 @@ export function FounderOperationsCockpit({
       >
         <div className="foc-section-heading">
           <div>
-            <span className="foc-eyebrow">Activation funnel</span>
+            <span className="foc-eyebrow">Verified conversion funnel</span>
             <h2 id="funnel-heading">Where students stop</h2>
           </div>
           <a href="/admin/analytics">
@@ -310,6 +349,11 @@ export function FounderOperationsCockpit({
             <ExternalLink size={15} aria-hidden="true" />
           </a>
         </div>
+        <p className="foc-sample-note">
+          The legacy funnel remains available for historical continuity. This
+          primary funnel does not use cosmetic onboarding completion or record
+          creation as verified activation.
+        </p>
         {smallSample ? (
           <p className="foc-sample-note">
             Small sample: use the counts as directional evidence, not a stable
@@ -318,7 +362,7 @@ export function FounderOperationsCockpit({
         ) : null}
         {!loading && funnel.length === 0 ? (
           <EmptyState>
-            No onboarding funnel events in this 7-day window yet.
+            No primary conversion-funnel evidence in this 7-day window yet.
           </EmptyState>
         ) : (
           <ol className="foc-funnel-list" aria-busy={loading}>
