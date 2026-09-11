@@ -60,9 +60,9 @@ describe("public timetable helpers", () => {
 
   it("builds timetable-specific share metadata", () => {
     expect(buildPublicTimetableMetadata(makeTimetable())).toEqual({
-      title: "HIT · BTech Computer Science · Class 1.1",
+      title: "HIT · BTech Computer Science · Class 1.1 timetable | CalenderZW",
       description:
-        "August Semester 2026 published timetable. View your classes and add them to your calendar with CalenderZW.",
+        "August Semester 2026 timetable for BTech Computer Science, Class 1.1 at HIT. View published classes and add the schedule to your calendar with CalenderZW.",
       canonicalPath: "/t/hit-ics-1-1-august-semester-2026",
     });
   });

@@ -142,9 +142,10 @@ export function formatOccurrenceTime(date: Date, timeZone: string) {
 
 export function buildPublicTimetableMetadata(timetable: PublicTimetable) {
   const institution = getInstitutionIdentity(timetable);
+  const classGroup = formatClassGroupLabel(timetable.classGroup);
   return {
-    title: `${institution} · ${timetable.programme} · ${formatClassGroupLabel(timetable.classGroup)}`,
-    description: `${timetable.academicPeriod} published timetable. View your classes and add them to your calendar with CalenderZW.`,
+    title: `${institution} · ${timetable.programme} · ${classGroup} timetable | CalenderZW`,
+    description: `${timetable.academicPeriod} timetable for ${timetable.programme}, ${classGroup} at ${institution}. View published classes and add the schedule to your calendar with CalenderZW.`,
     canonicalPath: `/t/${timetable.publicSlug}`,
   };
 }

@@ -1,4 +1,4 @@
-type SpaMetadata = {
+export type SpaMetadata = {
   title: string;
   description: string;
   canonicalPath: string;
@@ -7,6 +7,8 @@ type SpaMetadata = {
   ogImagePath?: string;
   robots?: string;
 };
+
+export const DEFAULT_SOCIAL_IMAGE_PATH = "/calenderzw-share-1200x630.png";
 
 function escapeHtml(value: string) {
   return value
@@ -41,7 +43,7 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   const description = escapeHtml(metadata.description);
   const ogTitle = metadata.ogTitle ?? metadata.title;
   const ogDescription = metadata.ogDescription ?? metadata.description;
-  const ogImagePath = metadata.ogImagePath ?? "/web-app-manifest-512x512.png";
+  const ogImagePath = metadata.ogImagePath ?? DEFAULT_SOCIAL_IMAGE_PATH;
   const ogImage = `https://calender.aido.co.zw${ogImagePath}`;
   const titlePattern = /<title>[\s\S]*?<\/title>/;
   const canonicalPattern = /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/;
@@ -59,6 +61,14 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   next = upsertMeta(next, "property", "og:url", canonicalUrl);
   next = upsertMeta(next, "property", "og:type", "website");
   next = upsertMeta(next, "property", "og:image", ogImage);
+  next = upsertMeta(next, "property", "og:image:width", "1200");
+  next = upsertMeta(next, "property", "og:image:height", "630");
+  next = upsertMeta(
+    next,
+    "property",
+    "og:image:alt",
+    "CalenderZW university timetable calendar",
+  );
   next = upsertMeta(next, "name", "twitter:card", "summary_large_image");
   next = upsertMeta(next, "name", "twitter:title", ogTitle);
   next = upsertMeta(next, "name", "twitter:description", ogDescription);
