@@ -33,6 +33,7 @@ export const analyticsFilterSchema = z
     osFamily: z
       .enum(["android", "ios", "windows", "macos", "linux", "other"])
       .optional(),
+    entryPath: z.string().trim().max(160).optional(),
     utmSource: z.string().trim().max(80).optional(),
     stage: z.string().trim().max(80).optional(),
   })
@@ -83,6 +84,7 @@ export function parseAnalyticsFilters(params: URLSearchParams) {
     deviceKind: params.get("deviceKind") ?? undefined,
     browserFamily: params.get("browserFamily") ?? undefined,
     osFamily: params.get("osFamily") ?? undefined,
+    entryPath: params.get("entryPath") ?? undefined,
     utmSource: params.get("utmSource") ?? undefined,
     stage: params.get("stage") ?? undefined,
   });
@@ -95,6 +97,15 @@ export type AnalyticsKpi = {
   comparisonValue: number | null;
   delta: number | null;
   definitionId: string;
+};
+
+export type AnalyticsFunnelStage = {
+  stage: string;
+  people: number;
+  conversionFromPrevious: number | null;
+  conversionFromFirst: number | null;
+  dropoffCount: number | null;
+  dropoffRate: number | null;
 };
 
 export type AnalyticsOverview = {
@@ -116,14 +127,10 @@ export type AnalyticsOverview = {
     googleConnections: number;
     shares: number;
   }[];
-  funnel: {
-    stage: string;
-    people: number;
-    conversionFromPrevious: number | null;
-    conversionFromFirst: number | null;
-    dropoffCount: number | null;
-    dropoffRate: number | null;
-  }[];
+  /** Legacy RPC funnel retained for historical continuity. Do not use it as verified activation proof. */
+  funnel: AnalyticsFunnelStage[];
+  /** DR-65 primary conversion funnel. Each stage requires explicit evidence for that step. */
+  conversionFunnel?: AnalyticsFunnelStage[];
   dataQuality: {
     eventsReceived: number;
     uniqueAnonymousIdentities: number;
@@ -144,14 +151,24 @@ export type AnalyticsOverview = {
 export type FounderOperationsOverview = {
   pilotPulse: {
     uniqueTimetableViewers: number;
-    onboardingStarts: number;
-    onboardingCompletions: number;
+    addToCalendarStarts?: number;
+    reminderSelections?: number;
+    providerSelections?: number;
+    providerHandoffs?: number;
+    googleConnectionsCompleted?: number;
+    googleConnectionFailures?: number;
+    verifiedActivations?: number;
+    verifiedActivationConversion?: number | null;
     calendarSubscriptionsCreated: number;
     updateEnabledSubscriptions: number;
     oneTimeIcsDownloads: number;
     feedObservedSubscriptions: number;
     shares: number;
+    /** Legacy compatibility fields; these are not verified activation signals. */
+    onboardingStarts: number;
+    onboardingCompletions: number;
     activationConversion: number | null;
+    legacyConnectionPreparationRate?: number | null;
   };
   subscriberHealth: {
     timetableId: string;
@@ -188,14 +205,23 @@ export type FounderOperationsOverview = {
 export const emptyFounderOperationsOverview: FounderOperationsOverview = {
   pilotPulse: {
     uniqueTimetableViewers: 0,
-    onboardingStarts: 0,
-    onboardingCompletions: 0,
+    addToCalendarStarts: 0,
+    reminderSelections: 0,
+    providerSelections: 0,
+    providerHandoffs: 0,
+    googleConnectionsCompleted: 0,
+    googleConnectionFailures: 0,
+    verifiedActivations: 0,
+    verifiedActivationConversion: null,
     calendarSubscriptionsCreated: 0,
     updateEnabledSubscriptions: 0,
     oneTimeIcsDownloads: 0,
     feedObservedSubscriptions: 0,
     shares: 0,
+    onboardingStarts: 0,
+    onboardingCompletions: 0,
     activationConversion: null,
+    legacyConnectionPreparationRate: null,
   },
   subscriberHealth: [],
   timetableTrust: [],

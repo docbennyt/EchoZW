@@ -5,17 +5,30 @@ const cockpit = readFileSync("src/FounderOperationsCockpit.tsx", "utf8");
 const styles = readFileSync("src/founderOperationsCockpit.css", "utf8");
 const compactCockpit = cockpit.replace(/\s+/g, " ");
 
-describe("DR-45 founder operations cockpit", () => {
-  it("puts operational signal before setup CRUD and keeps metric semantics explicit", () => {
+describe("DR-45/DR-65 founder operations cockpit", () => {
+  it("puts operational signal before setup CRUD and uses truthful activation semantics", () => {
     expect(cockpit).toContain("7-day pilot command center");
     expect(cockpit).toContain("Know what needs attention before opening CRUD.");
     expect(compactCockpit).toContain(
-      "Activation is update-enabled subscriptions divided by timetable viewers.",
+      "Verified activation requires successful Google calendar creation or sync evidence, or an observed update-enabled feed request.",
     );
+    expect(cockpit).toContain("Add-to-Calendar starts");
+    expect(cockpit).toContain("Provider handoffs");
+    expect(cockpit).toContain("Google connections completed");
+    expect(cockpit).toContain("Verified activations");
     expect(cockpit).toContain("Feed observed");
-    expect(cockpit).toContain("this is not proof of an active human user");
+    expect(cockpit).toContain("One-time ICS downloads");
+    expect(compactCockpit).toContain("Creating a subscription record");
     expect(cockpit).not.toContain("Active users");
-    expect(cockpit).not.toContain("active user");
+  });
+
+  it("uses the DR-65 strict funnel while preserving the legacy funnel in the API", () => {
+    expect(cockpit).toContain("overview?.conversionFunnel");
+    expect(cockpit).toContain("provider_handoff_prepared");
+    expect(cockpit).toContain("verified_activation");
+    expect(compactCockpit).toContain(
+      "The legacy funnel remains available for historical continuity.",
+    );
   });
 
   it("keeps subscriber identity and private feed material out of the cockpit contract", () => {

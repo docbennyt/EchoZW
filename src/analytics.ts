@@ -136,7 +136,11 @@ export function track(
   eventName: AnalyticsEventName,
   properties: Record<string, unknown> = {},
 ) {
-  const safeProperties = sanitizeAnalyticsProperties(properties);
+  const contextualProperties =
+    typeof window !== "undefined" && properties.entryPath === undefined
+      ? { entryPath: window.location.pathname, ...properties }
+      : properties;
+  const safeProperties = sanitizeAnalyticsProperties(contextualProperties);
 
   if (import.meta.env.DEV) {
     console.info("[analytics]", eventName, safeProperties);

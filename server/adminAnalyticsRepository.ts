@@ -1,6 +1,7 @@
 import { ANALYTICS_METRIC_REGISTRY } from "../src/domain/analyticsMetrics.js";
 import type {
   AnalyticsFilters,
+  AnalyticsFunnelStage,
   AnalyticsOverview,
   FounderOperationsOverview,
 } from "../src/domain/adminAnalytics.js";
@@ -9,6 +10,31 @@ import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 
 type JsonRecord = Record<string, unknown>;
 type QueryResult<T> = { data: T | null; error: { message?: string } | null };
+
+const reminderEvents = ["reminder_selected", "reminder_preset_selected"];
+const providerSelectionEvents = [
+  "provider_selected",
+  "calendar_method_selected",
+  "calendar_provider_selected",
+];
+const providerHandoffEvents = [
+  "subscription_created",
+  "calendar_subscription_created",
+  "google_oauth_started",
+  "apple_calendar_opened",
+  "apple_webcal_opened",
+  "subscription_url_copied",
+  "subscription_link_copied",
+  "ics_download_started",
+];
+const googleVerifiedEvents = [
+  "google_calendar_created",
+  "google_calendar_sync_completed",
+];
+const googleFailureEvents = [
+  "google_oauth_failed",
+  "google_calendar_sync_failed",
+];
 
 function numberValue(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -74,14 +100,295 @@ function eventCountByName(events: JsonRecord[], names: string[]) {
     .length;
 }
 
+function eventProperties(event: JsonRecord) {
+  const properties = event.properties;
+  return properties &&
+    typeof properties === "object" &&
+    !Array.isArray(properties)
+    ? (properties as JsonRecord)
+    : {};
+}
+
+function eventPersonKey(event: JsonRecord) {
+  const personId = stringValue(event.analytics_person_id);
+  if (personId) return `person:${personId}`;
+  const anonymousId = stringValue(event.anonymous_id);
+  return anonymousId ? `anonymous:${anonymousId}` : null;
+}
+
+function uniquePersonKeys(events: JsonRecord[], names?: string[]) {
+  const keys = new Set<string>();
+  for (const event of events) {
+    if (names && !names.includes(stringValue(event.event_name))) continue;
+    const key = eventPersonKey(event);
+    if (key) keys.add(key);
+  }
+  return keys;
+}
+
+function intersection(left: Set<string>, right: Set<string>) {
+  return new Set([...left].filter((value) => right.has(value)));
+}
+
+function inWindow(value: unknown, fromIso: string, toIso: string) {
+  const timestamp = nullableString(value);
+  return Boolean(timestamp && timestamp >= fromIso && timestamp < toIso);
+}
+
+function subscriptionProviderMap(subscriptions: JsonRecord[]) {
+  return new Map(
+    subscriptions
+      .map(
+        (subscription) =>
+          [
+            stringValue(subscription.id),
+            stringValue(subscription.provider),
+          ] as const,
+      )
+      .filter(([id]) => Boolean(id)),
+  );
+}
+
+function eventMatchesCohortFilters(
+  event: JsonRecord,
+  filters: AnalyticsFilters,
+) {
+  if (
+    filters.deviceKind &&
+    stringValue(event.device_kind) !== filters.deviceKind
+  ) {
+    return false;
+  }
+  if (
+    filters.browserFamily &&
+    stringValue(event.browser_family) !== filters.browserFamily
+  ) {
+    return false;
+  }
+  if (filters.osFamily && stringValue(event.os_family) !== filters.osFamily) {
+    return false;
+  }
+  if (filters.entryPath) {
+    const entryPath = stringValue(eventProperties(event).entryPath);
+    if (entryPath !== filters.entryPath) return false;
+  }
+  return true;
+}
+
+function conversionEventsForFilters(
+  events: JsonRecord[],
+  subscriptions: JsonRecord[],
+  filters: AnalyticsFilters,
+) {
+  const base = events.filter((event) =>
+    eventMatchesCohortFilters(event, filters),
+  );
+  if (!filters.provider) return base;
+
+  const providersBySubscription = subscriptionProviderMap(subscriptions);
+  const providerPeople = new Set<string>();
+  for (const event of base) {
+    const provider =
+      stringValue(event.provider) ||
+      providersBySubscription.get(stringValue(event.subscription_id)) ||
+      "";
+    if (provider !== filters.provider) continue;
+    const key = eventPersonKey(event);
+    if (key) providerPeople.add(key);
+  }
+
+  return base.filter((event) => {
+    const key = eventPersonKey(event);
+    return Boolean(key && providerPeople.has(key));
+  });
+}
+
+function subscriptionPersonKeys(events: JsonRecord[]) {
+  const keysBySubscription = new Map<string, Set<string>>();
+  for (const event of events) {
+    const subscriptionId = stringValue(event.subscription_id);
+    const personKey = eventPersonKey(event);
+    if (!subscriptionId || !personKey) continue;
+    const keys = keysBySubscription.get(subscriptionId) ?? new Set<string>();
+    keys.add(personKey);
+    keysBySubscription.set(subscriptionId, keys);
+  }
+  return keysBySubscription;
+}
+
+function verifiedActivationPeople(
+  events: JsonRecord[],
+  subscriptions: JsonRecord[],
+  filters: AnalyticsFilters,
+  fromIso: string,
+  toIso: string,
+) {
+  const verified = uniquePersonKeys(events, googleVerifiedEvents);
+  const keysBySubscription = subscriptionPersonKeys(events);
+
+  for (const subscription of subscriptions) {
+    if (stringValue(subscription.status) !== "active") continue;
+    const provider = stringValue(subscription.provider);
+    if (provider === "ics_download") continue;
+    if (filters.provider && provider !== filters.provider) continue;
+
+    const feedObserved =
+      provider !== "google_api" &&
+      inWindow(subscription.last_feed_fetch_at, fromIso, toIso);
+    const googleSynced =
+      provider === "google_api" &&
+      inWindow(subscription.last_synced_at, fromIso, toIso);
+    if (!feedObserved && !googleSynced) continue;
+
+    const subscriptionId = stringValue(subscription.id);
+    for (const personKey of keysBySubscription.get(subscriptionId) ?? []) {
+      verified.add(personKey);
+    }
+  }
+  return verified;
+}
+
+function funnelStage(
+  stage: string,
+  people: number,
+  previousPeople: number | null,
+  firstPeople: number,
+): AnalyticsFunnelStage {
+  const conversionFromPrevious =
+    previousPeople && previousPeople > 0 ? people / previousPeople : null;
+  const conversionFromFirst = firstPeople > 0 ? people / firstPeople : null;
+  const dropoffCount =
+    previousPeople === null ? null : Math.max(previousPeople - people, 0);
+  const dropoffRate =
+    previousPeople && previousPeople > 0 && dropoffCount !== null
+      ? dropoffCount / previousPeople
+      : null;
+  return {
+    stage,
+    people,
+    conversionFromPrevious,
+    conversionFromFirst,
+    dropoffCount,
+    dropoffRate,
+  };
+}
+
+function buildTruthfulConversionFunnel(
+  events: JsonRecord[],
+  subscriptions: JsonRecord[],
+  filters: AnalyticsFilters,
+  fromIso: string,
+  toIso: string,
+) {
+  const conversionEvents = conversionEventsForFilters(
+    events,
+    subscriptions,
+    filters,
+  );
+  const viewers = uniquePersonKeys(conversionEvents, ["timetable_viewed"]);
+  const starts = intersection(
+    viewers,
+    uniquePersonKeys(conversionEvents, ["calendar_cta_clicked"]),
+  );
+  const reminders = intersection(
+    starts,
+    uniquePersonKeys(conversionEvents, reminderEvents),
+  );
+  const providers = intersection(
+    reminders,
+    uniquePersonKeys(conversionEvents, providerSelectionEvents),
+  );
+  const handoffs = intersection(
+    providers,
+    uniquePersonKeys(conversionEvents, providerHandoffEvents),
+  );
+  const verified = intersection(
+    handoffs,
+    verifiedActivationPeople(
+      conversionEvents,
+      subscriptions,
+      filters,
+      fromIso,
+      toIso,
+    ),
+  );
+
+  const ordered = [
+    ["timetable_viewed", viewers.size],
+    ["add_to_calendar_started", starts.size],
+    ["reminder_selected", reminders.size],
+    ["provider_selected", providers.size],
+    ["provider_handoff_prepared", handoffs.size],
+    ["verified_activation", verified.size],
+  ] as const;
+  const firstPeople = ordered[0][1];
+
+  return {
+    funnel: ordered.map(([stage, people], index) =>
+      funnelStage(
+        stage,
+        people,
+        index === 0 ? null : ordered[index - 1][1],
+        firstPeople,
+      ),
+    ),
+    counts: {
+      timetableViewers: viewers.size,
+      addToCalendarStarts: uniquePersonKeys(conversionEvents, [
+        "calendar_cta_clicked",
+      ]).size,
+      reminderSelections: uniquePersonKeys(conversionEvents, reminderEvents)
+        .size,
+      providerSelections: uniquePersonKeys(
+        conversionEvents,
+        providerSelectionEvents,
+      ).size,
+      providerHandoffs: uniquePersonKeys(
+        conversionEvents,
+        providerHandoffEvents,
+      ).size,
+      googleConnectionsCompleted:
+        filters.provider && filters.provider !== "google_api"
+          ? 0
+          : verifiedActivationPeople(
+              conversionEvents.filter((event) => {
+                const provider = stringValue(event.provider);
+                return (
+                  provider === "google_api" ||
+                  googleVerifiedEvents.includes(stringValue(event.event_name))
+                );
+              }),
+              subscriptions.filter(
+                (subscription) =>
+                  stringValue(subscription.provider) === "google_api",
+              ),
+              { ...filters, provider: "google_api" },
+              fromIso,
+              toIso,
+            ).size,
+      googleConnectionFailures: uniquePersonKeys(
+        conversionEvents,
+        googleFailureEvents,
+      ).size,
+      verifiedActivations: verified.size,
+      verifiedActivationConversion:
+        firstPeople > 0 ? verified.size / firstPeople : null,
+    },
+  };
+}
+
 async function getFounderOperationsOverview(
   client: ReturnType<typeof createSupabaseAdminClient>,
   filters: AnalyticsFilters,
   row: JsonRecord | null,
-): Promise<FounderOperationsOverview> {
+): Promise<{
+  operations: FounderOperationsOverview;
+  conversionFunnel: AnalyticsFunnelStage[];
+}> {
   const fromIso = `${filters.from}T00:00:00.000Z`;
-  const toIso = new Date(`${filters.to}T00:00:00.000Z`);
-  toIso.setUTCDate(toIso.getUTCDate() + 1);
+  const toDate = new Date(`${filters.to}T00:00:00.000Z`);
+  toDate.setUTCDate(toDate.getUTCDate() + 1);
+  const toIso = toDate.toISOString();
 
   const [
     events,
@@ -97,17 +404,17 @@ async function getFounderOperationsOverview(
       client
         .from("analytics_events")
         .select(
-          "event_name, timetable_id, public_slug, provider, device_kind, created_at",
+          "event_name, analytics_person_id, anonymous_id, subscription_id, timetable_id, public_slug, provider, properties, device_kind, browser_family, os_family, created_at",
         )
         .gte("created_at", fromIso)
-        .lt("created_at", toIso.toISOString()),
+        .lt("created_at", toIso),
       "Could not load dashboard analytics events",
     ),
     expectData<JsonRecord[]>(
       client
         .from("calendar_subscriptions")
         .select(
-          "id, timetable_id, provider, status, subscriber_profile_id, last_feed_fetch_at, created_at, timetables(id, public_slug, current_published_version_id, institutions(name, short_name), programmes(name), cohorts(label), academic_periods(name))",
+          "id, timetable_id, provider, status, subscriber_profile_id, last_feed_fetch_at, last_synced_at, created_at, timetables(id, public_slug, current_published_version_id, institutions(name, short_name), programmes(name), cohorts(label), academic_periods(name))",
         ),
       "Could not load dashboard subscription aggregates",
     ),
@@ -156,6 +463,26 @@ async function getFounderOperationsOverview(
 
   const safeEvents = events ?? [];
   const safeSubscriptions = subscriptions ?? [];
+  const conversion = buildTruthfulConversionFunnel(
+    safeEvents,
+    safeSubscriptions,
+    filters,
+    fromIso,
+    toIso,
+  );
+  const conversionEvents = conversionEventsForFilters(
+    safeEvents,
+    safeSubscriptions,
+    filters,
+  );
+  const filteredSubscriptions = safeSubscriptions.filter((subscription) =>
+    filters.provider
+      ? stringValue(subscription.provider) === filters.provider
+      : true,
+  );
+  const periodSubscriptions = filteredSubscriptions.filter((subscription) =>
+    inWindow(subscription.created_at, fromIso, toIso),
+  );
   const subscriptionsByTimetable = groupByTimetable(safeSubscriptions);
   const correctionsByTimetable = groupByTimetable(correctionDirectives ?? []);
   const exceptionsByTimetable = groupByTimetable(exceptions ?? []);
@@ -198,8 +525,10 @@ async function getFounderOperationsOverview(
         contactableSubscriptions: activeRows.filter((item) =>
           Boolean(item.subscriber_profile_id),
         ).length,
-        feedObservedSubscriptions: activeRows.filter((item) =>
-          Boolean(item.last_feed_fetch_at),
+        feedObservedSubscriptions: activeRows.filter(
+          (item) =>
+            stringValue(item.provider) !== "ics_download" &&
+            Boolean(item.last_feed_fetch_at),
         ).length,
         lastFeedObservedAt: feedObservedAt ?? null,
         providerMix,
@@ -242,42 +571,51 @@ async function getFounderOperationsOverview(
     };
   });
 
-  const onboarded = eventCountByName(safeEvents, [
+  const legacyOnboarded = eventCountByName(conversionEvents, [
     "onboarding_completed",
-    "calendar_onboarding_completed",
     "google_oauth_completed",
   ]);
-  const viewers = numberValue(row?.unique_timetable_viewers);
+  const legacyPreparationRate =
+    conversion.counts.timetableViewers > 0
+      ? numberValue(row?.calendar_activation_rate)
+      : null;
 
-  return {
+  const operations: FounderOperationsOverview = {
     pilotPulse: {
-      uniqueTimetableViewers: viewers,
-      onboardingStarts: eventCountByName(safeEvents, [
-        "calendar_cta_clicked",
-        "subscribe_opened",
-        "onboarding_started",
-      ]),
-      onboardingCompletions: onboarded,
-      calendarSubscriptionsCreated: numberValue(row?.new_calendar_connections),
-      updateEnabledSubscriptions: safeSubscriptions.filter(
+      uniqueTimetableViewers: conversion.counts.timetableViewers,
+      addToCalendarStarts: conversion.counts.addToCalendarStarts,
+      reminderSelections: conversion.counts.reminderSelections,
+      providerSelections: conversion.counts.providerSelections,
+      providerHandoffs: conversion.counts.providerHandoffs,
+      googleConnectionsCompleted: conversion.counts.googleConnectionsCompleted,
+      googleConnectionFailures: conversion.counts.googleConnectionFailures,
+      verifiedActivations: conversion.counts.verifiedActivations,
+      verifiedActivationConversion:
+        conversion.counts.verifiedActivationConversion,
+      calendarSubscriptionsCreated: periodSubscriptions.length,
+      updateEnabledSubscriptions: periodSubscriptions.filter(
         (subscription) =>
           stringValue(subscription.status) === "active" &&
           stringValue(subscription.provider) !== "ics_download",
       ).length,
-      oneTimeIcsDownloads: safeSubscriptions.filter(
+      oneTimeIcsDownloads:
+        filters.provider && filters.provider !== "ics_download"
+          ? 0
+          : eventCountByName(conversionEvents, ["ics_download_completed"]),
+      feedObservedSubscriptions: filteredSubscriptions.filter(
         (subscription) =>
           stringValue(subscription.status) === "active" &&
-          stringValue(subscription.provider) === "ics_download",
+          stringValue(subscription.provider) !== "ics_download" &&
+          inWindow(subscription.last_feed_fetch_at, fromIso, toIso),
       ).length,
-      feedObservedSubscriptions: safeSubscriptions.filter((subscription) =>
-        Boolean(subscription.last_feed_fetch_at),
-      ).length,
-      shares: eventCountByName(safeEvents, [
-        "timetable_shared",
-        "class_link_shared_after_feedback",
+      shares: eventCountByName(conversionEvents, ["timetable_shared"]),
+      onboardingStarts: eventCountByName(conversionEvents, [
+        "calendar_cta_clicked",
+        "onboarding_opened",
       ]),
-      activationConversion:
-        viewers > 0 ? numberValue(row?.calendar_activation_rate) : null,
+      onboardingCompletions: legacyOnboarded,
+      activationConversion: legacyPreparationRate,
+      legacyConnectionPreparationRate: legacyPreparationRate,
     },
     subscriberHealth,
     timetableTrust,
@@ -299,6 +637,8 @@ async function getFounderOperationsOverview(
       }).length,
     },
   };
+
+  return { operations, conversionFunnel: conversion.funnel };
 }
 
 export async function getAnalyticsOverview(
@@ -326,7 +666,13 @@ export async function getAnalyticsOverview(
   }
 
   const row = (Array.isArray(data) ? data[0] : data) as JsonRecord | null;
-  const operations = await getFounderOperationsOverview(client, filters, row);
+  const { operations, conversionFunnel } = await getFounderOperationsOverview(
+    client,
+    filters,
+    row,
+  );
+  const verifiedActivationRate =
+    operations.pilotPulse.verifiedActivationConversion ?? 0;
 
   return {
     filters,
@@ -337,7 +683,7 @@ export async function getAnalyticsOverview(
     kpis: [
       {
         id: "activeCalendarConnections",
-        label: "Active calendar connections",
+        label: "Active update-enabled records",
         value: numberValue(row?.active_calendar_connections),
         comparisonValue: null,
         delta: null,
@@ -346,14 +692,22 @@ export async function getAnalyticsOverview(
       {
         id: "uniqueTimetableViewers",
         label: "Unique timetable viewers",
-        value: numberValue(row?.unique_timetable_viewers),
+        value: operations.pilotPulse.uniqueTimetableViewers,
         comparisonValue: null,
         delta: null,
         definitionId: "uniqueTimetableViewers",
       },
       {
+        id: "verifiedCalendarActivationRate",
+        label: "Verified activation rate",
+        value: verifiedActivationRate,
+        comparisonValue: null,
+        delta: null,
+        definitionId: "verifiedCalendarActivationRate",
+      },
+      {
         id: "calendarActivationRate",
-        label: "Calendar activation rate",
+        label: "Historical connection preparation rate",
         value: numberValue(row?.calendar_activation_rate),
         comparisonValue: null,
         delta: null,
@@ -361,7 +715,7 @@ export async function getAnalyticsOverview(
       },
       {
         id: "newCalendarConnections",
-        label: "New connections",
+        label: "New connection records",
         value: numberValue(row?.new_calendar_connections),
         comparisonValue: null,
         delta: null,
@@ -397,6 +751,7 @@ export async function getAnalyticsOverview(
     funnel: Array.isArray(row?.funnel)
       ? (row.funnel as AnalyticsOverview["funnel"])
       : [],
+    conversionFunnel,
     dataQuality: {
       eventsReceived: numberValue(row?.events_received),
       uniqueAnonymousIdentities: numberValue(row?.unique_anonymous_identities),
@@ -423,11 +778,13 @@ export async function getAnalyticsOverview(
       unexpectedEventNames: Array.isArray(row?.unexpected_event_names)
         ? row.unexpected_event_names.map(String)
         : [],
-      knownHistoricalInstrumentationGaps: Array.isArray(
-        row?.known_historical_instrumentation_gaps,
-      )
-        ? row.known_historical_instrumentation_gaps.map(String)
-        : [],
+      knownHistoricalInstrumentationGaps: [
+        ...(Array.isArray(row?.known_historical_instrumentation_gaps)
+          ? row.known_historical_instrumentation_gaps.map(String)
+          : []),
+        "DR-65: historical calendarActivationRate is connection preparation, not verified activation.",
+        "DR-65: strict conversion-funnel entry-path segmentation only applies where privacy-safe entryPath instrumentation exists.",
+      ],
     },
     operations: operations ?? emptyFounderOperationsOverview,
   };
