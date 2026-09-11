@@ -29,21 +29,18 @@ describe("DR-66 finder discovery contract", () => {
     expect(finder).not.toContain("czw-available-section");
   });
 
-  it(
-    "uses the post-merge responsive contract: mobile exact finder, desktop directory",
-    () => {
-      expect(responsiveUx).toContain("@media (max-width: 1023.98px)");
-      expect(responsiveUx).toContain("@media (min-width: 1024px)");
-      expect(responsiveUx).toContain(".czw-finder-primary");
-      expect(responsiveUx).toContain("display: none !important");
-      expect(responsiveUx).toContain(".czw-directory-desktop");
-      expect(responsiveUx).toContain(
-        "grid-template-columns: repeat(4, minmax(0, 1fr))",
-      );
-      expect(responsiveUx).toContain(".czw-directory-category-row");
-      expect(responsiveUx).toContain(".czw-directory-toolbar-actions");
-    },
-  );
+  it("uses the post-merge responsive contract: mobile exact finder, desktop directory", () => {
+    expect(responsiveUx).toContain("@media (max-width: 1023.98px)");
+    expect(responsiveUx).toContain("@media (min-width: 1024px)");
+    expect(responsiveUx).toContain(".czw-finder-primary");
+    expect(responsiveUx).toContain("display: none !important");
+    expect(responsiveUx).toContain(".czw-directory-desktop");
+    expect(responsiveUx).toContain(
+      "grid-template-columns: repeat(4, minmax(0, 1fr))",
+    );
+    expect(responsiveUx).toContain(".czw-directory-category-row");
+    expect(responsiveUx).toContain(".czw-directory-toolbar-actions");
+  });
 
   it("keeps the exact mobile task in the required field order", () => {
     const exactStart = finder.indexOf("function ExactFinder");
@@ -61,13 +58,10 @@ describe("DR-66 finder discovery contract", () => {
     expect(period).toBeLessThan(submit);
   });
 
-  it(
-    "uses real HIT identity and published timetable data instead of fabricated social proof",
-    () => {
-      expect(heroProof).toContain("https://portal.hit.ac.zw/img/HITlogo.png");
-      expect(heroProof).toContain("fetchPublishedTimetables");
-      expect(heroProof).toContain("publishedCount");
-      expect(heroProof).not.toContain("18+ active calendar connections");
-    },
-  );
+  it("uses real HIT identity and published timetable data instead of fabricated social proof", () => {
+    expect(heroProof).toContain("https://portal.hit.ac.zw/img/HITlogo.png");
+    expect(heroProof).toContain("fetchPublishedTimetables");
+    expect(heroProof).toContain("publishedCount");
+    expect(heroProof).not.toContain("18+ active calendar connections");
+  });
 });
