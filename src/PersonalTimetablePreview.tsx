@@ -6,8 +6,9 @@ import type { PublicTimetable } from "./api/pilotTypes";
 import {
   buildPersonalTimetableModel,
   buildPersonalTimetablePdf,
+  buildPersonalTimetableScene,
   buildPersonalTimetableSvg,
-  type PersonalTimetableModel,
+  type PersonalTimetableScene,
 } from "./domain/personalTimetableExport";
 import { projectPublishedTimetable } from "./domain/publishedCalendarProjection";
 
@@ -31,7 +32,7 @@ function downloadBlob(blob: Blob, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-async function svgToPng(svg: string) {
+async function svgToPng(svg: string, width: number, height: number) {
   const source = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(source);
   try {
@@ -43,8 +44,8 @@ async function svgToPng(svg: string) {
       image.src = url;
     });
     const canvas = document.createElement("canvas");
-    canvas.width = 1600;
-    canvas.height = 1130;
+    canvas.width = width;
+    canvas.height = height;
     const context = canvas.getContext("2d");
     if (!context)
       throw new Error("Image export is unavailable in this browser.");
@@ -62,70 +63,20 @@ async function svgToPng(svg: string) {
   }
 }
 
-function PreviewSheet({ model }: { model: PersonalTimetableModel }) {
-  const activeDays = model.days.filter((day) => day.sessions.length > 0);
-  const visibleDays =
-    activeDays.length > 0 ? activeDays : model.days.slice(0, 5);
-
+function PreviewSheet({
+  scene,
+  svg,
+}: {
+  scene: PersonalTimetableScene;
+  svg: string;
+}) {
   return (
-    <div className="pt-preview-sheet" data-version={model.versionNumber}>
-      <header>
-        <div>
-          <span>CalenderZW personal timetable</span>
-          <h3>
-            {model.programme} · {model.classGroup}
-          </h3>
-          <p>
-            {model.institution} · {model.academicPeriod} · v
-            {model.versionNumber}
-          </p>
-        </div>
-        <strong>{model.sourceSessionCount} weekly sessions</strong>
-      </header>
-      <div
-        className="pt-preview-week"
-        style={{
-          gridTemplateColumns: `repeat(${Math.max(1, visibleDays.length)}, minmax(150px, 1fr))`,
-        }}
-      >
-        {visibleDays.map((day) => (
-          <section key={day.weekday} className="pt-preview-day">
-            <h4>{day.label}</h4>
-            <div>
-              {day.sessions.length === 0 ? (
-                <p className="pt-preview-empty">No published sessions.</p>
-              ) : (
-                day.sessions.map((session) => (
-                  <article
-                    key={session.stableSessionKey}
-                    className={`pt-preview-session tone-${session.toneIndex} kind-${session.kind}`}
-                  >
-                    <time>
-                      {session.startTime.slice(0, 5)}–
-                      {session.endTime.slice(0, 5)}
-                    </time>
-                    <strong>{session.courseName}</strong>
-                    <span>
-                      {session.courseCode}
-                      {session.venue
-                        ? ` · ${session.venue}`
-                        : " · Venue not set"}
-                    </span>
-                    {session.sessionType ? (
-                      <em>{session.sessionType}</em>
-                    ) : null}
-                  </article>
-                ))
-              )}
-            </div>
-          </section>
-        ))}
-      </div>
-      <footer>
-        Generated from the current published CalenderZW schedule. Nothing is
-        added to fill timetable gaps.
-      </footer>
-    </div>
+    <div
+      className="pt-preview-sheet"
+      data-version={scene.versionNumber}
+      data-scene-version={scene.sceneVersion}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
   );
 }
 
@@ -162,6 +113,15 @@ export function PersonalTimetablePreview({
     }
   }, [timetable]);
 
+  const scene = useMemo(
+    () => (model ? buildPersonalTimetableScene(model) : null),
+    [model],
+  );
+  const svg = useMemo(
+    () => (scene ? buildPersonalTimetableSvg(scene) : ""),
+    [scene],
+  );
+
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
@@ -181,7 +141,7 @@ export function PersonalTimetablePreview({
   }, [open]);
 
   function openPreview() {
-    if (!model) {
+    if (!model || !scene) {
       setError("The current published timetable cannot be previewed yet.");
       return;
     }
@@ -189,23 +149,23 @@ export function PersonalTimetablePreview({
     setOpen(true);
     track("personal_timetable_preview_opened", {
       publicSlug: slug,
-      versionNumber: model.versionNumber,
+      versionNumber: scene.versionNumber,
     });
   }
 
   async function exportPdf() {
-    if (!model || busy) return;
+    if (!model || !scene || busy) return;
     setBusy("pdf");
     setError("");
     try {
-      const bytes = buildPersonalTimetablePdf(model);
+      const bytes = buildPersonalTimetablePdf(scene);
       downloadBlob(
         new Blob([bytes], { type: "application/pdf" }),
         `${safeFilename(`${model.programme}-${model.classGroup}`)}-timetable.pdf`,
       );
       track("personal_timetable_pdf_downloaded", {
         publicSlug: slug,
-        versionNumber: model.versionNumber,
+        versionNumber: scene.versionNumber,
       });
     } catch (caught) {
       setError(
@@ -219,18 +179,18 @@ export function PersonalTimetablePreview({
   }
 
   async function exportPng() {
-    if (!model || busy) return;
+    if (!model || !scene || !svg || busy) return;
     setBusy("png");
     setError("");
     try {
-      const blob = await svgToPng(buildPersonalTimetableSvg(model));
+      const blob = await svgToPng(svg, scene.width, scene.height);
       downloadBlob(
         blob,
         `${safeFilename(`${model.programme}-${model.classGroup}`)}-timetable.png`,
       );
       track("personal_timetable_png_downloaded", {
         publicSlug: slug,
-        versionNumber: model.versionNumber,
+        versionNumber: scene.versionNumber,
       });
     } catch (caught) {
       setError(
@@ -244,7 +204,7 @@ export function PersonalTimetablePreview({
   }
 
   const dialog =
-    open && model
+    open && model && scene
       ? createPortal(
           <div
             className="pt-preview-backdrop"
@@ -266,7 +226,8 @@ export function PersonalTimetablePreview({
                   <span className="pt-kicker">Class-specific view</span>
                   <h2 id="pt-preview-title">Preview your timetable</h2>
                   <p>
-                    Preview and exports use the same published schedule version.
+                    Preview, PNG and PDF use one canonical published schedule
+                    scene.
                   </p>
                 </div>
                 <button
@@ -279,7 +240,7 @@ export function PersonalTimetablePreview({
                 </button>
               </div>
               <div className="pt-preview-scroll">
-                <PreviewSheet model={model} />
+                <PreviewSheet scene={scene} svg={svg} />
               </div>
               <div className="pt-preview-actions">
                 <button
@@ -318,7 +279,7 @@ export function PersonalTimetablePreview({
         type="button"
         className="pt-button pt-button-secondary pt-preview-open"
         onClick={openPreview}
-        disabled={!model}
+        disabled={!scene}
       >
         <Eye size={18} aria-hidden="true" />
         Preview timetable
