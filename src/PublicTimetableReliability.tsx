@@ -16,6 +16,8 @@ import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
 import { PublicShell } from "./components/site/SiteChrome";
+import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
+import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { ChangeAlertsControl } from "./pwa/ChangeAlertsControl";
 import { detectDevice, type DeviceKind } from "./domain/device";
 import {
@@ -36,6 +38,11 @@ import {
 } from "./domain/subscriberContact";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
+import {
+  GOOGLE_CALENDAR_HOME_URL,
+  rememberGoogleCalendarReturnSlug,
+  shouldAutoOpenGoogleCalendar,
+} from "./domain/googleCalendarHandoff";
 import {
   buildClassSharePayload,
   readClassShareSource,
@@ -65,7 +72,7 @@ const courseToneClasses = [
 
 type ReminderPresetId = "on_time" | "prepared" | "commuter" | "custom";
 type PublicCalendarProvider =
-  "apple_subscription" | "webcal_subscription" | "ics_download";
+  "google_api" | "apple_subscription" | "webcal_subscription" | "ics_download";
 
 type CalendarMethod = {
   provider: PublicCalendarProvider | null;
@@ -117,9 +124,20 @@ const reminderChoices: Array<{
   },
 ];
 
-function calendarMethodsForDevice(device: DeviceKind): CalendarMethod[] {
+function calendarMethodsForDevice(
+  device: DeviceKind,
+  googleEnabled: boolean,
+): CalendarMethod[] {
+  const googleMethod: CalendarMethod = {
+    provider: "google_api",
+    title: "Google Calendar",
+    description:
+      "Connect directly. CalenderZW creates a separate calendar and keeps approved timetable updates synced.",
+    accent: "Available now",
+  };
+
   if (device === "ios") {
-    return [
+    const methods: CalendarMethod[] = [
       {
         provider: "apple_subscription",
         title: "Apple Calendar",
@@ -141,10 +159,13 @@ function calendarMethodsForDevice(device: DeviceKind): CalendarMethod[] {
           "Import the timetable as it is now. Future published changes will not update this file.",
       },
     ];
+    return googleEnabled
+      ? [methods[0], googleMethod, ...methods.slice(1)]
+      : methods;
   }
 
   if (device === "android") {
-    return [
+    const methods: CalendarMethod[] = [
       {
         provider: "webcal_subscription",
         title: "Copy subscription URL",
@@ -158,29 +179,63 @@ function calendarMethodsForDevice(device: DeviceKind): CalendarMethod[] {
         description:
           "Import the timetable once. Future published changes will not update the imported file.",
       },
+    ];
+    if (googleEnabled) return [googleMethod, ...methods];
+    return [
+      ...methods,
       {
         provider: null,
         title: "Google Calendar direct sync",
-        description: "Next on the CalenderZW roadmap.",
+        description: "Direct sync is unavailable in this deployment.",
       },
     ];
   }
 
-  return [
-    {
-      provider: "webcal_subscription",
-      title: "Subscribe using calendar URL",
-      description:
-        "Copy a private HTTPS feed for Apple Calendar, Outlook, Google Calendar, or another compatible calendar client.",
-      accent: "Keeps published updates",
-    },
-    {
-      provider: "ics_download",
-      title: "Download one-time .ics",
-      description:
-        "Import the current publication once. The file itself will not receive future changes.",
-    },
-  ];
+  return googleEnabled
+    ? [
+        googleMethod,
+        {
+          provider: "webcal_subscription",
+          title: "Subscribe using calendar URL",
+          description:
+            "Copy a private HTTPS feed for Apple Calendar, Outlook, Google Calendar, or another compatible calendar client.",
+          accent: "Keeps published updates",
+        },
+        {
+          provider: "ics_download",
+          title: "Download one-time .ics",
+          description:
+            "Import the current publication once. The file itself will not receive future changes.",
+        },
+      ]
+    : [
+        {
+          provider: "webcal_subscription",
+          title: "Subscribe using calendar URL",
+          description:
+            "Copy a private HTTPS feed for Apple Calendar, Outlook, Google Calendar, or another compatible calendar client.",
+          accent: "Keeps published updates",
+        },
+        {
+          provider: "ics_download",
+          title: "Download one-time .ics",
+          description:
+            "Import the current publication once. The file itself will not receive future changes.",
+        },
+      ];
+}
+
+async function fetchGoogleStatus() {
+  try {
+    const response = await fetch("/api/calendar/google/status", {
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return false;
+    const body = (await response.json()) as { enabled?: boolean };
+    return body.enabled === true;
+  } catch {
+    return false;
+  }
 }
 
 async function copyText(value: string) {
@@ -316,10 +371,18 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const [shareStatus, setShareStatus] = useState("");
   const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 820);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
   const primaryCtaRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const onboardingCompletionTrackedRef = useRef(false);
+  const googleSearch = useMemo(
+    () => new URLSearchParams(window.location.search),
+    [],
+  );
+  const googleSuccess = googleSearch.get("calendar") === "google-success";
+  const googleFailed = googleSearch.get("calendar") === "google-failed";
+  const googleSubscriptionId = googleSearch.get("subscriptionId");
 
   useEffect(() => {
     let active = true;
@@ -340,6 +403,16 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       active = false;
     };
   }, [slug]);
+
+  useEffect(() => {
+    let active = true;
+    void fetchGoogleStatus().then((enabled) => {
+      if (active) setGoogleEnabled(enabled);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!timetable) return;
@@ -407,8 +480,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     [],
   );
   const calendarMethods = useMemo(
-    () => calendarMethodsForDevice(deviceKind),
-    [deviceKind],
+    () => calendarMethodsForDevice(deviceKind, googleEnabled),
+    [deviceKind, googleEnabled],
   );
   const publicUrl = timetable
     ? `${window.location.origin}/t/${encodeURIComponent(timetable.publicSlug)}`
@@ -519,6 +592,60 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   }, [shareSource, timetable]);
 
   useEffect(() => {
+    if (!googleSuccess || !timetable) return;
+
+    track("calendar_success_viewed", {
+      publicSlug: timetable.publicSlug,
+      provider: "google_api",
+      subscriptionId: googleSubscriptionId,
+    });
+
+    if (googleSubscriptionId) {
+      const eventKey = `calenderzw_google_connected_${googleSubscriptionId}`;
+      let alreadyTracked = false;
+      try {
+        alreadyTracked = window.sessionStorage.getItem(eventKey) === "1";
+        if (!alreadyTracked) window.sessionStorage.setItem(eventKey, "1");
+      } catch {
+        // Connection UX must remain functional when storage is unavailable.
+      }
+      if (!alreadyTracked) {
+        track("google_oauth_completed", {
+          publicSlug: timetable.publicSlug,
+          provider: "google_api",
+          subscriptionId: googleSubscriptionId,
+        });
+        track("google_calendar_created", {
+          publicSlug: timetable.publicSlug,
+          provider: "google_api",
+          subscriptionId: googleSubscriptionId,
+        });
+        track("google_calendar_sync_completed", {
+          publicSlug: timetable.publicSlug,
+          provider: "google_api",
+          subscriptionId: googleSubscriptionId,
+        });
+      }
+    }
+
+    const storage = window.sessionStorage;
+    if (!shouldAutoOpenGoogleCalendar(googleSubscriptionId, storage)) return;
+    const timer = window.setTimeout(() => {
+      window.location.replace(GOOGLE_CALENDAR_HOME_URL);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [googleSuccess, googleSubscriptionId, timetable]);
+
+  useEffect(() => {
+    if (!googleFailed || !timetable) return;
+    track("google_oauth_failed", {
+      publicSlug: timetable.publicSlug,
+      provider: "google_api",
+      reason: "callback",
+    });
+  }, [googleFailed, timetable]);
+
+  useEffect(() => {
     if (
       !dialogOpen ||
       !timetable ||
@@ -615,6 +742,10 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       publicSlug: timetable.publicSlug,
       provider,
     });
+    track("calendar_provider_selected", {
+      publicSlug: timetable.publicSlug,
+      provider,
+    });
     track("onboarding_step_completed", {
       step: "provider",
       publicSlug: timetable.publicSlug,
@@ -660,6 +791,25 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
         reminderPreset,
         subscriptionId: response.subscriptionId,
       });
+      if (provider === "google_api") {
+        if (!response.googleConnectUrl) {
+          throw new Error(
+            "Google Calendar connection is unavailable right now.",
+          );
+        }
+        rememberGoogleCalendarReturnSlug(
+          timetable.publicSlug,
+          window.localStorage,
+        );
+        track("google_oauth_started", {
+          publicSlug: timetable.publicSlug,
+          provider: "google_api",
+          subscriptionId: response.subscriptionId,
+          reminderPreset,
+        });
+        window.location.assign(response.googleConnectUrl);
+        return;
+      }
       if (provider === "ics_download" && response.downloadUrl) {
         track("ics_download_started", { publicSlug: timetable.publicSlug });
         triggerCalendarDownload(response.downloadUrl);
@@ -667,6 +817,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       }
       setOnboardingStep("provider_result");
     } catch (error) {
+      if (provider === "google_api") {
+        track("google_oauth_failed", {
+          publicSlug: timetable.publicSlug,
+          provider: "google_api",
+          reason: "prepare",
+        });
+      }
       setCalendarError(
         error instanceof Error
           ? error.message
@@ -920,14 +1077,22 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               method.provider ? (
                 <button
                   type="button"
-                  className="pt-method"
+                  className={`pt-method${method.provider === "google_api" ? " pt-method-google-direct" : ""}`}
                   key={method.title}
                   disabled={calendarBusy !== null}
                   onClick={() => selectProvider(method.provider!)}
                 >
-                  <span className="pt-method-icon">
+                  <span
+                    className={`pt-method-icon${
+                      method.provider === "google_api"
+                        ? " pt-method-google-icon"
+                        : ""
+                    }`}
+                  >
                     {method.provider === "ics_download" ? (
                       <Download size={18} aria-hidden="true" />
+                    ) : method.provider === "google_api" ? (
+                      <CalendarCheck size={18} aria-hidden="true" />
                     ) : (
                       <Link2 size={18} aria-hidden="true" />
                     )}
@@ -964,7 +1129,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
       return (
         <div className="pt-contact-step">
           <h3>
-            Want us to be able to reach you about important timetable changes?
+            {selectedProvider === "google_api"
+              ? "Connect Google Calendar"
+              : "Want us to be able to reach you about important timetable changes?"}
           </h3>
           <div className="pt-phone-grid">
             <label>
@@ -995,8 +1162,9 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             </label>
           </div>
           <p className="pt-helper">
-            This is optional. Your private calendar subscription works even if
-            you skip this.
+            {selectedProvider === "google_api"
+              ? "Phone number is optional. Add it only if you want direct timetable alerts; no CalenderZW account is created."
+              : "This is optional. Your private calendar subscription works even if you skip this."}
           </p>
           {calendarError ? (
             <p className="pt-error" role="alert">
@@ -1009,14 +1177,18 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               className="pt-button pt-button-primary"
               onClick={saveContactAndContinue}
             >
-              Save contact & continue
+              {selectedProvider === "google_api"
+                ? "Save phone & continue to Google"
+                : "Save contact & continue"}
             </button>
             <button
               type="button"
               className="pt-button pt-button-secondary"
               onClick={skipContactAndContinue}
             >
-              Skip for now
+              {selectedProvider === "google_api"
+                ? "Continue to Google without phone"
+                : "Skip for now"}
             </button>
           </div>
         </div>
@@ -1364,7 +1536,30 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 <Share2 size={18} aria-hidden="true" />
                 Share with classmates
               </button>
+              <PersonalTimetablePreview slug={slug} timetable={timetable} />
+              <GoogleCalendarDisconnectEntry
+                connected={googleSuccess}
+                subscriptionId={googleSubscriptionId}
+              />
             </div>
+            {googleSuccess ? (
+              <div className="pt-google-connected-note" role="status">
+                <div>
+                  <strong>Google Calendar connected</strong>
+                  <small>
+                    Future approved CalenderZW timetable updates can sync to the
+                    same Google calendar.
+                  </small>
+                </div>
+                <a href={GOOGLE_CALENDAR_HOME_URL}>Open Google Calendar</a>
+              </div>
+            ) : null}
+            {googleFailed ? (
+              <div className="pt-google-failed-note" role="alert">
+                Google Calendar was not connected. Retry through Subscribe to
+                calendar.
+              </div>
+            ) : null}
             <ChangeAlertsControl publicSlug={timetable.publicSlug} />
             <p className="pt-helper">
               No account needed. Subscriptions follow future CalenderZW
