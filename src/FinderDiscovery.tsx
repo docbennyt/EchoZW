@@ -5,8 +5,6 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  Grid2X2,
-  List,
   Search,
   SlidersHorizontal,
   X,
@@ -18,14 +16,6 @@ import {
 } from "./api/publicDiscovery";
 import { chooseAcademicPeriod } from "./domain/finderPeriodSelection";
 
-const SORT_OPTIONS = [
-  "Recently updated",
-  "Institution A–Z",
-  "Programme A–Z",
-] as const;
-
-type SortOption = (typeof SORT_OPTIONS)[number];
-type ViewMode = "grid" | "list";
 type FinderStatus = "loading" | "ready" | "error";
 
 function unique(values: string[]) {
@@ -55,12 +45,12 @@ function useDesktopDirectory() {
   const [isDesktop, setIsDesktop] = useState(
     () =>
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(min-width: 900px)").matches,
+      window.matchMedia("(min-width: 1024px)").matches,
   );
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(min-width: 900px)");
+    const media = window.matchMedia("(min-width: 1024px)");
     const update = () => setIsDesktop(media.matches);
     update();
     media.addEventListener?.("change", update);
@@ -372,15 +362,12 @@ function TimetableThumbnail() {
 
 function TimetableCard({
   timetable,
-  viewMode = "grid",
 }: {
   timetable: PublishedTimetableSummary;
-  viewMode?: ViewMode;
 }) {
   return (
     <article
       className="czw-discovery-card"
-      data-view={viewMode}
       data-institution={timetable.institutionName}
     >
       <TimetableThumbnail />
@@ -412,23 +399,22 @@ function TimetableCard({
   );
 }
 
-function QuickFilterButton({
+function ActiveFilterChip({
   label,
-  active,
-  onClick,
+  onClear,
 }: {
   label: string;
-  active: boolean;
-  onClick: () => void;
+  onClear: () => void;
 }) {
   return (
     <Button
       type="button"
-      className="czw-directory-chip"
-      aria-pressed={active}
-      onClick={onClick}
+      className="czw-active-filter-chip"
+      aria-label={`Remove ${label} filter`}
+      onClick={onClear}
     >
-      {label}
+      <span>{label}</span>
+      <X size={13} aria-hidden="true" />
     </Button>
   );
 }
@@ -445,8 +431,6 @@ function DesktopDirectory({
   const [browseClass, setBrowseClass] = useState<string | null>(null);
   const [browsePeriod, setBrowsePeriod] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortOption>("Recently updated");
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   const institutions = useMemo(
     () => unique(timetables.map((item) => item.institutionName)),
@@ -496,65 +480,47 @@ function DesktopDirectory({
 
   const filteredTimetables = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    const filtered = timetables.filter((item) => {
-      if (browseInstitution && item.institutionName !== browseInstitution) {
-        return false;
-      }
-      if (browseProgramme && item.programmeName !== browseProgramme) {
-        return false;
-      }
-      if (browseClass && item.classGroupLabel !== browseClass) return false;
-      if (browsePeriod && item.academicPeriodName !== browsePeriod)
-        return false;
-      if (!normalizedQuery) return true;
-      return [
-        item.institutionName,
-        item.programmeName,
-        item.classGroupLabel,
-        item.academicPeriodName,
-      ]
-        .join(" ")
-        .toLocaleLowerCase()
-        .includes(normalizedQuery);
-    });
-
-    return [...filtered].sort((left, right) => {
-      if (sortBy === "Institution A–Z") {
-        return (
-          left.institutionName.localeCompare(right.institutionName) ||
-          left.programmeName.localeCompare(right.programmeName) ||
-          left.classGroupLabel.localeCompare(right.classGroupLabel)
-        );
-      }
-      if (sortBy === "Programme A–Z") {
-        return (
-          left.programmeName.localeCompare(right.programmeName) ||
-          left.institutionName.localeCompare(right.institutionName) ||
-          left.classGroupLabel.localeCompare(right.classGroupLabel)
-        );
-      }
-      return (
-        new Date(right.lastUpdated).getTime() -
-        new Date(left.lastUpdated).getTime()
+    return timetables
+      .filter((item) => {
+        if (browseInstitution && item.institutionName !== browseInstitution) {
+          return false;
+        }
+        if (browseProgramme && item.programmeName !== browseProgramme) {
+          return false;
+        }
+        if (browseClass && item.classGroupLabel !== browseClass) return false;
+        if (browsePeriod && item.academicPeriodName !== browsePeriod) {
+          return false;
+        }
+        if (!normalizedQuery) return true;
+        return [
+          item.institutionName,
+          item.programmeName,
+          item.classGroupLabel,
+          item.academicPeriodName,
+        ]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(normalizedQuery);
+      })
+      .sort(
+        (left, right) =>
+          new Date(right.lastUpdated).getTime() -
+          new Date(left.lastUpdated).getTime(),
       );
-    });
   }, [
     browseClass,
     browseInstitution,
     browsePeriod,
     browseProgramme,
     query,
-    sortBy,
     timetables,
   ]);
 
-  const hasBrowseFilters = Boolean(
-    browseInstitution ||
-    browseProgramme ||
-    browseClass ||
-    browsePeriod ||
-    query,
+  const hasFacetFilters = Boolean(
+    browseInstitution || browseProgramme || browseClass || browsePeriod,
   );
+  const hasBrowseFilters = Boolean(hasFacetFilters || query.trim());
 
   function setDirectoryInstitution(value: string | null) {
     setBrowseInstitution(value);
@@ -569,99 +535,28 @@ function DesktopDirectory({
     setBrowsePeriod(null);
   }
 
-  function clearDirectoryFilters() {
+  function setDirectoryClass(value: string | null) {
+    setBrowseClass(value);
+    setBrowsePeriod(null);
+  }
+
+  function clearFacetFilters() {
     setBrowseInstitution(null);
     setBrowseProgramme(null);
     setBrowseClass(null);
     setBrowsePeriod(null);
+  }
+
+  function clearDirectoryFilters() {
+    clearFacetFilters();
     setQuery("");
   }
 
   return (
     <section
-      className="czw-directory-desktop czw-directory-secondary"
-      data-priority="secondary"
-      aria-labelledby="directory-title"
+      className="czw-directory-desktop"
+      aria-label="Published timetable directory"
     >
-      <div className="czw-directory-intro">
-        <span className="czw-kicker">Browse published timetables</span>
-        <h2 id="directory-title">Directory</h2>
-        <p>
-          Use this only when you want to explore. The exact class finder above
-          remains the fastest route to your timetable.
-        </p>
-      </div>
-
-      <div className="czw-directory-search-row">
-        <div className="czw-directory-search-box">
-          <Search size={18} aria-hidden="true" />
-          <Input
-            aria-label="Search published timetables"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by university, programme, class or academic period"
-          />
-          {query ? (
-            <Button
-              type="button"
-              className="czw-directory-clear-search"
-              aria-label="Clear search"
-              onClick={() => setQuery("")}
-            >
-              <X size={16} aria-hidden="true" />
-            </Button>
-          ) : null}
-        </div>
-        <div className="czw-directory-search-trust">
-          <Check size={14} aria-hidden="true" />
-          Published by CalenderZW
-        </div>
-      </div>
-
-      <nav
-        className="czw-directory-category-row"
-        aria-label="Browse by institution"
-      >
-        <strong>Institutions</strong>
-        <div>
-          <QuickFilterButton
-            label="All institutions"
-            active={!browseInstitution}
-            onClick={() => setDirectoryInstitution(null)}
-          />
-          {institutions.map((item) => (
-            <QuickFilterButton
-              key={item}
-              label={item}
-              active={browseInstitution === item}
-              onClick={() => setDirectoryInstitution(item)}
-            />
-          ))}
-        </div>
-      </nav>
-
-      <nav
-        className="czw-directory-category-row czw-directory-category-secondary"
-        aria-label="Browse by programme"
-      >
-        <strong>Programmes</strong>
-        <div>
-          <QuickFilterButton
-            label="All programmes"
-            active={!browseProgramme}
-            onClick={() => setDirectoryProgramme(null)}
-          />
-          {browseProgrammes.map((item) => (
-            <QuickFilterButton
-              key={item}
-              label={item}
-              active={browseProgramme === item}
-              onClick={() => setDirectoryProgramme(item)}
-            />
-          ))}
-        </div>
-      </nav>
-
       <div className="czw-directory-layout">
         <aside className="czw-directory-sidebar" aria-label="Timetable filters">
           <div className="czw-directory-sidebar-heading">
@@ -669,13 +564,13 @@ function DesktopDirectory({
               <SlidersHorizontal size={16} aria-hidden="true" />
               Filter & refine
             </span>
-            {hasBrowseFilters ? (
+            {hasFacetFilters ? (
               <Button
                 type="button"
                 className="czw-directory-reset"
-                onClick={clearDirectoryFilters}
+                onClick={clearFacetFilters}
               >
-                Clear all
+                Clear filters
               </Button>
             ) : null}
           </div>
@@ -700,10 +595,7 @@ function DesktopDirectory({
               placeholder="All classes"
               value={browseClass}
               values={browseClasses}
-              onValueChange={(value) => {
-                setBrowseClass(value);
-                setBrowsePeriod(null);
-              }}
+              onValueChange={setDirectoryClass}
             />
             <SelectField
               label="Academic period"
@@ -713,77 +605,92 @@ function DesktopDirectory({
               onValueChange={setBrowsePeriod}
             />
           </div>
-
-          <div className="czw-directory-published-only">
-            <span className="czw-published-pill">
-              <Check size={13} aria-hidden="true" /> Published only
-            </span>
-            <p>
-              Results come from current CalenderZW publication state. Drafts
-              never appear here.
-            </p>
-          </div>
         </aside>
 
         <div className="czw-directory-results">
+          <div className="czw-directory-search-row">
+            <div className="czw-directory-search-box">
+              <Search size={18} aria-hidden="true" />
+              <Input
+                aria-label="Search published timetables"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by university, programme, class or academic period"
+              />
+              {query ? (
+                <Button
+                  type="button"
+                  className="czw-directory-clear-search"
+                  aria-label="Clear search"
+                  onClick={() => setQuery("")}
+                >
+                  <X size={16} aria-hidden="true" />
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
           <div className="czw-directory-toolbar">
-            <div>
-              <span className="czw-kicker">Published directory</span>
-              <h3>Published timetables</h3>
+            <div className="czw-directory-result-summary">
+              <h2>
+                {filteredTimetables.length} published{" "}
+                {filteredTimetables.length === 1 ? "timetable" : "timetables"}
+              </h2>
               <p>
-                Showing {filteredTimetables.length} of {timetables.length}
-                {timetables.length === 1 ? " timetable" : " timetables"}
+                Showing matching published class timetables from CalenderZW.
               </p>
             </div>
-            <div className="czw-directory-toolbar-actions">
-              <div className="czw-directory-sort">
-                <SelectField
-                  label="Sort"
-                  placeholder="Recently updated"
-                  value={sortBy}
-                  values={SORT_OPTIONS}
-                  onValueChange={(value) =>
-                    setSortBy(
-                      (value as SortOption | null) ?? "Recently updated",
-                    )
-                  }
+
+            <div
+              className="czw-directory-active-filters"
+              aria-label="Active timetable filters"
+            >
+              {browseInstitution ? (
+                <ActiveFilterChip
+                  label={browseInstitution}
+                  onClear={() => setDirectoryInstitution(null)}
                 />
-              </div>
-              <div
-                className="czw-directory-view-toggle"
-                aria-label="Result view"
-              >
+              ) : null}
+              {browseProgramme ? (
+                <ActiveFilterChip
+                  label={browseProgramme}
+                  onClear={() => setDirectoryProgramme(null)}
+                />
+              ) : null}
+              {browseClass ? (
+                <ActiveFilterChip
+                  label={`Class ${browseClass}`}
+                  onClear={() => setDirectoryClass(null)}
+                />
+              ) : null}
+              {browsePeriod ? (
+                <ActiveFilterChip
+                  label={browsePeriod}
+                  onClear={() => setBrowsePeriod(null)}
+                />
+              ) : null}
+              {hasBrowseFilters ? (
                 <Button
                   type="button"
-                  aria-label="Grid view"
-                  aria-pressed={viewMode === "grid"}
-                  onClick={() => setViewMode("grid")}
+                  className="czw-directory-clear-all"
+                  onClick={clearDirectoryFilters}
                 >
-                  <Grid2X2 size={16} aria-hidden="true" />
+                  Clear all
                 </Button>
-                <Button
-                  type="button"
-                  aria-label="List view"
-                  aria-pressed={viewMode === "list"}
-                  onClick={() => setViewMode("list")}
-                >
-                  <List size={17} aria-hidden="true" />
-                </Button>
-              </div>
+              ) : (
+                <span className="czw-directory-all-results">
+                  All published timetables
+                </span>
+              )}
             </div>
           </div>
 
           {filteredTimetables.length > 0 ? (
-            <div
-              className="czw-discovery-grid"
-              data-view={viewMode}
-              aria-live="polite"
-            >
+            <div className="czw-discovery-grid" aria-live="polite">
               {filteredTimetables.map((timetable) => (
                 <TimetableCard
                   key={timetable.publicSlug}
                   timetable={timetable}
-                  viewMode={viewMode}
                 />
               ))}
             </div>
@@ -832,16 +739,22 @@ export function FinderDiscovery() {
     };
   }, []);
 
+  if (isDesktop) {
+    return (
+      <div className="czw-finder-experience czw-directory-experience">
+        <FinderLoadState status={status} timetableCount={timetables.length} />
+        {status === "ready" && timetables.length > 0 ? (
+          <DesktopDirectory timetables={timetables} />
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`czw-finder-experience${isDesktop ? " czw-directory-experience" : ""}`}
-    >
+    <div className="czw-finder-experience">
       <div className="czw-finder-primary" data-priority="primary">
         <ExactFinder timetables={timetables} status={status} />
       </div>
-      {isDesktop && status === "ready" && timetables.length > 0 ? (
-        <DesktopDirectory timetables={timetables} />
-      ) : null}
     </div>
   );
 }

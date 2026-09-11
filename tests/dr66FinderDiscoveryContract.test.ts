@@ -21,7 +21,7 @@ describe("DR-66 finder discovery contract", () => {
     expect(publicApi).toContain("timezone: timetable.institutionTimezone");
   });
 
-  it("removes mobile slug/link and catalogue rails from the finder task", () => {
+  it("keeps mobile free of slug utilities and catalogue rails", () => {
     expect(finder).not.toContain("SharedLinkForm");
     expect(finder).not.toContain("Timetable link or slug");
     expect(finder).not.toContain("or open a shared class link");
@@ -29,17 +29,27 @@ describe("DR-66 finder discovery contract", () => {
     expect(finder).not.toContain("czw-available-section");
   });
 
-  it("uses the post-merge responsive contract: mobile exact finder, desktop directory", () => {
+  it("uses the desktop marketplace contract: sticky facets plus one results workspace", () => {
+    expect(finder).toContain('window.matchMedia("(min-width: 1024px)")');
+    expect(finder).toContain("function ActiveFilterChip");
+    expect(finder).toContain("clearFacetFilters");
+    expect(finder).toContain("clearDirectoryFilters");
+    expect(finder).toContain("czw-directory-active-filters");
+    expect(finder).not.toContain("QuickFilterButton");
+    expect(finder).not.toContain("SORT_OPTIONS");
+    expect(finder).not.toContain("czw-directory-view-toggle");
+
     expect(responsiveUx).toContain("@media (max-width: 1023.98px)");
     expect(responsiveUx).toContain("@media (min-width: 1024px)");
-    expect(responsiveUx).toContain(".czw-finder-primary");
-    expect(responsiveUx).toContain("display: none !important");
-    expect(responsiveUx).toContain(".czw-directory-desktop");
     expect(responsiveUx).toContain(
-      "grid-template-columns: repeat(4, minmax(0, 1fr))",
+      "grid-template-columns: 260px minmax(0, 1fr)",
     );
-    expect(responsiveUx).toContain(".czw-directory-category-row");
-    expect(responsiveUx).toContain(".czw-directory-toolbar-actions");
+    expect(responsiveUx).toContain("position: sticky");
+    expect(responsiveUx).toContain(".czw-active-filter-chip");
+    expect(responsiveUx).toContain(".czw-finder-demand-prompt");
+    expect(responsiveUx).toContain(
+      "grid-template-columns: repeat(3, minmax(0, 1fr))",
+    );
   });
 
   it("keeps the exact mobile task in the required field order", () => {

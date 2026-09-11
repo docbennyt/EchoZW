@@ -34,7 +34,7 @@ function setViewport(width: number) {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      matches: query === "(min-width: 900px)" ? width >= 900 : false,
+      matches: query === "(min-width: 1024px)" ? width >= 1024 : false,
       media: query,
       onchange: null,
       addListener: vi.fn(),
@@ -54,8 +54,8 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe("DR-66 FinderDiscovery responsive hierarchy", () => {
-  it.each([320, 360, 390])(
-    "keeps %ipx mobile focused on the exact finder only",
+  it.each([320, 360, 390, 900])(
+    "keeps %ipx focused on the exact finder only",
     async (width) => {
       setViewport(width);
       render(<FinderDiscovery />);
@@ -65,30 +65,30 @@ describe("DR-66 FinderDiscovery responsive hierarchy", () => {
       await waitFor(() =>
         expect(mocks.fetchPublishedTimetables).toHaveBeenCalledTimes(1),
       );
-      expect(screen.queryByRole("heading", { name: "Directory" })).toBeNull();
+      expect(screen.queryByLabelText("Search published timetables")).toBeNull();
       expect(screen.queryByText(/Timetable link or slug/i)).toBeNull();
-      expect(
-        screen.queryByRole("heading", { name: "Published timetables" }),
-      ).toBeNull();
     },
   );
 
-  it.each([1366, 1440])(
-    "keeps the exact finder above the subordinate directory at %ipx desktop",
+  it.each([1366, 1440, 1920])(
+    "uses a desktop filter rail and results workspace at %ipx",
     async (width) => {
       setViewport(width);
       render(<FinderDiscovery />);
-      const exact = await screen.findByRole("heading", {
-        name: "Find your exact class",
-      });
-      const directory = await screen.findByRole("heading", {
-        name: "Directory",
-      });
+
       expect(
-        exact.compareDocumentPosition(directory) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ).not.toBe(0);
-      expect(screen.queryByText(/Timetable link or slug/i)).toBeNull();
+        await screen.findByLabelText("Search published timetables"),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("heading", { name: "Find your exact class" }),
+      ).toBeNull();
+      expect(screen.getByText("Filter & refine")).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "1 published timetable" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("BTech Computer Science")).toBeInTheDocument();
+      expect(screen.getByText("All published timetables")).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Directory" })).toBeNull();
     },
   );
 });
