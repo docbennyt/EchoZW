@@ -13,7 +13,10 @@ const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as {
 const dockerfile = readFileSync("Dockerfile", "utf8");
 const environmentTemplate = readFileSync(".env.example", "utf8");
 const productionServer = readFileSync("server/productionServer.ts", "utf8");
-const runtimePublicConfig = readFileSync("server/runtimePublicConfig.ts", "utf8");
+const runtimePublicConfig = readFileSync(
+  "server/runtimePublicConfig.ts",
+  "utf8",
+);
 const deploymentDocs = readFileSync(
   "docs/DEPLOYMENT_VERCEL_RAILWAY.md",
   "utf8",

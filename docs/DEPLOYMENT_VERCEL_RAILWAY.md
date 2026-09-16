@@ -275,9 +275,11 @@ not replace the public-origin smoke test.
 ## Rollback
 
 Frontend-only regression:
+
 - restore/redeploy the prior known-good Vercel deployment.
 
 Backend-only regression:
+
 - restore/redeploy the prior known-good Railway deployment.
 
 Do not roll back or mutate Supabase schema merely to roll back a frontend

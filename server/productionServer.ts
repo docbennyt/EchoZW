@@ -48,7 +48,8 @@ const distDir = resolve(serverDir, "../../dist");
 const releaseSha = releaseShaFromEnv(process.env);
 
 function deploymentPlatform(env: NodeJS.ProcessEnv) {
-  if (env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_SERVICE_NAME) return "railway";
+  if (env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_SERVICE_NAME)
+    return "railway";
   if (env.VERCEL) return "vercel";
   if (env.RENDER) return "render";
   return "unknown";
