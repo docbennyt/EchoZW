@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
+    "start": "node dist-server/server/productionServer.js",
     "preview": "node dist-server/server/productionServer.js",
     "deploy:check": "node scripts/verify-production-readiness.mjs",
     "source:parse": "node --env-file-if-exists=.env.local dist-server/server/sourceSnapshotParseCli.js",
