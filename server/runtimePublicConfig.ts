@@ -14,6 +14,17 @@ function publicOrigin(env: NodeJS.ProcessEnv) {
   return (env.PUBLIC_APP_URL ?? env.APP_ORIGIN ?? "").replace(/\/$/, "");
 }
 
+export function releaseShaFromEnv(env: NodeJS.ProcessEnv) {
+  return (
+    env.RAILWAY_GIT_COMMIT_SHA ??
+    env.RENDER_GIT_COMMIT ??
+    env.SOURCE_VERSION ??
+    env.VERCEL_GIT_COMMIT_SHA ??
+    env.GITHUB_SHA ??
+    null
+  );
+}
+
 export function buildRuntimePublicConfig(
   env: ServerSupabaseEnv & NodeJS.ProcessEnv = process.env,
 ): RuntimePublicConfig {
@@ -22,12 +33,7 @@ export function buildRuntimePublicConfig(
     supabaseUrl: supabase.url,
     supabasePublishableKey: supabase.publishableKey,
     publicAppUrl: publicOrigin(env),
-    releaseSha:
-      env.RENDER_GIT_COMMIT ??
-      env.SOURCE_VERSION ??
-      env.VERCEL_GIT_COMMIT_SHA ??
-      env.GITHUB_SHA ??
-      null,
+    releaseSha: releaseShaFromEnv(env),
   };
 }
 
