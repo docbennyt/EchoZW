@@ -23,63 +23,63 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://api.calender.aido.co.zw/api/:path*"
+      "destination": "https://calender.up.railway.app/api/:path*"
     },
     {
       "source": "/runtime-config.js",
-      "destination": "https://api.calender.aido.co.zw/runtime-config.js"
+      "destination": "https://calender.up.railway.app/runtime-config.js"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://api.calender.aido.co.zw/sitemap.xml"
+      "destination": "https://calender.up.railway.app/sitemap.xml"
     },
     {
       "source": "/t/:path*",
-      "destination": "https://api.calender.aido.co.zw/t/:path*"
+      "destination": "https://calender.up.railway.app/t/:path*"
     },
     {
       "source": "/find",
-      "destination": "https://api.calender.aido.co.zw/find"
+      "destination": "https://calender.up.railway.app/find"
     },
     {
       "source": "/request",
-      "destination": "https://api.calender.aido.co.zw/request"
+      "destination": "https://calender.up.railway.app/request"
     },
     {
       "source": "/feedback",
-      "destination": "https://api.calender.aido.co.zw/feedback"
+      "destination": "https://calender.up.railway.app/feedback"
     },
     {
       "source": "/support",
-      "destination": "https://api.calender.aido.co.zw/support"
+      "destination": "https://calender.up.railway.app/support"
     },
     {
       "source": "/privacy",
-      "destination": "https://api.calender.aido.co.zw/privacy"
+      "destination": "https://calender.up.railway.app/privacy"
     },
     {
       "source": "/terms",
-      "destination": "https://api.calender.aido.co.zw/terms"
+      "destination": "https://calender.up.railway.app/terms"
     },
     {
       "source": "/data-deletion",
-      "destination": "https://api.calender.aido.co.zw/data-deletion"
+      "destination": "https://calender.up.railway.app/data-deletion"
     },
     {
       "source": "/account/:path*",
-      "destination": "https://api.calender.aido.co.zw/account/:path*"
+      "destination": "https://calender.up.railway.app/account/:path*"
     },
     {
       "source": "/auth/:path*",
-      "destination": "https://api.calender.aido.co.zw/auth/:path*"
+      "destination": "https://calender.up.railway.app/auth/:path*"
     },
     {
       "source": "/admin",
-      "destination": "https://api.calender.aido.co.zw/admin"
+      "destination": "https://calender.up.railway.app/admin"
     },
     {
       "source": "/admin/:path*",
-      "destination": "https://api.calender.aido.co.zw/admin/:path*"
+      "destination": "https://calender.up.railway.app/admin/:path*"
     },
     {
       "source": "/:path*",
