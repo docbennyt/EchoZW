@@ -18,3 +18,17 @@ jobs:
       - run: npm run format:check
       - run: npm run test
       - run: npm run build
+      - name: Smoke canonical production start command
+        run: |
+          NODE_ENV=development PORT=43123 npm start > /tmp/calenderzw-start.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:43123/api/health/live > /tmp/calenderzw-health.json; then
+              cat /tmp/calenderzw-health.json
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/calenderzw-start.log
+          exit 1
