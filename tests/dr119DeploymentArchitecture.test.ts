@@ -22,6 +22,8 @@ const deploymentDocs = readFileSync(
   "utf8",
 );
 
+const railwayOrigin = "https://calender.up.railway.app";
+
 describe("DR-119 Vercel + Railway deployment contract", () => {
   it("defines one canonical compiled Node production start command", () => {
     expect(packageJson.scripts.start).toBe(
@@ -32,25 +34,20 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(dockerfile).not.toContain("npm run dev");
   });
 
-  it("routes backend traffic before the Vercel SPA fallback", () => {
+  it("routes backend traffic to the live Railway origin before the Vercel SPA fallback", () => {
     expect(vercel.buildCommand).toBe("npm run build");
     expect(vercel.outputDirectory).toBe("dist");
 
     const rewrites = new Map(
       vercel.rewrites.map((rewrite) => [rewrite.source, rewrite.destination]),
     );
-    expect(rewrites.get("/api/:path*")).toBe(
-      "https://api.calender.aido.co.zw/api/:path*",
-    );
+    expect(rewrites.get("/api/:path*")).toBe(`${railwayOrigin}/api/:path*`);
     expect(rewrites.get("/runtime-config.js")).toBe(
-      "https://api.calender.aido.co.zw/runtime-config.js",
+      `${railwayOrigin}/runtime-config.js`,
     );
-    expect(rewrites.get("/sitemap.xml")).toBe(
-      "https://api.calender.aido.co.zw/sitemap.xml",
-    );
-    expect(rewrites.get("/t/:path*")).toBe(
-      "https://api.calender.aido.co.zw/t/:path*",
-    );
+    expect(rewrites.get("/sitemap.xml")).toBe(`${railwayOrigin}/sitemap.xml`);
+    expect(rewrites.get("/t/:path*")).toBe(`${railwayOrigin}/t/:path*`);
+    expect(rewrites.get("/find")).toBe(`${railwayOrigin}/find`);
     expect(vercel.rewrites.at(-1)).toEqual({
       source: "/:path*",
       destination: "/index.html",
