@@ -9,7 +9,8 @@ EchoZW Calendar is an EchoZW family app by [aiDo](https://aido.co.zw). It helps 
 - Zod validation
 - Vitest and Testing Library
 - CSS design tokens
-- Mocked provider interfaces for PesePay and future AI extraction
+- Supabase database/auth
+- Node production API
 
 ## Local Setup
 
@@ -24,48 +25,56 @@ Google and Apple Calendar subscriptions need a public HTTPS app URL. Use the loc
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` and fill values as needed:
+Copy `.env.example` to `.env.local` for local work. The template is grouped by deployment boundary so server secrets are not accidentally exposed in the Vite bundle.
 
-- `VITE_APP_BASE_URL`
-- `VITE_SUPPORT_EMAIL`
-- `VITE_ENABLE_GOOGLE_CALENDAR_SYNC`
-- `VITE_ENABLE_PESEPAY_CHECKOUT`
-- `VITE_ENABLE_PREMIUM_FEATURES`
-- `VITE_ENABLE_PRIVATE_TIMETABLES`
-- `VITE_ENABLE_DOCUMENT_UPLOADS`
-- `VITE_ENABLE_AI_EXTRACTION`
-- `VITE_ENABLE_INSTITUTION_BRANDING`
-- `VITE_ENABLE_WEB_PUSH`
-- `VITE_ENABLE_WHATSAPP_NOTIFICATIONS`
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `PESEPAY_INTEGRATION_KEY`
-- `PESEPAY_ENCRYPTION_KEY`
-- `PESEPAY_WEBHOOK_SECRET`
-- `PESEPAY_RETURN_URL`
-- `PESEPAY_RESULT_URL`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_CLIENT_SECRET`
+Production responsibilities are split between:
+
+- Vercel: browser-safe `VITE_*` values and the public frontend.
+- Railway: `PUBLIC_APP_URL`, Supabase server credentials, legal production values, OAuth secrets and optional backend integrations.
+
+See [`docs/DEPLOYMENT_VERCEL_RAILWAY.md`](docs/DEPLOYMENT_VERCEL_RAILWAY.md) for the authoritative production variable names and topology.
 
 ## Commands
 
 ```bash
 npm run build
+npm start
 npm run test
 npm run lint
 npm run format:check
+npm run deploy:check -- --origin https://calender.aido.co.zw
 ```
+
+`npm start` is the canonical production server command and starts the compiled Node server from `dist-server/server/productionServer.js` after `npm run build`.
 
 ## Known Limitations
 
-- This Vite pilot no longer generates calendar files from demo timetable data in production paths. A production subscribed feed needs the server API to read published timetable rows from Supabase.
-- Supabase, Google Calendar, PesePay, Sentry, and PostHog are scaffolded or documented, not live-connected without credentials.
+- A production subscribed feed needs the server API to read published timetable rows from Supabase.
+- Provider integrations remain unavailable unless their required production credentials and feature flags are configured.
 - Fictional seed data remains for local development and tests only.
 
-## Deployment
+## Production Deployment
 
-1. Set `PUBLIC_APP_URL` and `VITE_PUBLIC_APP_URL` to the live HTTPS origin.
-2. Run `npm run build`.
-3. Run `npm run preview` or `node dist-server/server/productionServer.js` so the calendar API and `.ics` feed routes stay active.
-4. Mount persistent storage at `/data` or set `CALENDAR_STORE_PATH` to a writable persistent file.
-5. Set Google OAuth credentials when direct Google Calendar sync is enabled.
+CalenderZW now uses a split production topology:
+
+```text
+GitHub -> Vercel frontend (calender.aido.co.zw)
+             |
+             +-- same-origin /api/*, /runtime-config.js and /sitemap.xml
+             |   rewrites
+             v
+         Railway backend (api.calender.aido.co.zw)
+             |
+             v
+          Supabase
+```
+
+Cloudflare manages DNS. Resend is configured externally as Supabase Auth SMTP.
+
+The repository `Dockerfile` is the Railway container contract. It builds the application and starts it through `npm start`; Railway supplies `PORT`, which the Node server already reads. Do not replace the production start command with `npm run dev` or Vite preview.
+
+`vercel.json` is the Vercel routing contract. Backend rewrites precede the SPA fallback, and server-owned timetable/SEO HTML routes continue through Railway so route-specific metadata is not lost during the hosting split.
+
+Production legal validation and Supabase authorization validation remain fail-fast. Missing values are deployment configuration errors, not reasons to weaken the checks.
+
+For exact Vercel, Railway, Cloudflare, Supabase, OAuth, smoke-test and rollback instructions, read [`docs/DEPLOYMENT_VERCEL_RAILWAY.md`](docs/DEPLOYMENT_VERCEL_RAILWAY.md).
