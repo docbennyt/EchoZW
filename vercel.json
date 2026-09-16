@@ -1,0 +1,109 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/dashboard",
+      "destination": "/admin",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/admin/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/sync/:slug",
+      "destination": "/t/:slug",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.calender.aido.co.zw/api/:path*"
+    },
+    {
+      "source": "/runtime-config.js",
+      "destination": "https://api.calender.aido.co.zw/runtime-config.js"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://api.calender.aido.co.zw/sitemap.xml"
+    },
+    {
+      "source": "/t/:path*",
+      "destination": "https://api.calender.aido.co.zw/t/:path*"
+    },
+    {
+      "source": "/find",
+      "destination": "https://api.calender.aido.co.zw/find"
+    },
+    {
+      "source": "/request",
+      "destination": "https://api.calender.aido.co.zw/request"
+    },
+    {
+      "source": "/feedback",
+      "destination": "https://api.calender.aido.co.zw/feedback"
+    },
+    {
+      "source": "/support",
+      "destination": "https://api.calender.aido.co.zw/support"
+    },
+    {
+      "source": "/privacy",
+      "destination": "https://api.calender.aido.co.zw/privacy"
+    },
+    {
+      "source": "/terms",
+      "destination": "https://api.calender.aido.co.zw/terms"
+    },
+    {
+      "source": "/data-deletion",
+      "destination": "https://api.calender.aido.co.zw/data-deletion"
+    },
+    {
+      "source": "/account/:path*",
+      "destination": "https://api.calender.aido.co.zw/account/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://api.calender.aido.co.zw/auth/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "https://api.calender.aido.co.zw/admin"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://api.calender.aido.co.zw/admin/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/runtime-config.js",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    }
+  ]
+}
