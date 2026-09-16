@@ -30,6 +30,7 @@ import { handlePushNotificationRequest } from "./pushNotificationApi.js";
 import { startPushNotificationWorker } from "./pushNotificationWorker.js";
 import {
   buildRuntimePublicConfig,
+  releaseShaFromEnv,
   runtimeConfigResponseHeaders,
   serializeRuntimeConfigScript,
 } from "./runtimePublicConfig.js";
@@ -44,67 +45,85 @@ import { handleCalendarRequest } from "./viteCalendarPlugin.js";
 const port = Number(process.env.PORT ?? 80);
 const serverDir = fileURLToPath(new URL(".", import.meta.url));
 const distDir = resolve(serverDir, "../../dist");
-const releaseSha =
-  process.env.RENDER_GIT_COMMIT ??
-  process.env.SOURCE_VERSION ??
-  process.env.VERCEL_GIT_COMMIT_SHA ??
-  process.env.GITHUB_SHA ??
-  null;
+const releaseSha = releaseShaFromEnv(process.env);
+
+function deploymentPlatform(env: NodeJS.ProcessEnv) {
+  if (env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_SERVICE_NAME) return "railway";
+  if (env.VERCEL) return "vercel";
+  if (env.RENDER) return "render";
+  return "unknown";
+}
 
 if (process.env.NODE_ENV === "production") {
-  validateLegalProductionConfig(process.env);
-  validateSupabaseProductionConfig(process.env);
-  const googleStatus = validateGoogleOAuthProductionConfig(process.env);
-  const googleStartup = getGoogleOAuthStartupStatus(process.env);
-  const supabase = validateSupabaseProductionConfig(process.env);
-  void checkSchemaCompatibility(process.env).then((schemaCompatibility) => {
-    console.info(
-      JSON.stringify(
-        sanitizeForLog({
-          event: "app.startup",
-          app: "CalenderZW",
-          environment: process.env.NODE_ENV,
-          nodeVersion: process.version,
-          port,
-          publicOrigin: process.env.PUBLIC_APP_URL ?? null,
-          releaseSha,
-          supabase: {
-            projectHost: supabase.projectHost,
-            runtimeUrlConfigured: Boolean(process.env.SUPABASE_URL),
-            publishableKeyConfigured: Boolean(supabase.publishableKey),
-            privilegedKeyConfigured: Boolean(supabase.privilegedKey),
-            browserRuntimeConfigAvailable: Boolean(
-              supabase.url && supabase.publishableKey,
-            ),
-          },
-          google: {
-            enabled: googleStatus.enabled,
-            redirectUri: googleStartup.redirectUri,
-            clientIdSuffix: googleStartup.clientIdSuffix,
-          },
-          calendar: {
-            tokenHashSecretConfigured: Boolean(
-              process.env.CALENDAR_TOKEN_HASH_SECRET,
-            ),
-          },
-          sourceIngestion: {
-            enabled: Boolean(process.env.HIT_TIMETABLE_RELAY_SECRET),
-            configured: Boolean(process.env.HIT_TIMETABLE_RELAY_SECRET),
-          },
-          analytics: {
-            enabled: Boolean(process.env.ANALYTICS_ENABLED ?? true),
-            configured: Boolean(process.env.SUPABASE_URL),
-          },
-          schemaCompatibility: {
-            status: schemaCompatibility.status,
-            requiredCount: schemaCompatibility.requiredCount,
-            failureCount: schemaCompatibility.failures.length,
-            failures: schemaCompatibility.failures,
-          },
-        }),
-      ),
+  try {
+    validateLegalProductionConfig(process.env);
+    const supabase = validateSupabaseProductionConfig(process.env);
+    const googleStatus = validateGoogleOAuthProductionConfig(process.env);
+    const googleStartup = getGoogleOAuthStartupStatus(process.env);
+
+    void checkSchemaCompatibility(process.env).then((schemaCompatibility) => {
+      console.info(
+        JSON.stringify(
+          sanitizeForLog({
+            event: "app.startup",
+            app: "CalenderZW",
+            platform: deploymentPlatform(process.env),
+            environment: process.env.NODE_ENV,
+            nodeVersion: process.version,
+            port,
+            publicOrigin: process.env.PUBLIC_APP_URL ?? null,
+            releaseSha,
+            supabase: {
+              projectHost: supabase.projectHost,
+              runtimeUrlConfigured: Boolean(process.env.SUPABASE_URL),
+              publishableKeyConfigured: Boolean(supabase.publishableKey),
+              privilegedKeyConfigured: Boolean(supabase.privilegedKey),
+              browserRuntimeConfigAvailable: Boolean(
+                supabase.url && supabase.publishableKey,
+              ),
+            },
+            google: {
+              enabled: googleStatus.enabled,
+              redirectUri: googleStartup.redirectUri,
+              clientIdSuffix: googleStartup.clientIdSuffix,
+            },
+            calendar: {
+              tokenHashSecretConfigured: Boolean(
+                process.env.CALENDAR_TOKEN_HASH_SECRET,
+              ),
+            },
+            sourceIngestion: {
+              enabled: Boolean(process.env.HIT_TIMETABLE_RELAY_SECRET),
+              configured: Boolean(process.env.HIT_TIMETABLE_RELAY_SECRET),
+            },
+            analytics: {
+              enabled: Boolean(process.env.ANALYTICS_ENABLED ?? true),
+              configured: Boolean(process.env.SUPABASE_URL),
+            },
+            schemaCompatibility: {
+              status: schemaCompatibility.status,
+              requiredCount: schemaCompatibility.requiredCount,
+              failureCount: schemaCompatibility.failures.length,
+              failures: schemaCompatibility.failures,
+            },
+          }),
+        ),
+      );
+    });
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        event: "app.startup_config_error",
+        app: "CalenderZW",
+        platform: deploymentPlatform(process.env),
+        environment: process.env.NODE_ENV,
+        message: error instanceof Error ? error.message : String(error),
+        action:
+          "Set the required production environment variables on the backend deployment. Secret values are not logged.",
+      }),
     );
-  });
+    throw error;
+  }
 }
 
 const contentTypes: Record<string, string> = {
@@ -116,7 +135,7 @@ const contentTypes: Record<string, string> = {
   ".png": "image/png",
   ".svg": "image/svg+xml",
   ".txt": "text/plain; charset=utf-8",
-  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".webmanifest": "application/manifest+json",
   ".xml": "application/xml; charset=utf-8",
 };
 
@@ -325,6 +344,7 @@ server.listen(port, "0.0.0.0", () => {
       sanitizeForLog({
         event: "app.listening",
         app: "CalenderZW",
+        platform: deploymentPlatform(process.env),
         port,
         releaseSha,
       }),
