@@ -174,15 +174,21 @@ function headerScore(row: string[]) {
 }
 
 function detectTimetableTable(tables: string[][][]) {
-  let best: { index: number; score: number } | null = null;
-  tables.forEach((table, index) => {
-    const score = table
+  let bestIndex = -1;
+  let bestScore = -1;
+
+  for (let index = 0; index < tables.length; index += 1) {
+    const score = tables[index]
       .slice(0, 4)
       .reduce((max, row) => Math.max(max, headerScore(row)), 0);
-    if (score >= 3 && (!best || score > best.score)) best = { index, score };
-  });
-  if (!best) throw new Error("STATIC_DOCX_TIMETABLE_TABLE_NOT_FOUND");
-  return best.index;
+    if (score >= 3 && score > bestScore) {
+      bestIndex = index;
+      bestScore = score;
+    }
+  }
+
+  if (bestIndex < 0) throw new Error("STATIC_DOCX_TIMETABLE_TABLE_NOT_FOUND");
+  return bestIndex;
 }
 
 function courseReferenceHeaderIndex(table: string[][]) {
