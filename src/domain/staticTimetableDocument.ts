@@ -119,7 +119,9 @@ function compact(value: string) {
 }
 
 function normalizeCourseCode(value: string) {
-  return compact(value).replace(/\s+/g, " ").toUpperCase();
+  const collapsed = compact(value).replace(/\s+/g, "").toUpperCase();
+  const match = collapsed.match(/^([A-Z]{2,6})(\d{3,5})$/);
+  return match ? `${match[1]} ${match[2]}` : compact(value).toUpperCase();
 }
 
 function parseClock(value: string) {
@@ -141,6 +143,13 @@ function parseTimeRange(value: string) {
   const endTime = parseClock(match[2]);
   if (!startTime || !endTime || endTime <= startTime) return null;
   return { startTime, endTime };
+}
+
+function parseLunchTimeRange(value: string) {
+  const match = compact(value).match(
+    /^(\d{1,2}:?\d{2}\s*[-–—]\s*\d{1,2}:?\d{2})\s+LUNCH\b/i,
+  );
+  return match ? parseTimeRange(match[1]) : null;
 }
 
 function durationHours(startTime: string, endTime: string) {
@@ -168,12 +177,24 @@ function detectTimetableTable(tables: string[][][]) {
   let best: { index: number; score: number } | null = null;
   tables.forEach((table, index) => {
     const score = table
-      .slice(0, 3)
+      .slice(0, 4)
       .reduce((max, row) => Math.max(max, headerScore(row)), 0);
     if (score >= 3 && (!best || score > best.score)) best = { index, score };
   });
   if (!best) throw new Error("STATIC_DOCX_TIMETABLE_TABLE_NOT_FOUND");
   return best.index;
+}
+
+function courseReferenceHeaderIndex(table: string[][]) {
+  return table.slice(0, 4).findIndex((row) => {
+    const header = row.map((cell) => compact(cell).toUpperCase());
+    const hasCourseCode = header.some((cell) => cell.includes("COURSE CODE"));
+    const hasTitle = header.some(
+      (cell) => cell === "TITLE" || cell.includes("COURSE TITLE"),
+    );
+    const hasHours = header.some((cell) => cell.includes("HOUR"));
+    return hasCourseCode && hasTitle && hasHours;
+  });
 }
 
 function detectCourseReferenceTable(
@@ -182,14 +203,7 @@ function detectCourseReferenceTable(
 ) {
   for (let tableIndex = 0; tableIndex < tables.length; tableIndex += 1) {
     if (tableIndex === timetableIndex) continue;
-    const table = tables[tableIndex];
-    const header = table[0]?.map((cell) => compact(cell).toUpperCase()) ?? [];
-    const hasCourseCode = header.some((cell) => cell.includes("COURSE CODE"));
-    const hasTitle = header.some(
-      (cell) => cell === "TITLE" || cell.includes("COURSE TITLE"),
-    );
-    const hasHours = header.some((cell) => cell.includes("HOUR"));
-    if (hasCourseCode && hasTitle && hasHours) return tableIndex;
+    if (courseReferenceHeaderIndex(tables[tableIndex]) >= 0) return tableIndex;
   }
   return null;
 }
@@ -203,22 +217,26 @@ function parseMetadata(
     .map(compact)
     .filter(Boolean)
     .join("\n")}`;
-  const departmentMatch = allText.match(
-    /Department\s+of\s+([^\n-]+)\s*-\s*(20\d{2})/i,
-  );
-  const yearMatch =
-    departmentMatch?.[2] ?? allText.match(/\b(20\d{2})\b/)?.[1] ?? null;
+  const departmentLine = allText.match(/Department\s+of\s+([^\n]+)/i)?.[1] ?? null;
+  const departmentName = departmentLine
+    ? compact(departmentLine)
+        .replace(/\s*[-–—:]\s*20\d{2}.*$/i, "")
+        .replace(/\s+20\d{2}.*$/i, "")
+        .trim() || null
+    : null;
+  const yearMatch = allText.match(/\b(20\d{2})\b/)?.[1] ?? null;
   const titleMatch = allText.match(
     /Part\s+(\d+)\s+Semester\s+(\d+)\s+([^\n]*?Timetable)/i,
   );
+  const mode = titleMatch
+    ? compact(titleMatch[3]).replace(/\s*Timetable$/i, "").trim()
+    : "";
   return {
-    departmentName: departmentMatch ? compact(departmentMatch[1]) : null,
+    departmentName,
     academicYear: yearMatch ? Number(yearMatch) : null,
     yearLevel: titleMatch ? Number(titleMatch[1]) : null,
     semesterNumber: titleMatch ? Number(titleMatch[2]) : null,
-    modeLabel: titleMatch
-      ? compact(titleMatch[3]).replace(/\s*Timetable$/i, "")
-      : null,
+    modeLabel: mode || null,
     title: titleMatch ? compact(titleMatch[0]) : null,
   };
 }
@@ -227,14 +245,25 @@ function parseCourseReferences(
   table: string[][],
   tableIndex: number,
 ): StaticCourseReference[] {
-  if (table.length < 2) return [];
-  return table.slice(1).flatMap((row, offset) => {
+  const headerRowIndex = courseReferenceHeaderIndex(table);
+  if (headerRowIndex < 0) return [];
+  const header = table[headerRowIndex].map((cell) => compact(cell).toUpperCase());
+  const courseCodeIndex = header.findIndex((cell) => cell.includes("COURSE CODE"));
+  const titleIndex = header.findIndex(
+    (cell) => cell === "TITLE" || cell.includes("COURSE TITLE"),
+  );
+  const hoursIndex = header.findIndex((cell) => cell.includes("HOUR"));
+  const lecturerIndex = header.findIndex(
+    (cell) => cell.includes("LECTURER") || cell.includes("INSTRUCTOR"),
+  );
+
+  return table.slice(headerRowIndex + 1).flatMap((row, offset) => {
     const cells = row.map(compact);
-    const courseCodeRaw = cells[0] ?? "";
-    const courseName = cells[1] ?? "";
+    const courseCodeRaw = cells[courseCodeIndex] ?? "";
+    const courseName = cells[titleIndex] ?? "";
     if (!courseCodeRaw || !courseName) return [];
-    const hoursMatch = (cells[2] ?? "").match(/(\d+(?:\.\d+)?)\s*hour/i);
-    const rowIndex = offset + 1;
+    const hoursMatch = (cells[hoursIndex] ?? "").match(/(\d+(?:\.\d+)?)\s*hour/i);
+    const rowIndex = headerRowIndex + offset + 1;
     return [
       {
         candidateKey: candidateKey([
@@ -251,7 +280,7 @@ function parseCourseReferences(
         courseCode: normalizeCourseCode(courseCodeRaw),
         courseName,
         hoursPerWeek: hoursMatch ? Number(hoursMatch[1]) : null,
-        lecturerRaw: cells[3] || null,
+        lecturerRaw: lecturerIndex >= 0 ? cells[lecturerIndex] || null : null,
       },
     ];
   });
@@ -289,8 +318,7 @@ function parseSessionCell(raw: string) {
 
 function lunchRow(table: string[][], rowIndex: number) {
   const row = table[rowIndex] ?? [];
-  const joined = row.slice(1).map(compact).join("").toUpperCase();
-  return joined === "LUNCH";
+  return row.some((cell) => compact(cell).toUpperCase() === "LUNCH");
 }
 
 export function parseStaticTimetableDocument(
@@ -299,6 +327,7 @@ export function parseStaticTimetableDocument(
   if (!Array.isArray(structure.tables) || structure.tables.length === 0) {
     throw new Error("STATIC_DOCX_TABLES_REQUIRED");
   }
+
   const metadata = parseMetadata(structure);
   const timetableTableIndex = detectTimetableTable(structure.tables);
   const courseReferenceTableIndex = detectCourseReferenceTable(
@@ -316,6 +345,7 @@ export function parseStaticTimetableDocument(
   const courseByCode = new Map(
     courses.map((course) => [course.courseCode, course]),
   );
+
   const headerRowIndex = timetable.findIndex((row) => headerScore(row) >= 3);
   if (headerRowIndex < 0)
     throw new Error("STATIC_DOCX_WEEKDAY_HEADER_NOT_FOUND");
@@ -332,6 +362,7 @@ export function parseStaticTimetableDocument(
       ): item is { columnIndex: number; label: string; weekday: number } =>
         item.weekday !== null,
     );
+
   const sessions: StaticTimetableSessionCandidate[] = [];
   const ignored: StaticTimetableIgnoredRecord[] = [];
   const unparsed: StaticTimetableUnparsedCandidate[] = [];
@@ -350,6 +381,20 @@ export function parseStaticTimetableDocument(
   ) {
     const row = timetable[rowIndex] ?? [];
     const timeRaw = compact(row[0] ?? "");
+    const inlineLunchTime = timeRaw ? parseLunchTimeRange(timeRaw) : null;
+    if (inlineLunchTime) {
+      ignored.push({
+        kind: "break",
+        sourceTableIndex: timetableTableIndex,
+        sourceRowIndex: rowIndex,
+        rawText: timeRaw,
+        startTime: inlineLunchTime.startTime,
+        endTime: inlineLunchTime.endTime,
+      });
+      pendingLunchTime = null;
+      continue;
+    }
+
     const time = timeRaw ? parseTimeRange(timeRaw) : null;
     if (timeRaw && !time) {
       warnings.push({
@@ -362,6 +407,7 @@ export function parseStaticTimetableDocument(
       });
       continue;
     }
+
     if (
       time &&
       weekdayColumns.every(
@@ -371,6 +417,7 @@ export function parseStaticTimetableDocument(
       pendingLunchTime = { ...time, rowIndex, raw: timeRaw };
       continue;
     }
+
     if (!time && lunchRow(timetable, rowIndex)) {
       ignored.push({
         kind: "break",
@@ -383,8 +430,10 @@ export function parseStaticTimetableDocument(
       pendingLunchTime = null;
       continue;
     }
+
     if (!time) continue;
     pendingLunchTime = null;
+
     for (const { columnIndex, label, weekday } of weekdayColumns) {
       const rawText = (row[columnIndex] ?? "").trim();
       if (!rawText) {
@@ -427,10 +476,16 @@ export function parseStaticTimetableDocument(
           message: `Could not safely interpret ${label} ${time.startTime}–${time.endTime}.`,
           candidateKey: key,
           fieldName: "rawText",
-          details: { tableIndex: timetableTableIndex, rowIndex, columnIndex, rawText },
+          details: {
+            tableIndex: timetableTableIndex,
+            rowIndex,
+            columnIndex,
+            rawText,
+          },
         });
         continue;
       }
+
       const reference = courseByCode.get(parsed.courseCode) ?? null;
       const session: StaticTimetableSessionCandidate = {
         candidateKey: key,
@@ -450,6 +505,7 @@ export function parseStaticTimetableDocument(
         lecturerRaw: reference?.lecturerRaw ?? null,
         warningCodes: [],
       };
+
       if (!reference) {
         session.warningCodes.push("COURSE_NOT_IN_REFERENCE");
         warnings.push({
@@ -469,7 +525,10 @@ export function parseStaticTimetableDocument(
           message: `Preserved raw delivery wording “${parsed.deliveryModeRaw}”; reviewer must confirm its operational meaning.`,
           candidateKey: key,
           fieldName: "deliveryMode",
-          details: { rawDeliveryMode: parsed.deliveryModeRaw, venueRaw: parsed.venueRaw },
+          details: {
+            rawDeliveryMode: parsed.deliveryModeRaw,
+            venueRaw: parsed.venueRaw,
+          },
         });
       }
       sessions.push(session);
@@ -488,6 +547,7 @@ export function parseStaticTimetableDocument(
       details: { courseCode: course.courseCode, courseName: course.courseName },
     });
   }
+
   for (const [fieldName, value] of [
     ["departmentName", metadata.departmentName],
     ["academicYear", metadata.academicYear],
@@ -504,14 +564,17 @@ export function parseStaticTimetableDocument(
       details: {},
     });
   }
+
   const timetableContactHours = sessions.reduce(
-    (sum, session) => sum + durationHours(session.startTime, session.endTime),
+    (sum, session) =>
+      sum + durationHours(session.startTime, session.endTime),
     0,
   );
   const courseReferenceHours = courses.reduce(
     (sum, course) => sum + (course.hoursPerWeek ?? 0),
     0,
   );
+
   return {
     parserVersion: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
     metadata,
