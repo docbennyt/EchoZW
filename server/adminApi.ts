@@ -17,6 +17,7 @@ import { handleStaffAdminApi } from "./staffAdminApi.js";
 import { handleAdminAnalyticsApi } from "./adminAnalyticsApi.js";
 import { handleGrowthInboxAdminApi } from "./growthInboxAdminApi.js";
 import { handleSourceGatewayAdminApi } from "./sourceGatewayAdminApi.js";
+import { handleStaticTimetableImportAdminApi } from "./staticTimetableImportApi.js";
 import { sanitizeForLog } from "./observability.js";
 
 function sendJson(
@@ -164,6 +165,8 @@ export async function handleAdminRequest(
       }
       if (await handleAdminAnalyticsApi(req, res)) return true;
       if (await handleGrowthInboxAdminApi(req, res)) return true;
+      if (await handleStaticTimetableImportAdminApi(req, res, context.user))
+        return true;
       if (await handleSourceGatewayAdminApi(req, res, context.user))
         return true;
       if (await handlePilotAdminApi(req, res, context.user)) return true;
