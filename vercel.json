@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "mkdir -p dist && (npm run lint > dist/lint.txt 2>&1 || true) && echo ok > dist/index.html",
+  "buildCommand": "npx eslint server/adminApi.ts server/docxStructuredReader.ts server/staticTimetableImportApi.ts server/staticTimetableImportRepository.ts && mkdir -p dist && echo ok > dist/index.html",
   "outputDirectory": "dist",
   "redirects": [
     {
