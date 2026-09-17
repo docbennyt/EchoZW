@@ -15,7 +15,12 @@ const draftSchema = z.object({
   cohortId: uuid,
   academicPeriodId: uuid,
   resolutions: z
-    .array(z.object({ warningId: uuid, note: z.string().trim().min(1).max(2_000) }))
+    .array(
+      z.object({
+        warningId: uuid,
+        note: z.string().trim().min(1).max(2_000),
+      }),
+    )
     .default([]),
   sessions: z
     .array(
@@ -155,7 +160,9 @@ export async function handleStaticTimetableImportAdminApi(
     try {
       const institutionId = uuid.parse(url.searchParams.get("institutionId"));
       const filename = filenameFromHeader(req);
-      const mimeType = String(req.headers["content-type"] ?? "application/octet-stream")
+      const mimeType = String(
+        req.headers["content-type"] ?? "application/octet-stream",
+      )
         .split(";")[0]
         .trim();
       const bytes = await readRawBody(req, MAX_DOCX_BYTES);
