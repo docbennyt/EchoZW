@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npx prettier --write server/staticTimetableImportApi.ts >/dev/null && grep -F '.array(z.object({ warningId: uuid, note:' server/staticTimetableImportApi.ts >/dev/null && mkdir -p dist && echo ok > dist/index.html",
+  "buildCommand": "npm run lint && mkdir -p dist && echo ok > dist/index.html",
   "outputDirectory": "dist",
   "redirects": [
     {
