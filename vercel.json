@@ -4,36 +4,106 @@
   "buildCommand": "npm run format:check",
   "outputDirectory": "dist",
   "redirects": [
-    { "source": "/dashboard", "destination": "/admin", "permanent": true },
-    { "source": "/dashboard/:path*", "destination": "/admin/:path*", "permanent": true },
-    { "source": "/sync/:slug", "destination": "/t/:slug", "permanent": true }
+    {
+      "source": "/dashboard",
+      "destination": "/admin",
+      "permanent": true
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "/admin/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/sync/:slug",
+      "destination": "/t/:slug",
+      "permanent": true
+    }
   ],
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://calender.up.railway.app/api/:path*" },
-    { "source": "/runtime-config.js", "destination": "https://calender.up.railway.app/runtime-config.js" },
-    { "source": "/sitemap.xml", "destination": "https://calender.up.railway.app/sitemap.xml" },
-    { "source": "/t/:path*", "destination": "https://calender.up.railway.app/t/:path*" },
-    { "source": "/find", "destination": "https://calender.up.railway.app/find" },
-    { "source": "/request", "destination": "https://calender.up.railway.app/request" },
-    { "source": "/feedback", "destination": "https://calender.up.railway.app/feedback" },
-    { "source": "/support", "destination": "https://calender.up.railway.app/support" },
-    { "source": "/privacy", "destination": "https://calender.up.railway.app/privacy" },
-    { "source": "/terms", "destination": "https://calender.up.railway.app/terms" },
-    { "source": "/data-deletion", "destination": "https://calender.up.railway.app/data-deletion" },
-    { "source": "/account/:path*", "destination": "https://calender.up.railway.app/account/:path*" },
-    { "source": "/auth/:path*", "destination": "https://calender.up.railway.app/auth/:path*" },
-    { "source": "/admin", "destination": "https://calender.up.railway.app/admin" },
-    { "source": "/admin/:path*", "destination": "https://calender.up.railway.app/admin/:path*" },
-    { "source": "/:path*", "destination": "/index.html" }
+    {
+      "source": "/api/:path*",
+      "destination": "https://calender.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/runtime-config.js",
+      "destination": "https://calender.up.railway.app/runtime-config.js"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://calender.up.railway.app/sitemap.xml"
+    },
+    {
+      "source": "/t/:path*",
+      "destination": "https://calender.up.railway.app/t/:path*"
+    },
+    {
+      "source": "/find",
+      "destination": "https://calender.up.railway.app/find"
+    },
+    {
+      "source": "/request",
+      "destination": "https://calender.up.railway.app/request"
+    },
+    {
+      "source": "/feedback",
+      "destination": "https://calender.up.railway.app/feedback"
+    },
+    {
+      "source": "/support",
+      "destination": "https://calender.up.railway.app/support"
+    },
+    {
+      "source": "/privacy",
+      "destination": "https://calender.up.railway.app/privacy"
+    },
+    {
+      "source": "/terms",
+      "destination": "https://calender.up.railway.app/terms"
+    },
+    {
+      "source": "/data-deletion",
+      "destination": "https://calender.up.railway.app/data-deletion"
+    },
+    {
+      "source": "/account/:path*",
+      "destination": "https://calender.up.railway.app/account/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://calender.up.railway.app/auth/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "https://calender.up.railway.app/admin"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "https://calender.up.railway.app/admin/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/api/:path*",
-      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }]
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
     },
     {
       "source": "/runtime-config.js",
-      "headers": [{ "key": "x-vercel-enable-rewrite-caching", "value": "0" }]
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
     }
   ]
 }
