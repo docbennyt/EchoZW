@@ -65,60 +65,77 @@ export async function getStaticTimetableImportOptions(
     .from("institutions")
     .select("id,name,slug")
     .order("name");
-  if (institutionError)
+  if (institutionError) {
     dbError(
       "STATIC_IMPORT_OPTIONS_UNAVAILABLE",
       "Could not load institutions for static timetable import.",
       institutionError,
     );
-
-  if (!institutionId) {
-    return { institutions: institutions ?? [], programmes: [], cohorts: [], academicPeriods: [] };
   }
 
-  const [{ data: programmes, error: programmeError }, { data: periods, error: periodError }] =
-    await Promise.all([
-      supabase
-        .from("programmes")
-        .select("id,institution_id,name,short_name,code,academic_unit_id,status")
-        .eq("institution_id", institutionId)
-        .eq("status", "active")
-        .order("name"),
-      supabase
-        .from("academic_periods")
-        .select("id,institution_id,name,academic_year,period_number,starts_on,ends_on,status")
-        .eq("institution_id", institutionId)
-        .order("academic_year", { ascending: false })
-        .order("period_number"),
-    ]);
-  if (programmeError)
+  if (!institutionId) {
+    return {
+      institutions: institutions ?? [],
+      programmes: [],
+      cohorts: [],
+      academicPeriods: [],
+    };
+  }
+
+  const [
+    { data: programmes, error: programmeError },
+    { data: periods, error: periodError },
+  ] = await Promise.all([
+    supabase
+      .from("programmes")
+      .select("id,institution_id,name,short_name,code,academic_unit_id,status")
+      .eq("institution_id", institutionId)
+      .eq("status", "active")
+      .order("name"),
+    supabase
+      .from("academic_periods")
+      .select(
+        "id,institution_id,name,academic_year,period_number,starts_on,ends_on,status",
+      )
+      .eq("institution_id", institutionId)
+      .order("academic_year", { ascending: false })
+      .order("period_number"),
+  ]);
+  if (programmeError) {
     dbError(
       "STATIC_IMPORT_OPTIONS_UNAVAILABLE",
       "Could not load programmes for static timetable import.",
       programmeError,
     );
-  if (periodError)
+  }
+  if (periodError) {
     dbError(
       "STATIC_IMPORT_OPTIONS_UNAVAILABLE",
       "Could not load academic periods for static timetable import.",
       periodError,
     );
+  }
 
-  const programmeIds = (programmes ?? []).map((row) => String(asRecord(row).id));
+  const programmeIds = (programmes ?? []).map((row) =>
+    String(asRecord(row).id),
+  );
   let cohorts: unknown[] = [];
   if (programmeIds.length > 0) {
     const { data, error } = await supabase
       .from("cohorts")
-      .select("id,programme_id,code,label,level_label,intake_label,group_label,status")
+      .select(
+        "id,programme_id,code,label,level_label,intake_label,group_label,status",
+      )
       .in("programme_id", programmeIds)
       .eq("status", "active")
       .order("label");
-    if (error)
+    if (error) {
       dbError(
         "STATIC_IMPORT_OPTIONS_UNAVAILABLE",
         "Could not load cohorts for static timetable import.",
         error,
       );
+    }
     cohorts = data ?? [];
   }
 
@@ -143,7 +160,8 @@ async function inferCanonicalSuggestions(
       .filter(Boolean);
     return department !== "" && values.includes(department);
   });
-  const programmeId = programmes.length === 1 ? String(programmes[0].id) : null;
+  const programmeId =
+    programmes.length === 1 ? String(programmes[0].id) : null;
 
   const expectedLevel = parsed.metadata.yearLevel;
   const cohorts = (options.cohorts as JsonRecord[]).filter((cohort) => {
@@ -165,7 +183,8 @@ async function inferCanonicalSuggestions(
 
   const periods = (options.academicPeriods as JsonRecord[]).filter(
     (period) =>
-      String(period.academic_year) === String(parsed.metadata.academicYear ?? "") &&
+      String(period.academic_year) ===
+        String(parsed.metadata.academicYear ?? "") &&
       Number(period.period_number) === parsed.metadata.semesterNumber,
   );
   const academicPeriodId = periods.length === 1 ? String(periods[0].id) : null;
@@ -181,6 +200,27 @@ function parserSummaryPayload(parsed: StaticTimetableParseResult) {
     unparsed: parsed.unparsed,
     ignored: parsed.ignored,
   };
+}
+
+async function findExistingBatch(
+  sourceDocumentId: string,
+  env: NodeJS.ProcessEnv,
+) {
+  const query = await client(env)
+    .from("import_batches")
+    .select("id")
+    .eq("source_document_id", sourceDocumentId)
+    .eq("import_mode", "cohort_docx")
+    .eq("parser_version", STATIC_TIMETABLE_DOCX_PARSER_VERSION)
+    .maybeSingle();
+  if (query.error) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not check an existing static timetable parse run.",
+      query.error,
+    );
+  }
+  return query.data ? String(asRecord(query.data).id) : null;
 }
 
 export async function createStaticTimetableImport(
@@ -201,21 +241,12 @@ export async function createStaticTimetableImport(
     );
   }
 
-  let parsed: StaticTimetableParseResult;
-  try {
-    parsed = parseStaticTimetableDocument(readStructuredDocx(input.bytes));
-  } catch (error) {
-    throw new StaticTimetableImportError(
-      "DOCX_PARSE_FAILED",
-      "CalenderZW could not safely interpret this DOCX timetable. The file was not imported.",
-      422,
-      error instanceof Error ? { parserError: error.message } : undefined,
-    );
-  }
-
   const supabase = client(env);
   const sha256 = createHash("sha256").update(input.bytes).digest("hex");
   const storagePath = `${input.institutionId}/${sha256}/${safeFilename(input.filename)}`;
+  const mimeType =
+    input.mimeType ||
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   let { data: sourceDocument, error: sourceLookupError } = await supabase
     .from("source_documents")
@@ -223,23 +254,25 @@ export async function createStaticTimetableImport(
     .eq("institution_id", input.institutionId)
     .eq("sha256", sha256)
     .maybeSingle();
-  if (sourceLookupError)
+  if (sourceLookupError) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not check existing static timetable evidence.",
       sourceLookupError,
     );
+  }
 
   if (!sourceDocument) {
     const upload = await supabase.storage
       .from("timetable-sources")
       .upload(storagePath, input.bytes, {
-        contentType:
-          input.mimeType ||
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        contentType: mimeType,
         upsert: false,
       });
-    if (upload.error && !String(upload.error.message).toLowerCase().includes("already exists")) {
+    if (
+      upload.error &&
+      !String(upload.error.message).toLowerCase().includes("already exists")
+    ) {
       throw new StaticTimetableImportError(
         "STATIC_IMPORT_STORAGE_FAILED",
         "Could not persist the immutable source document.",
@@ -254,16 +287,14 @@ export async function createStaticTimetableImport(
         institution_id: input.institutionId,
         original_filename: input.filename,
         storage_path: storagePath,
-        mime_type:
-          input.mimeType ||
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        mime_type: mimeType,
         file_size_bytes: input.bytes.length,
         sha256,
         document_type: "cohort_timetable_docx",
-        source_status: "parsing",
+        source_status: "uploaded",
         uploaded_by: input.actorId,
         parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
-        metadata: { parsedMetadata: parsed.metadata },
+        metadata: {},
       })
       .select("*")
       .single();
@@ -275,12 +306,13 @@ export async function createStaticTimetableImport(
           .eq("institution_id", input.institutionId)
           .eq("sha256", sha256)
           .maybeSingle();
-        if (concurrent.error || !concurrent.data)
+        if (concurrent.error || !concurrent.data) {
           dbError(
             "STATIC_IMPORT_DATABASE_UNAVAILABLE",
             "The static timetable source was stored concurrently but could not be loaded.",
             concurrent.error,
           );
+        }
         sourceDocument = concurrent.data;
       } else {
         dbError(
@@ -295,24 +327,68 @@ export async function createStaticTimetableImport(
   }
 
   const documentId = String(asRecord(sourceDocument).id);
-  const existingBatch = await supabase
-    .from("import_batches")
-    .select("id")
-    .eq("source_document_id", documentId)
-    .eq("import_mode", "cohort_docx")
-    .eq("parser_version", STATIC_TIMETABLE_DOCX_PARSER_VERSION)
-    .maybeSingle();
-  if (existingBatch.error)
-    dbError(
-      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
-      "Could not check an existing static timetable parse run.",
-      existingBatch.error,
-    );
-  if (existingBatch.data) {
-    return getStaticTimetableImport(String(asRecord(existingBatch.data).id), env);
+  const existingBatchId = await findExistingBatch(documentId, env);
+  if (existingBatchId) {
+    return getStaticTimetableImport(existingBatchId, env);
   }
 
-  const suggestions = await inferCanonicalSuggestions(input.institutionId, parsed, env);
+  const { error: parsingStatusError } = await supabase
+    .from("source_documents")
+    .update({
+      source_status: "parsing",
+      parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+    })
+    .eq("id", documentId);
+  if (parsingStatusError) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not mark the retained source document for deterministic parsing.",
+      parsingStatusError,
+    );
+  }
+
+  let parsed: StaticTimetableParseResult;
+  try {
+    parsed = parseStaticTimetableDocument(readStructuredDocx(input.bytes));
+  } catch (error) {
+    const parserError = error instanceof Error ? error.message : "UNKNOWN";
+    await supabase
+      .from("source_documents")
+      .update({
+        source_status: "rejected",
+        parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+        metadata: { parserError },
+      })
+      .eq("id", documentId);
+    throw new StaticTimetableImportError(
+      "DOCX_PARSE_FAILED",
+      "CalenderZW could not safely interpret this DOCX timetable. The source evidence was retained for audit and no timetable was created.",
+      422,
+      { parserError },
+    );
+  }
+
+  const { error: parsedStatusError } = await supabase
+    .from("source_documents")
+    .update({
+      source_status: "parsed",
+      parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+      metadata: { parsedMetadata: parsed.metadata },
+    })
+    .eq("id", documentId);
+  if (parsedStatusError) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not persist the deterministic parser result metadata.",
+      parsedStatusError,
+    );
+  }
+
+  const suggestions = await inferCanonicalSuggestions(
+    input.institutionId,
+    parsed,
+    env,
+  );
   const insertedBatch = await supabase
     .from("import_batches")
     .insert({
@@ -325,12 +401,19 @@ export async function createStaticTimetableImport(
     })
     .select("id")
     .single();
-  if (insertedBatch.error || !insertedBatch.data)
+  if (insertedBatch.error || !insertedBatch.data) {
+    if ((insertedBatch.error as SupabaseErrorLike | null)?.code === "23505") {
+      const concurrentBatchId = await findExistingBatch(documentId, env);
+      if (concurrentBatchId) {
+        return getStaticTimetableImport(concurrentBatchId, env);
+      }
+    }
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not create the static timetable review batch.",
       insertedBatch.error,
     );
+  }
   const batchId = String(asRecord(insertedBatch.data).id);
 
   const documentCandidateKey = `document:${sha256}`;
@@ -381,7 +464,9 @@ export async function createStaticTimetableImport(
       venue_raw: session.venueRaw,
       lecturer_raw: session.lecturerRaw,
       delivery_mode_raw: session.deliveryModeRaw,
-      review_status: session.warningCodes.some((code) => code === "COURSE_NOT_IN_REFERENCE")
+      review_status: session.warningCodes.some(
+        (code) => code === "COURSE_NOT_IN_REFERENCE",
+      )
         ? "invalid"
         : session.warningCodes.length
           ? "warning"
@@ -429,12 +514,13 @@ export async function createStaticTimetableImport(
     .from("import_candidates")
     .insert(candidateRows)
     .select("id,candidate_key");
-  if (insertedCandidates.error || !insertedCandidates.data)
+  if (insertedCandidates.error || !insertedCandidates.data) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not persist timetable candidates and provenance.",
       insertedCandidates.error,
     );
+  }
   const candidateIds = new Map(
     (insertedCandidates.data as unknown as JsonRecord[]).map((row) => [
       String(row.candidate_key),
@@ -453,25 +539,29 @@ export async function createStaticTimetableImport(
     suggested_value: null,
   }));
   if (warningRows.length > 0) {
-    const { error } = await supabase.from("import_candidate_warnings").insert(warningRows);
-    if (error)
+    const { error } = await supabase
+      .from("import_candidate_warnings")
+      .insert(warningRows);
+    if (error) {
       dbError(
         "STATIC_IMPORT_DATABASE_UNAVAILABLE",
         "Could not persist static timetable review warnings.",
         error,
       );
+    }
   }
 
   const { error: documentUpdateError } = await supabase
     .from("source_documents")
     .update({ source_status: "review_required" })
     .eq("id", documentId);
-  if (documentUpdateError)
+  if (documentUpdateError) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not finalize the static timetable source status.",
       documentUpdateError,
     );
+  }
 
   return getStaticTimetableImport(batchId, env);
 }
@@ -486,12 +576,13 @@ export async function getStaticTimetableImport(
     .select("*")
     .eq("id", batchId)
     .maybeSingle();
-  if (batchQuery.error)
+  if (batchQuery.error) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not load the static timetable import review.",
       batchQuery.error,
     );
+  }
   if (!batchQuery.data) {
     throw new StaticTimetableImportError(
       "STATIC_IMPORT_NOT_FOUND",
@@ -505,43 +596,51 @@ export async function getStaticTimetableImport(
     .select("*")
     .eq("id", String(batch.source_document_id))
     .maybeSingle();
-  if (documentQuery.error || !documentQuery.data)
+  if (documentQuery.error || !documentQuery.data) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not load static timetable source evidence.",
       documentQuery.error,
     );
+  }
 
   const candidatesQuery = await supabase
     .from("import_candidates")
     .select("id,candidate_key")
     .eq("import_batch_id", batchId);
-  if (candidatesQuery.error)
+  if (candidatesQuery.error) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not load static timetable candidate evidence.",
       candidatesQuery.error,
     );
+  }
   const candidateRows = (candidatesQuery.data ?? []) as unknown as JsonRecord[];
   const candidateKeys = new Map(
-    candidateRows.map((row) => [String(row.id), row.candidate_key ? String(row.candidate_key) : null]),
+    candidateRows.map((row) => [
+      String(row.id),
+      row.candidate_key ? String(row.candidate_key) : null,
+    ]),
   );
   let warningRows: JsonRecord[] = [];
   if (candidateRows.length > 0) {
     const warningsQuery = await supabase
       .from("import_candidate_warnings")
-      .select("id,candidate_id,warning_code,severity,message,field_name,resolution_note,resolved_at")
+      .select(
+        "id,candidate_id,warning_code,severity,message,field_name,resolution_note,resolved_at",
+      )
       .in(
         "candidate_id",
         candidateRows.map((row) => String(row.id)),
       )
       .order("created_at");
-    if (warningsQuery.error)
+    if (warningsQuery.error) {
       dbError(
         "STATIC_IMPORT_DATABASE_UNAVAILABLE",
         "Could not load static timetable warnings.",
         warningsQuery.error,
       );
+    }
     warningRows = (warningsQuery.data ?? []) as unknown as JsonRecord[];
   }
 
@@ -553,12 +652,13 @@ export async function getStaticTimetableImport(
     .select("id,timetable_id")
     .eq("import_batch_id", batchId)
     .maybeSingle();
-  if (versionQuery.error)
+  if (versionQuery.error) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
       "Could not check the created static timetable draft.",
       versionQuery.error,
     );
+  }
 
   let createdDraft: null | Record<string, unknown> = null;
   if (versionQuery.data) {
@@ -575,7 +675,9 @@ export async function getStaticTimetableImport(
     createdDraft = {
       timetableId: String(version.timetable_id),
       draftVersionId: String(version.id),
-      publicSlug: timetable.data ? String(asRecord(timetable.data).public_slug ?? "") : "",
+      publicSlug: timetable.data
+        ? String(asRecord(timetable.data).public_slug ?? "")
+        : "",
       sessionCount: count.count ?? 0,
     };
   }
@@ -614,7 +716,9 @@ export async function getStaticTimetableImport(
       severity: String(row.severity),
       message: String(row.message),
       fieldName: row.field_name ? String(row.field_name) : null,
-      resolutionNote: row.resolution_note ? String(row.resolution_note) : null,
+      resolutionNote: row.resolution_note
+        ? String(row.resolution_note)
+        : null,
       resolvedAt: row.resolved_at ? String(row.resolved_at) : null,
     })),
     suggestions: asRecord(summary.suggestions ?? {}),
@@ -634,15 +738,18 @@ export async function createStaticTimetableDraft(
   },
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  const { data, error } = await client(env).rpc("materialize_static_document_draft", {
-    p_import_batch_id: input.batchId,
-    p_actor_id: input.actorId,
-    p_programme_id: input.programmeId,
-    p_cohort_id: input.cohortId,
-    p_academic_period_id: input.academicPeriodId,
-    p_resolutions: input.resolutions,
-    p_sessions: input.sessions,
-  });
+  const { data, error } = await client(env).rpc(
+    "materialize_static_document_draft",
+    {
+      p_import_batch_id: input.batchId,
+      p_actor_id: input.actorId,
+      p_programme_id: input.programmeId,
+      p_cohort_id: input.cohortId,
+      p_academic_period_id: input.academicPeriodId,
+      p_resolutions: input.resolutions,
+      p_sessions: input.sessions,
+    },
+  );
   if (error) {
     const message = String((error as SupabaseErrorLike).message ?? "");
     const known = [
