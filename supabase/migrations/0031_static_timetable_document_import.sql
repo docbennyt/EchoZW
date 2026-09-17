@@ -115,6 +115,7 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+#variable_conflict use_column
 declare
   v_batch public.import_batches%rowtype;
   v_document public.source_documents%rowtype;
@@ -195,9 +196,10 @@ begin
       or coalesce(session_row->>'weekday', '') !~ '^[1-7]$'
       or coalesce(session_row->>'startTime', '') !~ '^[0-2][0-9]:[0-5][0-9]$'
       or coalesce(session_row->>'endTime', '') !~ '^[0-2][0-9]:[0-5][0-9]$'
-      or (session_row->>'endTime')::time <= (session_row->>'startTime')::time
+      or (session_row->>'startTime')::time >= (session_row->>'endTime')::time
       or not exists (
-        select 1 from public.import_candidates c
+        select 1
+        from public.import_candidates c
         where c.import_batch_id = p_import_batch_id
           and c.candidate_key = session_row->>'candidateKey'
           and c.candidate_type = 'session'
@@ -218,8 +220,11 @@ begin
   if exists (
     select 1
     from jsonb_array_elements(p_sessions) session_row
-    group by upper(btrim(session_row->>'courseCode')),
-             session_row->>'weekday', session_row->>'startTime', session_row->>'endTime'
+    group by
+      upper(btrim(session_row->>'courseCode')),
+      session_row->>'weekday',
+      session_row->>'startTime',
+      session_row->>'endTime'
     having count(*) > 1
   ) then
     raise exception 'STATIC_IMPORT_DUPLICATE_SESSION';
@@ -227,15 +232,20 @@ begin
 
   if exists (
     with planned as (
-      select row_number() over () as n,
-             (session_row->>'weekday')::int as weekday,
-             (session_row->>'startTime')::time as start_time,
-             (session_row->>'endTime')::time as end_time
+      select
+        row_number() over () as n,
+        (session_row->>'weekday')::int as weekday,
+        (session_row->>'startTime')::time as start_time,
+        (session_row->>'endTime')::time as end_time
       from jsonb_array_elements(p_sessions) session_row
     )
-    select 1 from planned a join planned b
-      on b.n > a.n and b.weekday = a.weekday
-     and b.start_time < a.end_time and b.end_time > a.start_time
+    select 1
+    from planned a
+    join planned b
+      on b.n > a.n
+     and b.weekday = a.weekday
+     and b.start_time < a.end_time
+     and b.end_time > a.start_time
   ) then
     raise exception 'STATIC_IMPORT_TIMETABLE_CONFLICT';
   end if;
@@ -247,12 +257,18 @@ begin
   limit 1;
   if found then
     return query
-    select v_existing_version.timetable_id,
-           v_existing_version.id,
-           t.public_slug,
-           (select count(*)::int from public.timetable_sessions s where s.timetable_version_id = v_existing_version.id),
-           'existing'::text
-    from public.timetables t where t.id = v_existing_version.timetable_id;
+    select
+      v_existing_version.timetable_id,
+      v_existing_version.id,
+      t.public_slug,
+      (
+        select count(*)::int
+        from public.timetable_sessions s
+        where s.timetable_version_id = v_existing_version.id
+      ),
+      'existing'::text
+    from public.timetables t
+    where t.id = v_existing_version.timetable_id;
     return;
   end if;
 
@@ -265,7 +281,10 @@ begin
   limit 1
   for update;
 
-  if found and v_timetable.current_published_version_id is not null
+  -- Static import never takes ownership of a previously published class from a
+  -- different source strategy. That transition requires explicit reconciliation.
+  if found
+    and v_timetable.current_published_version_id is not null
     and v_timetable.source_strategy <> 'static_document' then
     raise exception 'STATIC_IMPORT_EXISTING_PUBLISHED_REQUIRES_RECONCILIATION';
   end if;
@@ -273,22 +292,47 @@ begin
   if not found then
     v_slug_base := lower(regexp_replace(
       coalesce(v_programme.code, v_programme.name) || '-' || v_cohort.label || '-' || v_period.name,
-      '[^a-zA-Z0-9]+', '-', 'g'
+      '[^a-zA-Z0-9]+',
+      '-',
+      'g'
     ));
     v_slug_base := trim(both '-' from v_slug_base);
     v_slug := v_slug_base;
-    while exists (select 1 from public.timetables where public_slug = v_slug) loop
+    while exists (
+      select 1 from public.timetables where public_slug = v_slug
+    ) loop
       v_slug := v_slug_base || '-' || v_slug_suffix;
       v_slug_suffix := v_slug_suffix + 1;
     end loop;
+
     insert into public.timetables (
-      institution_id, slug, programme, cohort, semester, status,
-      programme_id, cohort_id, academic_period_id, public_slug, source_strategy,
-      created_by, updated_at
+      institution_id,
+      slug,
+      programme,
+      cohort,
+      semester,
+      status,
+      programme_id,
+      cohort_id,
+      academic_period_id,
+      public_slug,
+      source_strategy,
+      created_by,
+      updated_at
     ) values (
-      v_programme.institution_id, v_slug, v_programme.name, v_cohort.label,
-      v_period.name, 'draft', v_programme.id, v_cohort.id, v_period.id, v_slug,
-      'static_document', p_actor_id, now()
+      v_programme.institution_id,
+      v_slug,
+      v_programme.name,
+      v_cohort.label,
+      v_period.name,
+      'draft',
+      v_programme.id,
+      v_cohort.id,
+      v_period.id,
+      v_slug,
+      'static_document',
+      p_actor_id,
+      now()
     ) returning * into v_timetable;
   else
     update public.timetables
@@ -297,45 +341,92 @@ begin
     returning * into v_timetable;
   end if;
 
-  select coalesce(max(version_number), 0) + 1 into v_version_number
-  from public.timetable_versions where timetable_id = v_timetable.id;
+  select coalesce(max(v.version_number), 0) + 1
+  into v_version_number
+  from public.timetable_versions v
+  where v.timetable_id = v_timetable.id;
 
   insert into public.timetable_versions (
-    timetable_id, version_label, source, version_number, status,
-    verification_status, source_document_id, source_label, source_is_draft,
-    change_summary, created_by, import_batch_id
+    timetable_id,
+    version_label,
+    source,
+    version_number,
+    status,
+    verification_status,
+    source_document_id,
+    source_label,
+    source_is_draft,
+    change_summary,
+    created_by,
+    import_batch_id
   ) values (
-    v_timetable.id, 'v' || v_version_number, 'static_document', v_version_number,
-    'draft', 'unverified', v_document.id, v_document.original_filename, true,
-    'Verified static document import draft', p_actor_id, p_import_batch_id
+    v_timetable.id,
+    'v' || v_version_number,
+    'static_document',
+    v_version_number,
+    'draft',
+    'unverified',
+    v_document.id,
+    v_document.original_filename,
+    false,
+    'Human-reviewed static document import draft',
+    p_actor_id,
+    p_import_batch_id
   ) returning id into v_version_id;
 
   insert into public.timetable_sessions (
-    timetable_version_id, stable_session_key, course_code, course_name,
-    session_type, weekday, start_time, end_time, starts_on, ends_on,
-    venue, venue_raw, venue_normalized, lecturer, lecturer_raw,
-    lecturer_normalized, notes, source_candidate_id, status, source_candidate_key
+    timetable_version_id,
+    stable_session_key,
+    course_code,
+    course_name,
+    session_type,
+    weekday,
+    start_time,
+    end_time,
+    starts_on,
+    ends_on,
+    venue,
+    venue_raw,
+    venue_normalized,
+    lecturer,
+    lecturer_raw,
+    lecturer_normalized,
+    notes,
+    source_candidate_id,
+    status,
+    source_candidate_key
   )
   select
     v_version_id,
-    'static_' || substr(encode(digest(
-      p_import_batch_id::text || '|' || session_row->>'candidateKey', 'sha256'
-    ), 'hex'), 1, 24),
+    'static_' || substr(
+      encode(
+        digest(
+          p_import_batch_id::text || '|' || session_row->>'candidateKey',
+          'sha256'
+        ),
+        'hex'
+      ),
+      1,
+      24
+    ),
     btrim(session_row->>'courseCode'),
     btrim(session_row->>'courseName'),
     nullif(btrim(session_row->>'sessionType'), ''),
     (session_row->>'weekday')::smallint,
     (session_row->>'startTime')::time,
     (session_row->>'endTime')::time,
-    v_period.starts_on, v_period.ends_on,
+    v_period.starts_on,
+    v_period.ends_on,
     nullif(btrim(session_row->>'venue'), ''),
     nullif(btrim(session_row->>'venue'), ''),
     nullif(btrim(session_row->>'venue'), ''),
     nullif(btrim(session_row->>'lecturer'), ''),
     nullif(btrim(session_row->>'lecturer'), ''),
     nullif(btrim(session_row->>'lecturer'), ''),
-    case when nullif(btrim(session_row->>'deliveryModeRaw'), '') is null then null
-      else 'Source delivery wording: ' || btrim(session_row->>'deliveryModeRaw') end,
+    case
+      when nullif(btrim(session_row->>'deliveryModeRaw'), '') is null then null
+      else 'Source delivery wording: ' || btrim(session_row->>'deliveryModeRaw')
+    end,
     c.id,
     'tentative',
     session_row->>'candidateKey'
@@ -345,8 +436,10 @@ begin
    and c.candidate_key = session_row->>'candidateKey';
 
   update public.import_candidate_warnings w
-  set resolved_at = now(), resolved_by = p_actor_id,
-      resolution_note = resolution->>'note'
+  set
+    resolved_at = now(),
+    resolved_by = p_actor_id,
+    resolution_note = resolution->>'note'
   from public.import_candidates c,
        jsonb_array_elements(p_resolutions) resolution
   where w.candidate_id = c.id
@@ -355,11 +448,16 @@ begin
     and nullif(btrim(resolution->>'note'), '') is not null;
 
   update public.import_batches
-  set selected_programme_id = p_programme_id,
-      selected_cohort_id = p_cohort_id,
-      selected_academic_period_id = p_academic_period_id,
-      status = 'confirmed', completed_at = now(),
-      summary = summary || jsonb_build_object('draftVersionId', v_version_id, 'verifiedBy', p_actor_id)
+  set
+    selected_programme_id = p_programme_id,
+    selected_cohort_id = p_cohort_id,
+    selected_academic_period_id = p_academic_period_id,
+    status = 'confirmed',
+    completed_at = now(),
+    summary = summary || jsonb_build_object(
+      'draftVersionId', v_version_id,
+      'verifiedBy', p_actor_id
+    )
   where id = p_import_batch_id;
 
   update public.source_documents
@@ -372,8 +470,12 @@ begin
   where id = v_timetable.id;
 
   return query
-  select v_timetable.id, v_version_id, v_timetable.public_slug,
-         jsonb_array_length(p_sessions)::int, 'draft'::text;
+  select
+    v_timetable.id,
+    v_version_id,
+    v_timetable.public_slug,
+    jsonb_array_length(p_sessions)::int,
+    'draft'::text;
 end;
 $$;
 
