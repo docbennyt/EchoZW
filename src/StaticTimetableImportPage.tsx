@@ -45,9 +45,9 @@ function editableSessions(review: StaticImportReview): EditableSession[] {
 
 export function StaticTimetableImportPage() {
   const [token, setToken] = useState<string | null>(null);
-  const [status, setStatus] = useState<"loading" | "ready" | "auth" | "error">(
-    "loading",
-  );
+  const [status, setStatus] = useState<
+    "loading" | "ready" | "auth" | "error"
+  >("loading");
   const [error, setError] = useState("");
   const [options, setOptions] = useState<StaticImportOptions>(EMPTY_OPTIONS);
   const [institutionId, setInstitutionId] = useState("");
@@ -73,7 +73,9 @@ export function StaticTimetableImportPage() {
         if (caught instanceof Error && caught.message === "AUTH_REQUIRED") {
           setStatus("auth");
         } else {
-          setError(caught instanceof Error ? caught.message : "Could not load importer.");
+          setError(
+            caught instanceof Error ? caught.message : "Could not load importer.",
+          );
           setStatus("error");
         }
       }
@@ -94,24 +96,36 @@ export function StaticTimetableImportPage() {
       const response = await getStaticTimetableImportOptions(token, nextId);
       setOptions(response.options);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load institution options.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not load institution options.",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   const availableCohorts = useMemo(
-    () => options.cohorts.filter((cohort) => !programmeId || cohort.programme_id === programmeId),
+    () =>
+      options.cohorts.filter(
+        (cohort) => !programmeId || cohort.programme_id === programmeId,
+      ),
     [options.cohorts, programmeId],
   );
 
   const blockingWarnings = useMemo(
-    () => review?.warnings.filter((warning) => warning.severity === "blocking") ?? [],
+    () =>
+      review?.warnings.filter((warning) => warning.severity === "blocking") ??
+      [],
     [review],
   );
 
   const unresolvedBlockers = useMemo(
-    () => blockingWarnings.filter((warning) => !(resolutions[warning.id] ?? "").trim()),
+    () =>
+      blockingWarnings.filter(
+        (warning) => !(resolutions[warning.id] ?? "").trim(),
+      ),
     [blockingWarnings, resolutions],
   );
 
@@ -122,7 +136,8 @@ export function StaticTimetableImportPage() {
       academicPeriodId &&
       sessions.length > 0 &&
       sessions.every(
-        (session) => session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
+        (session) =>
+          session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
       ) &&
       unresolvedBlockers.length === 0 &&
       !review.createdDraft,
@@ -153,7 +168,9 @@ export function StaticTimetableImportPage() {
         ),
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not import DOCX.");
+      setError(
+        caught instanceof Error ? caught.message : "Could not import DOCX.",
+      );
     } finally {
       setBusy(false);
     }
@@ -211,7 +228,11 @@ export function StaticTimetableImportPage() {
         `Draft created with ${result.draft.sessionCount} sessions. Nothing has been published.`,
       );
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not create review draft.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not create review draft.",
+      );
     } finally {
       setBusy(false);
     }
@@ -230,7 +251,11 @@ export function StaticTimetableImportPage() {
   }
 
   if (status === "loading") {
-    return <main className="czw-static-import czw-static-import-state">Loading importer…</main>;
+    return (
+      <main className="czw-static-import czw-static-import-state">
+        Loading importer…
+      </main>
+    );
   }
 
   if (status === "error" && !token) {
@@ -249,15 +274,20 @@ export function StaticTimetableImportPage() {
           <span>CalenderZW · source truth</span>
           <h1>Import a class timetable document</h1>
           <p>
-            DOCX is parsed deterministically into review evidence. Nothing is published
-            until a human verifies it and the normal guarded publication path succeeds.
+            DOCX is parsed deterministically into review evidence. Nothing is
+            published until a human verifies it and the normal guarded publication
+            path succeeds.
           </p>
         </div>
         <a href="/admin">Back to Admin</a>
       </header>
 
-      {error ? <div className="czw-static-import-alert error">{error}</div> : null}
-      {success ? <div className="czw-static-import-alert success">{success}</div> : null}
+      {error ? (
+        <div className="czw-static-import-alert error">{error}</div>
+      ) : null}
+      {success ? (
+        <div className="czw-static-import-alert success">{success}</div>
+      ) : null}
 
       <section className="czw-static-import-panel">
         <div className="czw-static-import-section-heading">
@@ -308,7 +338,9 @@ export function StaticTimetableImportPage() {
             <div className="czw-static-import-section-heading">
               <div>
                 <span>2 · Extracted identity</span>
-                <h2>{review.parsed.metadata.title ?? review.document.originalFilename}</h2>
+                <h2>
+                  {review.parsed.metadata.title ?? review.document.originalFilename}
+                </h2>
               </div>
               <small>Parser {review.batch.parserVersion}</small>
             </div>
@@ -331,12 +363,32 @@ export function StaticTimetableImportPage() {
               </article>
             </div>
             <dl className="czw-static-import-evidence">
-              <div><dt>Department</dt><dd>{review.parsed.metadata.departmentName ?? "Unresolved"}</dd></div>
-              <div><dt>Academic year</dt><dd>{review.parsed.metadata.academicYear ?? "Unresolved"}</dd></div>
-              <div><dt>Part / level</dt><dd>{review.parsed.metadata.yearLevel ?? "Unresolved"}</dd></div>
-              <div><dt>Semester</dt><dd>{review.parsed.metadata.semesterNumber ?? "Unresolved"}</dd></div>
-              <div><dt>Mode wording</dt><dd>{review.parsed.metadata.modeLabel ?? "Not stated"}</dd></div>
-              <div><dt>Source SHA-256</dt><dd><code>{review.document.sha256}</code></dd></div>
+              <div>
+                <dt>Department</dt>
+                <dd>{review.parsed.metadata.departmentName ?? "Unresolved"}</dd>
+              </div>
+              <div>
+                <dt>Academic year</dt>
+                <dd>{review.parsed.metadata.academicYear ?? "Unresolved"}</dd>
+              </div>
+              <div>
+                <dt>Part / level</dt>
+                <dd>{review.parsed.metadata.yearLevel ?? "Unresolved"}</dd>
+              </div>
+              <div>
+                <dt>Semester</dt>
+                <dd>{review.parsed.metadata.semesterNumber ?? "Unresolved"}</dd>
+              </div>
+              <div>
+                <dt>Mode wording</dt>
+                <dd>{review.parsed.metadata.modeLabel ?? "Not stated"}</dd>
+              </div>
+              <div>
+                <dt>Source SHA-256</dt>
+                <dd>
+                  <code>{review.document.sha256}</code>
+                </dd>
+              </div>
             </dl>
           </section>
 
@@ -361,14 +413,18 @@ export function StaticTimetableImportPage() {
                   <option value="">Choose programme</option>
                   {options.programmes.map((programme) => (
                     <option key={programme.id} value={programme.id}>
-                      {programme.code ? `${programme.code} · ` : ""}{programme.name}
+                      {programme.code ? `${programme.code} · ` : ""}
+                      {programme.name}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
                 Cohort / class
-                <select value={cohortId} onChange={(event) => setCohortId(event.target.value)}>
+                <select
+                  value={cohortId}
+                  onChange={(event) => setCohortId(event.target.value)}
+                >
                   <option value="">Choose cohort</option>
                   {availableCohorts.map((cohort) => (
                     <option key={cohort.id} value={cohort.id}>
@@ -400,18 +456,25 @@ export function StaticTimetableImportPage() {
                 <span>4 · Review warnings</span>
                 <h2>Resolve source ambiguities explicitly</h2>
               </div>
-              <small>{unresolvedBlockers.length} blocking checks unresolved</small>
+              <small>
+                {unresolvedBlockers.length} blocking checks unresolved
+              </small>
             </div>
             <div className="czw-static-import-warning-list">
               {review.warnings.length === 0 ? <p>No parser warnings.</p> : null}
               {review.warnings.map((warning) => (
-                <article key={warning.id} className={`warning ${warning.severity}`}>
+                <article
+                  key={warning.id}
+                  className={`warning ${warning.severity}`}
+                >
                   <div>
                     <strong>{warning.code.replaceAll("_", " ")}</strong>
                     <span>{warning.severity}</span>
                   </div>
                   <p>{warning.message}</p>
-                  {warning.candidateKey ? <small>Evidence: {warning.candidateKey}</small> : null}
+                  {warning.candidateKey ? (
+                    <small>Evidence: {warning.candidateKey}</small>
+                  ) : null}
                   {warning.severity === "blocking" ? (
                     <label>
                       Human resolution note
@@ -456,35 +519,58 @@ export function StaticTimetableImportPage() {
                   {sessions.map((session, index) => (
                     <tr key={session.candidateKey}>
                       <td>
-                        <code>t{session.sourceTableIndex}:r{session.sourceRowIndex}:c{session.sourceColumnIndex}</code>
+                        <code>
+                          t{session.sourceTableIndex}:r{session.sourceRowIndex}:c
+                          {session.sourceColumnIndex}
+                        </code>
                         <small>{session.rawText}</small>
                       </td>
-                      <td>{session.weekdayLabel}<br /><strong>{session.startTime}–{session.endTime}</strong></td>
+                      <td>
+                        {session.weekdayLabel}
+                        <br />
+                        <strong>
+                          {session.startTime}–{session.endTime}
+                        </strong>
+                      </td>
                       <td>
                         <input
                           aria-label={`Course code ${session.candidateKey}`}
                           value={session.courseCodeDraft}
-                          onChange={(event) => patchSession(index, { courseCodeDraft: event.target.value })}
+                          onChange={(event) =>
+                            patchSession(index, {
+                              courseCodeDraft: event.target.value,
+                            })
+                          }
                         />
                         <input
                           aria-label={`Course name ${session.candidateKey}`}
                           value={session.courseNameDraft}
                           placeholder="Verified course name"
-                          onChange={(event) => patchSession(index, { courseNameDraft: event.target.value })}
+                          onChange={(event) =>
+                            patchSession(index, {
+                              courseNameDraft: event.target.value,
+                            })
+                          }
                         />
                       </td>
                       <td>
                         <input
                           aria-label={`Venue ${session.candidateKey}`}
                           value={session.venueDraft}
-                          onChange={(event) => patchSession(index, { venueDraft: event.target.value })}
+                          onChange={(event) =>
+                            patchSession(index, { venueDraft: event.target.value })
+                          }
                         />
                       </td>
                       <td>
                         <input
                           aria-label={`Lecturer ${session.candidateKey}`}
                           value={session.lecturerDraft}
-                          onChange={(event) => patchSession(index, { lecturerDraft: event.target.value })}
+                          onChange={(event) =>
+                            patchSession(index, {
+                              lecturerDraft: event.target.value,
+                            })
+                          }
                         />
                       </td>
                       <td>{session.deliveryModeRaw ?? "—"}</td>
@@ -501,16 +587,24 @@ export function StaticTimetableImportPage() {
               <h2>Create a review draft</h2>
               <p>
                 This action creates an immutable draft version and marks the class as
-                <code> static_document</code>. It does not publish or replace a published timetable.
+                <code> static_document</code>. It does not publish or replace a
+                published timetable.
               </p>
             </div>
             {review.createdDraft ? (
               <div className="czw-static-import-created">
                 <strong>Draft ready</strong>
-                <span>{review.createdDraft.sessionCount} sessions · {review.createdDraft.publicSlug}</span>
+                <span>
+                  {review.createdDraft.sessionCount} sessions ·{" "}
+                  {review.createdDraft.publicSlug}
+                </span>
               </div>
             ) : (
-              <Button type="button" disabled={busy || !canCreateDraft} onClick={() => void createDraft()}>
+              <Button
+                type="button"
+                disabled={busy || !canCreateDraft}
+                onClick={() => void createDraft()}
+              >
                 {busy ? "Creating draft…" : "Verify & create draft"}
               </Button>
             )}
