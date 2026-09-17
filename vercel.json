@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "node scripts/dr120-ci-diagnostics.mjs",
+  "buildCommand": "npm run format:check && npm run test && npm run build",
   "outputDirectory": "dist",
   "redirects": [
     { "source": "/dashboard", "destination": "/admin", "permanent": true },
@@ -9,7 +9,6 @@
     { "source": "/sync/:slug", "destination": "/t/:slug", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/__dr120-ci", "destination": "/dr120-ci.html" },
     { "source": "/api/:path*", "destination": "https://calender.up.railway.app/api/:path*" },
     { "source": "/runtime-config.js", "destination": "https://calender.up.railway.app/runtime-config.js" },
     { "source": "/sitemap.xml", "destination": "https://calender.up.railway.app/sitemap.xml" },
