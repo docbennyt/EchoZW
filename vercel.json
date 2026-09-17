@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npx prettier --check server/staticTimetableImportApi.ts server/staticTimetableImportRepository.ts",
+  "buildCommand": "npx prettier --check server/staticTimetableImportApi.ts",
   "outputDirectory": "dist",
   "redirects": [
     {
