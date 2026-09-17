@@ -39,10 +39,25 @@ const structure = {
     [
       ["COURSE CODE", "TITLE", "HOURS PER WEEK", "LECTURER"],
       ["SBT 1102", "Cell Biology", "6 hours", "Mr T. Chirova"],
-      ["SBT 1103", "Chemistry for Biotechnologists", "6 hours", "Mrs Zinyando"],
-      ["SST 1101", "Technical Communication Skills I", "4 hours", "Service Course"],
+      [
+        "SBT 1103",
+        "Chemistry for Biotechnologists",
+        "6 hours",
+        "Mrs Zinyando",
+      ],
+      [
+        "SST 1101",
+        "Technical Communication Skills I",
+        "4 hours",
+        "Service Course",
+      ],
       ["SBT 1104", "Computer Applications", "4 hours", "Service Course"],
-      ["HIT 1103", "Mathematics for Technologists I", "4 hours", "Service Course"],
+      [
+        "HIT 1103",
+        "Mathematics for Technologists I",
+        "4 hours",
+        "Service Course",
+      ],
       ["HIT 1101", "Technopreneurship I", "4 hours", "Service Course"],
     ],
   ],
@@ -75,7 +90,9 @@ describe("static timetable DOCX matrix parser", () => {
 
   it("never silently reconciles the ICS 1110 versus SBT 1104 source discrepancy", () => {
     const parsed = parseStaticTimetableDocument(structure);
-    const ics = parsed.sessions.find((session) => session.courseCode === "ICS 1110");
+    const ics = parsed.sessions.find(
+      (session) => session.courseCode === "ICS 1110",
+    );
 
     expect(ics).toBeTruthy();
     expect(ics?.courseName).toBeNull();
@@ -97,7 +114,9 @@ describe("static timetable DOCX matrix parser", () => {
 
   it("preserves uncertain blended delivery wording as review evidence", () => {
     const parsed = parseStaticTimetableDocument(structure);
-    const blended = parsed.sessions.filter((session) => session.deliveryModeRaw);
+    const blended = parsed.sessions.filter(
+      (session) => session.deliveryModeRaw,
+    );
 
     expect(blended.length).toBeGreaterThan(0);
     expect(blended[0].deliveryModeRaw).toBe("Online Teaching");
@@ -109,5 +128,51 @@ describe("static timetable DOCX matrix parser", () => {
         }),
       ]),
     );
+  });
+
+  it("accepts an inline lunch row without turning it into an invalid session", () => {
+    const inlineLunch = structuredClone(structure);
+    inlineLunch.tables[0][3] = [
+      "1215-1315 LUNCH",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ];
+    inlineLunch.tables[0].splice(4, 1);
+
+    const parsed = parseStaticTimetableDocument(inlineLunch);
+
+    expect(parsed.summary.sessionCount).toBe(14);
+    expect(parsed.ignored).toContainEqual(
+      expect.objectContaining({
+        kind: "break",
+        rawText: "1215-1315 LUNCH",
+        startTime: "12:15",
+        endTime: "13:15",
+      }),
+    );
+    expect(parsed.warnings).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: "INVALID_TIME_RANGE" }),
+      ]),
+    );
+  });
+
+  it("normalizes spacing in course codes without changing raw evidence", () => {
+    const compactCodes = structuredClone(structure);
+    compactCodes.tables[0][1][1] = "SBT1102 (S103) / Online Teaching";
+
+    const parsed = parseStaticTimetableDocument(compactCodes);
+    const session = parsed.sessions.find(
+      (candidate) => candidate.courseCodeRaw === "SBT1102",
+    );
+
+    expect(session).toMatchObject({
+      courseCodeRaw: "SBT1102",
+      courseCode: "SBT 1102",
+      courseName: "Cell Biology",
+    });
   });
 });
