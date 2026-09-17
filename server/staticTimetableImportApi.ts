@@ -49,7 +49,11 @@ function sendJson(res: ServerResponse, status: number, body: unknown) {
 function sendError(res: ServerResponse, error: unknown) {
   if (error instanceof StaticTimetableImportError) {
     sendJson(res, error.status, {
-      error: { code: error.code, message: error.message, details: error.details },
+      error: {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      },
     });
     return;
   }
