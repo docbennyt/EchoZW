@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npm run test && mkdir -p dist && echo ok > dist/index.html",
+  "buildCommand": "npx vitest run tests/staticTimetableDocumentParser.test.ts tests/staticTimetableDocumentImport.test.ts && mkdir -p dist && echo ok > dist/index.html",
   "outputDirectory": "dist",
   "redirects": [
     {
