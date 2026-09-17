@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npx eslint server/staticTimetableImportRepository.ts --rule 'no-undef: off' --rule 'prefer-const: off' && mkdir -p dist && echo ok > dist/index.html",
+  "buildCommand": "npx eslint server/staticTimetableImportRepository.ts --rule 'prefer-const: off' && mkdir -p dist && echo ok > dist/index.html",
   "outputDirectory": "dist",
   "redirects": [
     {
