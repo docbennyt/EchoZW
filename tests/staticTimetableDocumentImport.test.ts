@@ -30,7 +30,7 @@ describe("DR-120 static document import architecture", () => {
     expect(migration).toContain("'draft'");
     expect(migration).not.toContain("current_published_version_id = v_version_id");
     expect(staticApi).toContain("/api/admin/static-timetable-imports");
-    expect(staticApi).toContain("/draft");
+    expect(staticApi).toContain('action === "draft"');
     expect(staticApi).not.toContain("/publish");
   });
 
