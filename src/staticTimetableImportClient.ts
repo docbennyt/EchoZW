@@ -36,6 +36,39 @@ export type StaticImportSession = {
   sourceColumnIndex: number;
 };
 
+export type StaticImportCourseReference = {
+  candidateKey: string;
+  sourceTableIndex: number;
+  sourceRowIndex: number;
+  rawCells: string[];
+  courseCodeRaw: string;
+  courseCode: string;
+  courseName: string;
+  hoursPerWeek: number | null;
+  lecturerRaw: string | null;
+};
+
+export type StaticImportUnparsedCandidate = {
+  candidateKey: string;
+  sourceTableIndex: number;
+  sourceRowIndex: number;
+  sourceColumnIndex: number;
+  rawText: string;
+  weekday: number;
+  weekdayLabel: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type StaticImportIgnoredRecord = {
+  kind: "break" | "blank";
+  sourceTableIndex: number;
+  sourceRowIndex: number;
+  rawText: string;
+  startTime: string | null;
+  endTime: string | null;
+};
+
 export type StaticImportReview = {
   batch: {
     id: string;
@@ -65,22 +98,10 @@ export type StaticImportReview = {
   parsed: {
     metadata: StaticImportMetadata;
     summary: StaticImportReview["batch"]["summary"];
-    courses: Array<{
-      candidateKey: string;
-      courseCodeRaw: string;
-      courseCode: string;
-      courseName: string;
-      hoursPerWeek: number | null;
-      lecturerRaw: string | null;
-    }>;
+    courses: StaticImportCourseReference[];
     sessions: StaticImportSession[];
-    unparsed: Array<Record<string, unknown>>;
-    ignored: Array<{
-      kind: "break" | "blank";
-      rawText: string;
-      startTime: string | null;
-      endTime: string | null;
-    }>;
+    unparsed: StaticImportUnparsedCandidate[];
+    ignored: StaticImportIgnoredRecord[];
   };
   warnings: StaticImportWarning[];
   suggestions: {

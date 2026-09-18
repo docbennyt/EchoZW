@@ -581,9 +581,118 @@ export function StaticTimetableImportPage() {
             </div>
           </section>
 
+          <section className="czw-static-import-panel">
+            <div className="czw-static-import-section-heading">
+              <div>
+                <span>6 · Evidence ledger</span>
+                <h2>Inspect reference and non-session source evidence</h2>
+              </div>
+              <small>Read-only source truth retained for audit</small>
+            </div>
+
+            <h3>Course reference evidence</h3>
+            <div className="czw-static-import-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Raw code</th>
+                    <th>Title</th>
+                    <th>Hours</th>
+                    <th>Lecturer</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {review.parsed.courses.map((course) => (
+                    <tr key={course.candidateKey}>
+                      <td>
+                        <code>
+                          t{course.sourceTableIndex}:r{course.sourceRowIndex}
+                        </code>
+                        <small>{course.rawCells.join(" | ")}</small>
+                      </td>
+                      <td>{course.courseCodeRaw}</td>
+                      <td>{course.courseName}</td>
+                      <td>{course.hoursPerWeek ?? "—"}</td>
+                      <td>{course.lecturerRaw ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3>Unparsed timetable-looking cells</h3>
+            {review.parsed.unparsed.length === 0 ? (
+              <p>No unparsed timetable-looking cells.</p>
+            ) : (
+              <div className="czw-static-import-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Source</th>
+                      <th>Day / time</th>
+                      <th>Raw evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {review.parsed.unparsed.map((candidate) => (
+                      <tr key={candidate.candidateKey}>
+                        <td>
+                          <code>
+                            t{candidate.sourceTableIndex}:r{candidate.sourceRowIndex}:c
+                            {candidate.sourceColumnIndex}
+                          </code>
+                        </td>
+                        <td>
+                          {candidate.weekdayLabel} · {candidate.startTime}–
+                          {candidate.endTime}
+                        </td>
+                        <td>{candidate.rawText}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <h3>Ignored structural evidence</h3>
+            <div className="czw-static-import-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Source</th>
+                    <th>Kind</th>
+                    <th>Time</th>
+                    <th>Raw evidence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {review.parsed.ignored.map((record, index) => (
+                    <tr
+                      key={`${record.sourceTableIndex}:${record.sourceRowIndex}:${record.kind}:${index}`}
+                    >
+                      <td>
+                        <code>
+                          t{record.sourceTableIndex}:r{record.sourceRowIndex}
+                        </code>
+                      </td>
+                      <td>{record.kind}</td>
+                      <td>
+                        {record.startTime && record.endTime
+                          ? `${record.startTime}–${record.endTime}`
+                          : "—"}
+                      </td>
+                      <td>{record.rawText || "Blank source cell"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
           <section className="czw-static-import-panel czw-static-import-finalize">
             <div>
-              <span>6 · Verify</span>
+              <span>7 · Verify</span>
               <h2>Create a review draft</h2>
               <p>
                 This action creates an immutable draft version and marks the class as

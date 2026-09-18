@@ -15,6 +15,7 @@ const repository = readFileSync(
   "server/staticTimetableImportRepository.ts",
   "utf8",
 );
+const reviewPage = readFileSync("src/StaticTimetableImportPage.tsx", "utf8");
 const main = readFileSync("src/main.tsx", "utf8");
 const docs = readFileSync("docs/DOCX_IMPORT_SPEC.md", "utf8");
 
@@ -56,6 +57,15 @@ describe("DR-120 static document import architecture", () => {
     expect(staticApi).not.toContain("details: error.details");
     expect(main).toContain("/admin/static-import");
     expect(main).toContain("StaticTimetableImportPage");
+  });
+
+  it("shows the reviewer sessions, references, ignored rows and unparsed evidence", () => {
+    expect(reviewPage).toContain("Session verification");
+    expect(reviewPage).toContain("Course reference evidence");
+    expect(reviewPage).toContain("Unparsed timetable-looking cells");
+    expect(reviewPage).toContain("Ignored structural evidence");
+    expect(reviewPage).toContain("sourceTableIndex");
+    expect(reviewPage).toContain("rawText");
   });
 
   it("documents the exact HIT Biotechnology conservation invariants", () => {
