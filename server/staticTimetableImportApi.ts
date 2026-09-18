@@ -9,6 +9,14 @@ import {
 } from "./staticTimetableImportRepository.js";
 
 const MAX_DOCX_BYTES = 10 * 1024 * 1024;
+const DOCX_MIME_TYPE =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPTED_DOCX_MIME_TYPES = new Set([
+  DOCX_MIME_TYPE,
+  "application/octet-stream",
+  "application/zip",
+  "application/x-zip-compressed",
+]);
 const uuid = z.string().uuid();
 const draftSchema = z.object({
   programmeId: uuid,
@@ -52,7 +60,6 @@ function sendError(res: ServerResponse, error: unknown) {
       error: {
         code: error.code,
         message: error.message,
-        details: error.details,
       },
     });
     return;
@@ -139,6 +146,23 @@ function filenameFromHeader(req: IncomingMessage) {
   }
 }
 
+function docxMimeFromRequest(req: IncomingMessage) {
+  const mimeType = String(
+    req.headers["content-type"] ?? "application/octet-stream",
+  )
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (!ACCEPTED_DOCX_MIME_TYPES.has(mimeType)) {
+    throw new StaticTimetableImportError(
+      "DOCX_MIME_REQUIRED",
+      "Static timetable import accepts DOCX documents only.",
+      415,
+    );
+  }
+  return DOCX_MIME_TYPE;
+}
+
 export async function handleStaticTimetableImportAdminApi(
   req: IncomingMessage,
   res: ServerResponse,
@@ -164,11 +188,7 @@ export async function handleStaticTimetableImportAdminApi(
     try {
       const institutionId = uuid.parse(url.searchParams.get("institutionId"));
       const filename = filenameFromHeader(req);
-      const mimeType = String(
-        req.headers["content-type"] ?? "application/octet-stream",
-      )
-        .split(";")[0]
-        .trim();
+      const mimeType = docxMimeFromRequest(req);
       const bytes = await readRawBody(req, MAX_DOCX_BYTES);
       const review = await createStaticTimetableImport({
         institutionId,

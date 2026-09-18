@@ -29,10 +29,10 @@ const structure = {
       ["", "LUNCH", "", "", "", ""],
       [
         "1400-1600",
-        "ICS 1110 Lab 2",
         "SBT 1102 S103",
+        "ICS 1110 Auto-Hall / Online Teaching",
+        "ICS 1110 S103 / Online Teaching",
         "SBT 1103 Auto-Hall",
-        "HIT 1101 S103",
         "",
       ],
     ],
@@ -88,15 +88,19 @@ describe("static timetable DOCX matrix parser", () => {
     );
   });
 
-  it("never silently reconciles the ICS 1110 versus SBT 1104 source discrepancy", () => {
+  it("never silently reconciles the two ICS 1110 cells versus SBT 1104", () => {
     const parsed = parseStaticTimetableDocument(structure);
-    const ics = parsed.sessions.find(
+    const ics = parsed.sessions.filter(
       (session) => session.courseCode === "ICS 1110",
     );
 
-    expect(ics).toBeTruthy();
-    expect(ics?.courseName).toBeNull();
-    expect(ics?.warningCodes).toContain("COURSE_NOT_IN_REFERENCE");
+    expect(ics).toHaveLength(2);
+    expect(ics.every((session) => session.courseName === null)).toBe(true);
+    expect(
+      ics.every((session) =>
+        session.warningCodes.includes("COURSE_NOT_IN_REFERENCE"),
+      ),
+    ).toBe(true);
     expect(parsed.warnings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

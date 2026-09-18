@@ -50,7 +50,6 @@ export default [
         "warn",
         { allowConstantExport: true },
       ],
-      "prefer-const": ["error", { destructuring: "all" }],
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [
         "warn",

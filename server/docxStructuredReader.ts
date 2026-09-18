@@ -4,20 +4,62 @@ import type { StaticTimetableDocumentStructure } from "../src/domain/staticTimet
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
+const MAX_DOCUMENT_XML_BYTES = 20 * 1024 * 1024;
+
+function ensureRange(
+  buffer: Buffer,
+  offset: number,
+  length: number,
+  code: string,
+) {
+  if (
+    !Number.isSafeInteger(offset) ||
+    !Number.isSafeInteger(length) ||
+    offset < 0 ||
+    length < 0 ||
+    offset + length > buffer.length
+  ) {
+    throw new Error(code);
+  }
+}
 
 function findEndOfCentralDirectory(buffer: Buffer) {
   const lowerBound = Math.max(0, buffer.length - 65_557);
   for (let offset = buffer.length - 22; offset >= lowerBound; offset -= 1) {
+    ensureRange(buffer, offset, 4, "DOCX_ZIP_DIRECTORY_INVALID");
     if (buffer.readUInt32LE(offset) === EOCD_SIGNATURE) return offset;
   }
   throw new Error("DOCX_ZIP_DIRECTORY_NOT_FOUND");
 }
 
+function inflateBounded(compressed: Buffer, declaredSize: number) {
+  if (declaredSize > MAX_DOCUMENT_XML_BYTES) {
+    throw new Error("DOCX_DOCUMENT_XML_TOO_LARGE");
+  }
+  try {
+    return inflateRawSync(compressed, {
+      maxOutputLength: MAX_DOCUMENT_XML_BYTES,
+    });
+  } catch (error) {
+    const code =
+      error && typeof error === "object" && "code" in error
+        ? String(error.code)
+        : "";
+    if (code === "ERR_BUFFER_TOO_LARGE") {
+      throw new Error("DOCX_DOCUMENT_XML_TOO_LARGE");
+    }
+    throw new Error("DOCX_ZIP_DEFLATE_INVALID");
+  }
+}
+
 function readZipEntry(buffer: Buffer, expectedName: string) {
   const eocd = findEndOfCentralDirectory(buffer);
+  ensureRange(buffer, eocd, 22, "DOCX_ZIP_DIRECTORY_INVALID");
   const entryCount = buffer.readUInt16LE(eocd + 10);
   let cursor = buffer.readUInt32LE(eocd + 16);
+
   for (let index = 0; index < entryCount; index += 1) {
+    ensureRange(buffer, cursor, 46, "DOCX_ZIP_CENTRAL_DIRECTORY_INVALID");
     if (buffer.readUInt32LE(cursor) !== CENTRAL_SIGNATURE) {
       throw new Error("DOCX_ZIP_CENTRAL_DIRECTORY_INVALID");
     }
@@ -28,30 +70,56 @@ function readZipEntry(buffer: Buffer, expectedName: string) {
     const extraLength = buffer.readUInt16LE(cursor + 30);
     const commentLength = buffer.readUInt16LE(cursor + 32);
     const localHeaderOffset = buffer.readUInt32LE(cursor + 42);
+    const recordLength = 46 + nameLength + extraLength + commentLength;
+    ensureRange(
+      buffer,
+      cursor,
+      recordLength,
+      "DOCX_ZIP_CENTRAL_DIRECTORY_INVALID",
+    );
     const name = buffer
       .subarray(cursor + 46, cursor + 46 + nameLength)
       .toString("utf8");
+
     if (name === expectedName) {
+      if (uncompressedSize > MAX_DOCUMENT_XML_BYTES) {
+        throw new Error("DOCX_DOCUMENT_XML_TOO_LARGE");
+      }
+      ensureRange(
+        buffer,
+        localHeaderOffset,
+        30,
+        "DOCX_ZIP_LOCAL_HEADER_INVALID",
+      );
       if (buffer.readUInt32LE(localHeaderOffset) !== LOCAL_SIGNATURE) {
         throw new Error("DOCX_ZIP_LOCAL_HEADER_INVALID");
       }
       const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
       const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
       const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
+      ensureRange(
+        buffer,
+        dataStart,
+        compressedSize,
+        "DOCX_ZIP_ENTRY_TRUNCATED",
+      );
       const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
       const contents =
         compressionMethod === 0
           ? Buffer.from(compressed)
           : compressionMethod === 8
-            ? inflateRawSync(compressed)
+            ? inflateBounded(compressed, uncompressedSize)
             : null;
       if (!contents) throw new Error("DOCX_ZIP_COMPRESSION_UNSUPPORTED");
+      if (contents.length > MAX_DOCUMENT_XML_BYTES) {
+        throw new Error("DOCX_DOCUMENT_XML_TOO_LARGE");
+      }
       if (uncompressedSize > 0 && contents.length !== uncompressedSize) {
         throw new Error("DOCX_ZIP_ENTRY_SIZE_MISMATCH");
       }
       return contents;
     }
-    cursor += 46 + nameLength + extraLength + commentLength;
+    cursor += recordLength;
   }
   throw new Error("DOCX_DOCUMENT_XML_NOT_FOUND");
 }
