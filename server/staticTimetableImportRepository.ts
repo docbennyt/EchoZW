@@ -30,16 +30,6 @@ function client(env: NodeJS.ProcessEnv = process.env) {
   return createSupabaseAdminClient(env);
 }
 
-function safeFilename(value: string) {
-  const cleaned = value
-    .normalize("NFKC")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^[-.]+|[-.]+$/g, "")
-    .slice(0, 180);
-  return cleaned || "timetable.docx";
-}
-
 function dbError(
   code: string,
   message: string,
@@ -243,7 +233,7 @@ export async function createStaticTimetableImport(
 
   const supabase = client(env);
   const sha256 = createHash("sha256").update(input.bytes).digest("hex");
-  const storagePath = `${input.institutionId}/${sha256}/${safeFilename(input.filename)}`;
+  const storagePath = `${input.institutionId}/${sha256}/source.docx`;
   const mimeType =
     input.mimeType ||
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -389,37 +379,9 @@ export async function createStaticTimetableImport(
     parsed,
     env,
   );
-  const insertedBatch = await supabase
-    .from("import_batches")
-    .insert({
-      source_document_id: documentId,
-      import_mode: "cohort_docx",
-      status: "review_required",
-      parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
-      started_by: input.actorId,
-      summary: { ...parserSummaryPayload(parsed), suggestions },
-    })
-    .select("id")
-    .single();
-  if (insertedBatch.error || !insertedBatch.data) {
-    if ((insertedBatch.error as SupabaseErrorLike | null)?.code === "23505") {
-      const concurrentBatchId = await findExistingBatch(documentId, env);
-      if (concurrentBatchId) {
-        return getStaticTimetableImport(concurrentBatchId, env);
-      }
-    }
-    dbError(
-      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
-      "Could not create the static timetable review batch.",
-      insertedBatch.error,
-    );
-  }
-  const batchId = String(asRecord(insertedBatch.data).id);
-
   const documentCandidateKey = `document:${sha256}`;
   const candidateRows = [
     {
-      import_batch_id: batchId,
       candidate_key: documentCandidateKey,
       source_table: null,
       source_row: null,
@@ -431,7 +393,6 @@ export async function createStaticTimetableImport(
       normalized_payload: { metadata: parsed.metadata },
     },
     ...parsed.courses.map((course) => ({
-      import_batch_id: batchId,
       candidate_key: course.candidateKey,
       source_table: course.sourceTableIndex,
       source_row: course.sourceRowIndex,
@@ -446,7 +407,6 @@ export async function createStaticTimetableImport(
       normalized_payload: course,
     })),
     ...parsed.sessions.map((session) => ({
-      import_batch_id: batchId,
       candidate_key: session.candidateKey,
       source_table: session.sourceTableIndex,
       source_row: session.sourceRowIndex,
@@ -474,7 +434,6 @@ export async function createStaticTimetableImport(
       normalized_payload: session,
     })),
     ...parsed.unparsed.map((candidate) => ({
-      import_batch_id: batchId,
       candidate_key: candidate.candidateKey,
       source_table: candidate.sourceTableIndex,
       source_row: candidate.sourceRowIndex,
@@ -491,7 +450,6 @@ export async function createStaticTimetableImport(
       normalized_payload: candidate,
     })),
     ...parsed.ignored.map((record, index) => ({
-      import_batch_id: batchId,
       candidate_key: `ignored:${record.sourceTableIndex}:${record.sourceRowIndex}:${index}`,
       source_table: record.sourceTableIndex,
       source_row: record.sourceRowIndex,
@@ -509,61 +467,32 @@ export async function createStaticTimetableImport(
       normalized_payload: record,
     })),
   ];
-
-  const insertedCandidates = await supabase
-    .from("import_candidates")
-    .insert(candidateRows)
-    .select("id,candidate_key");
-  if (insertedCandidates.error || !insertedCandidates.data) {
-    dbError(
-      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
-      "Could not persist timetable candidates and provenance.",
-      insertedCandidates.error,
-    );
-  }
-  const candidateIds = new Map(
-    (insertedCandidates.data as unknown as JsonRecord[]).map((row) => [
-      String(row.candidate_key),
-      String(row.id),
-    ]),
-  );
-
   const warningRows = parsed.warnings.map((warning) => ({
-    candidate_id:
-      candidateIds.get(warning.candidateKey ?? documentCandidateKey) ??
-      candidateIds.get(documentCandidateKey),
+    candidate_key: warning.candidateKey ?? documentCandidateKey,
     warning_code: warning.code,
     severity: warning.severity === "error" ? "blocking" : "warning",
     message: warning.message,
     field_name: warning.fieldName,
     suggested_value: null,
   }));
-  if (warningRows.length > 0) {
-    const { error } = await supabase
-      .from("import_candidate_warnings")
-      .insert(warningRows);
-    if (error) {
-      dbError(
-        "STATIC_IMPORT_DATABASE_UNAVAILABLE",
-        "Could not persist static timetable review warnings.",
-        error,
-      );
-    }
-  }
 
-  const { error: documentUpdateError } = await supabase
-    .from("source_documents")
-    .update({ source_status: "review_required" })
-    .eq("id", documentId);
-  if (documentUpdateError) {
+  const persisted = await supabase.rpc("persist_static_document_import", {
+    p_source_document_id: documentId,
+    p_actor_id: input.actorId,
+    p_parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+    p_summary: { ...parserSummaryPayload(parsed), suggestions },
+    p_candidates: candidateRows,
+    p_warnings: warningRows,
+  });
+  if (persisted.error || !persisted.data) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
-      "Could not finalize the static timetable source status.",
-      documentUpdateError,
+      "Could not atomically persist the static timetable review evidence.",
+      persisted.error,
     );
   }
 
-  return getStaticTimetableImport(batchId, env);
+  return getStaticTimetableImport(String(persisted.data), env);
 }
 
 export async function getStaticTimetableImport(

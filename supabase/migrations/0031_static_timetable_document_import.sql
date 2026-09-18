@@ -50,6 +50,195 @@ create unique index if not exists import_batches_static_docx_idempotency_unique
   on public.import_batches (source_document_id, parser_version)
   where import_mode = 'cohort_docx';
 
+-- Persist a deterministic parse result atomically. The source document itself is
+-- retained before parsing; this transaction prevents a concurrent duplicate from
+-- observing a half-written batch/candidate/warning graph.
+create or replace function public.persist_static_document_import(
+  p_source_document_id uuid,
+  p_actor_id uuid,
+  p_parser_version text,
+  p_summary jsonb,
+  p_candidates jsonb,
+  p_warnings jsonb
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_batch_id uuid;
+begin
+  if p_actor_id is null then
+    raise exception 'STATIC_IMPORT_ACTOR_REQUIRED';
+  end if;
+  if nullif(btrim(p_parser_version), '') is null then
+    raise exception 'STATIC_IMPORT_PARSER_VERSION_REQUIRED';
+  end if;
+  if jsonb_typeof(coalesce(p_summary, '{}'::jsonb)) <> 'object' then
+    raise exception 'STATIC_IMPORT_SUMMARY_INVALID';
+  end if;
+  if jsonb_typeof(coalesce(p_candidates, '[]'::jsonb)) <> 'array'
+    or jsonb_array_length(coalesce(p_candidates, '[]'::jsonb)) < 1 then
+    raise exception 'STATIC_IMPORT_CANDIDATES_REQUIRED';
+  end if;
+  if jsonb_typeof(coalesce(p_warnings, '[]'::jsonb)) <> 'array' then
+    raise exception 'STATIC_IMPORT_WARNINGS_INVALID';
+  end if;
+  if exists (
+    select 1
+    from jsonb_array_elements(p_candidates) candidate
+    where nullif(candidate->>'candidate_key', '') is null
+      or nullif(candidate->>'raw_text', '') is null
+      or nullif(candidate->>'candidate_type', '') is null
+  ) then
+    raise exception 'STATIC_IMPORT_CANDIDATE_INVALID';
+  end if;
+
+  perform 1
+  from public.source_documents d
+  where d.id = p_source_document_id
+  for update;
+  if not found then
+    raise exception 'STATIC_IMPORT_DOCUMENT_NOT_FOUND';
+  end if;
+
+  insert into public.import_batches (
+    source_document_id,
+    import_mode,
+    status,
+    parser_version,
+    started_by,
+    summary
+  ) values (
+    p_source_document_id,
+    'cohort_docx',
+    'review_required',
+    p_parser_version,
+    p_actor_id,
+    coalesce(p_summary, '{}'::jsonb)
+  )
+  on conflict (source_document_id, parser_version)
+    where import_mode = 'cohort_docx'
+  do nothing
+  returning id into v_batch_id;
+
+  if v_batch_id is null then
+    select b.id
+    into v_batch_id
+    from public.import_batches b
+    where b.source_document_id = p_source_document_id
+      and b.import_mode = 'cohort_docx'
+      and b.parser_version = p_parser_version
+    limit 1;
+
+    if v_batch_id is null then
+      raise exception 'STATIC_IMPORT_IDEMPOTENCY_LOOKUP_FAILED';
+    end if;
+
+    update public.source_documents
+    set
+      source_status = 'review_required',
+      parser_version = p_parser_version
+    where id = p_source_document_id;
+
+    return v_batch_id;
+  end if;
+
+  insert into public.import_candidates (
+    import_batch_id,
+    candidate_key,
+    source_table,
+    source_row,
+    source_column,
+    source_cell,
+    raw_text,
+    candidate_type,
+    course_code_raw,
+    course_name_raw,
+    day_raw,
+    weekday,
+    time_raw,
+    start_time,
+    end_time,
+    venue_raw,
+    lecturer_raw,
+    delivery_mode_raw,
+    review_status,
+    normalized_payload
+  )
+  select
+    v_batch_id,
+    candidate->>'candidate_key',
+    nullif(candidate->>'source_table', '')::integer,
+    nullif(candidate->>'source_row', '')::integer,
+    nullif(candidate->>'source_column', '')::integer,
+    nullif(candidate->>'source_cell', ''),
+    candidate->>'raw_text',
+    candidate->>'candidate_type',
+    nullif(candidate->>'course_code_raw', ''),
+    nullif(candidate->>'course_name_raw', ''),
+    nullif(candidate->>'day_raw', ''),
+    nullif(candidate->>'weekday', '')::smallint,
+    nullif(candidate->>'time_raw', ''),
+    nullif(candidate->>'start_time', '')::time,
+    nullif(candidate->>'end_time', '')::time,
+    nullif(candidate->>'venue_raw', ''),
+    nullif(candidate->>'lecturer_raw', ''),
+    nullif(candidate->>'delivery_mode_raw', ''),
+    coalesce(nullif(candidate->>'review_status', ''), 'unreviewed'),
+    coalesce(candidate->'normalized_payload', '{}'::jsonb)
+  from jsonb_array_elements(p_candidates) candidate;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_warnings) warning
+    where nullif(warning->>'candidate_key', '') is null
+      or not exists (
+        select 1
+        from public.import_candidates c
+        where c.import_batch_id = v_batch_id
+          and c.candidate_key = warning->>'candidate_key'
+      )
+  ) then
+    raise exception 'STATIC_IMPORT_WARNING_CANDIDATE_NOT_FOUND';
+  end if;
+
+  insert into public.import_candidate_warnings (
+    candidate_id,
+    warning_code,
+    severity,
+    message,
+    field_name,
+    suggested_value
+  )
+  select
+    c.id,
+    warning->>'warning_code',
+    warning->>'severity',
+    warning->>'message',
+    nullif(warning->>'field_name', ''),
+    nullif(warning->>'suggested_value', '')
+  from jsonb_array_elements(p_warnings) warning
+  join public.import_candidates c
+    on c.import_batch_id = v_batch_id
+   and c.candidate_key = warning->>'candidate_key';
+
+  update public.source_documents
+  set
+    source_status = 'review_required',
+    parser_version = p_parser_version
+  where id = p_source_document_id;
+
+  return v_batch_id;
+end;
+$$;
+
+revoke all on function public.persist_static_document_import(uuid, uuid, text, jsonb, jsonb, jsonb)
+  from public, anon, authenticated;
+grant execute on function public.persist_static_document_import(uuid, uuid, text, jsonb, jsonb, jsonb)
+  to service_role;
+
 -- Live watcher materialization must not reinterpret a class whose durable source
 -- authority is a static document. The server checks this guard immediately before
 -- source-gateway draft materialization.
@@ -400,7 +589,7 @@ begin
     v_version_id,
     'static_' || substr(
       encode(
-        digest(
+        extensions.digest(
           p_import_batch_id::text || '|' || session_row->>'candidateKey',
           'sha256'
         ),

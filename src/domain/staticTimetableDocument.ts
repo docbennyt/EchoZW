@@ -322,9 +322,13 @@ function parseSessionCell(raw: string) {
   };
 }
 
-function lunchRow(table: string[][], rowIndex: number) {
-  const row = table[rowIndex] ?? [];
-  return row.some((cell) => compact(cell).toUpperCase() === "LUNCH");
+function lunchRowEvidence(row: string[]) {
+  const cells = row.map(compact).filter(Boolean);
+  if (cells.length === 0) return null;
+  if (cells.some((cell) => cell.toUpperCase() === "LUNCH")) {
+    return cells.join(" | ");
+  }
+  return cells.join("").toUpperCase() === "LUNCH" ? cells.join(" | ") : null;
 }
 
 export function parseStaticTimetableDocument(
@@ -424,12 +428,13 @@ export function parseStaticTimetableDocument(
       continue;
     }
 
-    if (!time && lunchRow(timetable, rowIndex)) {
+    const lunchEvidence = !time ? lunchRowEvidence(row) : null;
+    if (lunchEvidence) {
       ignored.push({
         kind: "break",
         sourceTableIndex: timetableTableIndex,
         sourceRowIndex: rowIndex,
-        rawText: "LUNCH",
+        rawText: lunchEvidence,
         startTime: pendingLunchTime?.startTime ?? null,
         endTime: pendingLunchTime?.endTime ?? null,
       });

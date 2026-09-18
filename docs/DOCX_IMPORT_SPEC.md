@@ -6,9 +6,9 @@ DR-120 adds a class-specific static-document ingestion lane beside the live Sour
 
 The workflow is **Upload → deterministic extraction → human review → create draft**. There is intentionally no publish endpoint in this lane. The importer never updates `current_published_version_id`; student-visible publication still goes through the existing guarded version/publication process. Re-importing the same source document and parser version is duplicate-aware and returns the same review evidence instead of creating duplicate draft/session state.
 
-The uploaded DOCX is persisted in the private `timetable-sources` bucket and registered in `source_documents` with original filename, MIME type, byte size, SHA-256, uploader, timestamp, parser version, institution and durable storage path. Import candidates retain table, row, column, raw text and candidate keys. Normalization never replaces the raw evidence.
+The uploaded DOCX is persisted in the private `timetable-sources` bucket and registered in `source_documents` with original filename, MIME type, byte size, SHA-256, uploader, timestamp, parser version, institution and durable storage path. Import candidates retain table, row, column, raw text and candidate keys. Normalization never replaces the raw evidence. Batch, candidate and warning persistence is performed in one database transaction, keyed by `source_document + parser_version`, so a concurrent duplicate cannot observe a half-written review graph.
 
-The parser reads `word/document.xml` directly from the DOCX ZIP container. It uses Word table/paragraph structure and does not use OCR. Unknown or malformed schedule cells become blocking review evidence rather than disappearing. `LUNCH` is preserved as an ignored structural row, never a class session.
+The parser reads `word/document.xml` directly from the DOCX ZIP container. It uses Word table/paragraph structure and does not use OCR. Unknown or malformed schedule cells become blocking review evidence rather than disappearing. `LUNCH` is preserved as ignored structural evidence, never a class session.
 
 Canonical programme, cohort and academic-period mapping is exact-only. Ambiguous mapping requires the reviewer to select an existing entity. The import lane does not fuzzy-create academic entities.
 
@@ -20,10 +20,10 @@ The acceptance fixture is `2026 SEMESTER 1 PART 1 Blended Timetable.docx`, Depar
 - **28 timetable contact hours**.
 - **6 course-reference rows**.
 - Course-reference hours also total 28.
-- `1215-1315 LUNCH` is ignored as a non-session break.
+- The source encodes the lunch interval as a `1215-1315` row followed by `L | U | N | C | H` across weekday cells; that exact evidence is retained as an ignored break and never becomes a session.
 - Raw blended-delivery strings such as `S103 / Online Teaching` and `Auto-Hall / Online Teaching` remain visible for human verification.
 
-The source contains `ICS 1110` in timetable cells while the course-reference section contains `SBT 1104 — Computer Applications`. CalenderZW must **never silently** substitute, merge, or reinterpret those codes. `ICS 1110` produces a blocking `COURSE_NOT_IN_REFERENCE` warning and unused `SBT 1104` produces a blocking `REFERENCE_COURSE_UNUSED` warning. A reviewer must document the verified resolution before a draft can be materialized.
+The source contains two afternoon `ICS 1110` timetable cells while the course-reference section contains `SBT 1104 — Computer Applications`. CalenderZW must **never silently** substitute, merge, or reinterpret those codes. Each `ICS 1110` cell produces a blocking `COURSE_NOT_IN_REFERENCE` warning and unused `SBT 1104` produces a blocking `REFERENCE_COURSE_UNUSED` warning. A reviewer must document the verified resolution before a draft can be materialized.
 
 ## Review and draft semantics
 

@@ -26,13 +26,13 @@ const structure = {
         "HIT 1101 S103",
       ],
       ["1215-1315", "", "", "", "", ""],
-      ["", "LUNCH", "", "", "", ""],
+      ["", "L", "U", "N", "C", "H"],
       [
         "1400-1600",
-        "ICS 1110 Lab 2",
         "SBT 1102 S103",
+        "ICS 1110 (Auto-Hall) / Online Teaching",
+        "ICS 1110 S103 / Online Teaching",
         "SBT 1103 Auto-Hall",
-        "HIT 1101 S103",
         "",
       ],
     ],
@@ -64,7 +64,7 @@ const structure = {
 };
 
 describe("static timetable DOCX matrix parser", () => {
-  it("conserves the HIT Biotechnology canary invariants", () => {
+  it("conserves the exact HIT Biotechnology canary invariants", () => {
     const parsed = parseStaticTimetableDocument(structure);
 
     expect(parsed.metadata).toMatchObject({
@@ -74,29 +74,51 @@ describe("static timetable DOCX matrix parser", () => {
       semesterNumber: 1,
       modeLabel: "Blended",
     });
+    expect(parsed.summary.detectedTableCount).toBe(2);
     expect(parsed.summary.sessionCount).toBe(14);
     expect(parsed.summary.timetableContactHours).toBe(28);
     expect(parsed.summary.courseReferenceCount).toBe(6);
     expect(parsed.summary.courseReferenceHours).toBe(28);
-    expect(parsed.ignored).toContainEqual(
-      expect.objectContaining({
-        kind: "break",
-        rawText: "LUNCH",
-        startTime: "12:15",
-        endTime: "13:15",
-      }),
+
+    const breaks = parsed.ignored.filter((record) => record.kind === "break");
+    expect(breaks).toHaveLength(1);
+    expect(breaks[0]).toMatchObject({
+      rawText: "L | U | N | C | H",
+      startTime: "12:15",
+      endTime: "13:15",
+    });
+    expect(parsed.sessions).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ weekday: 5, startTime: "14:00" }),
+      ]),
     );
   });
 
-  it("never silently reconciles the ICS 1110 versus SBT 1104 source discrepancy", () => {
+  it("never silently reconciles the two ICS 1110 cells versus SBT 1104", () => {
     const parsed = parseStaticTimetableDocument(structure);
-    const ics = parsed.sessions.find(
+    const ics = parsed.sessions.filter(
       (session) => session.courseCode === "ICS 1110",
     );
 
-    expect(ics).toBeTruthy();
-    expect(ics?.courseName).toBeNull();
-    expect(ics?.warningCodes).toContain("COURSE_NOT_IN_REFERENCE");
+    expect(ics).toHaveLength(2);
+    expect(ics.every((session) => session.courseName === null)).toBe(true);
+    expect(
+      ics.every((session) =>
+        session.warningCodes.includes("COURSE_NOT_IN_REFERENCE"),
+      ),
+    ).toBe(true);
+    expect(ics.map((session) => session.rawText)).toEqual([
+      "ICS 1110 (Auto-Hall) / Online Teaching",
+      "ICS 1110 S103 / Online Teaching",
+    ]);
+    expect(parsed.courses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          courseCode: "SBT 1104",
+          courseName: "Computer Applications",
+        }),
+      ]),
+    );
     expect(parsed.warnings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -120,6 +142,20 @@ describe("static timetable DOCX matrix parser", () => {
 
     expect(blended.length).toBeGreaterThan(0);
     expect(blended[0].deliveryModeRaw).toBe("Online Teaching");
+    expect(blended).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          courseCode: "ICS 1110",
+          venueRaw: "Auto-Hall",
+          deliveryModeRaw: "Online Teaching",
+        }),
+        expect.objectContaining({
+          courseCode: "ICS 1110",
+          venueRaw: "S103",
+          deliveryModeRaw: "Online Teaching",
+        }),
+      ]),
+    );
     expect(parsed.warnings).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

@@ -11,6 +11,10 @@ const watcherGuard = readFileSync(
 );
 const adminApi = readFileSync("server/adminApi.ts", "utf8");
 const staticApi = readFileSync("server/staticTimetableImportApi.ts", "utf8");
+const repository = readFileSync(
+  "server/staticTimetableImportRepository.ts",
+  "utf8",
+);
 const main = readFileSync("src/main.tsx", "utf8");
 const docs = readFileSync("docs/DOCX_IMPORT_SPEC.md", "utf8");
 
@@ -23,9 +27,19 @@ describe("DR-120 static document import architecture", () => {
     expect(migration).toContain("'live_managed_source'");
   });
 
-  it("keeps document import duplicate-aware and draft-only", () => {
+  it("persists parse evidence atomically and keeps identical imports idempotent", () => {
+    expect(migration).toContain("persist_static_document_import");
     expect(migration).toContain("import_batches_static_docx_idempotency_unique");
+    expect(migration).toContain(
+      "on conflict (source_document_id, parser_version)",
+    );
+    expect(repository).toContain('.rpc("persist_static_document_import"');
+    expect(repository).toContain("/${sha256}/source.docx`");
+  });
+
+  it("keeps document import draft-only and uses the installed digest schema explicitly", () => {
     expect(migration).toContain("materialize_static_document_draft");
+    expect(migration).toContain("extensions.digest(");
     expect(migration).toContain("'static_document'");
     expect(migration).toContain("'draft'");
     expect(migration).not.toContain("current_published_version_id = v_version_id");
@@ -34,9 +48,12 @@ describe("DR-120 static document import architecture", () => {
     expect(staticApi).not.toContain("/publish");
   });
 
-  it("requires operational-admin auth and exposes a dedicated verification surface", () => {
+  it("requires operational-admin auth and constrains DOCX upload content", () => {
     expect(adminApi).toContain("requireOperationalAdmin");
     expect(adminApi).toContain("handleStaticTimetableImportAdminApi");
+    expect(staticApi).toContain("DOCX_MIME_REQUIRED");
+    expect(staticApi).toContain("ACCEPTED_DOCX_MIME_TYPES");
+    expect(staticApi).not.toContain("details: error.details");
     expect(main).toContain("/admin/static-import");
     expect(main).toContain("StaticTimetableImportPage");
   });
