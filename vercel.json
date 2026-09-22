@@ -34,54 +34,6 @@
       "destination": "https://calender.up.railway.app/sitemap.xml"
     },
     {
-      "source": "/t/:path*",
-      "destination": "https://calender.up.railway.app/t/:path*"
-    },
-    {
-      "source": "/find",
-      "destination": "https://calender.up.railway.app/find"
-    },
-    {
-      "source": "/request",
-      "destination": "https://calender.up.railway.app/request"
-    },
-    {
-      "source": "/feedback",
-      "destination": "https://calender.up.railway.app/feedback"
-    },
-    {
-      "source": "/support",
-      "destination": "https://calender.up.railway.app/support"
-    },
-    {
-      "source": "/privacy",
-      "destination": "https://calender.up.railway.app/privacy"
-    },
-    {
-      "source": "/terms",
-      "destination": "https://calender.up.railway.app/terms"
-    },
-    {
-      "source": "/data-deletion",
-      "destination": "https://calender.up.railway.app/data-deletion"
-    },
-    {
-      "source": "/account/:path*",
-      "destination": "https://calender.up.railway.app/account/:path*"
-    },
-    {
-      "source": "/auth/:path*",
-      "destination": "https://calender.up.railway.app/auth/:path*"
-    },
-    {
-      "source": "/admin",
-      "destination": "https://calender.up.railway.app/admin"
-    },
-    {
-      "source": "/admin/:path*",
-      "destination": "https://calender.up.railway.app/admin/:path*"
-    },
-    {
       "source": "/:path*",
       "destination": "/index.html"
     }
