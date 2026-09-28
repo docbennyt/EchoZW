@@ -14,6 +14,11 @@ import type {
   TimetableSessionException,
 } from "./pilotTypes";
 
+export type StaffEnrollmentOutcome =
+  | "invited_new_user"
+  | "invite_resent_pending_user"
+  | "access_granted_existing_user";
+
 type ApiOptions = {
   method?: "GET" | "POST" | "PATCH" | "DELETE";
   accessToken: string;
@@ -389,38 +394,39 @@ export function inviteClassRep(
   accessToken: string,
   input: { email: string; displayName: string; timetableId: string },
 ) {
-  return adminFetch<{ invite: { staffUserId: string; assignmentId: string } }>(
-    "/api/admin/staff/invite",
-    {
-      method: "POST",
-      accessToken,
-      body: input,
-    },
-  );
+  return adminFetch<{
+    invite: {
+      staffUserId: string;
+      assignmentId: string;
+      enrollment: StaffEnrollmentOutcome;
+    };
+  }>("/api/admin/staff/invite", {
+    method: "POST",
+    accessToken,
+    body: input,
+  });
 }
 
 export function inviteAdmin(
   accessToken: string,
   input: { email: string; displayName: string },
 ) {
-  return adminFetch<{ invite: { staffUserId: string } }>(
-    "/api/admin/staff/invite-admin",
-    {
-      method: "POST",
-      accessToken,
-      body: input,
-    },
-  );
+  return adminFetch<{
+    invite: { staffUserId: string; enrollment: StaffEnrollmentOutcome };
+  }>("/api/admin/staff/invite-admin", {
+    method: "POST",
+    accessToken,
+    body: input,
+  });
 }
 
 export function resendStaffInvite(accessToken: string, staffUserId: string) {
-  return adminFetch<{ ok: true }>(
-    `/api/admin/staff/${staffUserId}/resend-invite`,
-    {
-      method: "POST",
-      accessToken,
-    },
-  );
+  return adminFetch<{
+    resend: { enrollment: StaffEnrollmentOutcome };
+  }>(`/api/admin/staff/${staffUserId}/resend-invite`, {
+    method: "POST",
+    accessToken,
+  });
 }
 
 export const resendClassRepInvite = resendStaffInvite;
