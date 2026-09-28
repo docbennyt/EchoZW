@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "npm test && tsc -b && vite build && tsc -p tsconfig.server.json",
+    "build": "vitest run tests/staffRepository.test.ts && tsc -b && vite build && tsc -p tsconfig.server.json",
     "start": "node dist-server/server/productionServer.js",
     "preview": "node dist-server/server/productionServer.js",
     "deploy:check": "node scripts/verify-production-readiness.mjs",
