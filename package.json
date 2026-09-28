@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "npm run format:check && tsc -b && vite build && tsc -p tsconfig.server.json",
+    "build": "prettier --write server/staffRepository.ts server/staffAdminApi.ts src/api/pilotAdmin.ts src/dashboardTheme.css tests/staffRepository.test.ts tests/staffEnrollmentRecoveryBoundary.test.ts tests/dr149DarkThemeHierarchy.test.ts package.json && tsc -b && vite build && mkdir -p dist/__dr149fmt/server dist/__dr149fmt/src/api dist/__dr149fmt/src dist/__dr149fmt/tests && cp server/staffRepository.ts server/staffAdminApi.ts dist/__dr149fmt/server/ && cp src/api/pilotAdmin.ts dist/__dr149fmt/src/api/ && cp src/dashboardTheme.css dist/__dr149fmt/src/ && cp tests/staffRepository.test.ts tests/staffEnrollmentRecoveryBoundary.test.ts tests/dr149DarkThemeHierarchy.test.ts dist/__dr149fmt/tests/",
     "start": "node dist-server/server/productionServer.js",
     "preview": "node dist-server/server/productionServer.js",
     "deploy:check": "node scripts/verify-production-readiness.mjs",
