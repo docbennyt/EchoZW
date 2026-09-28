@@ -142,11 +142,12 @@ export async function handleStaffAdminApi(
       /^\/api\/admin\/staff\/([^/]+)\/resend-invite$/,
     );
     if (req.method === "POST" && resendMatch) {
-      await resendStaffInvite({
-        actor,
-        staffUserId: decodeURIComponent(resendMatch[1]),
+      sendJson(res, 200, {
+        resend: await resendStaffInvite({
+          actor,
+          staffUserId: decodeURIComponent(resendMatch[1]),
+        }),
       });
-      sendJson(res, 200, { ok: true });
       return true;
     }
 
