@@ -11,6 +11,8 @@ COPY . .
 # Serial Vitest execution avoids Alpine/build-container memory spikes while preserving the full suite.
 RUN NODE_ENV=test APP_ENV=test npm test -- --maxWorkers=1 --no-file-parallelism
 RUN npm run lint
+RUN cp src/dashboardTheme.css /tmp/dashboardTheme.css && cp tests/dr149DarkThemeHierarchy.test.ts /tmp/dr149DarkThemeHierarchy.test.ts && npx prettier --write src/dashboardTheme.css tests/dr149DarkThemeHierarchy.test.ts && echo '--- dashboardTheme.css prettier diff ---' && diff -u /tmp/dashboardTheme.css src/dashboardTheme.css || true
+RUN echo '--- dr149DarkThemeHierarchy.test.ts prettier diff ---' && diff -u /tmp/dr149DarkThemeHierarchy.test.ts tests/dr149DarkThemeHierarchy.test.ts || true
 RUN npm run format:check
 RUN npm run build
 
