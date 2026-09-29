@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const adminClientMocks = vi.hoisted(() => ({
   createSupabaseAdminClient: vi.fn(),
@@ -11,8 +11,10 @@ vi.mock("../server/supabase/adminClient", () => ({
 import {
   assignClassRep,
   inviteAdmin,
+  inviteClassRep,
   resendStaffInvite,
   setStaffActive,
+  setStaffRepositoryEnv,
 } from "../server/staffRepository";
 import { permissionsForRole } from "../server/supabase/auth";
 
@@ -57,6 +59,13 @@ function queryBuilder(input: {
   };
   return builder;
 }
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  setStaffRepositoryEnv({
+    PUBLIC_APP_URL: "https://calender.aido.co.zw",
+  } as NodeJS.ProcessEnv);
+});
 
 describe("staff repository founder and Admin safety", () => {
   it("rejects attempts to disable the protected founder before any update", async () => {
@@ -211,10 +220,138 @@ describe("staff repository founder and Admin safety", () => {
     );
   });
 
-  it("resends Class Rep access through the shared DR-52 password setup flow", async () => {
+  it("sends a genuine Supabase invitation for a brand-new Class Rep", async () => {
+    const staffMissing = queryBuilder({ single: null });
+    const staffInsert = queryBuilder({
+      single: { id: "staff-new", user_id: "auth-new" },
+    });
+    const staffForAssignment = queryBuilder({
+      single: {
+        id: "staff-new",
+        user_id: "auth-new",
+        email: "rep@example.test",
+        display_name: "Rep",
+        role: "class_rep",
+        is_founder: false,
+        active: true,
+      },
+    });
+    const revokeBuilder = queryBuilder({ list: [] });
+    const assignmentInsert = queryBuilder({ single: { id: "assignment-new" } });
+    const auditBuilder = queryBuilder({ list: [] });
+    let staffCalls = 0;
+    let assignmentCalls = 0;
+    const from = vi.fn((table: string) => {
+      if (table === "staff_users") {
+        staffCalls += 1;
+        if (staffCalls === 1) return staffMissing;
+        if (staffCalls === 2) return staffInsert;
+        return staffForAssignment;
+      }
+      if (table === "class_rep_assignments") {
+        assignmentCalls += 1;
+        return assignmentCalls === 1 ? revokeBuilder : assignmentInsert;
+      }
+      if (table === "audit_logs") return auditBuilder;
+      throw new Error(`Unexpected table ${table}`);
+    });
+    const listUsers = vi.fn(async () => ({
+      data: { users: [] },
+      error: null,
+    }));
+    const inviteUserByEmail = vi.fn(async () => ({
+      data: { user: { id: "auth-new", email: "rep@example.test" } },
+      error: null,
+    }));
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({
+      from,
+      auth: { admin: { listUsers, inviteUserByEmail } },
+    });
+
+    await expect(
+      inviteClassRep({
+        actor: adminActor,
+        email: "REP@example.test",
+        displayName: "Rep",
+        timetableId: "timetable-1",
+      }),
+    ).resolves.toEqual({
+      staffUserId: "staff-new",
+      assignmentId: "assignment-new",
+      enrollment: "invited_new_user",
+    });
+
+    expect(inviteUserByEmail).toHaveBeenCalledWith("rep@example.test", {
+      data: { display_name: "Rep", product: "CalenderZW" },
+      redirectTo: "https://calender.aido.co.zw/account/update-password",
+    });
+    expect(staffInsert.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: "auth-new",
+        role: "class_rep",
+        invited_at: expect.any(String),
+        last_invited_at: expect.any(String),
+      }),
+    );
+  });
+
+  it("does not send any auth email when resending access for a confirmed Class Rep", async () => {
     const staffLookup = queryBuilder({
       single: {
         id: "staff-rep",
+        user_id: "auth-rep",
+        email: "rep@example.test",
+        display_name: "Rep",
+        role: "class_rep",
+        is_founder: false,
+        active: true,
+      },
+    });
+    const auditBuilder = queryBuilder({ list: [] });
+    const from = vi.fn((table: string) => {
+      if (table === "staff_users") return staffLookup;
+      if (table === "audit_logs") return auditBuilder;
+      throw new Error(`Unexpected table ${table}`);
+    });
+    const listUsers = vi.fn(async () => ({
+      data: {
+        users: [
+          {
+            id: "auth-rep",
+            email: "rep@example.test",
+            email_confirmed_at: "2026-09-01T10:00:00.000Z",
+          },
+        ],
+      },
+      error: null,
+    }));
+    const inviteUserByEmail = vi.fn();
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({
+      from,
+      auth: { admin: { listUsers, inviteUserByEmail } },
+    });
+
+    await expect(
+      resendStaffInvite({
+        actor: adminActor,
+        staffUserId: "staff-rep",
+      }),
+    ).resolves.toEqual({ enrollment: "access_granted_existing_user" });
+
+    expect(inviteUserByEmail).not.toHaveBeenCalled();
+    expect(staffLookup.update).not.toHaveBeenCalled();
+    expect(auditBuilder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "class_rep.access_confirmed_existing_user",
+      }),
+    );
+  });
+
+  it("resends a real invite for an existing pending Class Rep", async () => {
+    const staffLookup = queryBuilder({
+      single: {
+        id: "staff-rep",
+        user_id: "auth-rep",
         email: "rep@example.test",
         display_name: "Rep",
         role: "class_rep",
@@ -233,10 +370,26 @@ describe("staff repository founder and Admin safety", () => {
       if (table === "audit_logs") return auditBuilder;
       throw new Error(`Unexpected table ${table}`);
     });
-    const resetPasswordForEmail = vi.fn(async () => ({ error: null }));
+    const listUsers = vi.fn(async () => ({
+      data: {
+        users: [
+          {
+            id: "auth-rep",
+            email: "rep@example.test",
+            invited_at: "2026-09-28T10:00:00.000Z",
+            email_confirmed_at: null,
+          },
+        ],
+      },
+      error: null,
+    }));
+    const inviteUserByEmail = vi.fn(async () => ({
+      data: { user: { id: "auth-rep", email: "rep@example.test" } },
+      error: null,
+    }));
     adminClientMocks.createSupabaseAdminClient.mockReturnValue({
       from,
-      auth: { resetPasswordForEmail },
+      auth: { admin: { listUsers, inviteUserByEmail } },
     });
 
     await expect(
@@ -244,14 +397,18 @@ describe("staff repository founder and Admin safety", () => {
         actor: adminActor,
         staffUserId: "staff-rep",
       }),
-    ).resolves.toBeUndefined();
+    ).resolves.toEqual({ enrollment: "invite_resent_pending_user" });
 
-    expect(resetPasswordForEmail).toHaveBeenCalledWith("rep@example.test", {
+    expect(inviteUserByEmail).toHaveBeenCalledWith("rep@example.test", {
+      data: { display_name: "Rep", product: "CalenderZW" },
       redirectTo: "https://calender.aido.co.zw/account/update-password",
+    });
+    expect(timestampUpdate.update).toHaveBeenCalledWith({
+      last_invited_at: expect.any(String),
     });
   });
 
-  it("reuses an existing Supabase Auth identity when the founder invites an Admin", async () => {
+  it("reuses a confirmed Supabase Auth identity without forcing recovery when the founder grants Admin access", async () => {
     const staffLookup = queryBuilder({ single: null });
     const staffInsert = queryBuilder({
       single: { id: "staff-new-admin", user_id: "auth-existing" },
@@ -267,17 +424,21 @@ describe("staff repository founder and Admin safety", () => {
       throw new Error(`Unexpected table ${table}`);
     });
     const listUsers = vi.fn(async () => ({
-      data: { users: [{ id: "auth-existing", email: "ops@example.test" }] },
+      data: {
+        users: [
+          {
+            id: "auth-existing",
+            email: "ops@example.test",
+            email_confirmed_at: "2026-09-01T10:00:00.000Z",
+          },
+        ],
+      },
       error: null,
     }));
     const inviteUserByEmail = vi.fn();
-    const resetPasswordForEmail = vi.fn(async () => ({ error: null }));
     adminClientMocks.createSupabaseAdminClient.mockReturnValue({
       from,
-      auth: {
-        admin: { listUsers, inviteUserByEmail },
-        resetPasswordForEmail,
-      },
+      auth: { admin: { listUsers, inviteUserByEmail } },
     });
 
     await expect(
@@ -286,18 +447,23 @@ describe("staff repository founder and Admin safety", () => {
         email: "OPS@example.test",
         displayName: "Operations Admin",
       }),
-    ).resolves.toEqual({ staffUserId: "staff-new-admin" });
+    ).resolves.toEqual({
+      staffUserId: "staff-new-admin",
+      enrollment: "access_granted_existing_user",
+    });
 
     expect(inviteUserByEmail).not.toHaveBeenCalled();
-    expect(resetPasswordForEmail).toHaveBeenCalledWith("ops@example.test", {
-      redirectTo: "https://calender.aido.co.zw/account/update-password",
-    });
     expect(staffInsert.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: "auth-existing",
         role: "admin",
         is_founder: false,
+        invited_at: null,
+        last_invited_at: null,
       }),
+    );
+    expect(auditBuilder.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "admin.access_granted_existing_user" }),
     );
   });
 });

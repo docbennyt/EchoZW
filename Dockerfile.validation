@@ -1,0 +1,18 @@
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --silent
+
+COPY . .
+
+# Railway is used as an exact-head validation runner when GitHub-hosted CI is unavailable.
+# Serial Vitest execution avoids Alpine/build-container memory spikes while preserving the full suite.
+RUN NODE_ENV=test APP_ENV=test npm test -- --maxWorkers=1 --no-file-parallelism
+RUN npm run lint
+RUN npm run format:check
+RUN npm run build
+
+ENV NODE_ENV=production
+CMD ["npm", "start"]

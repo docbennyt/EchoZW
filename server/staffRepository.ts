@@ -27,6 +27,18 @@ export type StaffMutationActor = {
   permissions: StaffPermissions;
 };
 
+export type StaffEnrollmentOutcome =
+  | "invited_new_user"
+  | "invite_resent_pending_user"
+  | "access_granted_existing_user";
+
+type StaffAuthEnrollment = {
+  userId: string;
+  enrollment: StaffEnrollmentOutcome;
+  invitationSent: boolean;
+  existingAuthUser: boolean;
+};
+
 export type StaffMember = {
   id: string;
   userId: string;
@@ -87,9 +99,13 @@ function safeEmail(value: string) {
 
 function publicOrigin() {
   return (
+    repositoryEnv?.PUBLIC_APP_URL ??
+    process.env.PUBLIC_APP_URL ??
+    repositoryEnv?.VITE_PUBLIC_APP_URL ??
+    process.env.VITE_PUBLIC_APP_URL ??
     repositoryEnv?.PUBLIC_SITE_URL ??
-    repositoryEnv?.VITE_PUBLIC_SITE_URL ??
     process.env.PUBLIC_SITE_URL ??
+    repositoryEnv?.VITE_PUBLIC_SITE_URL ??
     process.env.VITE_PUBLIC_SITE_URL ??
     "https://calender.aido.co.zw"
   ).replace(/\/$/, "");
@@ -260,27 +276,14 @@ async function findAuthUserByEmail(email: string) {
   return null;
 }
 
-async function sendStaffSetupEmail(email: string) {
-  const { error } = await client().auth.resetPasswordForEmail(email, {
-    redirectTo: staffSetupRedirect(),
-  });
-  if (error) {
-    throw new StaffApiError(
-      "INVITE_FAILED",
-      "Could not send the staff setup email.",
-      502,
-      error,
-    );
-  }
+function authUserIsConfirmed(user: {
+  email_confirmed_at?: string | null;
+  confirmed_at?: string | null;
+}) {
+  return Boolean(user.email_confirmed_at ?? user.confirmed_at);
 }
 
-async function ensureInvitedAuthUser(email: string, displayName: string) {
-  const existing = await findAuthUserByEmail(email);
-  if (existing) {
-    await sendStaffSetupEmail(email);
-    return { userId: existing.id, invited: false, setupEmailSent: true };
-  }
-
+async function sendStaffInvitation(email: string, displayName: string) {
   const { data, error } = await client().auth.admin.inviteUserByEmail(email, {
     data: { display_name: displayName, product: "CalenderZW" },
     redirectTo: staffSetupRedirect(),
@@ -293,7 +296,72 @@ async function ensureInvitedAuthUser(email: string, displayName: string) {
       error,
     );
   }
-  return { userId: data.user.id, invited: true, setupEmailSent: true };
+  return data.user;
+}
+
+/**
+ * Staff provisioning and password recovery are intentionally separate domains.
+ * New or still-pending invitees receive Supabase invite semantics. Confirmed
+ * users keep their existing credentials and only receive the new staff role.
+ * Explicit user-initiated password recovery must never be introduced here.
+ */
+async function resolveStaffAuthEnrollment(
+  email: string,
+  displayName: string,
+): Promise<StaffAuthEnrollment> {
+  const existing = await findAuthUserByEmail(email);
+  if (!existing) {
+    const invited = await sendStaffInvitation(email, displayName);
+    return {
+      userId: invited.id,
+      enrollment: "invited_new_user",
+      invitationSent: true,
+      existingAuthUser: false,
+    };
+  }
+
+  if (authUserIsConfirmed(existing)) {
+    return {
+      userId: existing.id,
+      enrollment: "access_granted_existing_user",
+      invitationSent: false,
+      existingAuthUser: true,
+    };
+  }
+
+  if (existing.invited_at) {
+    const reinvited = await sendStaffInvitation(email, displayName);
+    if (reinvited.id !== existing.id) {
+      throw new StaffApiError(
+        "AUTH_IDENTITY_MISMATCH",
+        "Could not safely resend the existing staff invitation.",
+        409,
+      );
+    }
+    return {
+      userId: existing.id,
+      enrollment: "invite_resent_pending_user",
+      invitationSent: true,
+      existingAuthUser: true,
+    };
+  }
+
+  throw new StaffApiError(
+    "ACCOUNT_CONFIRMATION_REQUIRED",
+    "This email already has an unconfirmed CalenderZW account that was not created by a staff invitation. Ask the user to finish confirming that account, then grant staff access again.",
+    409,
+  );
+}
+
+function enrollmentAuditAction(
+  role: "admin" | "class_rep",
+  enrollment: StaffEnrollmentOutcome,
+) {
+  if (enrollment === "invited_new_user") return `${role}.invited`;
+  if (enrollment === "invite_resent_pending_user") {
+    return `${role}.invite_resent`;
+  }
+  return `${role}.access_granted_existing_user`;
 }
 
 async function getStaffRecord(staffUserId: string) {
@@ -393,10 +461,10 @@ export async function inviteClassRep(input: {
     throw new StaffApiError("VALIDATION_FAILED", "Name is required.", 422);
   }
 
-  const authUser = await ensureInvitedAuthUser(email, displayName);
+  const authEnrollment = await resolveStaffAuthEnrollment(email, displayName);
   const now = new Date().toISOString();
   const admin = client();
-  const existing = await getStaffRecordByUserId(authUser.userId);
+  const existing = await getStaffRecordByUserId(authEnrollment.userId);
 
   if (existing && existing.role !== "class_rep") {
     await auditRejected({
@@ -414,6 +482,9 @@ export async function inviteClassRep(input: {
     );
   }
 
+  const invitationTimestamps = authEnrollment.invitationSent
+    ? { last_invited_at: now }
+    : {};
   const staff = existing
     ? await expectData<JsonRecord>(
         admin
@@ -422,9 +493,9 @@ export async function inviteClassRep(input: {
             email,
             display_name: displayName,
             active: true,
-            last_invited_at: now,
             disabled_at: null,
             updated_at: now,
+            ...invitationTimestamps,
           })
           .eq("id", String(existing.id))
           .select("id, user_id")
@@ -435,14 +506,14 @@ export async function inviteClassRep(input: {
         admin
           .from("staff_users")
           .insert({
-            user_id: authUser.userId,
+            user_id: authEnrollment.userId,
             email,
             display_name: displayName,
             role: "class_rep",
             is_founder: false,
             active: true,
-            invited_at: now,
-            last_invited_at: now,
+            invited_at: authEnrollment.invitationSent ? now : null,
+            last_invited_at: authEnrollment.invitationSent ? now : null,
             disabled_at: null,
             created_by: input.actor.userId,
             updated_at: now,
@@ -452,26 +523,35 @@ export async function inviteClassRep(input: {
         "Could not save the Class Rep staff record.",
       );
 
+  const auditAction = enrollmentAuditAction(
+    "class_rep",
+    authEnrollment.enrollment,
+  );
   const assignment = await assignClassRep({
     actor: input.actor,
     staffUserId: String(staff?.id),
     timetableId: input.timetableId,
-    auditAction: "class_rep.invited",
+    auditAction,
   });
 
   await audit({
     actorId: input.actor.userId,
-    action: "class_rep.invite_email_sent",
+    action: auditAction,
     entityType: "staff_user",
     entityId: String(staff?.id),
     metadata: {
-      invited: authUser.invited,
-      setupEmailSent: authUser.setupEmailSent,
+      enrollment: authEnrollment.enrollment,
+      existingAuthUser: authEnrollment.existingAuthUser,
+      invitationSent: authEnrollment.invitationSent,
       assignmentId: assignment.id,
     },
   });
 
-  return { staffUserId: String(staff?.id), assignmentId: assignment.id };
+  return {
+    staffUserId: String(staff?.id),
+    assignmentId: assignment.id,
+    enrollment: authEnrollment.enrollment,
+  };
 }
 
 export async function inviteAdmin(input: {
@@ -489,8 +569,8 @@ export async function inviteAdmin(input: {
     throw new StaffApiError("VALIDATION_FAILED", "Name is required.", 422);
   }
 
-  const authUser = await ensureInvitedAuthUser(email, displayName);
-  const existing = await getStaffRecordByUserId(authUser.userId);
+  const authEnrollment = await resolveStaffAuthEnrollment(email, displayName);
+  const existing = await getStaffRecordByUserId(authEnrollment.userId);
   if (existing?.is_founder) {
     throw new StaffApiError(
       "FOUNDER_PROTECTED",
@@ -502,6 +582,9 @@ export async function inviteAdmin(input: {
   const now = new Date().toISOString();
   const admin = client();
   let staff: JsonRecord | null;
+  const invitationTimestamps = authEnrollment.invitationSent
+    ? { last_invited_at: now }
+    : {};
   if (existing) {
     if (existing.role === "class_rep") {
       await revokeActiveAssignments(input.actor.userId, String(existing.id));
@@ -515,8 +598,8 @@ export async function inviteAdmin(input: {
           role: "admin",
           active: true,
           disabled_at: null,
-          last_invited_at: now,
           updated_at: now,
+          ...invitationTimestamps,
         })
         .eq("id", String(existing.id))
         .select("id, user_id")
@@ -528,14 +611,14 @@ export async function inviteAdmin(input: {
       admin
         .from("staff_users")
         .insert({
-          user_id: authUser.userId,
+          user_id: authEnrollment.userId,
           email,
           display_name: displayName,
           role: "admin",
           is_founder: false,
           active: true,
-          invited_at: now,
-          last_invited_at: now,
+          invited_at: authEnrollment.invitationSent ? now : null,
+          last_invited_at: authEnrollment.invitationSent ? now : null,
           disabled_at: null,
           created_by: input.actor.userId,
           updated_at: now,
@@ -546,20 +629,24 @@ export async function inviteAdmin(input: {
     );
   }
 
+  const auditAction = enrollmentAuditAction("admin", authEnrollment.enrollment);
   await audit({
     actorId: input.actor.userId,
-    action:
-      existing?.role === "admin" ? "admin.invite_resent" : "admin.role_granted",
+    action: auditAction,
     entityType: "staff_user",
     entityId: String(staff?.id),
     metadata: {
-      invited: authUser.invited,
-      setupEmailSent: authUser.setupEmailSent,
-      existingAuthUser: !authUser.invited,
+      enrollment: authEnrollment.enrollment,
+      existingAuthUser: authEnrollment.existingAuthUser,
+      invitationSent: authEnrollment.invitationSent,
+      previousRole: existing?.role ?? null,
     },
   });
 
-  return { staffUserId: String(staff?.id) };
+  return {
+    staffUserId: String(staff?.id),
+    enrollment: authEnrollment.enrollment,
+  };
 }
 
 export async function resendStaffInvite(input: {
@@ -583,7 +670,54 @@ export async function resendStaffInvite(input: {
     assertCanManageClassReps(input.actor);
   }
 
-  await sendStaffSetupEmail(String(staff.email));
+  const email = safeEmail(String(staff.email));
+  const authUser = await findAuthUserByEmail(email);
+  if (!authUser || authUser.id !== String(staff.user_id)) {
+    throw new StaffApiError(
+      "AUTH_USER_NOT_FOUND",
+      "The staff record no longer matches a Supabase Auth account. Review the account before resending access.",
+      409,
+    );
+  }
+
+  const role = staff.role === "admin" ? "admin" : "class_rep";
+  if (authUserIsConfirmed(authUser)) {
+    const enrollment = "access_granted_existing_user" as const;
+    await audit({
+      actorId: input.actor.userId,
+      action: `${role}.access_confirmed_existing_user`,
+      entityType: "staff_user",
+      entityId: input.staffUserId,
+      metadata: {
+        enrollment,
+        existingAuthUser: true,
+        invitationSent: false,
+      },
+    });
+    return { enrollment };
+  }
+
+  if (!authUser.invited_at) {
+    throw new StaffApiError(
+      "ACCOUNT_CONFIRMATION_REQUIRED",
+      "This staff email belongs to an unconfirmed account that was not created by a staff invitation. Ask the user to finish confirming that account first.",
+      409,
+    );
+  }
+
+  const reinvited = await sendStaffInvitation(
+    email,
+    staff.display_name ? String(staff.display_name) : "CalenderZW staff",
+  );
+  if (reinvited.id !== authUser.id) {
+    throw new StaffApiError(
+      "AUTH_IDENTITY_MISMATCH",
+      "Could not safely resend the existing staff invitation.",
+      409,
+    );
+  }
+
+  const enrollment = "invite_resent_pending_user" as const;
   await expectData(
     client()
       .from("staff_users")
@@ -595,13 +729,16 @@ export async function resendStaffInvite(input: {
   );
   await audit({
     actorId: input.actor.userId,
-    action:
-      staff.role === "admin"
-        ? "admin.invite_resent"
-        : "class_rep.invite_resent",
+    action: `${role}.invite_resent`,
     entityType: "staff_user",
     entityId: input.staffUserId,
+    metadata: {
+      enrollment,
+      existingAuthUser: true,
+      invitationSent: true,
+    },
   });
+  return { enrollment };
 }
 
 export async function assignClassRep(input: {
