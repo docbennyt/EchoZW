@@ -328,8 +328,7 @@ html[data-dashboard-surface="true"] .czw-auth-card input:focus-visible,
 html[data-dashboard-surface="true"] .czw-auth-card select:focus-visible,
 html[data-dashboard-surface="true"] .czw-auth-card textarea:focus-visible {
   border-color: var(--dashboard-brand);
-  outline: 3px solid
-    color-mix(in srgb, var(--dashboard-brand) 28%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--dashboard-brand) 28%, transparent);
   outline-offset: 2px;
 }
 
@@ -337,10 +336,8 @@ html[data-dashboard-surface="true"] .czw-auth-card textarea:focus-visible {
 html[data-dashboard-surface="true"][data-dashboard-theme="dark"]
   .czw-admin-wrap
   .pilot-surface,
-html[data-dashboard-surface="true"][data-dashboard-theme="dark"]
-  .foc-section,
-html[data-dashboard-surface="true"][data-dashboard-theme="dark"]
-  .dr57-card {
+html[data-dashboard-surface="true"][data-dashboard-theme="dark"] .foc-section,
+html[data-dashboard-surface="true"][data-dashboard-theme="dark"] .dr57-card {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.035),
     0 18px 44px rgba(0, 0, 0, 0.16);
