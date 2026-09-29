@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npx prettier --check src/api/pilotAdmin.ts && npm run build",
+  "buildCommand": "npx prettier --check src/dashboardTheme.css && npm run build",
   "outputDirectory": "dist",
   "redirects": [
     {
