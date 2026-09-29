@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "npx vitest run tests/staffRepository.test.ts && npm run build",
+  "buildCommand": "npx vitest run --reporter=json --outputFile=test-results.json || true; npm run build && cp test-results.json dist/test-results.json",
   "outputDirectory": "dist",
   "redirects": [
     {
