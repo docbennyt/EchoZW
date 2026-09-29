@@ -34,14 +34,6 @@
       "destination": "https://calender.up.railway.app/sitemap.xml"
     },
     {
-      "source": "/t/:path*",
-      "destination": "https://calender.up.railway.app/t/:path*"
-    },
-    {
-      "source": "/find",
-      "destination": "https://calender.up.railway.app/find"
-    },
-    {
       "source": "/:path*",
       "destination": "/index.html"
     }
