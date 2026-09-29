@@ -173,4 +173,102 @@ describe("canonical resolved schedule", () => {
 
     expect(resolveRecurringSessions(resolved)[0]?.venue).toBe("N109");
   });
+
+  it("moves the production-shaped ISE4105 recurring class by overlay without rewriting source evidence", () => {
+    const baseSessions = Array.from({ length: 15 }, (_, index) => ({
+      stableSessionKey: `source-${index}`,
+      courseCode: `ISE${4100 + index}`,
+      courseName: `Course ${index}`,
+      weekday: ((index % 5) + 1) as 1 | 2 | 3 | 4 | 5,
+      startTime: index % 2 === 0 ? "08:00:00" : "10:15:00",
+      endTime: index % 2 === 0 ? "10:00:00" : "12:15:00",
+      venue: `N${100 + index}`,
+      lecturer: null,
+      sessionType: "Lecture",
+      notes: null,
+    }));
+    baseSessions[12] = {
+      stableSessionKey: "source_778238ed6e5a0718deaa192c",
+      courseCode: "ISE4105",
+      courseName: "Software Testing & Quality Assurance",
+      weekday: 3,
+      startTime: "12:15:00",
+      endTime: "13:15:00",
+      venue: "N109",
+      lecturer: "Mr Manjoro",
+      sessionType: "Lecture",
+      notes: null,
+    };
+
+    const sourceSnapshot = structuredClone(baseSessions);
+    const resolved = timetable({
+      publicSlug: "ise-part-4-1-august-semester-2026",
+      sessions: baseSessions,
+      corrections: [
+        {
+          id: "a52cab41-e429-4684-b971-a87110507a55",
+          stableSessionKey: null,
+          action: "add",
+          sourceMayReplace: false,
+          pinned: true,
+          courseCode: "ISE4105",
+          courseName: "Software Testing & Quality Assurance",
+          weekday: 2,
+          startTime: "12:15:00",
+          endTime: "13:15:00",
+          venue: "N109",
+          lecturer: "Mr Manjoro",
+          sessionType: "Lecture",
+          notes: null,
+          reason: "Was ommitted.",
+          provenance: null,
+          creatorRole: "class_rep",
+          active: true,
+          createdAt: "2026-09-29T16:26:05.000Z",
+        },
+        {
+          id: "remove-source-ise4105",
+          stableSessionKey: "source_778238ed6e5a0718deaa192c",
+          action: "remove",
+          sourceMayReplace: true,
+          pinned: false,
+          courseCode: null,
+          courseName: null,
+          weekday: null,
+          startTime: null,
+          endTime: null,
+          venue: null,
+          lecturer: null,
+          sessionType: null,
+          notes: null,
+          reason: "not supposed to be here.",
+          provenance: null,
+          creatorRole: "class_rep",
+          active: true,
+          createdAt: "2026-09-29T16:30:00.000Z",
+        },
+      ],
+    });
+
+    const effective = resolveRecurringSessions(resolved);
+    const ise4105 = effective.filter((session) => session.courseCode === "ISE4105");
+
+    expect(effective).toHaveLength(15);
+    expect(ise4105).toEqual([
+      expect.objectContaining({
+        source: "correction",
+        weekday: 2,
+        startTime: "12:15:00",
+        endTime: "13:15:00",
+        venue: "N109",
+      }),
+    ]);
+    expect(
+      effective.some(
+        (session) =>
+          session.stableSessionKey === "source_778238ed6e5a0718deaa192c",
+      ),
+    ).toBe(false);
+    expect(baseSessions).toEqual(sourceSnapshot);
+  });
 });
