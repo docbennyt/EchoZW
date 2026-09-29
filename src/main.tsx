@@ -12,6 +12,7 @@ import { HeroTrustProof } from "./HeroTrustProof";
 import { PilotOfferEnhancement } from "./PilotOfferEnhancement";
 import { MarketingEnhancements } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
+import { StaticTimetableImportPage } from "./StaticTimetableImportPage";
 import { initializeInstallExperience } from "./pwa/installCapability";
 import { registerCalenderZwServiceWorker } from "./pwa/serviceWorker";
 import { AUTH_CONFIRM_PATH, PASSWORD_RESET_PATH } from "./authRecovery";
@@ -29,6 +30,7 @@ import "./productionUxEnhancementsPatch.css";
 import "./studentOnboardingAcceleration.css";
 import "./growthCapturePages.css";
 import "./growthInboxPage.css";
+import "./staticTimetableImportPage.css";
 import "./timetablePublicSettingsControl.css";
 import "./pilotOfferEnhancement.css";
 import "./classRepCorrectionSafetyEnhancement.css";
@@ -99,6 +101,10 @@ function RootApp() {
 
   if (path === "/admin/demand" || path === "/admin/demand/") {
     return <GrowthInboxPage />;
+  }
+
+  if (path === "/admin/static-import" || path === "/admin/static-import/") {
+    return <StaticTimetableImportPage />;
   }
 
   const googleSlug = googleTimetableSlug(path);
