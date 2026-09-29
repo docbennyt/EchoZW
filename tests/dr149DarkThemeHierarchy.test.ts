@@ -16,9 +16,7 @@ describe("DR-149 dark dashboard hierarchy", () => {
   it("raises dark text and boundary contrast without abandoning the shared semantic contract", () => {
     expect(themeCss).toContain("--dashboard-text-2: #c6d1cc;");
     expect(themeCss).toContain("--dashboard-text-3: #94a69e;");
-    expect(themeCss).toContain(
-      "--dashboard-line: rgba(255, 255, 255, 0.13);",
-    );
+    expect(themeCss).toContain("--dashboard-line: rgba(255, 255, 255, 0.13);");
     expect(themeCss).toContain(
       "--dashboard-line-strong: rgba(255, 255, 255, 0.22);",
     );
