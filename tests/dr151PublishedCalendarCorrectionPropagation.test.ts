@@ -95,7 +95,10 @@ describe("DR-151 published calendar correction propagation", () => {
   });
 
   it("emits the effective Tuesday correction in ICS and not the removed Wednesday source UID", () => {
-    const ics = generatePublishedTimetableIcs({ timetable: timetable() });
+    const ics = generatePublishedTimetableIcs({
+      timetable: timetable(),
+      reminderOffsetsMinutes: [],
+    });
 
     expect(ics).toContain(
       "UID:correction-a52cab41-e429-4684-b971-a87110507a55@calender.aido.co.zw",
