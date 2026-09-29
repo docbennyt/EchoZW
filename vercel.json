@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "find tests -maxdepth 1 -type f | sort | head -n 50 | xargs npx vitest run && npm run build",
+  "buildCommand": "find tests -maxdepth 1 -type f \( -name '*.test.ts' -o -name '*.test.tsx' \) | sort | head -n 50 | xargs npx vitest run && npm run build",
   "outputDirectory": "dist",
   "redirects": [
     {
