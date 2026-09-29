@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm ci --silent
 
 COPY . .
-RUN npm run build
+RUN npx prettier --write src/dashboardTheme.css
+RUN cat src/dashboardTheme.css && exit 1
 
-ENV NODE_ENV=production
-CMD ["npm", "start"]
+CMD ["node", "-e", "setInterval(() => {}, 2147483647)"]
