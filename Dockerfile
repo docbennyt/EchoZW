@@ -6,7 +6,7 @@ COPY package*.json ./
 RUN npm ci --silent
 
 COPY . .
-RUN npm run build
+RUN NODE_ENV=test APP_ENV=test npm test && npm run lint && npm run format:check && npm run build
 
 ENV NODE_ENV=production
 CMD ["npm", "start"]
