@@ -35,6 +35,10 @@ describe("Vercel SPA asset-origin contract", () => {
       source: "/runtime-config.js",
       destination: "https://calender.up.railway.app/runtime-config.js",
     });
+    expect(rewrites).toContainEqual({
+      source: "/sitemap.xml",
+      destination: "https://calender.up.railway.app/sitemap.xml",
+    });
     expect(rewrites.at(-1)).toEqual({
       source: "/:path*",
       destination: "/index.html",
