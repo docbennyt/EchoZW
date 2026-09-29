@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "buildCommand": "ls tests/*.test.ts tests/*.test.tsx 2>/dev/null | sort | sed -n '29p' | xargs npx vitest run && npm run build",
+  "buildCommand": "ls tests/*.test.ts tests/*.test.tsx 2>/dev/null | sort | sed -n '30p' | xargs npx vitest run && npm run build",
   "outputDirectory": "dist",
   "redirects": [
     {
