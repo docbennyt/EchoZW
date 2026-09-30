@@ -8,8 +8,7 @@ RUN npm ci --silent
 COPY . .
 
 # TEMPORARY isolated formatter artifact runner for DR-151 only.
-# Format the exact files flagged by the repository's Prettier gate, then expose only
-# those source files over HTTP so their formatter-exact bytes can be copied back.
+# Format exactly the files flagged by the repository's Prettier gate.
 RUN npx prettier --write \
     server/docxStructuredReader.ts \
     server/staticTimetableImportRepository.ts \
@@ -21,4 +20,5 @@ RUN npx prettier --write \
     tests/staticTimetableDocumentImport.test.ts \
     tests/staticTimetableDocumentParser.test.ts
 
-CMD ["node", "-e", "const http=require('node:http'),fs=require('node:fs'),path=require('node:path');const allowed=new Set(['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts']);http.createServer((req,res)=>{const key=decodeURIComponent((req.url||'/').split('?')[0]).replace(/^\\/+/, '');if(!allowed.has(key)){res.statusCode=404;return res.end('not found');}res.setHeader('Content-Type','text/plain; charset=utf-8');fs.createReadStream(path.join('/app',key)).pipe(res);}).listen(Number(process.env.PORT||3000),'0.0.0.0');"]
+# Emit formatter-exact files as gzip+base64 log records, then remain healthy.
+CMD ["node", "-e", "const fs=require('node:fs'),z=require('node:zlib');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){console.log('DR151FMT:'+f+':'+z.gzipSync(fs.readFileSync('/app/'+f)).toString('base64'));}require('node:http').createServer((q,r)=>r.end('ok')).listen(Number(process.env.PORT||3000),'0.0.0.0');"]
