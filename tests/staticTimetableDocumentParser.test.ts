@@ -39,12 +39,7 @@ const structure = {
     [
       ["COURSE CODE", "TITLE", "HOURS PER WEEK", "LECTURER"],
       ["SBT 1102", "Cell Biology", "6 hours", "Mr T. Chirova"],
-      [
-        "SBT 1103",
-        "Chemistry for Biotechnologists",
-        "6 hours",
-        "Mrs Zinyando",
-      ],
+      ["SBT 1103", "Chemistry for Biotechnologists", "6 hours", "Mrs Zinyando"],
       [
         "SST 1101",
         "Technical Communication Skills I",
@@ -168,14 +163,7 @@ describe("static timetable DOCX matrix parser", () => {
 
   it("accepts an inline lunch row without turning it into an invalid session", () => {
     const inlineLunch = structuredClone(structure);
-    inlineLunch.tables[0][3] = [
-      "1215-1315 LUNCH",
-      "",
-      "",
-      "",
-      "",
-      "",
-    ];
+    inlineLunch.tables[0][3] = ["1215-1315 LUNCH", "", "", "", "", ""];
     inlineLunch.tables[0].splice(4, 1);
 
     const parsed = parseStaticTimetableDocument(inlineLunch);

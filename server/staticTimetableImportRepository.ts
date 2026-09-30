@@ -43,7 +43,9 @@ function asRecord(value: unknown) {
 }
 
 function normalizeText(value: unknown) {
-  return String(value ?? "").trim().toLocaleLowerCase("en");
+  return String(value ?? "")
+    .trim()
+    .toLocaleLowerCase("en");
 }
 
 export async function getStaticTimetableImportOptions(
@@ -144,18 +146,20 @@ async function inferCanonicalSuggestions(
 ) {
   const options = await getStaticTimetableImportOptions(institutionId, env);
   const department = normalizeText(parsed.metadata.departmentName);
-  const programmes = (options.programmes as JsonRecord[]).filter((programme) => {
-    const values = [programme.name, programme.short_name, programme.code]
-      .map(normalizeText)
-      .filter(Boolean);
-    return department !== "" && values.includes(department);
-  });
-  const programmeId =
-    programmes.length === 1 ? String(programmes[0].id) : null;
+  const programmes = (options.programmes as JsonRecord[]).filter(
+    (programme) => {
+      const values = [programme.name, programme.short_name, programme.code]
+        .map(normalizeText)
+        .filter(Boolean);
+      return department !== "" && values.includes(department);
+    },
+  );
+  const programmeId = programmes.length === 1 ? String(programmes[0].id) : null;
 
   const expectedLevel = parsed.metadata.yearLevel;
   const cohorts = (options.cohorts as JsonRecord[]).filter((cohort) => {
-    if (!programmeId || String(cohort.programme_id) !== programmeId) return false;
+    if (!programmeId || String(cohort.programme_id) !== programmeId)
+      return false;
     if (expectedLevel === null) return false;
     const values = [cohort.label, cohort.level_label, cohort.code]
       .map((value) => normalizeText(value))
@@ -238,12 +242,14 @@ export async function createStaticTimetableImport(
     input.mimeType ||
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-  let { data: sourceDocument, error: sourceLookupError } = await supabase
+  const sourceLookup = await supabase
     .from("source_documents")
     .select("*")
     .eq("institution_id", input.institutionId)
     .eq("sha256", sha256)
     .maybeSingle();
+  let sourceDocument = sourceLookup.data;
+  const sourceLookupError = sourceLookup.error;
   if (sourceLookupError) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
@@ -645,9 +651,7 @@ export async function getStaticTimetableImport(
       severity: String(row.severity),
       message: String(row.message),
       fieldName: row.field_name ? String(row.field_name) : null,
-      resolutionNote: row.resolution_note
-        ? String(row.resolution_note)
-        : null,
+      resolutionNote: row.resolution_note ? String(row.resolution_note) : null,
       resolvedAt: row.resolved_at ? String(row.resolved_at) : null,
     })),
     suggestions: asRecord(summary.suggestions ?? {}),

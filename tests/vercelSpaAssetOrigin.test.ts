@@ -7,9 +7,9 @@ type Rewrite = {
 };
 
 function loadVercelRewrites(): Rewrite[] {
-  const config = JSON.parse(
-    readFileSync(new URL("../vercel.json", import.meta.url), "utf8"),
-  ) as { rewrites?: Rewrite[] };
+  const config = JSON.parse(readFileSync("vercel.json", "utf8")) as {
+    rewrites?: Rewrite[];
+  };
 
   return config.rewrites ?? [];
 }

@@ -46,8 +46,8 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
       `${railwayOrigin}/runtime-config.js`,
     );
     expect(rewrites.get("/sitemap.xml")).toBe(`${railwayOrigin}/sitemap.xml`);
-    expect(rewrites.get("/t/:path*")).toBe(`${railwayOrigin}/t/:path*`);
-    expect(rewrites.get("/find")).toBe(`${railwayOrigin}/find`);
+    expect(rewrites.get("/t/:path*")).toBeUndefined();
+    expect(rewrites.get("/find")).toBeUndefined();
     expect(vercel.rewrites.at(-1)).toEqual({
       source: "/:path*",
       destination: "/index.html",
@@ -56,15 +56,15 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     const apiIndex = vercel.rewrites.findIndex(
       (rewrite) => rewrite.source === "/api/:path*",
     );
-    const timetableSeoIndex = vercel.rewrites.findIndex(
-      (rewrite) => rewrite.source === "/t/:path*",
+    const sitemapIndex = vercel.rewrites.findIndex(
+      (rewrite) => rewrite.source === "/sitemap.xml",
     );
     const fallbackIndex = vercel.rewrites.findIndex(
       (rewrite) => rewrite.source === "/:path*",
     );
     expect(apiIndex).toBeGreaterThanOrEqual(0);
-    expect(timetableSeoIndex).toBeGreaterThan(apiIndex);
-    expect(fallbackIndex).toBeGreaterThan(timetableSeoIndex);
+    expect(sitemapIndex).toBeGreaterThan(apiIndex);
+    expect(fallbackIndex).toBeGreaterThan(sitemapIndex);
   });
 
   it("preserves legacy redirects and the public OAuth callback", () => {

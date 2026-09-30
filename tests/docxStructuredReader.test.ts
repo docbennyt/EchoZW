@@ -44,14 +44,7 @@ function buildStoredDocx(xml: string, declaredSize = Buffer.byteLength(xml)) {
   eocd.writeUInt32LE(centralOffset, 16);
   eocd.writeUInt16LE(0, 20);
 
-  return Buffer.concat([
-    localHeader,
-    name,
-    data,
-    centralHeader,
-    name,
-    eocd,
-  ]);
+  return Buffer.concat([localHeader, name, data, centralHeader, name, eocd]);
 }
 
 describe("structured DOCX reader", () => {
@@ -88,6 +81,8 @@ describe("structured DOCX reader", () => {
     const xml = `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:tbl /></w:document>`;
     const docx = buildStoredDocx(xml);
 
-    expect(() => readStructuredDocx(docx.subarray(0, docx.length - 10))).toThrow();
+    expect(() =>
+      readStructuredDocx(docx.subarray(0, docx.length - 10)),
+    ).toThrow();
   });
 });

@@ -160,7 +160,8 @@ export class StaticImportClientError extends Error {
 }
 
 async function parseResponse<T>(response: Response) {
-  const body = (await response.json().catch(() => null)) as T | ApiErrorBody | null;
+  const body = (await response.json().catch(() => null)) as
+    T | ApiErrorBody | null;
   if (!response.ok) {
     const errorBody = body as ApiErrorBody | null;
     throw new StaticImportClientError(
@@ -180,9 +181,12 @@ export async function getStaticTimetableImportOptions(
   const suffix = institutionId
     ? `?institutionId=${encodeURIComponent(institutionId)}`
     : "";
-  const response = await fetch(`/api/admin/static-timetable-imports/options${suffix}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const response = await fetch(
+    `/api/admin/static-timetable-imports/options${suffix}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
   return parseResponse<{ options: StaticImportOptions }>(response);
 }
 
@@ -212,9 +216,12 @@ export async function getStaticTimetableImport(
   accessToken: string,
   batchId: string,
 ) {
-  const response = await fetch(`/api/admin/static-timetable-imports/${batchId}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  const response = await fetch(
+    `/api/admin/static-timetable-imports/${batchId}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
   return parseResponse<{ review: StaticImportReview }>(response);
 }
 
@@ -240,14 +247,17 @@ export async function createStaticTimetableDraft(
     }>;
   },
 ) {
-  const response = await fetch(`/api/admin/static-timetable-imports/${batchId}/draft`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+  const response = await fetch(
+    `/api/admin/static-timetable-imports/${batchId}/draft`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
     },
-    body: JSON.stringify(input),
-  });
+  );
   return parseResponse<{
     draft: {
       timetableId: string;
