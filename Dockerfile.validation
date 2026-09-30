@@ -7,12 +7,12 @@ RUN npm ci --silent
 
 COPY . .
 
-# Railway is used as an exact-head validation runner when GitHub-hosted CI is unavailable.
-# Serial Vitest execution avoids Alpine/build-container memory spikes while preserving the full suite.
-RUN NODE_ENV=test APP_ENV=test npm test -- --maxWorkers=1 --no-file-parallelism
-RUN npm run lint
-RUN npm run format:check
-RUN npm run build
+# TEMPORARY isolated formatter probe for Railway validation only.
+# It prints the exact Prettier diff for the files reported by format:check and then exits.
+RUN FILES="server/docxStructuredReader.ts server/staticTimetableImportRepository.ts src/domain/staticTimetableDocument.ts src/staticTimetableImportClient.ts src/StaticTimetableImportPage.tsx tests/docxStructuredReader.test.ts tests/dr151ResolvedScheduleProductionRegression.test.ts tests/staticTimetableDocumentImport.test.ts tests/staticTimetableDocumentParser.test.ts"; \
+    for f in $FILES; do cp "$f" "/tmp/$(echo "$f" | tr '/' '_')"; done; \
+    npx prettier --write $FILES; \
+    for f in $FILES; do echo "===PRETTIER_DIFF:$f==="; diff -u "/tmp/$(echo "$f" | tr '/' '_')" "$f" || true; done; \
+    exit 1
 
-ENV NODE_ENV=production
-CMD ["npm", "start"]
+CMD ["node", "-e", "setInterval(() => {}, 1 << 30)"]
