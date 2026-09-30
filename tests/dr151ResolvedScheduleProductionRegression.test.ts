@@ -7,7 +7,7 @@ function makeTimetable(): PublicTimetable {
     { length: 15 },
     (_, index) => ({
       stableSessionKey: `source-${index}`,
-      courseCode: `ISE${4100 + index}`,
+      courseCode: `ISE${4200 + index}`,
       courseName: `Course ${index}`,
       weekday: (index % 5) + 1,
       startTime: index % 2 === 0 ? "08:00:00" : "10:15:00",
