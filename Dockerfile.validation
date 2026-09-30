@@ -28,9 +28,7 @@ RUN npx prettier --write \
   tests/dr151ResolvedScheduleProductionRegression.test.ts \
   tests/staticTimetableDocumentImport.test.ts \
   tests/staticTimetableDocumentParser.test.ts; do \
-  echo "=== FORMATTED_BASE64_BEGIN:$f ==="; \
-  base64 "$f" | tr -d '\n'; echo; \
-  echo "=== FORMATTED_BASE64_END:$f ==="; \
+  base64 "$f" | tr -d '\n' | fold -w 1800 | awk -v f="$f" '{print "B64:" f ":" NR ":" $0}'; \
   done \
   && false
 
