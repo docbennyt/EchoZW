@@ -7,12 +7,18 @@ RUN npm ci --silent
 
 COPY . .
 
-# TEMPORARY isolated formatter probe for Railway validation only.
-# It prints the exact Prettier diff for the files reported by format:check and then exits.
-RUN FILES="server/docxStructuredReader.ts server/staticTimetableImportRepository.ts src/domain/staticTimetableDocument.ts src/staticTimetableImportClient.ts src/StaticTimetableImportPage.tsx tests/docxStructuredReader.test.ts tests/dr151ResolvedScheduleProductionRegression.test.ts tests/staticTimetableDocumentImport.test.ts tests/staticTimetableDocumentParser.test.ts"; \
-    for f in $FILES; do cp "$f" "/tmp/$(echo "$f" | tr '/' '_')"; done; \
-    npx prettier --write $FILES; \
-    for f in $FILES; do echo "===PRETTIER_DIFF:$f==="; diff -u "/tmp/$(echo "$f" | tr '/' '_')" "$f" || true; done; \
-    exit 1
+# TEMPORARY isolated formatter artifact runner for DR-151 only.
+# Format the exact files flagged by the repository's Prettier gate, then expose only
+# those source files over HTTP so their formatter-exact bytes can be copied back.
+RUN npx prettier --write \
+    server/docxStructuredReader.ts \
+    server/staticTimetableImportRepository.ts \
+    src/domain/staticTimetableDocument.ts \
+    src/staticTimetableImportClient.ts \
+    src/StaticTimetableImportPage.tsx \
+    tests/docxStructuredReader.test.ts \
+    tests/dr151ResolvedScheduleProductionRegression.test.ts \
+    tests/staticTimetableDocumentImport.test.ts \
+    tests/staticTimetableDocumentParser.test.ts
 
-CMD ["node", "-e", "setInterval(() => {}, 1 << 30)"]
+CMD ["node", "-e", "const http=require('node:http'),fs=require('node:fs'),path=require('node:path');const allowed=new Set(['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts']);http.createServer((req,res)=>{const key=decodeURIComponent((req.url||'/').split('?')[0]).replace(/^\\/+/, '');if(!allowed.has(key)){res.statusCode=404;return res.end('not found');}res.setHeader('Content-Type','text/plain; charset=utf-8');fs.createReadStream(path.join('/app',key)).pipe(res);}).listen(Number(process.env.PORT||3000),'0.0.0.0');"]
