@@ -63,7 +63,7 @@ function readZipEntry(buffer: Buffer, expectedName: string) {
       assertReadable(buffer, dataStart, compressedSize, "DOCX_ZIP_ENTRY_TRUNCATED");
       const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
 
-      let contents: Buffer | null = null;
+      let contents: Buffer | null;
       try {
         contents =
           compressionMethod === 0
