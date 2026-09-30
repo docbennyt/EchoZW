@@ -20,5 +20,7 @@ RUN npx prettier --write \
     tests/staticTimetableDocumentImport.test.ts \
     tests/staticTimetableDocumentParser.test.ts
 
-# Emit formatter-exact files as gzip+base64 log records, then remain healthy.
-CMD ["node", "-e", "const fs=require('node:fs'),z=require('node:zlib');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){console.log('DR151FMT:'+f+':'+z.gzipSync(fs.readFileSync('/app/'+f)).toString('base64'));}require('node:http').createServer((q,r)=>r.end('ok')).listen(Number(process.env.PORT||3000),'0.0.0.0');"]
+# Emit formatter-exact files into isolated build logs as gzip+base64 records.
+RUN node -e "const fs=require('node:fs'),z=require('node:zlib');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){console.log('DR151FMT:'+f+':'+z.gzipSync(fs.readFileSync('/app/'+f)).toString('base64'));}"
+
+CMD ["node", "-e", "require('node:http').createServer((q,r)=>r.end('ok')).listen(Number(process.env.PORT||3000),'0.0.0.0')"]
