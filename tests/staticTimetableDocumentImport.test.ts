@@ -21,8 +21,12 @@ const docs = readFileSync("docs/DOCX_IMPORT_SPEC.md", "utf8");
 
 describe("DR-120 static document import architecture", () => {
   it("models source authority explicitly and blocks watcher draft generation for static timetables", () => {
-    expect(migration).toContain("source_strategy text not null default 'manual'");
-    expect(migration).toContain("'live_managed_source', 'static_document', 'hybrid'");
+    expect(migration).toContain(
+      "source_strategy text not null default 'manual'",
+    );
+    expect(migration).toContain(
+      "'live_managed_source', 'static_document', 'hybrid'",
+    );
     expect(watcherGuard).toContain("t.source_strategy = 'static_document'");
     expect(watcherGuard).toContain("status := 'skipped'");
     expect(migration).toContain("'live_managed_source'");
@@ -30,7 +34,9 @@ describe("DR-120 static document import architecture", () => {
 
   it("persists parse evidence atomically and keeps identical imports idempotent", () => {
     expect(migration).toContain("persist_static_document_import");
-    expect(migration).toContain("import_batches_static_docx_idempotency_unique");
+    expect(migration).toContain(
+      "import_batches_static_docx_idempotency_unique",
+    );
     expect(migration).toContain(
       "on conflict (source_document_id, parser_version)",
     );
@@ -43,7 +49,9 @@ describe("DR-120 static document import architecture", () => {
     expect(migration).toContain("extensions.digest(");
     expect(migration).toContain("'static_document'");
     expect(migration).toContain("'draft'");
-    expect(migration).not.toContain("current_published_version_id = v_version_id");
+    expect(migration).not.toContain(
+      "current_published_version_id = v_version_id",
+    );
     expect(staticApi).toContain("/api/admin/static-timetable-imports");
     expect(staticApi).toContain('action === "draft"');
     expect(staticApi).not.toContain("/publish");

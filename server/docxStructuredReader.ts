@@ -6,7 +6,12 @@ const CENTRAL_SIGNATURE = 0x02014b50;
 const LOCAL_SIGNATURE = 0x04034b50;
 const MAX_DOCUMENT_XML_BYTES = 8 * 1024 * 1024;
 
-function assertReadable(buffer: Buffer, offset: number, length: number, code: string) {
+function assertReadable(
+  buffer: Buffer,
+  offset: number,
+  length: number,
+  code: string,
+) {
   if (offset < 0 || length < 0 || offset + length > buffer.length) {
     throw new Error(code);
   }
@@ -42,7 +47,12 @@ function readZipEntry(buffer: Buffer, expectedName: string) {
     const commentLength = buffer.readUInt16LE(cursor + 32);
     const localHeaderOffset = buffer.readUInt32LE(cursor + 42);
     const entryLength = 46 + nameLength + extraLength + commentLength;
-    assertReadable(buffer, cursor, entryLength, "DOCX_ZIP_CENTRAL_DIRECTORY_INVALID");
+    assertReadable(
+      buffer,
+      cursor,
+      entryLength,
+      "DOCX_ZIP_CENTRAL_DIRECTORY_INVALID",
+    );
 
     const name = buffer
       .subarray(cursor + 46, cursor + 46 + nameLength)
@@ -53,17 +63,28 @@ function readZipEntry(buffer: Buffer, expectedName: string) {
         throw new Error("DOCX_DOCUMENT_XML_TOO_LARGE");
       }
 
-      assertReadable(buffer, localHeaderOffset, 30, "DOCX_ZIP_LOCAL_HEADER_INVALID");
+      assertReadable(
+        buffer,
+        localHeaderOffset,
+        30,
+        "DOCX_ZIP_LOCAL_HEADER_INVALID",
+      );
       if (buffer.readUInt32LE(localHeaderOffset) !== LOCAL_SIGNATURE) {
         throw new Error("DOCX_ZIP_LOCAL_HEADER_INVALID");
       }
       const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
       const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
-      const dataStart = localHeaderOffset + 30 + localNameLength + localExtraLength;
-      assertReadable(buffer, dataStart, compressedSize, "DOCX_ZIP_ENTRY_TRUNCATED");
+      const dataStart =
+        localHeaderOffset + 30 + localNameLength + localExtraLength;
+      assertReadable(
+        buffer,
+        dataStart,
+        compressedSize,
+        "DOCX_ZIP_ENTRY_TRUNCATED",
+      );
       const compressed = buffer.subarray(dataStart, dataStart + compressedSize);
 
-      let contents: Buffer | null = null;
+      let contents: Buffer | null;
       try {
         contents =
           compressionMethod === 0
@@ -100,7 +121,9 @@ function decodeXml(value: string) {
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&amp;/g, "&")
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#(\d+);/g, (_, code: string) =>
+      String.fromCodePoint(Number(code)),
+    )
     .replace(/&#x([0-9a-f]+);/gi, (_, code: string) =>
       String.fromCodePoint(Number.parseInt(code, 16)),
     );
@@ -110,10 +133,13 @@ function textFromXml(fragment: string) {
   const withBreaks = fragment
     .replace(/<w:(?:br|cr)\b[^>]*\/?\s*>/g, "\n")
     .replace(/<w:tab\b[^>]*\/?\s*>/g, "\t");
-  const parts = [
-    ...withBreaks.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g),
-  ].map((match) => decodeXml(match[1]));
-  return parts.join("").replace(/\u00a0/g, " ").trim();
+  const parts = [...withBreaks.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g)].map(
+    (match) => decodeXml(match[1]),
+  );
+  return parts
+    .join("")
+    .replace(/\u00a0/g, " ")
+    .trim();
 }
 
 function paragraphsFromXml(fragment: string) {
@@ -134,7 +160,9 @@ function tablesFromXml(xml: string) {
   );
 }
 
-export function readStructuredDocx(buffer: Buffer): StaticTimetableDocumentStructure {
+export function readStructuredDocx(
+  buffer: Buffer,
+): StaticTimetableDocumentStructure {
   if (buffer.length < 4 || buffer.readUInt32LE(0) !== LOCAL_SIGNATURE) {
     throw new Error("DOCX_ZIP_INVALID");
   }

@@ -45,9 +45,9 @@ function editableSessions(review: StaticImportReview): EditableSession[] {
 
 export function StaticTimetableImportPage() {
   const [token, setToken] = useState<string | null>(null);
-  const [status, setStatus] = useState<
-    "loading" | "ready" | "auth" | "error"
-  >("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "auth" | "error">(
+    "loading",
+  );
   const [error, setError] = useState("");
   const [options, setOptions] = useState<StaticImportOptions>(EMPTY_OPTIONS);
   const [institutionId, setInstitutionId] = useState("");
@@ -74,7 +74,9 @@ export function StaticTimetableImportPage() {
           setStatus("auth");
         } else {
           setError(
-            caught instanceof Error ? caught.message : "Could not load importer.",
+            caught instanceof Error
+              ? caught.message
+              : "Could not load importer.",
           );
           setStatus("error");
         }
@@ -131,16 +133,16 @@ export function StaticTimetableImportPage() {
 
   const canCreateDraft = Boolean(
     review &&
-      programmeId &&
-      cohortId &&
-      academicPeriodId &&
-      sessions.length > 0 &&
-      sessions.every(
-        (session) =>
-          session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
-      ) &&
-      unresolvedBlockers.length === 0 &&
-      !review.createdDraft,
+    programmeId &&
+    cohortId &&
+    academicPeriodId &&
+    sessions.length > 0 &&
+    sessions.every(
+      (session) =>
+        session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
+    ) &&
+    unresolvedBlockers.length === 0 &&
+    !review.createdDraft,
   );
 
   async function upload() {
@@ -275,8 +277,8 @@ export function StaticTimetableImportPage() {
           <h1>Import a class timetable document</h1>
           <p>
             DOCX is parsed deterministically into review evidence. Nothing is
-            published until a human verifies it and the normal guarded publication
-            path succeeds.
+            published until a human verifies it and the normal guarded
+            publication path succeeds.
           </p>
         </div>
         <a href="/admin">Back to Admin</a>
@@ -339,7 +341,8 @@ export function StaticTimetableImportPage() {
               <div>
                 <span>2 · Extracted identity</span>
                 <h2>
-                  {review.parsed.metadata.title ?? review.document.originalFilename}
+                  {review.parsed.metadata.title ??
+                    review.document.originalFilename}
                 </h2>
               </div>
               <small>Parser {review.batch.parserVersion}</small>
@@ -501,7 +504,9 @@ export function StaticTimetableImportPage() {
                 <span>5 · Session verification</span>
                 <h2>Correct only what the document review proves</h2>
               </div>
-              <small>Raw source remains preserved beside normalized fields</small>
+              <small>
+                Raw source remains preserved beside normalized fields
+              </small>
             </div>
             <div className="czw-static-import-table-wrap">
               <table>
@@ -520,7 +525,8 @@ export function StaticTimetableImportPage() {
                     <tr key={session.candidateKey}>
                       <td>
                         <code>
-                          t{session.sourceTableIndex}:r{session.sourceRowIndex}:c
+                          t{session.sourceTableIndex}:r{session.sourceRowIndex}
+                          :c
                           {session.sourceColumnIndex}
                         </code>
                         <small>{session.rawText}</small>
@@ -558,7 +564,9 @@ export function StaticTimetableImportPage() {
                           aria-label={`Venue ${session.candidateKey}`}
                           value={session.venueDraft}
                           onChange={(event) =>
-                            patchSession(index, { venueDraft: event.target.value })
+                            patchSession(index, {
+                              venueDraft: event.target.value,
+                            })
                           }
                         />
                       </td>
@@ -639,7 +647,8 @@ export function StaticTimetableImportPage() {
                       <tr key={candidate.candidateKey}>
                         <td>
                           <code>
-                            t{candidate.sourceTableIndex}:r{candidate.sourceRowIndex}:c
+                            t{candidate.sourceTableIndex}:r
+                            {candidate.sourceRowIndex}:c
                             {candidate.sourceColumnIndex}
                           </code>
                         </td>
@@ -695,7 +704,8 @@ export function StaticTimetableImportPage() {
               <span>7 · Verify</span>
               <h2>Create a review draft</h2>
               <p>
-                This action creates an immutable draft version and marks the class as
+                This action creates an immutable draft version and marks the
+                class as
                 <code> static_document</code>. It does not publish or replace a
                 published timetable.
               </p>

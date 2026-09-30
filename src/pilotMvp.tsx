@@ -93,6 +93,7 @@ import {
   getInstitutionIdentity,
   getUpcomingOccurrences,
 } from "./domain/publicTimetable";
+import { resolveRecurringSessions } from "./domain/resolvedSchedule";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 
 const weekdayLabels = [
@@ -3464,6 +3465,7 @@ function ClassRepDashboard({
   const nextClass = timetable
     ? getUpcomingOccurrences(timetable, new Date(), 1)[0]
     : null;
+  const currentSchedule = timetable ? resolveRecurringSessions(timetable) : [];
 
   return (
     <div className="pilot-stack">
@@ -3540,7 +3542,7 @@ function ClassRepDashboard({
 
       <Surface title="Current Schedule">
         <div className="pilot-day-stack">
-          {timetable?.sessions.map((sessionItem) => (
+          {currentSchedule.map((sessionItem) => (
             <article
               key={sessionItem.stableSessionKey}
               className="pilot-session-card"
@@ -4161,7 +4163,9 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
     for (let day = 1; day <= 7; day += 1) {
       map.set(day, []);
     }
-    for (const session of timetable?.sessions ?? []) {
+    for (const session of timetable
+      ? resolveRecurringSessions(timetable)
+      : []) {
       map.get(session.weekday)?.push(session);
     }
     return map;
@@ -4554,7 +4558,9 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
     for (let day = 1; day <= 7; day += 1) {
       map.set(day, []);
     }
-    for (const session of timetable?.sessions ?? []) {
+    for (const session of timetable
+      ? resolveRecurringSessions(timetable)
+      : []) {
       map.get(session.weekday)?.push(session);
     }
     return map;

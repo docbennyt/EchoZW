@@ -223,7 +223,8 @@ function parseMetadata(
     .map(compact)
     .filter(Boolean)
     .join("\n")}`;
-  const departmentLine = allText.match(/Department\s+of\s+([^\n]+)/i)?.[1] ?? null;
+  const departmentLine =
+    allText.match(/Department\s+of\s+([^\n]+)/i)?.[1] ?? null;
   const departmentName = departmentLine
     ? compact(departmentLine)
         .replace(/\s*[-–—:]\s*20\d{2}.*$/i, "")
@@ -235,7 +236,9 @@ function parseMetadata(
     /Part\s+(\d+)\s+Semester\s+(\d+)\s+([^\n]*?Timetable)/i,
   );
   const mode = titleMatch
-    ? compact(titleMatch[3]).replace(/\s*Timetable$/i, "").trim()
+    ? compact(titleMatch[3])
+        .replace(/\s*Timetable$/i, "")
+        .trim()
     : "";
   return {
     departmentName,
@@ -253,8 +256,12 @@ function parseCourseReferences(
 ): StaticCourseReference[] {
   const headerRowIndex = courseReferenceHeaderIndex(table);
   if (headerRowIndex < 0) return [];
-  const header = table[headerRowIndex].map((cell) => compact(cell).toUpperCase());
-  const courseCodeIndex = header.findIndex((cell) => cell.includes("COURSE CODE"));
+  const header = table[headerRowIndex].map((cell) =>
+    compact(cell).toUpperCase(),
+  );
+  const courseCodeIndex = header.findIndex((cell) =>
+    cell.includes("COURSE CODE"),
+  );
   const titleIndex = header.findIndex(
     (cell) => cell === "TITLE" || cell.includes("COURSE TITLE"),
   );
@@ -268,7 +275,9 @@ function parseCourseReferences(
     const courseCodeRaw = cells[courseCodeIndex] ?? "";
     const courseName = cells[titleIndex] ?? "";
     if (!courseCodeRaw || !courseName) return [];
-    const hoursMatch = (cells[hoursIndex] ?? "").match(/(\d+(?:\.\d+)?)\s*hour/i);
+    const hoursMatch = (cells[hoursIndex] ?? "").match(
+      /(\d+(?:\.\d+)?)\s*hour/i,
+    );
     const rowIndex = headerRowIndex + offset + 1;
     return [
       {
@@ -295,18 +304,11 @@ function parseCourseReferences(
 function parseSessionCell(raw: string) {
   const normalized = raw.replace(/\r/g, "").trim();
   if (!normalized) return null;
-  const segments = normalized
-    .split("/")
-    .map(compact)
-    .filter(Boolean);
+  const segments = normalized.split("/").map(compact).filter(Boolean);
   const physical = segments[0] ?? "";
   const deliveryModeRaw =
     segments.length > 1 ? segments.slice(1).join(" / ") : null;
-  const firstLine = physical
-    .split(/\n/)
-    .map(compact)
-    .filter(Boolean)
-    .join(" ");
+  const firstLine = physical.split(/\n/).map(compact).filter(Boolean).join(" ");
   const courseMatch = firstLine.match(/^([A-Za-z]{2,6}\s*\d{3,5})\b/i);
   if (!courseMatch) return { malformed: true as const };
   const courseCodeRaw = compact(courseMatch[1]);
@@ -367,9 +369,7 @@ export function parseStaticTimetableDocument(
       weekday: WEEKDAYS.get(compact(cell).toUpperCase()) ?? null,
     }))
     .filter(
-      (
-        item,
-      ): item is { columnIndex: number; label: string; weekday: number } =>
+      (item): item is { columnIndex: number; label: string; weekday: number } =>
         item.weekday !== null,
     );
 
@@ -577,8 +577,7 @@ export function parseStaticTimetableDocument(
   }
 
   const timetableContactHours = sessions.reduce(
-    (sum, session) =>
-      sum + durationHours(session.startTime, session.endTime),
+    (sum, session) => sum + durationHours(session.startTime, session.endTime),
     0,
   );
   const courseReferenceHours = courses.reduce(
