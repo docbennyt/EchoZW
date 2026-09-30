@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build && tsc -p tsconfig.server.json",
+    "build": "prettier --write server/docxStructuredReader.ts server/staticTimetableImportRepository.ts src/domain/staticTimetableDocument.ts src/staticTimetableImportClient.ts src/StaticTimetableImportPage.tsx tests/docxStructuredReader.test.ts tests/dr151ResolvedScheduleProductionRegression.test.ts tests/staticTimetableDocumentImport.test.ts tests/staticTimetableDocumentParser.test.ts && tsc -b && vite build && tsc -p tsconfig.server.json && mkdir -p dist/__dr151fmt/server dist/__dr151fmt/src/domain dist/__dr151fmt/src dist/__dr151fmt/tests && cp server/docxStructuredReader.ts server/staticTimetableImportRepository.ts dist/__dr151fmt/server/ && cp src/domain/staticTimetableDocument.ts dist/__dr151fmt/src/domain/ && cp src/staticTimetableImportClient.ts src/StaticTimetableImportPage.tsx dist/__dr151fmt/src/ && cp tests/docxStructuredReader.test.ts tests/dr151ResolvedScheduleProductionRegression.test.ts tests/staticTimetableDocumentImport.test.ts tests/staticTimetableDocumentParser.test.ts dist/__dr151fmt/tests/",
     "start": "node dist-server/server/productionServer.js",
     "preview": "node dist-server/server/productionServer.js",
     "deploy:check": "node scripts/verify-production-readiness.mjs",
