@@ -8,17 +8,7 @@ RUN npm ci --silent
 COPY . .
 
 # Diagnostic-only formatter pass on the validation alias branch. This commit is never merged.
-RUN tar -cf /tmp/prettier-before.tar \
-  server/docxStructuredReader.ts \
-  server/staticTimetableImportRepository.ts \
-  src/domain/staticTimetableDocument.ts \
-  src/staticTimetableImportClient.ts \
-  src/StaticTimetableImportPage.tsx \
-  tests/docxStructuredReader.test.ts \
-  tests/dr151ResolvedScheduleProductionRegression.test.ts \
-  tests/staticTimetableDocumentImport.test.ts \
-  tests/staticTimetableDocumentParser.test.ts \
-  && npx prettier --write \
+RUN npx prettier --write \
   server/docxStructuredReader.ts \
   server/staticTimetableImportRepository.ts \
   src/domain/staticTimetableDocument.ts \
@@ -28,8 +18,6 @@ RUN tar -cf /tmp/prettier-before.tar \
   tests/dr151ResolvedScheduleProductionRegression.test.ts \
   tests/staticTimetableDocumentImport.test.ts \
   tests/staticTimetableDocumentParser.test.ts >/dev/null \
-  && mkdir -p /tmp/prettier-before \
-  && tar -xf /tmp/prettier-before.tar -C /tmp/prettier-before \
   && for f in \
   server/docxStructuredReader.ts \
   server/staticTimetableImportRepository.ts \
@@ -40,8 +28,9 @@ RUN tar -cf /tmp/prettier-before.tar \
   tests/dr151ResolvedScheduleProductionRegression.test.ts \
   tests/staticTimetableDocumentImport.test.ts \
   tests/staticTimetableDocumentParser.test.ts; do \
-  echo "=== PRETTIER PATCH: $f ==="; \
-  diff -u "/tmp/prettier-before/$f" "$f" || true; \
+  echo "=== FORMATTED_BASE64_BEGIN:$f ==="; \
+  base64 "$f" | tr -d '\n'; echo; \
+  echo "=== FORMATTED_BASE64_END:$f ==="; \
   done \
   && false
 
