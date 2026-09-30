@@ -20,7 +20,8 @@ RUN npx prettier --write \
     tests/staticTimetableDocumentImport.test.ts \
     tests/staticTimetableDocumentParser.test.ts
 
-# Emit formatter-exact files into isolated build logs as gzip+base64 records.
-RUN node -e "const fs=require('node:fs'),z=require('node:zlib');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){console.log('DR151FMT:'+f+':'+z.gzipSync(fs.readFileSync('/app/'+f)).toString('base64'));}"
+# Emit formatter-exact UTF-8 files as raw base64 chunks for transfer back to the PR branch.
+# The short chunks keep Railway log records below line-size limits. Nonce: 20260930T0825Z.
+RUN node -e "const fs=require('node:fs');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){const b=fs.readFileSync('/app/'+f).toString('base64');for(let i=0;i<b.length;i+=6000)console.log('DR151RAW|'+f+'|'+String(i/6000).padStart(3,'0')+'|'+b.slice(i,i+6000));}"
 
 CMD ["node", "-e", "require('node:http').createServer((q,r)=>r.end('ok')).listen(Number(process.env.PORT||3000),'0.0.0.0')"]
