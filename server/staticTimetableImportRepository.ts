@@ -238,12 +238,14 @@ export async function createStaticTimetableImport(
     input.mimeType ||
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-  let { data: sourceDocument, error: sourceLookupError } = await supabase
+  const sourceLookup = await supabase
     .from("source_documents")
     .select("*")
     .eq("institution_id", input.institutionId)
     .eq("sha256", sha256)
     .maybeSingle();
+  let sourceDocument = sourceLookup.data;
+  const sourceLookupError = sourceLookup.error;
   if (sourceLookupError) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
