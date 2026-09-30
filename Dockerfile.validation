@@ -21,7 +21,9 @@ RUN npx prettier --write \
     tests/staticTimetableDocumentParser.test.ts
 
 # Emit formatter-exact UTF-8 files as raw base64 chunks for transfer back to the PR branch.
-# The short chunks keep Railway log records below line-size limits. Nonce: 20260930T0825Z.
 RUN node -e "const fs=require('node:fs');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){const b=fs.readFileSync('/app/'+f).toString('base64');for(let i=0;i<b.length;i+=6000)console.log('DR151RAW|'+f+'|'+String(i/6000).padStart(3,'0')+'|'+b.slice(i,i+6000));}"
+
+# Emit the exact Git blob object id for every formatted artifact so transferred blobs can be verified byte-for-byte.
+RUN node -e "const fs=require('node:fs'),crypto=require('node:crypto');const files=['server/docxStructuredReader.ts','server/staticTimetableImportRepository.ts','src/domain/staticTimetableDocument.ts','src/staticTimetableImportClient.ts','src/StaticTimetableImportPage.tsx','tests/docxStructuredReader.test.ts','tests/dr151ResolvedScheduleProductionRegression.test.ts','tests/staticTimetableDocumentImport.test.ts','tests/staticTimetableDocumentParser.test.ts'];for(const f of files){const b=fs.readFileSync('/app/'+f);const sha=crypto.createHash('sha1').update(Buffer.from('blob '+b.length+'\0')).update(b).digest('hex');console.log('DR151SHA|'+f+'|'+sha)}"
 
 CMD ["node", "-e", "require('node:http').createServer((q,r)=>r.end('ok')).listen(Number(process.env.PORT||3000),'0.0.0.0')"]
