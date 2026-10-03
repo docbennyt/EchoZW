@@ -17,16 +17,16 @@
       "/healthz",
       "/__release",
       "/dashboard*",
-      "/sync/*"
-    ]
+      "/sync/*",
+    ],
   },
   "version_metadata": {
-    "binding": "CF_VERSION_METADATA"
+    "binding": "CF_VERSION_METADATA",
   },
   "vars": {
     "APP_ENV": "cloudflare-local",
     "PUBLIC_APP_URL": "https://calender.aido.co.zw",
-    "LEGACY_BACKEND_ORIGIN": "https://calender.up.railway.app"
+    "LEGACY_BACKEND_ORIGIN": "https://calender.up.railway.app",
   },
   "env": {
     "staging": {
@@ -35,40 +35,40 @@
       "routes": [
         {
           "pattern": "next.calender.aido.co.zw",
-          "custom_domain": true
-        }
+          "custom_domain": true,
+        },
       ],
       "version_metadata": {
-        "binding": "CF_VERSION_METADATA"
+        "binding": "CF_VERSION_METADATA",
       },
       "vars": {
         "APP_ENV": "cloudflare-staging",
         "PUBLIC_APP_URL": "https://calender.aido.co.zw",
         "STAGING_ORIGIN": "https://next.calender.aido.co.zw",
-        "LEGACY_BACKEND_ORIGIN": "https://calender.up.railway.app"
+        "LEGACY_BACKEND_ORIGIN": "https://calender.up.railway.app",
       },
       "r2_buckets": [
         {
           "binding": "SOURCE_BUCKET",
-          "bucket_name": "calenderzw-source-staging"
+          "bucket_name": "calenderzw-source-staging",
         },
         {
           "binding": "CALENDAR_ARTIFACT_BUCKET",
-          "bucket_name": "calenderzw-calendar-artifacts-staging"
-        }
+          "bucket_name": "calenderzw-calendar-artifacts-staging",
+        },
       ],
       "queues": {
         "producers": [
           {
             "binding": "SOURCE_PROCESSING_QUEUE",
-            "queue": "calenderzw-source-processing-staging"
+            "queue": "calenderzw-source-processing-staging",
           },
           {
             "binding": "PUSH_QUEUE",
-            "queue": "calenderzw-push-staging"
-          }
-        ]
-      }
-    }
-  }
+            "queue": "calenderzw-push-staging",
+          },
+        ],
+      },
+    },
+  },
 }
