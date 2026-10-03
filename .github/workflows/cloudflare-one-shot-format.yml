@@ -1,0 +1,32 @@
+name: Cloudflare one-shot format
+
+on:
+  push:
+    branches:
+      - DR-152-cloudflare-production-runtime
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: DR-152-cloudflare-production-runtime
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write scripts/check-cloudflare-foundation.mjs tests/cloudflareRuntimeFoundation.test.ts
+      - name: Commit formatter output
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/check-cloudflare-foundation.mjs tests/cloudflareRuntimeFoundation.test.ts
+          git commit -m "style(cloudflare): format JSONC parser fix"
+          git push origin HEAD:DR-152-cloudflare-production-runtime
