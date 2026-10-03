@@ -62,6 +62,46 @@ assert(
   "staging backend bridge must be explicit and removable.",
 );
 
+const staging = wrangler.env?.staging;
+assert(staging, "staging environment must exist.");
+assert(
+  staging.routes?.some(
+    (route) =>
+      route.pattern === "next.calender.aido.co.zw" &&
+      route.custom_domain === true,
+  ),
+  "staging custom domain must remain isolated from production.",
+);
+
+const bucketMap = new Map(
+  (staging.r2_buckets ?? []).map((bucket) => [bucket.binding, bucket.bucket_name]),
+);
+assert(
+  bucketMap.get("SOURCE_BUCKET") === "calenderzw-source-staging",
+  "source R2 binding must point to the staging bucket.",
+);
+assert(
+  bucketMap.get("CALENDAR_ARTIFACT_BUCKET") ===
+    "calenderzw-calendar-artifacts-staging",
+  "calendar artifact binding must point to the staging bucket.",
+);
+
+const queueMap = new Map(
+  (staging.queues?.producers ?? []).map((producer) => [
+    producer.binding,
+    producer.queue,
+  ]),
+);
+assert(
+  queueMap.get("SOURCE_PROCESSING_QUEUE") ===
+    "calenderzw-source-processing-staging",
+  "source queue binding must remain staging-only.",
+);
+assert(
+  queueMap.get("PUSH_QUEUE") === "calenderzw-push-staging",
+  "push queue binding must remain staging-only.",
+);
+
 console.log(
-  "Cloudflare foundation contract OK: atomic SPA assets, selective Worker routing, and missing-asset 404 guard are present.",
+  "Cloudflare foundation contract OK: atomic SPA assets, staging-only bindings, selective Worker routing, and missing-asset 404 guard are present.",
 );
