@@ -1,3 +1,5 @@
+/* global Headers, Response, URL, fetch, Request */
+
 const DYNAMIC_PREFIXES = ["/api/", "/calendar/"];
 const DYNAMIC_EXACT_PATHS = new Set([
   "/runtime-config.js",
