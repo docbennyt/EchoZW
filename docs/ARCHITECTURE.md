@@ -47,3 +47,27 @@ This invariant exists because it has caused repeated P0 blank-page incidents. Tr
 - `server`: backend/API execution and server-only integrations.
 - `supabase`: database migrations and database-side contracts.
 - `src/App.tsx`: public routes, dashboard scaffold, sync wizard, and reporting UI.
+
+## Cloudflare migration target (DR-152 programme)
+
+Production is still Vercel + Railway until the controlled cutover is approved. The target architecture is:
+
+```text
+browser/calendar client
+        |
+        v
+Cloudflare Worker + Static Assets (one atomic version)
+        |-- SPA HTML + hashed JS/CSS
+        |-- dynamic API transport
+        |-- calendar endpoints
+        |-- runtime config / sitemap
+        |-- Queue consumers + reconciliation Cron
+        |-- R2 source/materialized artifacts
+        |
+        v
+Supabase PostgreSQL + Auth + RLS
+```
+
+The transition may use a **staging-only backend bridge** for dynamic routes while Worker-native adapters are implemented. That bridge is not the final production architecture and may never serve SPA HTML.
+
+The final runtime must preserve one effective-timetable contract across Class Rep, public timetable, API, Google projection and ICS delivery. Public ICS should be materialized/cache-first so calendar polling does not repeatedly regenerate the same representation from Supabase.
