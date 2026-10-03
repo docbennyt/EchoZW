@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
 
-const wrangler = JSON.parse(await readFile("wrangler.jsonc", "utf8"));
+function parseJsonc(source) {
+  return JSON.parse(source.replace(/,\s*([}\]])/g, "$1"));
+}
+
+const wrangler = parseJsonc(await readFile("wrangler.jsonc", "utf8"));
 const worker = await readFile("worker/index.mjs", "utf8");
 
 const requiredWorkerFirst = [
@@ -49,8 +53,7 @@ assert(
   "missing assets must be able to return a real 404.",
 );
 assert(
-  worker.includes("Browser HTML") &&
-    worker.includes("NEVER proxied to Railway"),
+  worker.includes("Browser HTML") && worker.includes("NEVER proxied to Railway"),
   "the split-release SPA ownership invariant must be explicit in Worker code.",
 );
 assert(
