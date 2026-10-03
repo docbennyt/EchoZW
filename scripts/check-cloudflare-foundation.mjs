@@ -49,7 +49,8 @@ assert(
   "missing assets must be able to return a real 404.",
 );
 assert(
-  worker.includes("Browser HTML") && worker.includes("NEVER proxied to Railway"),
+  worker.includes("Browser HTML") &&
+    worker.includes("NEVER proxied to Railway"),
   "the split-release SPA ownership invariant must be explicit in Worker code.",
 );
 assert(

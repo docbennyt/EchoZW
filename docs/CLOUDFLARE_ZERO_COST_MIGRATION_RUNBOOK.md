@@ -375,11 +375,11 @@ With Cloudflare Worker Static Assets configured so normal asset paths do not exe
 Assume 50,000 active feed subscriptions.
 
 | Average refreshes/feed/day | Feed requests/day | Worker Free result if every request invokes Worker |
-|---:|---:|---|
-| 1 | 50,000 | feasible in request count, little room for app API |
-| 2 | 100,000 | consumes the entire Worker daily request allowance |
-| 4 | 200,000 | not free on Workers |
-| 8 | 400,000 | not free on Workers |
+| -------------------------: | ----------------: | -------------------------------------------------- |
+|                          1 |            50,000 | feasible in request count, little room for app API |
+|                          2 |           100,000 | consumes the entire Worker daily request allowance |
+|                          4 |           200,000 | not free on Workers                                |
+|                          8 |           400,000 | not free on Workers                                |
 
 Therefore the free architecture must make **public timetable feed delivery cache/artifact-first**, not database-compute-first.
 
@@ -516,14 +516,14 @@ Workers instances are stateless and must not be treated as persistent disks.
 
 Create a migration inventory table before implementation:
 
-| State | Current location | Authoritative? | Target | Migration needed? |
-|---|---|---:|---|---:|
-| timetable/version data | Supabase | yes | Supabase | no |
-| auth | Supabase | yes | Supabase | no |
-| raw timetable documents | planned R2 | yes for raw object | R2 | preserve |
-| public `.ics` artifacts | generated dynamically today | derived | R2/cache | yes, recommended |
-| local calendar store if used | filesystem | inspect | Supabase | yes if production-used |
-| runtime config | process env -> JS response | derived | Worker env -> response | yes |
+| State                        | Current location            |     Authoritative? | Target                 |      Migration needed? |
+| ---------------------------- | --------------------------- | -----------------: | ---------------------- | ---------------------: |
+| timetable/version data       | Supabase                    |                yes | Supabase               |                     no |
+| auth                         | Supabase                    |                yes | Supabase               |                     no |
+| raw timetable documents      | planned R2                  | yes for raw object | R2                     |               preserve |
+| public `.ics` artifacts      | generated dynamically today |            derived | R2/cache               |       yes, recommended |
+| local calendar store if used | filesystem                  |            inspect | Supabase               | yes if production-used |
+| runtime config               | process env -> JS response  |            derived | Worker env -> response |                    yes |
 
 ---
 
@@ -730,23 +730,23 @@ Rules:
 
 ## 11. Routing contract for the final single-origin deployment
 
-| Route | Owner | Cache/security expectation |
-|---|---|---|
-| `/` | Static Assets / SPA | normal HTML caching policy |
-| `/find` | same release as SPA assets | no cross-origin HTML |
-| `/t/:slug` | same Worker version + assets | dynamic SEO may wrap same release shell |
-| `/admin*` | same SPA release | noindex, auth inside app/API |
-| `/rep/*` | same SPA release | noindex where appropriate |
-| `/privacy`, `/terms`, `/support`, `/data-deletion` | same SPA release | stable public content |
-| `/assets/*` | Static Assets | immutable hashes, never SPA fallback |
-| `/api/*` | Worker API | no accidental static fallback |
-| `/runtime-config.js` | Worker | browser-safe only, `no-store` |
-| `/sitemap.xml` | Worker or generated static artifact | XML MIME |
-| `/robots.txt` | Static/Worker | text/plain |
-| `/llms.txt` | Static/Worker | factual public content only |
-| calendar feed routes | Worker or materialized R2 artifact by privacy class | correct calendar MIME/cache |
-| OAuth callbacks | Worker | same public origin retained |
-| payment webhooks | Worker | strict verification, no browser dependency |
+| Route                                              | Owner                                               | Cache/security expectation                 |
+| -------------------------------------------------- | --------------------------------------------------- | ------------------------------------------ |
+| `/`                                                | Static Assets / SPA                                 | normal HTML caching policy                 |
+| `/find`                                            | same release as SPA assets                          | no cross-origin HTML                       |
+| `/t/:slug`                                         | same Worker version + assets                        | dynamic SEO may wrap same release shell    |
+| `/admin*`                                          | same SPA release                                    | noindex, auth inside app/API               |
+| `/rep/*`                                           | same SPA release                                    | noindex where appropriate                  |
+| `/privacy`, `/terms`, `/support`, `/data-deletion` | same SPA release                                    | stable public content                      |
+| `/assets/*`                                        | Static Assets                                       | immutable hashes, never SPA fallback       |
+| `/api/*`                                           | Worker API                                          | no accidental static fallback              |
+| `/runtime-config.js`                               | Worker                                              | browser-safe only, `no-store`              |
+| `/sitemap.xml`                                     | Worker or generated static artifact                 | XML MIME                                   |
+| `/robots.txt`                                      | Static/Worker                                       | text/plain                                 |
+| `/llms.txt`                                        | Static/Worker                                       | factual public content only                |
+| calendar feed routes                               | Worker or materialized R2 artifact by privacy class | correct calendar MIME/cache                |
+| OAuth callbacks                                    | Worker                                              | same public origin retained                |
+| payment webhooks                                   | Worker                                              | strict verification, no browser dependency |
 
 ### SPA fallback invariant
 
@@ -1253,23 +1253,23 @@ Use expand/contract database changes so both runtimes can operate during rollbac
 
 ## 20. Reliability/failure-injection matrix
 
-| Failure | Expected user result |
-|---|---|
-| Supabase unavailable | static public shell still loads; API returns branded/retryable error |
-| Worker API exception | generic structured error + request ID; no secret |
-| Queue duplicate | idempotent result, no duplicate business effect |
-| Queue delay | job status truthful; no false success |
-| Google API timeout | retry/actionable UI, no lost local state |
-| payment timeout | pending/idempotency preserved |
-| R2 unavailable | source flow fails closed; metadata cannot falsely claim complete object |
-| missing JS asset | real 404, never HTML-as-JS |
-| stale service worker | update path recovers; no permanent blank app |
-| Worker quota near limit | alert/capacity action before hard failure |
-| Worker CPU limit exceeded | migration blocker/rollback for critical path |
-| Supabase quota near limit | alert/capacity action before restriction |
-| browser offline mid-form | no false success/duplicate; retry possible |
-| double submit | loading/idempotency prevents duplicate |
-| concurrent Admin/Rep edits | existing stale-edit/idempotency safety preserved |
+| Failure                    | Expected user result                                                    |
+| -------------------------- | ----------------------------------------------------------------------- |
+| Supabase unavailable       | static public shell still loads; API returns branded/retryable error    |
+| Worker API exception       | generic structured error + request ID; no secret                        |
+| Queue duplicate            | idempotent result, no duplicate business effect                         |
+| Queue delay                | job status truthful; no false success                                   |
+| Google API timeout         | retry/actionable UI, no lost local state                                |
+| payment timeout            | pending/idempotency preserved                                           |
+| R2 unavailable             | source flow fails closed; metadata cannot falsely claim complete object |
+| missing JS asset           | real 404, never HTML-as-JS                                              |
+| stale service worker       | update path recovers; no permanent blank app                            |
+| Worker quota near limit    | alert/capacity action before hard failure                               |
+| Worker CPU limit exceeded  | migration blocker/rollback for critical path                            |
+| Supabase quota near limit  | alert/capacity action before restriction                                |
+| browser offline mid-form   | no false success/duplicate; retry possible                              |
+| double submit              | loading/idempotency prevents duplicate                                  |
+| concurrent Admin/Rep edits | existing stale-edit/idempotency safety preserved                        |
 
 ---
 

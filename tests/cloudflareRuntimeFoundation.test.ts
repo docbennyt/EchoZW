@@ -17,9 +17,7 @@ describe("Cloudflare runtime foundation", () => {
     expect(wrangler.main).toBe("./worker/index.mjs");
     expect(wrangler.assets?.directory).toBe("./dist/");
     expect(wrangler.assets?.binding).toBe("ASSETS");
-    expect(wrangler.assets?.not_found_handling).toBe(
-      "single-page-application",
-    );
+    expect(wrangler.assets?.not_found_handling).toBe("single-page-application");
   });
 
   it("runs Worker compute only for explicitly dynamic or redirect routes", () => {
