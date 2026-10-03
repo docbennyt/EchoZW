@@ -7,13 +7,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: DR-152-cloudflare-production-runtime
       - uses: actions/setup-node@v4
         with:
           node-version: 24.15.0
@@ -27,15 +29,19 @@ jobs:
             tests/cloudflareRuntimeFoundation.test.ts \
             worker/index.mjs \
             wrangler.jsonc
-      - name: Upload formatted files
-        uses: actions/upload-artifact@v4
-        with:
-          name: cloudflare-formatted-files
-          path: |
-            docs/CLOUDFLARE_ZERO_COST_MIGRATION_RUNBOOK.md
-            scripts/check-cloudflare-foundation.mjs
-            tests/cloudflareRuntimeFoundation.test.ts
-            worker/index.mjs
+      - name: Commit formatting only when needed
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/CLOUDFLARE_ZERO_COST_MIGRATION_RUNBOOK.md \
+            scripts/check-cloudflare-foundation.mjs \
+            tests/cloudflareRuntimeFoundation.test.ts \
+            worker/index.mjs \
             wrangler.jsonc
-          if-no-files-found: error
-          retention-days: 1
+          git commit -m "style(cloudflare): format migration foundation"
+          git push origin HEAD:DR-152-cloudflare-production-runtime
