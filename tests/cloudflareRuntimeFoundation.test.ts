@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const wrangler = JSON.parse(readFileSync("wrangler.jsonc", "utf8")) as {
+function readJsonc(path: string) {
+  const source = readFileSync(path, "utf8");
+  return JSON.parse(source.replace(/,\s*([}\]])/g, "$1"));
+}
+
+const wrangler = readJsonc("wrangler.jsonc") as {
   main?: string;
   assets?: {
     directory?: string;
