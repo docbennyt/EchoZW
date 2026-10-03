@@ -74,7 +74,10 @@ assert(
 );
 
 const bucketMap = new Map(
-  (staging.r2_buckets ?? []).map((bucket) => [\n    bucket.binding,\n    bucket.bucket_name,\n  ]),
+  (staging.r2_buckets ?? []).map((bucket) => [
+    bucket.binding,
+    bucket.bucket_name,
+  ]),
 );
 assert(
   bucketMap.get("SOURCE_BUCKET") === "calenderzw-source-staging",
