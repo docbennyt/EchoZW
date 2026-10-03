@@ -1,10 +1,10 @@
 # CalenderZW zero-recurring-cost infrastructure migration runbook
 
-> **Status:** planning document only. **Do not migrate production merely because this file exists.**
+> **Status:** active migration programme. Build Cloudflare in parallel; **do not cut production over until every gate in this runbook is proven and human-approved.**
 >
-> **Last researched:** 2026-09-29
+> **Last researched:** 2026-10-03
 >
-> **Current production branch when this runbook was created:** `Calender` at `f82afbe95b37a8837df011c67fd18a1e154bd41c`
+> **Migration baseline:** `Calender` at `2b51254d26aa88718f0bb826ae71b653dae07ca4`; implementation branch `DR-152-cloudflare-production-runtime`.
 >
 > **Primary goal:** make a future Railway -> Cloudflare migration fast, reversible, observable, and boring to users. A successful migration is one where students, Class Reps, Admins, integrations, calendar subscribers, search engines, and operators cannot detect a loss of functionality, reliability, usability, usefulness, accessibility, or trust.
 
@@ -1479,7 +1479,7 @@ If any critical item is unproven, Railway remains the fallback and the migration
 
 ## 28. Recommended decision for CalenderZW now
 
-**Do not migrate now.** Prepare the codebase so the move becomes mechanical when Railway billing must be removed.
+**Migration implementation is now active, but production cutover remains gated.** Build and prove Cloudflare beside the known-good Vercel/Railway baseline; do not remove rollback infrastructure or change production DNS until rehearsal, exact-head validation and human sign-off are complete.
 
 Recommended sequence:
 
