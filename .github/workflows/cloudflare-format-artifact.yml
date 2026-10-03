@@ -1,0 +1,41 @@
+name: Cloudflare format artifact
+
+on:
+  push:
+    branches:
+      - DR-152-cloudflare-production-runtime
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - name: Format Cloudflare migration files
+        run: |
+          npx prettier --write \
+            docs/CLOUDFLARE_ZERO_COST_MIGRATION_RUNBOOK.md \
+            scripts/check-cloudflare-foundation.mjs \
+            tests/cloudflareRuntimeFoundation.test.ts \
+            worker/index.mjs \
+            wrangler.jsonc
+      - name: Upload formatted files
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-formatted-files
+          path: |
+            docs/CLOUDFLARE_ZERO_COST_MIGRATION_RUNBOOK.md
+            scripts/check-cloudflare-foundation.mjs
+            tests/cloudflareRuntimeFoundation.test.ts
+            worker/index.mjs
+            wrangler.jsonc
+          if-no-files-found: error
+          retention-days: 1
