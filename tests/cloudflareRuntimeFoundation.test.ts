@@ -6,7 +6,7 @@ function readJsonc(path: string) {
   return JSON.parse(source.replace(/,\s*([}\]])/g, "$1"));
 }
 
-const wrangler = readJsonc("wrangler.jsonc") as {
+type WranglerConfig = {
   main?: string;
   assets?: {
     directory?: string;
@@ -14,7 +14,19 @@ const wrangler = readJsonc("wrangler.jsonc") as {
     not_found_handling?: string;
     run_worker_first?: string[];
   };
+  env?: {
+    staging?: {
+      routes?: Array<{ pattern?: string; custom_domain?: boolean }>;
+      r2_buckets?: Array<{ binding?: string; bucket_name?: string }>;
+      queues?: {
+        producers?: Array<{ binding?: string; queue?: string }>;
+      };
+      vars?: Record<string, string>;
+    };
+  };
 };
+
+const wrangler = readJsonc("wrangler.jsonc") as WranglerConfig;
 const worker = readFileSync("worker/index.mjs", "utf8");
 
 describe("Cloudflare runtime foundation", () => {
@@ -50,5 +62,44 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).toContain("LEGACY_BACKEND_ORIGIN");
     expect(worker).toContain("Transitional staging bridge only");
     expect(worker).not.toContain("productionServer");
+  });
+
+  it("binds only isolated staging R2 and Queue resources", () => {
+    const staging = wrangler.env?.staging;
+    expect(staging?.routes).toContainEqual({
+      pattern: "next.calender.aido.co.zw",
+      custom_domain: true,
+    });
+
+    expect(staging?.r2_buckets).toEqual(
+      expect.arrayContaining([
+        {
+          binding: "SOURCE_BUCKET",
+          bucket_name: "calenderzw-source-staging",
+        },
+        {
+          binding: "CALENDAR_ARTIFACT_BUCKET",
+          bucket_name: "calenderzw-calendar-artifacts-staging",
+        },
+      ]),
+    );
+
+    expect(staging?.queues?.producers).toEqual(
+      expect.arrayContaining([
+        {
+          binding: "SOURCE_PROCESSING_QUEUE",
+          queue: "calenderzw-source-processing-staging",
+        },
+        {
+          binding: "PUSH_QUEUE",
+          queue: "calenderzw-push-staging",
+        },
+      ]),
+    );
+
+    expect(staging?.vars?.PUBLIC_APP_URL).toBe("https://calender.aido.co.zw");
+    expect(staging?.vars?.STAGING_ORIGIN).toBe(
+      "https://next.calender.aido.co.zw",
+    );
   });
 });
