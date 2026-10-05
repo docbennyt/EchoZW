@@ -105,6 +105,23 @@ assert(
   "push queue binding must remain staging-only.",
 );
 
+const deadLetterMap = new Map(
+  (staging.queues?.consumers ?? []).map((consumer) => [
+    consumer.queue,
+    consumer.dead_letter_queue,
+  ]),
+);
+assert(
+  deadLetterMap.get("calenderzw-source-processing-staging") ===
+    "calenderzw-source-processing-dlq-staging",
+  "source processing queue must have a staging dead-letter queue.",
+);
+assert(
+  deadLetterMap.get("calenderzw-push-staging") ===
+    "calenderzw-push-dlq-staging",
+  "push queue must have a staging dead-letter queue.",
+);
+
 console.log(
   "Cloudflare foundation contract OK: atomic SPA assets, staging-only bindings, selective Worker routing, and missing-asset 404 guard are present.",
 );

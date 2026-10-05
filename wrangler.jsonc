@@ -68,6 +68,16 @@
             "queue": "calenderzw-push-staging",
           },
         ],
+        "consumers": [
+          {
+            "queue": "calenderzw-source-processing-staging",
+            "dead_letter_queue": "calenderzw-source-processing-dlq-staging",
+          },
+          {
+            "queue": "calenderzw-push-staging",
+            "dead_letter_queue": "calenderzw-push-dlq-staging",
+          },
+        ],
       },
     },
   },

@@ -20,6 +20,7 @@ type WranglerConfig = {
       r2_buckets?: Array<{ binding?: string; bucket_name?: string }>;
       queues?: {
         producers?: Array<{ binding?: string; queue?: string }>;
+        consumers?: Array<{ queue?: string; dead_letter_queue?: string }>;
       };
       vars?: Record<string, string>;
     };
@@ -93,6 +94,18 @@ describe("Cloudflare runtime foundation", () => {
         {
           binding: "PUSH_QUEUE",
           queue: "calenderzw-push-staging",
+        },
+      ]),
+    );
+    expect(staging?.queues?.consumers).toEqual(
+      expect.arrayContaining([
+        {
+          queue: "calenderzw-source-processing-staging",
+          dead_letter_queue: "calenderzw-source-processing-dlq-staging",
+        },
+        {
+          queue: "calenderzw-push-staging",
+          dead_letter_queue: "calenderzw-push-dlq-staging",
         },
       ]),
     );
