@@ -42,6 +42,12 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
       vercel.rewrites.map((rewrite) => [rewrite.source, rewrite.destination]),
     );
     expect(rewrites.get("/api/:path*")).toBe(`${railwayOrigin}/api/:path*`);
+    expect(rewrites.get("/calendar/feed/:path*")).toBe(
+      `${railwayOrigin}/calendar/feed/:path*`,
+    );
+    expect(rewrites.get("/calendar/download/:path*")).toBe(
+      `${railwayOrigin}/calendar/download/:path*`,
+    );
     expect(rewrites.get("/runtime-config.js")).toBe(
       `${railwayOrigin}/runtime-config.js`,
     );
@@ -56,6 +62,12 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     const apiIndex = vercel.rewrites.findIndex(
       (rewrite) => rewrite.source === "/api/:path*",
     );
+    const calendarFeedIndex = vercel.rewrites.findIndex(
+      (rewrite) => rewrite.source === "/calendar/feed/:path*",
+    );
+    const calendarDownloadIndex = vercel.rewrites.findIndex(
+      (rewrite) => rewrite.source === "/calendar/download/:path*",
+    );
     const sitemapIndex = vercel.rewrites.findIndex(
       (rewrite) => rewrite.source === "/sitemap.xml",
     );
@@ -63,7 +75,10 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
       (rewrite) => rewrite.source === "/:path*",
     );
     expect(apiIndex).toBeGreaterThanOrEqual(0);
+    expect(calendarFeedIndex).toBeGreaterThan(apiIndex);
+    expect(calendarDownloadIndex).toBeGreaterThan(calendarFeedIndex);
     expect(sitemapIndex).toBeGreaterThan(apiIndex);
+    expect(sitemapIndex).toBeGreaterThan(calendarDownloadIndex);
     expect(fallbackIndex).toBeGreaterThan(sitemapIndex);
   });
 
