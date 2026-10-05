@@ -26,6 +26,14 @@
       "destination": "https://calender.up.railway.app/api/:path*"
     },
     {
+      "source": "/calendar/feed/:path*",
+      "destination": "https://calender.up.railway.app/calendar/feed/:path*"
+    },
+    {
+      "source": "/calendar/download/:path*",
+      "destination": "https://calender.up.railway.app/calendar/download/:path*"
+    },
+    {
       "source": "/runtime-config.js",
       "destination": "https://calender.up.railway.app/runtime-config.js"
     },
@@ -41,6 +49,24 @@
   "headers": [
     {
       "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/calendar/feed/:path*",
+      "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "source": "/calendar/download/:path*",
       "headers": [
         {
           "key": "x-vercel-enable-rewrite-caching",
