@@ -103,6 +103,44 @@ describe("growth capture submission reliability", () => {
     expect(institution.value).toBe("");
   });
 
+  it("submits acquisition-ready timetable request metadata", async () => {
+    fetchMock.mockResolvedValue(response(true));
+    render(<TimetableRequestPage />);
+    fillRequest();
+    fireEvent.change(screen.getByLabelText("Semester / intake"), {
+      target: { value: "August intake" },
+    });
+    fireEvent.change(screen.getByLabelText("Class Rep status"), {
+      target: { value: "knows_class_rep" },
+    });
+    fireEvent.change(screen.getByLabelText("Source access"), {
+      target: { value: "document" },
+    });
+    fireEvent.change(screen.getByLabelText("Source document filename"), {
+      target: { value: "SE Part 4 timetable.docx" },
+    });
+    fireEvent.click(
+      screen.getByLabelText(
+        "I agree CalenderZW may contact me about this request.",
+      ),
+    );
+
+    fireEvent.submit(requestForm());
+
+    await screen.findByRole("status");
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      institutionName: "Harare Institute of Technology",
+      programmeName: "BTech Software Engineering",
+      classGroup: "4.1",
+      semesterName: "August intake",
+      classRepStatus: "knows_class_rep",
+      sourceAccess: "document",
+      sourceDocumentName: "SE Part 4 timetable.docx",
+      requesterNotifyOnPublish: true,
+    });
+  });
+
   it("preserves feedback fields after a 4xx response", async () => {
     fetchMock.mockResolvedValue(
       response(false, { error: { message: "Please check your feedback." } }),

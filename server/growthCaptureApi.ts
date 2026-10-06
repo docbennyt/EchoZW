@@ -95,8 +95,15 @@ function parseTimetableRequest(value: unknown): TimetableRequestInsert {
   const input = value as Record<string, unknown>;
   const requesterRole = input.requesterRole;
   const sourceAccess = input.sourceAccess;
+  const classRepStatus = input.classRepStatus ?? "unknown";
   if (
     !["student", "class_rep", "staff", "other"].includes(String(requesterRole))
+  )
+    throw new Error("INVALID_INPUT");
+  if (
+    !["unknown", "is_class_rep", "knows_class_rep", "not_class_rep"].includes(
+      String(classRepStatus),
+    )
   )
     throw new Error("INVALID_INPUT");
   if (
@@ -111,19 +118,29 @@ function parseTimetableRequest(value: unknown): TimetableRequestInsert {
   const email = cleanEmail(input.email);
   if ((phoneE164 || email) && !consentContact)
     throw new Error("CONTACT_CONSENT_REQUIRED");
+  const requesterNotifyOnPublish =
+    input.requesterNotifyOnPublish == null
+      ? Boolean(email)
+      : input.requesterNotifyOnPublish === true;
+  if (requesterNotifyOnPublish && !email)
+    throw new Error("NOTIFICATION_EMAIL_REQUIRED");
 
   return {
     institutionName: cleanText(input.institutionName, 160, true)!,
     programmeName: cleanText(input.programmeName, 160, true)!,
     classGroup: cleanText(input.classGroup, 120, true)!,
     academicPeriod: cleanText(input.academicPeriod, 120),
+    semesterName: cleanText(input.semesterName, 120),
     requesterRole: requesterRole as TimetableRequestInsert["requesterRole"],
+    classRepStatus: classRepStatus as TimetableRequestInsert["classRepStatus"],
     sourceAccess: sourceAccess as TimetableRequestInsert["sourceAccess"],
     sourceNote: cleanText(input.sourceNote, 1000),
+    sourceDocumentName: cleanText(input.sourceDocumentName, 240),
     contactName: cleanText(input.contactName, 120),
     phoneE164,
     email,
     consentContact,
+    requesterNotifyOnPublish,
   };
 }
 
@@ -181,6 +198,15 @@ function sendInputError(res: ServerResponse, error: unknown) {
       error: {
         code,
         message: "Consent is required before sending contact details.",
+      },
+    });
+    return;
+  }
+  if (code === "NOTIFICATION_EMAIL_REQUIRED") {
+    sendJson(res, 400, {
+      error: {
+        code,
+        message: "An email is required for publication notifications.",
       },
     });
     return;
@@ -244,6 +270,7 @@ export async function handleGrowthCaptureRequest(
         "INVALID_JSON",
         "INVALID_INPUT",
         "CONTACT_CONSENT_REQUIRED",
+        "NOTIFICATION_EMAIL_REQUIRED",
       ].includes(error.message)
     ) {
       sendInputError(res, error);

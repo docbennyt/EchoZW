@@ -1,5 +1,5 @@
 import { Button } from "@base-ui/react/button";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "./utils/supabase/client";
 
 type TimetableRequest = {
@@ -8,13 +8,20 @@ type TimetableRequest = {
   programme_name: string;
   class_group: string;
   academic_period: string | null;
+  semester_name: string | null;
   requester_role: string;
+  class_rep_status: string;
   source_access: string;
   source_note: string | null;
+  source_document_name: string | null;
+  source_upload_status: string;
   contact_name: string | null;
   phone_e164: string | null;
   email: string | null;
   consent_contact: boolean;
+  requester_notify_on_publish: boolean;
+  requester_notified_at: string | null;
+  demand_key: string;
   status: string;
   public_slug: string | null;
   created_at: string;
@@ -36,7 +43,27 @@ type Feedback = {
   created_at: string;
 };
 
-type Inbox = { requests: TimetableRequest[]; feedback: Feedback[] };
+type AcquisitionQueueItem = {
+  demand_key: string;
+  first_requested_at: string;
+  last_requested_at: string;
+  request_count: number;
+  notify_email_count: number;
+  class_rep_lead_count: number;
+  source_lead_count: number;
+  has_source_document: boolean;
+  current_status: string | null;
+  institution_name: string;
+  programme_name: string;
+  class_group: string;
+  academic_period: string | null;
+};
+
+type Inbox = {
+  requests: TimetableRequest[];
+  feedback: Feedback[];
+  acquisitionQueue?: AcquisitionQueueItem[];
+};
 
 async function loadToken() {
   const client = createClient();
@@ -80,7 +107,11 @@ function formatDate(value: string) {
 
 export function GrowthInboxPage() {
   const [token, setToken] = useState<string | null>(null);
-  const [inbox, setInbox] = useState<Inbox>({ requests: [], feedback: [] });
+  const [inbox, setInbox] = useState<Inbox>({
+    requests: [],
+    feedback: [],
+    acquisitionQueue: [],
+  });
   const [status, setStatus] = useState<"loading" | "ready" | "error" | "auth">(
     "loading",
   );
@@ -111,19 +142,7 @@ export function GrowthInboxPage() {
     })();
   }, [refresh]);
 
-  const demandGroups = useMemo(() => {
-    const groups = new Map<string, number>();
-    for (const item of inbox.requests) {
-      const key = [
-        item.institution_name,
-        item.programme_name,
-        item.class_group,
-        item.academic_period ?? "Current period",
-      ].join(" · ");
-      groups.set(key, (groups.get(key) ?? 0) + 1);
-    }
-    return [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
-  }, [inbox.requests]);
+  const acquisitionQueue = inbox.acquisitionQueue ?? [];
 
   async function updateRequest(item: TimetableRequest, nextStatus: string) {
     if (!token) return;
@@ -204,7 +223,7 @@ export function GrowthInboxPage() {
         <article>
           <strong>
             {
-              inbox.requests.filter((item) => item.source_access !== "none")
+              acquisitionQueue.filter((item) => item.source_lead_count > 0)
                 .length
             }
           </strong>
@@ -226,12 +245,21 @@ export function GrowthInboxPage() {
             Grouped locally in this view; no IP/device fingerprinting.
           </small>
         </div>
-        {demandGroups.length ? (
+        {acquisitionQueue.length ? (
           <ol className="czw-demand-clusters">
-            {demandGroups.map(([label, count]) => (
-              <li key={label}>
-                <span>{label}</span>
-                <strong>{count}</strong>
+            {acquisitionQueue.slice(0, 8).map((item) => (
+              <li key={item.demand_key}>
+                <span>
+                  {item.institution_name} · {item.programme_name} ·{" "}
+                  {item.class_group}
+                  {item.academic_period ? ` · ${item.academic_period}` : ""}
+                </span>
+                <strong>{item.request_count}</strong>
+                <small>
+                  {item.source_lead_count} source leads ·{" "}
+                  {item.class_rep_lead_count} rep leads ·{" "}
+                  {item.notify_email_count} notify
+                </small>
               </li>
             ))}
           </ol>
@@ -261,18 +289,32 @@ export function GrowthInboxPage() {
                 <p>
                   Class {item.class_group}
                   {item.academic_period ? ` · ${item.academic_period}` : ""}
+                  {item.semester_name ? ` · ${item.semester_name}` : ""}
                 </p>
                 <p>
                   <strong>Role:</strong> {item.requester_role} ·{" "}
+                  <strong>Rep:</strong> {item.class_rep_status} ·{" "}
                   <strong>Source:</strong> {item.source_access}
                 </p>
+                <p>
+                  <strong>Demand key:</strong> {item.demand_key}
+                </p>
                 {item.source_note ? <p>{item.source_note}</p> : null}
+                {item.source_document_name ? (
+                  <p>
+                    <strong>Source document:</strong>{" "}
+                    {item.source_document_name} · {item.source_upload_status}
+                  </p>
+                ) : null}
                 {item.consent_contact ? (
                   <p className="czw-growth-contact-line">
                     {[item.contact_name, item.phone_e164, item.email]
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
+                ) : null}
+                {item.requester_notify_on_publish ? (
+                  <p>Requester wants publication notification.</p>
                 ) : null}
               </div>
               <div className="czw-growth-inbox-actions">
