@@ -37,6 +37,19 @@ export function TimetableRequestPage() {
   const [state, setState] = useState<SubmitState>("idle");
   const [message, setMessage] = useState("");
   const submittingRef = useRef(false);
+  const params =
+    typeof window === "undefined"
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search);
+  const prefill = {
+    institutionName: params.get("institution") ?? "",
+    programmeName: params.get("programme") ?? "",
+    classGroup: params.get("class") ?? "",
+    academicPeriod: params.get("period") ?? "",
+    requesterRole: params.get("rep") === "1" ? "class_rep" : "student",
+    classRepStatus: params.get("rep") === "1" ? "is_class_rep" : "unknown",
+    sourceAccess: params.get("source") === "document" ? "document" : "none",
+  };
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,10 +114,20 @@ export function TimetableRequestPage() {
           <form onSubmit={submit}>
             <div className="czw-growth-grid">
               <Field label="University / institution *">
-                <Input name="institutionName" required maxLength={160} />
+                <Input
+                  name="institutionName"
+                  required
+                  maxLength={160}
+                  defaultValue={prefill.institutionName}
+                />
               </Field>
               <Field label="Programme *">
-                <Input name="programmeName" required maxLength={160} />
+                <Input
+                  name="programmeName"
+                  required
+                  maxLength={160}
+                  defaultValue={prefill.programmeName}
+                />
               </Field>
               <Field label="Class / part / group *">
                 <Input
@@ -112,6 +135,7 @@ export function TimetableRequestPage() {
                   required
                   maxLength={120}
                   placeholder="e.g. CS 1.1"
+                  defaultValue={prefill.classGroup}
                 />
               </Field>
               <Field label="Academic period">
@@ -119,6 +143,7 @@ export function TimetableRequestPage() {
                   name="academicPeriod"
                   maxLength={120}
                   placeholder="e.g. Aug Semester 2026"
+                  defaultValue={prefill.academicPeriod}
                 />
               </Field>
               <Field label="Semester / intake">
@@ -129,7 +154,10 @@ export function TimetableRequestPage() {
                 />
               </Field>
               <Field label="You are">
-                <select name="requesterRole" defaultValue="student">
+                <select
+                  name="requesterRole"
+                  defaultValue={prefill.requesterRole}
+                >
                   <option value="student">Student</option>
                   <option value="class_rep">Class Rep</option>
                   <option value="staff">University staff</option>
@@ -137,7 +165,10 @@ export function TimetableRequestPage() {
                 </select>
               </Field>
               <Field label="Class Rep status">
-                <select name="classRepStatus" defaultValue="unknown">
+                <select
+                  name="classRepStatus"
+                  defaultValue={prefill.classRepStatus}
+                >
                   <option value="unknown">I am not sure</option>
                   <option value="is_class_rep">I am the Class Rep</option>
                   <option value="knows_class_rep">
@@ -147,7 +178,7 @@ export function TimetableRequestPage() {
                 </select>
               </Field>
               <Field label="Source access">
-                <select name="sourceAccess" defaultValue="none">
+                <select name="sourceAccess" defaultValue={prefill.sourceAccess}>
                   <option value="none">I do not have the source</option>
                   <option value="class_rep">
                     I am / can reach the Class Rep

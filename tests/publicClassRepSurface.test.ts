@@ -20,7 +20,8 @@ describe("public Class Rep surface", () => {
     expect(app).toContain('href="/rep/login"');
     expect(app).toContain('<a href="/rep/login">Rep login</a>');
 
-    expect(finder).toContain('href="/rep/login"');
+    expect(finder).toContain('requestHref({ rep: "1" })');
+    expect(finder).toContain('requestHref({ source: "document" })');
     expect(finder).toContain(
       "Showing matching published class timetables from CalenderZW.",
     );

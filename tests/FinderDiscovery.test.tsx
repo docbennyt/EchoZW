@@ -91,4 +91,25 @@ describe("DR-66 FinderDiscovery responsive hierarchy", () => {
       expect(screen.queryByRole("heading", { name: "Directory" })).toBeNull();
     },
   );
+
+  it("turns an empty directory into a timetable acquisition action", async () => {
+    setViewport(390);
+    mocks.fetchPublishedTimetables.mockResolvedValueOnce({ timetables: [] });
+
+    render(<FinderDiscovery />);
+
+    expect(
+      await screen.findByText("No published timetables are listed yet."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Can’t find your timetable?")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Request my timetable/i }),
+    ).toHaveAttribute("href", "/request");
+    expect(
+      screen.getByRole("link", { name: /Upload timetable/i }),
+    ).toHaveAttribute("href", "/request?source=document");
+    expect(
+      screen.getByRole("link", { name: /I’m the Class Rep/i }),
+    ).toHaveAttribute("href", "/request?rep=1");
+  });
 });

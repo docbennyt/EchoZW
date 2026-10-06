@@ -3,10 +3,12 @@ import { Input } from "@base-ui/react/input";
 import { Select } from "@base-ui/react/select";
 import {
   ArrowRight,
+  FileUp,
   Check,
   ChevronDown,
   Search,
   SlidersHorizontal,
+  UserCheck,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -150,10 +152,10 @@ function FinderLoadState({
       <div className="czw-finder-empty">
         <strong>No published timetables are listed yet.</strong>
         <p>
-          Your class representative can publish a timetable before students use
-          this finder.
+          Send a request or source document so CalenderZW can turn demand into
+          review-ready timetable work.
         </p>
-        <a href="/rep/login">Set up a class →</a>
+        <MissingTimetableActions />
       </div>
     );
   }
@@ -334,6 +336,16 @@ function ExactFinder({
           >
             View timetable <ArrowRight size={17} aria-hidden="true" />
           </Button>
+          {institution || programme || classGroup ? (
+            <MissingTimetableActions
+              context={{
+                institution,
+                programme,
+                classGroup,
+                academicPeriod: effectivePeriod,
+              }}
+            />
+          ) : null}
         </form>
       ) : null}
     </section>
@@ -416,6 +428,58 @@ function ActiveFilterChip({
       <span>{label}</span>
       <X size={13} aria-hidden="true" />
     </Button>
+  );
+}
+
+function MissingTimetableActions({
+  context,
+}: {
+  context?: {
+    institution?: string | null;
+    programme?: string | null;
+    classGroup?: string | null;
+    academicPeriod?: string | null;
+  };
+}) {
+  const params = new URLSearchParams();
+  if (context?.institution) params.set("institution", context.institution);
+  if (context?.programme) params.set("programme", context.programme);
+  if (context?.classGroup) params.set("class", context.classGroup);
+  if (context?.academicPeriod) params.set("period", context.academicPeriod);
+  function requestHref(extra: Record<string, string> = {}) {
+    const next = new URLSearchParams(params);
+    for (const [key, value] of Object.entries(extra)) next.set(key, value);
+    const query = next.toString();
+    return query ? `/request?${query}` : "/request";
+  }
+
+  return (
+    <div className="czw-missing-timetable-actions">
+      <div>
+        <strong>Can’t find your timetable?</strong>
+        <p>
+          Send the request once. A timetable document or Class Rep lead helps
+          CalenderZW create structured review work automatically.
+        </p>
+      </div>
+      <div className="czw-missing-timetable-buttons">
+        <a className="czw-button czw-button-primary" href={requestHref()}>
+          Request my timetable <ArrowRight size={15} aria-hidden="true" />
+        </a>
+        <a
+          className="czw-button czw-button-secondary"
+          href={requestHref({ source: "document" })}
+        >
+          <FileUp size={15} aria-hidden="true" /> Upload timetable
+        </a>
+        <a
+          className="czw-button czw-button-secondary"
+          href={requestHref({ rep: "1" })}
+        >
+          <UserCheck size={15} aria-hidden="true" /> I’m the Class Rep
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -699,8 +763,8 @@ function DesktopDirectory({
               <Search size={22} aria-hidden="true" />
               <strong>No published timetables match those filters.</strong>
               <p>
-                Clear one or more filters, or search using a programme, class or
-                period name.
+                Clear one or more filters, or turn this into an acquisition
+                request so the team can publish it.
               </p>
               <Button
                 type="button"
@@ -709,6 +773,14 @@ function DesktopDirectory({
               >
                 Clear filters
               </Button>
+              <MissingTimetableActions
+                context={{
+                  institution: browseInstitution,
+                  programme: browseProgramme,
+                  classGroup: browseClass,
+                  academicPeriod: browsePeriod,
+                }}
+              />
             </div>
           )}
         </div>
