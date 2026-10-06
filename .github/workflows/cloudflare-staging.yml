@@ -1,0 +1,78 @@
+name: Cloudflare Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref/SHA to deploy."
+        required: true
+        default: DR-152-cloudflare-production-runtime
+        type: string
+      run_smoke:
+        description: "Run live staging smoke after deploy."
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Verify and deploy staging Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: cloudflare-staging
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CALENDERZW_STAGING_ORIGIN: https://next.calender.aido.co.zw
+      CALENDERZW_STAGING_FEED_URL: ${{ secrets.CALENDERZW_STAGING_FEED_URL }}
+    steps:
+      - name: Checkout exact ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+
+      - name: Confirm exact head
+        run: |
+          echo "event_sha=${GITHUB_SHA}"
+          echo "checked_out_sha=$(git rev-parse HEAD)"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format
+        run: npm run format:check
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Cloudflare foundation check
+        run: npm run worker:check
+
+      - name: Wrangler dry-run validation
+        run: npm run worker:validate
+
+      - name: Deploy Cloudflare staging
+        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc
+
+      - name: Live staging smoke
+        if: ${{ inputs.run_smoke }}
+        run: npm run worker:smoke:staging
