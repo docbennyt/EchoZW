@@ -5,6 +5,10 @@ const sql = readFileSync(
   "supabase/migrations/0019_growth_capture.sql",
   "utf8",
 ).toLowerCase();
+const acquisitionSql = readFileSync(
+  "supabase/migrations/0033_acquisition_request_queue.sql",
+  "utf8",
+).toLowerCase();
 
 describe("growth capture migration", () => {
   it("creates private timetable request and feedback tables", () => {
@@ -42,5 +46,23 @@ describe("growth capture migration", () => {
     expect(sql).toContain(
       "testimonial_approved boolean not null default false",
     );
+  });
+
+  it("upgrades timetable requests into a deduplicated acquisition queue", () => {
+    expect(acquisitionSql).toContain("add column if not exists demand_key");
+    expect(acquisitionSql).toContain(
+      "add column if not exists class_rep_status",
+    );
+    expect(acquisitionSql).toContain(
+      "add column if not exists requester_notify_on_publish",
+    );
+    expect(acquisitionSql).toContain(
+      "create or replace view public.timetable_acquisition_queue",
+    );
+    expect(acquisitionSql).toContain("count(*)::integer as request_count");
+    expect(acquisitionSql).toContain(
+      "count(*) filter (where email is not null and requester_notify_on_publish)::integer as notify_email_count",
+    );
+    expect(acquisitionSql).toContain("group by demand_key");
   });
 });

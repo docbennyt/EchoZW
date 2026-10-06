@@ -54,13 +54,17 @@ export function TimetableRequestPage() {
         programmeName: form.get("programmeName"),
         classGroup: form.get("classGroup"),
         academicPeriod: form.get("academicPeriod"),
+        semesterName: form.get("semesterName"),
         requesterRole: form.get("requesterRole"),
+        classRepStatus: form.get("classRepStatus"),
         sourceAccess: form.get("sourceAccess"),
         sourceNote: form.get("sourceNote"),
+        sourceDocumentName: form.get("sourceDocumentName"),
         contactName: form.get("contactName"),
         phoneE164: form.get("phoneE164"),
         email: form.get("email"),
         consentContact,
+        requesterNotifyOnPublish: form.get("requesterNotifyOnPublish") === "on",
       });
       formElement.reset();
       setState("success");
@@ -81,9 +85,9 @@ export function TimetableRequestPage() {
           <span>Missing timetable?</span>
           <h1>Get your class onto CalenderZW.</h1>
           <p>
-            Tell us which class is missing. If you are a Class Rep or have an
-            official source document/link, say so — that can speed up
-            publication.
+            Tell us exactly which class is missing. If you can identify the
+            Class Rep or source document, CalenderZW can turn this into a
+            review-ready timetable instead of a manual founder chase.
           </p>
         </section>
         <section className="czw-growth-card" aria-labelledby="request-heading">
@@ -117,12 +121,29 @@ export function TimetableRequestPage() {
                   placeholder="e.g. Aug Semester 2026"
                 />
               </Field>
+              <Field label="Semester / intake">
+                <Input
+                  name="semesterName"
+                  maxLength={120}
+                  placeholder="e.g. August intake"
+                />
+              </Field>
               <Field label="You are">
                 <select name="requesterRole" defaultValue="student">
                   <option value="student">Student</option>
                   <option value="class_rep">Class Rep</option>
                   <option value="staff">University staff</option>
                   <option value="other">Other</option>
+                </select>
+              </Field>
+              <Field label="Class Rep status">
+                <select name="classRepStatus" defaultValue="unknown">
+                  <option value="unknown">I am not sure</option>
+                  <option value="is_class_rep">I am the Class Rep</option>
+                  <option value="knows_class_rep">
+                    I can connect the Class Rep
+                  </option>
+                  <option value="not_class_rep">I am not the Class Rep</option>
                 </select>
               </Field>
               <Field label="Source access">
@@ -146,7 +167,14 @@ export function TimetableRequestPage() {
                 name="sourceNote"
                 maxLength={1000}
                 rows={4}
-                placeholder="Optional — describe where the official timetable comes from."
+                placeholder="Optional — paste an official link, describe the noticeboard/source, or explain who has the document."
+              />
+            </Field>
+            <Field label="Source document filename">
+              <Input
+                name="sourceDocumentName"
+                maxLength={240}
+                placeholder="Optional — e.g. SE Part 4 timetable.docx"
               />
             </Field>
             <div className="czw-growth-contact">
@@ -171,6 +199,14 @@ export function TimetableRequestPage() {
                 <span>
                   I agree CalenderZW may contact me about this request.
                 </span>
+              </label>
+              <label className="czw-growth-check">
+                <input
+                  type="checkbox"
+                  name="requesterNotifyOnPublish"
+                  defaultChecked
+                />
+                <span>Email me when this timetable is published.</span>
               </label>
             </div>
             {state === "success" ? (
