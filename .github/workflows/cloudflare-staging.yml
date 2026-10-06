@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref/SHA to deploy. Defaults to the workflow ref."
-        required: false
+        description: "Git ref/SHA to deploy."
+        required: true
+        default: DR-152-cloudflare-production-runtime
         type: string
       run_smoke:
         description: "Run live staging smoke after deploy."
@@ -35,7 +36,7 @@ jobs:
       - name: Checkout exact ref
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || github.sha }}
+          ref: ${{ inputs.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
