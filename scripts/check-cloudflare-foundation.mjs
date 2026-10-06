@@ -61,6 +61,17 @@ assert(
   worker.includes("LEGACY_BACKEND_ORIGIN"),
   "staging backend bridge must be explicit and removable.",
 );
+assert(
+  worker.includes('url.pathname === "/api/edge/source-documents"') &&
+    worker.includes("SOURCE_BUCKET.put") &&
+    worker.includes("SOURCE_PROCESSING_QUEUE.send"),
+  "source document uploads must write private R2 and enqueue processing.",
+);
+assert(
+  worker.includes("async queue(batch)") &&
+    worker.includes("source_document_uploaded"),
+  "source processing queue consumer must be wired in the Worker.",
+);
 
 const staging = wrangler.env?.staging;
 assert(staging, "staging environment must exist.");

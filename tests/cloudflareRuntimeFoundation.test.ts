@@ -115,4 +115,14 @@ describe("Cloudflare runtime foundation", () => {
       "https://next.calender.aido.co.zw",
     );
   });
+
+  it("has a native private source upload path that writes R2 and queues processing", () => {
+    expect(worker).toContain('url.pathname === "/api/edge/source-documents"');
+    expect(worker).toContain("SOURCE_BUCKET.put");
+    expect(worker).toContain("SOURCE_PROCESSING_QUEUE.send");
+    expect(worker).toContain("source_document_uploaded");
+    expect(worker).toContain("DOCX_ZIP_INVALID");
+    expect(worker).toContain("MAX_SOURCE_DOCUMENT_BYTES");
+    expect(worker).toContain("async queue(batch)");
+  });
 });

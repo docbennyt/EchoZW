@@ -1,10 +1,19 @@
-/* global Headers, Response, URL, fetch, Request */
+/* global Headers, Response, URL, fetch, Request, crypto */
 
 const DYNAMIC_PREFIXES = ["/api/", "/calendar/"];
 const DYNAMIC_EXACT_PATHS = new Set([
   "/runtime-config.js",
   "/sitemap.xml",
   "/healthz",
+]);
+const MAX_SOURCE_DOCUMENT_BYTES = 10 * 1024 * 1024;
+const DOCX_MIME_TYPE =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const ACCEPTED_DOCX_MIME_TYPES = new Set([
+  DOCX_MIME_TYPE,
+  "application/octet-stream",
+  "application/zip",
+  "application/x-zip-compressed",
 ]);
 
 function json(body, init = {}) {
@@ -126,6 +135,190 @@ function notFound() {
   return new Response("Not found.", { status: 404, headers });
 }
 
+function headerValue(headers, name) {
+  return headers.get(name)?.trim() ?? "";
+}
+
+function decodeFilename(value) {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return value.trim();
+  }
+}
+
+function safeFilename(value) {
+  return value.replace(/[^\w.\- ()]/g, "_").slice(0, 180);
+}
+
+function hex(buffer) {
+  return [...new Uint8Array(buffer)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function monthKey(now = new Date()) {
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function assertSourceUploadBindings(env) {
+  if (!env.SOURCE_BUCKET || !env.SOURCE_PROCESSING_QUEUE) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_NOT_CONFIGURED",
+          message: "Source upload storage is not configured for this runtime.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+  return null;
+}
+
+async function handleSourceDocumentUpload(request, env, ctx) {
+  if (request.method !== "POST") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  const bindingError = assertSourceUploadBindings(env);
+  if (bindingError) return bindingError;
+
+  const declaredSize = Number(request.headers.get("content-length") ?? 0);
+  if (
+    Number.isFinite(declaredSize) &&
+    declaredSize > MAX_SOURCE_DOCUMENT_BYTES
+  ) {
+    return json(
+      {
+        error: {
+          code: "FILE_TOO_LARGE",
+          message: "The DOCX file exceeds the 10 MB source upload limit.",
+        },
+      },
+      { status: 413 },
+    );
+  }
+
+  const filename = safeFilename(
+    decodeFilename(headerValue(request.headers, "x-calenderzw-filename")),
+  );
+  if (!filename || !filename.toLocaleLowerCase("en").endsWith(".docx")) {
+    return json(
+      {
+        error: {
+          code: "DOCX_REQUIRED",
+          message:
+            "CalenderZW source upload currently accepts DOCX files only.",
+        },
+      },
+      { status: 422 },
+    );
+  }
+
+  const mimeType = headerValue(request.headers, "content-type")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (!ACCEPTED_DOCX_MIME_TYPES.has(mimeType)) {
+    return json(
+      {
+        error: {
+          code: "DOCX_MIME_REQUIRED",
+          message: "CalenderZW source upload accepts DOCX documents only.",
+        },
+      },
+      { status: 415 },
+    );
+  }
+
+  const bytes = await request.arrayBuffer();
+  if (bytes.byteLength === 0) {
+    return json(
+      {
+        error: {
+          code: "EMPTY_FILE",
+          message: "Choose a DOCX timetable document to upload.",
+        },
+      },
+      { status: 422 },
+    );
+  }
+  if (bytes.byteLength > MAX_SOURCE_DOCUMENT_BYTES) {
+    return json(
+      {
+        error: {
+          code: "FILE_TOO_LARGE",
+          message: "The DOCX file exceeds the 10 MB source upload limit.",
+        },
+      },
+      { status: 413 },
+    );
+  }
+
+  const signature = new Uint8Array(bytes.slice(0, 4));
+  if (
+    signature[0] !== 0x50 ||
+    signature[1] !== 0x4b ||
+    signature[2] !== 0x03 ||
+    signature[3] !== 0x04
+  ) {
+    return json(
+      {
+        error: {
+          code: "DOCX_ZIP_INVALID",
+          message: "That file is not a valid DOCX ZIP container.",
+        },
+      },
+      { status: 422 },
+    );
+  }
+
+  const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
+  const r2Key = `source-documents/${monthKey()}/${sha256}/source.docx`;
+  await env.SOURCE_BUCKET.put(r2Key, bytes, {
+    httpMetadata: { contentType: DOCX_MIME_TYPE },
+    customMetadata: {
+      sha256,
+      originalFilename: filename,
+      parser: "static-docx-matrix-v1",
+      visibility: "private",
+    },
+  });
+
+  const job = {
+    kind: "source_document_uploaded",
+    r2Key,
+    sha256,
+    originalFilename: filename,
+    mimeType: DOCX_MIME_TYPE,
+    sizeBytes: bytes.byteLength,
+    uploadedAt: new Date().toISOString(),
+  };
+  ctx.waitUntil(env.SOURCE_PROCESSING_QUEUE.send(job));
+
+  return json(
+    {
+      document: {
+        r2Key,
+        sha256,
+        originalFilename: filename,
+        mimeType: DOCX_MIME_TYPE,
+        sizeBytes: bytes.byteLength,
+        queued: true,
+      },
+    },
+    { status: 202 },
+  );
+}
+
 async function serveSpaShell(request, env) {
   const url = new URL(request.url);
   const indexUrl = new URL("/index.html", url);
@@ -137,7 +330,7 @@ async function serveSpaShell(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === "/__release") {
@@ -152,6 +345,10 @@ export default {
       });
       applySecurityHeaders(headers);
       return new Response(null, { status: 308, headers });
+    }
+
+    if (url.pathname === "/api/edge/source-documents") {
+      return handleSourceDocumentUpload(request, env, ctx);
     }
 
     // Transitional staging bridge only. The final Cloudflare runtime replaces
@@ -180,5 +377,16 @@ export default {
     }
 
     return notFound();
+  },
+
+  async queue(batch) {
+    for (const message of batch.messages) {
+      const body = message.body ?? {};
+      if (body.kind === "source_document_uploaded" && body.r2Key) {
+        message.ack();
+        continue;
+      }
+      message.retry();
+    }
   },
 };
