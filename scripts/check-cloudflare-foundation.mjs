@@ -10,6 +10,7 @@ const worker = await readFile("worker/index.mjs", "utf8");
 const requiredWorkerFirst = [
   "/api/*",
   "/calendar/*",
+  "/assets/*",
   "/runtime-config.js",
   "/sitemap.xml",
   "/__release",
@@ -40,8 +41,8 @@ for (const route of requiredWorkerFirst) {
   assert(workerFirst.includes(route), `missing Worker-first route ${route}`);
 }
 assert(
-  !workerFirst.some((route) => route === "/assets/*" || route === "/*"),
-  "Static assets must not be forced through Worker compute.",
+  !workerFirst.includes("/*"),
+  "The whole site must not be forced through Worker compute.",
 );
 
 assert(

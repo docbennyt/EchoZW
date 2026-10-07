@@ -121,7 +121,7 @@ await expectNotHtml404(
   "invalid calendar feed",
 );
 await expectNotHtml404(
-  "/calendar/download/calenderzw-diagnostic-invalid-token.ics",
+  "/calendar/download/00000000-0000-4000-8000-000000000000.ics",
   "invalid calendar download",
 );
 

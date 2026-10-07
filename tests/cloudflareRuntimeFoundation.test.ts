@@ -44,12 +44,13 @@ describe("Cloudflare runtime foundation", () => {
       expect.arrayContaining([
         "/api/*",
         "/calendar/*",
+        "/assets/*",
         "/runtime-config.js",
         "/sitemap.xml",
         "/__release",
       ]),
     );
-    expect(routes).not.toContain("/assets/*");
+    expect(routes).toContain("/assets/*");
     expect(routes).not.toContain("/*");
   });
 

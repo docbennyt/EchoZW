@@ -329,6 +329,23 @@ async function serveSpaShell(request, env) {
   return withSecurityHeaders(await env.ASSETS.fetch(indexRequest));
 }
 
+async function serveAssetOr404(request, env) {
+  const assetResponse = await env.ASSETS.fetch(request);
+  const contentType = assetResponse.headers.get("content-type") ?? "";
+
+  // Cloudflare SPA fallback can turn a missing hashed asset into index.html.
+  // Reject that fallback at the Worker boundary so stale HTML can never execute
+  // with text/html-as-JavaScript after an atomic release.
+  if (
+    assetResponse.status !== 200 ||
+    /^text\/html(?:;|$)/i.test(contentType)
+  ) {
+    return notFound();
+  }
+
+  return withSecurityHeaders(assetResponse);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -358,10 +375,10 @@ export default {
       return proxyLegacyBackend(request, env);
     }
 
-    // P0 guardrail: never let a missing hashed asset fall through to SPA HTML.
-    // This prevents the historical text/html-as-JavaScript white-page failure.
+    // P0 guardrail: /assets/* is Worker-first in Wrangler so the Worker can
+    // distinguish a real immutable asset from Cloudflare's SPA HTML fallback.
     if (url.pathname.startsWith("/assets/")) {
-      return notFound();
+      return serveAssetOr404(request, env);
     }
 
     if (request.method !== "GET" && request.method !== "HEAD") {
