@@ -336,10 +336,7 @@ async function serveAssetOr404(request, env) {
   // Cloudflare SPA fallback can turn a missing hashed asset into index.html.
   // Reject that fallback at the Worker boundary so stale HTML can never execute
   // with text/html-as-JavaScript after an atomic release.
-  if (
-    assetResponse.status !== 200 ||
-    /^text\/html(?:;|$)/i.test(contentType)
-  ) {
+  if (assetResponse.status !== 200 || /^text\/html(?:;|$)/i.test(contentType)) {
     return notFound();
   }
 
