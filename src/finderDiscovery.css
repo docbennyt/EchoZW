@@ -550,6 +550,44 @@
   margin-top: 6px;
 }
 
+.czw-missing-timetable-actions {
+  width: min(100%, 680px);
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px solid rgba(21, 61, 50, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.czw-missing-timetable-actions strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.czw-missing-timetable-actions p {
+  max-width: none;
+  margin: 0;
+}
+
+.czw-missing-timetable-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.czw-missing-timetable-buttons .czw-button {
+  min-height: 40px;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
 /* ThemeForest-like directory experience for desktop only. */
 .czw-directory-experience {
   gap: 0;

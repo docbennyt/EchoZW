@@ -1,8 +1,13 @@
 import type { PublicTimetable } from "./pilotTypes";
+import { resolveRecurringSessions } from "../domain/resolvedSchedule";
 
 export async function fetchPublicTimetable(publicSlug: string) {
   const response = await fetch(
     `/api/public/timetables/${encodeURIComponent(publicSlug)}`,
+    {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    },
   );
   const body = (await response.json().catch(() => null)) as {
     timetable?: PublicTimetable;
@@ -17,5 +22,8 @@ export async function fetchPublicTimetable(publicSlug: string) {
     throw error;
   }
 
-  return body.timetable;
+  return {
+    ...body.timetable,
+    sessions: resolveRecurringSessions(body.timetable),
+  } satisfies PublicTimetable;
 }
