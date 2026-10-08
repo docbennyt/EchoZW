@@ -4,6 +4,7 @@ import {
   Copy,
   Download,
   ExternalLink,
+  FileUp,
   GraduationCap,
   Link2,
   Lock,
@@ -344,6 +345,7 @@ function AdminNav({ path }: { path: string }) {
     { href: "/admin/class-groups", label: "Class groups" },
     { href: "/admin/academic-periods", label: "Academic periods" },
     { href: "/admin/timetables", label: "Timetables" },
+    { href: "/admin/static-import", label: "Upload timetable" },
     { href: "/admin/source-gateway", label: "Source Gateway" },
   ];
 
@@ -2133,7 +2135,7 @@ function TimetableSetupForm({
 
   return (
     <Surface
-      title="New timetable"
+      title="Enter manually"
       subtitle="Choose the academic setup, then enter weekly classes."
     >
       <form className="pilot-form" onSubmit={submit}>
@@ -2232,6 +2234,41 @@ function TimetableSetupForm({
           Create timetable
         </button>
       </form>
+    </Surface>
+  );
+}
+
+function TimetableDocumentUploadPrompt() {
+  return (
+    <Surface
+      title="Add timetable"
+      subtitle="Start with the document whenever the class has a supported DOCX."
+      actions={
+        <a className="primary" href="/admin/static-import">
+          <FileUp size={18} />
+          Upload timetable document
+        </a>
+      }
+    >
+      <div className="pilot-card-list">
+        <article className="pilot-card">
+          <div className="pilot-card-meta">
+            <strong>Upload timetable document</strong>
+            <span>DOCX to auto-filled review draft.</span>
+            <span>Parser evidence, warnings and raw source stay visible.</span>
+          </div>
+          <div className="pilot-card-actions">
+            <a href="/admin/static-import">Upload DOCX</a>
+          </div>
+        </article>
+        <article className="pilot-card">
+          <div className="pilot-card-meta">
+            <strong>Enter manually</strong>
+            <span>Fallback for unsupported formats.</span>
+            <span>Use this only when no supported source document exists.</span>
+          </div>
+        </article>
+      </div>
     </Surface>
   );
 }
@@ -3299,6 +3336,7 @@ function TimetablesPage({
 
   return (
     <div className="pilot-stack">
+      <TimetableDocumentUploadPrompt />
       <TimetableSetupForm
         accessToken={accessToken}
         institutions={institutions}
