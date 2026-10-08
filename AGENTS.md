@@ -25,3 +25,20 @@ See `docs/ARCHITECTURE.md` for the full deployment contract.
 - Preserve established security, authorization, versioning, and publication gates unless the issue explicitly changes them.
 - Do not weaken regression tests to accommodate an architecture violation.
 - Before changing deployment topology, inspect current production ownership and verify the exact route/asset contract.
+
+## Cloudflare migration rules
+
+The migration target is one atomic Cloudflare Worker + Static Assets release. During migration, the current Vercel/Railway production topology remains authoritative until an explicit cutover gate is approved.
+
+- Cloudflare may temporarily proxy backend-only routes to Railway on staging/Preview, but it must never proxy browser SPA HTML to Railway.
+- Missing hashed assets under `/assets/*` must return a real 404. They must never fall through to `index.html`.
+- Do not recreate persistent `setInterval`/polling workers in Cloudflare. Source processing and push delivery must become event/Queue-driven; Cron is recovery/reconciliation only.
+- Do not query Supabase and regenerate public ICS on every subscriber poll once a materialized R2 artifact exists.
+- Keep Supabase as PostgreSQL/Auth/RLS for this migration. Do not introduce D1 as a parallel source of relational truth.
+- Raw timetable evidence and materialized large artifacts belong in R2; structured metadata/review/version state belongs in Supabase.
+- Preserve the repaired invitation state machine: staff invitation is never password recovery.
+- Class Rep permissions remain scoped to explicitly assigned timetables.
+- Static document imports remain review/draft-first and must never auto-publish ambiguous source data.
+- High-risk migration PRs require human review and must not auto-merge.
+
+See `docs/CLOUDFLARE_ZERO_COST_MIGRATION_RUNBOOK.md` and the DR-152+ Linear migration project before changing runtime topology.
