@@ -69,7 +69,13 @@ jobs:
       - name: Deploy Cloudflare staging
         id: deploy
         if: ${{ env.IS_SAME_REPO_PR == 'true' }}
-        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }} --tag sha-${{ steps.exact-head.outputs.sha }} --message "PR #${{ github.event.pull_request.number }} ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+        run: |
+          npx wrangler@4.147.0 deploy \
+            --env staging \
+            --config wrangler.jsonc \
+            --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }} \
+            --tag sha-${{ steps.exact-head.outputs.sha }} \
+            --message "PR ${{ github.event.pull_request.number }} ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Live staging smoke
         if: ${{ env.IS_SAME_REPO_PR == 'true' }}

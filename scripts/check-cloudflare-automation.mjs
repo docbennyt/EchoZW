@@ -61,6 +61,10 @@ assert(
   "PR preview deploy and smoke must use the exact SHA.",
 );
 assert(
+  !previewWorkflow.includes('--message "PR #'),
+  "PR preview deploy message must not use a YAML-comment-prone # in an inline command.",
+);
+assert(
   previewWorkflow.includes(
     "github.event.pull_request.head.repo.full_name == github.repository",
   ),
