@@ -199,4 +199,59 @@ describe("static timetable DOCX matrix parser", () => {
       courseName: "Cell Biology",
     });
   });
+
+  it("extracts a second supported layout without hard-coding the Biotechnology grid", () => {
+    const alternateLayout = {
+      paragraphs: [
+        "Department of Software Engineering 2026",
+        "Part 2 Semester 1 Conventional Timetable",
+      ],
+      tables: [
+        [
+          ["Slot", "Monday", "Tuesday", "Wednesday"],
+          ["08:00 - 10:00", "SWE 2101 Lab 1", "", "SWE 2102 Room 5"],
+          ["10:15 - 12:15", "", "SWE 2103 Room 2 / Online Teaching", ""],
+          ["12:15 - 13:15 LUNCH", "", "", ""],
+        ],
+        [
+          ["Course Code", "Course Title", "Contact Hours", "Instructor"],
+          ["SWE 2101", "Data Structures", "2 hours", "Dr Nyoni"],
+          ["SWE 2102", "Systems Analysis", "2 hours", "Ms Banda"],
+          ["SWE 2103", "Database Systems", "2 hours", "Mr Moyo"],
+        ],
+      ],
+    };
+
+    const parsed = parseStaticTimetableDocument(alternateLayout);
+
+    expect(parsed.metadata).toMatchObject({
+      departmentName: "Software Engineering",
+      academicYear: 2026,
+      yearLevel: 2,
+      semesterNumber: 1,
+      modeLabel: "Conventional",
+    });
+    expect(parsed.summary.sessionCount).toBe(3);
+    expect(parsed.summary.timetableContactHours).toBe(6);
+    expect(parsed.summary.courseReferenceCount).toBe(3);
+    expect(parsed.ignored).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "break",
+          rawText: "12:15 - 13:15 LUNCH",
+          startTime: "12:15",
+          endTime: "13:15",
+        }),
+      ]),
+    );
+    expect(parsed.sessions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          courseCode: "SWE 2103",
+          venueRaw: "Room 2",
+          deliveryModeRaw: "Online Teaching",
+        }),
+      ]),
+    );
+  });
 });
