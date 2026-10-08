@@ -138,10 +138,10 @@ try {
 if (releaseJson?.runtime !== "cloudflare-workers") {
   fail("__release runtime is not cloudflare-workers.");
 }
-if (
-  expectedReleaseSha &&
-  !JSON.stringify(releaseJson ?? {}).includes(expectedReleaseSha)
-) {
+if (releaseJson?.stage !== "cloudflare-staging") {
+  fail("__release stage is not cloudflare-staging.");
+}
+if (expectedReleaseSha && releaseJson?.sourceSha !== expectedReleaseSha) {
   fail(`__release did not include expected SHA ${expectedReleaseSha}.`);
 }
 

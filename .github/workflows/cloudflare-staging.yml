@@ -6,7 +6,7 @@ on:
       ref:
         description: "Git ref/SHA to deploy."
         required: true
-        default: DR-152-cloudflare-production-runtime
+        default: Calender
         type: string
       run_smoke:
         description: "Run live staging smoke after deploy."
@@ -45,9 +45,12 @@ jobs:
           cache: npm
 
       - name: Confirm exact head
+        id: exact-head
         run: |
           echo "event_sha=${GITHUB_SHA}"
-          echo "checked_out_sha=$(git rev-parse HEAD)"
+          checked_out_sha="$(git rev-parse HEAD)"
+          echo "checked_out_sha=${checked_out_sha}"
+          echo "sha=${checked_out_sha}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         run: npm ci
@@ -68,11 +71,26 @@ jobs:
         run: npm run worker:check
 
       - name: Wrangler dry-run validation
-        run: npm run worker:validate
+        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --dry-run --outdir .wrangler-dry-run --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }}
 
       - name: Deploy Cloudflare staging
-        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc
+        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }} --tag sha-${{ steps.exact-head.outputs.sha }} --message "GitHub Actions ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Live staging smoke
         if: ${{ inputs.run_smoke }}
         run: npm run worker:smoke:staging
+        env:
+          EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}
+
+      - name: Deployment evidence summary
+        if: ${{ always() }}
+        run: |
+          {
+            echo "## Cloudflare staging"
+            echo
+            echo "- Ref input: \`${{ inputs.ref }}\`"
+            echo "- Exact SHA: \`${{ steps.exact-head.outputs.sha }}\`"
+            echo "- Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo "- Smoke requested: \`${{ inputs.run_smoke }}\`"
+            echo "- Production DNS unchanged by this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
