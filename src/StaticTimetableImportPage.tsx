@@ -57,6 +57,7 @@ export function StaticTimetableImportPage() {
   const [programmeId, setProgrammeId] = useState("");
   const [cohortId, setCohortId] = useState("");
   const [academicPeriodId, setAcademicPeriodId] = useState("");
+  const [targetId, setTargetId] = useState("");
   const [resolutions, setResolutions] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState("");
@@ -131,13 +132,30 @@ export function StaticTimetableImportPage() {
     [blockingWarnings, resolutions],
   );
 
+  const selectedTarget = useMemo(
+    () =>
+      review?.targets.find((target) => target.id === targetId) ??
+      review?.targets[0] ??
+      null,
+    [review, targetId],
+  );
+
+  const targetSessions = useMemo(() => {
+    if (!selectedTarget) return sessions;
+    const candidateKeys = new Set(selectedTarget.candidateKeys);
+    return sessions.filter((session) =>
+      candidateKeys.has(session.candidateKey),
+    );
+  }, [selectedTarget, sessions]);
+
   const canCreateDraft = Boolean(
     review &&
     programmeId &&
     cohortId &&
     academicPeriodId &&
     sessions.length > 0 &&
-    sessions.every(
+    targetSessions.length > 0 &&
+    targetSessions.every(
       (session) =>
         session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
     ) &&
@@ -159,6 +177,7 @@ export function StaticTimetableImportPage() {
       const next = response.review;
       setReview(next);
       setSessions(editableSessions(next));
+      setTargetId(next.targets[0]?.id ?? "");
       setProgrammeId(next.suggestions.programmeId ?? "");
       setCohortId(next.suggestions.cohortId ?? "");
       setAcademicPeriodId(next.suggestions.academicPeriodId ?? "");
@@ -193,6 +212,7 @@ export function StaticTimetableImportPage() {
     setSuccess("");
     try {
       const result = await createStaticTimetableDraft(token, review.batch.id, {
+        targetId: selectedTarget?.id ?? null,
         programmeId,
         cohortId,
         academicPeriodId,
@@ -200,7 +220,7 @@ export function StaticTimetableImportPage() {
           warningId: warning.id,
           note: resolutions[warning.id].trim(),
         })),
-        sessions: sessions.map((session) => ({
+        sessions: targetSessions.map((session) => ({
           candidateKey: session.candidateKey,
           courseCode: session.courseCodeDraft.trim(),
           courseName: session.courseNameDraft.trim(),
@@ -395,10 +415,40 @@ export function StaticTimetableImportPage() {
             </dl>
           </section>
 
+          {review.targets.length > 0 ? (
+            <section className="czw-static-import-panel">
+              <div className="czw-static-import-section-heading">
+                <div>
+                  <span>3 · Detected targets</span>
+                  <h2>Choose the timetable slice to review</h2>
+                </div>
+                <small>One document can create several drafts</small>
+              </div>
+              <div className="czw-static-import-target-list">
+                {review.targets.map((target) => (
+                  <label key={target.id} className="czw-static-import-target">
+                    <input
+                      type="radio"
+                      name="static-import-target"
+                      checked={(selectedTarget?.id ?? "") === target.id}
+                      onChange={() => setTargetId(target.id)}
+                    />
+                    <span>
+                      <strong>{target.titleRaw}</strong>
+                      <small>
+                        {target.candidateKeys.length} source candidates
+                      </small>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="czw-static-import-panel">
             <div className="czw-static-import-section-heading">
               <div>
-                <span>3 · Canonical mapping</span>
+                <span>4 · Canonical mapping</span>
                 <h2>Bind evidence to existing academic entities</h2>
               </div>
               <small>Exact suggestions only; no fuzzy entity creation</small>
@@ -456,7 +506,7 @@ export function StaticTimetableImportPage() {
           <section className="czw-static-import-panel">
             <div className="czw-static-import-section-heading">
               <div>
-                <span>4 · Review warnings</span>
+                <span>5 · Review warnings</span>
                 <h2>Resolve source ambiguities explicitly</h2>
               </div>
               <small>
@@ -501,11 +551,13 @@ export function StaticTimetableImportPage() {
           <section className="czw-static-import-panel">
             <div className="czw-static-import-section-heading">
               <div>
-                <span>5 · Session verification</span>
+                <span>6 · Session verification</span>
                 <h2>Correct only what the document review proves</h2>
               </div>
               <small>
-                Raw source remains preserved beside normalized fields
+                {selectedTarget
+                  ? `${selectedTarget.titleRaw} · ${targetSessions.length} sessions`
+                  : "Raw source remains preserved beside normalized fields"}
               </small>
             </div>
             <div className="czw-static-import-table-wrap">
@@ -521,69 +573,75 @@ export function StaticTimetableImportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sessions.map((session, index) => (
-                    <tr key={session.candidateKey}>
-                      <td>
-                        <code>
-                          t{session.sourceTableIndex}:r{session.sourceRowIndex}
-                          :c
-                          {session.sourceColumnIndex}
-                        </code>
-                        <small>{session.rawText}</small>
-                      </td>
-                      <td>
-                        {session.weekdayLabel}
-                        <br />
-                        <strong>
-                          {session.startTime}–{session.endTime}
-                        </strong>
-                      </td>
-                      <td>
-                        <input
-                          aria-label={`Course code ${session.candidateKey}`}
-                          value={session.courseCodeDraft}
-                          onChange={(event) =>
-                            patchSession(index, {
-                              courseCodeDraft: event.target.value,
-                            })
-                          }
-                        />
-                        <input
-                          aria-label={`Course name ${session.candidateKey}`}
-                          value={session.courseNameDraft}
-                          placeholder="Verified course name"
-                          onChange={(event) =>
-                            patchSession(index, {
-                              courseNameDraft: event.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          aria-label={`Venue ${session.candidateKey}`}
-                          value={session.venueDraft}
-                          onChange={(event) =>
-                            patchSession(index, {
-                              venueDraft: event.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                      <td>
-                        <input
-                          aria-label={`Lecturer ${session.candidateKey}`}
-                          value={session.lecturerDraft}
-                          onChange={(event) =>
-                            patchSession(index, {
-                              lecturerDraft: event.target.value,
-                            })
-                          }
-                        />
-                      </td>
-                      <td>{session.deliveryModeRaw ?? "—"}</td>
-                    </tr>
-                  ))}
+                  {targetSessions.map((session) => {
+                    const index = sessions.findIndex(
+                      (item) => item.candidateKey === session.candidateKey,
+                    );
+                    return (
+                      <tr key={session.candidateKey}>
+                        <td>
+                          <code>
+                            t{session.sourceTableIndex}:r
+                            {session.sourceRowIndex}
+                            :c
+                            {session.sourceColumnIndex}
+                          </code>
+                          <small>{session.rawText}</small>
+                        </td>
+                        <td>
+                          {session.weekdayLabel}
+                          <br />
+                          <strong>
+                            {session.startTime}–{session.endTime}
+                          </strong>
+                        </td>
+                        <td>
+                          <input
+                            aria-label={`Course code ${session.candidateKey}`}
+                            value={session.courseCodeDraft}
+                            onChange={(event) =>
+                              patchSession(index, {
+                                courseCodeDraft: event.target.value,
+                              })
+                            }
+                          />
+                          <input
+                            aria-label={`Course name ${session.candidateKey}`}
+                            value={session.courseNameDraft}
+                            placeholder="Verified course name"
+                            onChange={(event) =>
+                              patchSession(index, {
+                                courseNameDraft: event.target.value,
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            aria-label={`Venue ${session.candidateKey}`}
+                            value={session.venueDraft}
+                            onChange={(event) =>
+                              patchSession(index, {
+                                venueDraft: event.target.value,
+                              })
+                            }
+                          />
+                        </td>
+                        <td>
+                          <input
+                            aria-label={`Lecturer ${session.candidateKey}`}
+                            value={session.lecturerDraft}
+                            onChange={(event) =>
+                              patchSession(index, {
+                                lecturerDraft: event.target.value,
+                              })
+                            }
+                          />
+                        </td>
+                        <td>{session.deliveryModeRaw ?? "—"}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -592,7 +650,7 @@ export function StaticTimetableImportPage() {
           <section className="czw-static-import-panel">
             <div className="czw-static-import-section-heading">
               <div>
-                <span>6 · Evidence ledger</span>
+                <span>7 · Evidence ledger</span>
                 <h2>Inspect reference and non-session source evidence</h2>
               </div>
               <small>Read-only source truth retained for audit</small>

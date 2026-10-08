@@ -19,6 +19,7 @@ const ACCEPTED_DOCX_MIME_TYPES = new Set([
 ]);
 const uuid = z.string().uuid();
 const draftSchema = z.object({
+  targetId: uuid.nullable().optional(),
   programmeId: uuid,
   cohortId: uuid,
   academicPeriodId: uuid,

@@ -33,6 +33,7 @@
     "@untitledui/icons": "^0.0.22",
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
+    "pdf-parse": "^1.1.1",
     "qrcode": "latest",
     "react": "latest",
     "react-dom": "latest",

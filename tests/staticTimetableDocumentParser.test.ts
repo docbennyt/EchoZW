@@ -254,4 +254,55 @@ describe("static timetable DOCX matrix parser", () => {
       ]),
     );
   });
+
+  it("uses explicit course-reference headings as multi-target evidence", () => {
+    const ecommerce = {
+      paragraphs: [
+        "Harare Institute of Technology",
+        "School of Business and Management Sciences",
+        "Department of E-Commerce",
+        "Semester I 2026-2027 Final Draft",
+      ],
+      tables: [
+        [
+          ["TIME", "MONDAY", "TUESDAY", "WEDNESDAY"],
+          ["08:00-10:00", "HIT 1101\nBEC 2108\nBEC 4103", "", "BEC 2108 Lab 4"],
+          ["10:15-12:15", "", "BEC 4103 Room 9", ""],
+        ],
+        [
+          ["Part 1 Semester 1"],
+          ["Course Code", "Course Title", "Contact Hours", "Lecturer"],
+          ["HIT 1101", "Technopreneurship I", "2 hours", "Service Course"],
+        ],
+        [
+          ["Part 2 Semester 1"],
+          ["Course Code", "Course Title", "Contact Hours", "Lecturer"],
+          ["BEC 2108", "E-Commerce Systems", "4 hours", "Dr Moyo"],
+        ],
+        [
+          ["Part 4 Semester 1"],
+          ["Course Code", "Course Title", "Contact Hours", "Lecturer"],
+          ["BEC 4103", "Digital Strategy", "4 hours", "Ms Ncube"],
+        ],
+      ],
+    };
+
+    const parsed = parseStaticTimetableDocument(ecommerce);
+
+    expect(parsed.metadata).toMatchObject({
+      departmentName: "E-Commerce",
+      academicYear: 2026,
+    });
+    expect(parsed.courseReferenceTableIndices).toEqual([1, 2, 3]);
+    expect(parsed.courses.map((course) => course.targetLabel)).toEqual([
+      "Part 1 Semester 1",
+      "Part 2 Semester 1",
+      "Part 4 Semester 1",
+    ]);
+    expect(parsed.ignored).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "blank", rawText: "" }),
+      ]),
+    );
+  });
 });
