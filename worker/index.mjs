@@ -118,6 +118,7 @@ function releasePayload(env) {
   return {
     runtime: "cloudflare-workers",
     stage: env.APP_ENV ?? "unknown",
+    sourceSha: env.SOURCE_SHA ?? null,
     publicOrigin: env.PUBLIC_APP_URL ?? null,
     workerVersion: env.CF_VERSION_METADATA?.id ?? null,
     workerVersionTag: env.CF_VERSION_METADATA?.tag ?? null,

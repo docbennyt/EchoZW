@@ -1,0 +1,53 @@
+name: Cloudflare Production Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref/SHA to validate for a future production deploy."
+        required: true
+        default: Calender
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  validate-production-ref:
+    name: Validate production deploy eligibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: cloudflare-production
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Validate ref is reachable from Calender
+        id: validate
+        run: |
+          checked_out_sha="$(git rev-parse HEAD)"
+          git fetch origin Calender
+          calender_sha="$(git rev-parse origin/Calender)"
+          echo "checked_out_sha=${checked_out_sha}"
+          echo "calender_sha=${calender_sha}"
+          git merge-base --is-ancestor "${checked_out_sha}" origin/Calender
+          echo "sha=${checked_out_sha}" >> "$GITHUB_OUTPUT"
+
+      - name: Production deploy intentionally disabled
+        run: |
+          {
+            echo "## Cloudflare production gate"
+            echo
+            echo "- Requested ref: \`${{ inputs.ref }}\`"
+            echo "- Exact SHA: \`${{ steps.validate.outputs.sha }}\`"
+            echo "- Reachable from \`Calender\`: yes"
+            echo "- Production deploy: disabled until DR-166 cutover approval"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Production Cloudflare deploy is intentionally disabled until DR-166 cutover approval."
