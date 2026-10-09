@@ -340,16 +340,64 @@ export function StaticTimetableImportPage() {
     );
   }
 
-  function hydrateReview(next: StaticImportReview, resetSessions = true) {
+  function hydrateReview(
+    next: StaticImportReview,
+    resetSessions = true,
+    optionSnapshot = options,
+  ) {
+    const nextMappings = mappingsFromReview(next);
+    const nextTargetId = next.targets.some((target) => target.id === targetId)
+      ? targetId
+      : (next.targets[0]?.id ?? "");
     setReview(next);
     if (resetSessions) setSessions(editableSessions(next));
-    setMappings(mappingsFromReview(next));
+    setMappings(nextMappings);
     setInstitutionId(next.document.institutionId);
-    setTargetId((current) =>
-      next.targets.some((target) => target.id === current)
-        ? current
-        : (next.targets[0]?.id ?? ""),
-    );
+    setTargetId(nextTargetId);
+    if (nextTargetId) {
+      const mapping = nextMappings[nextTargetId];
+      const programme = optionSnapshot.programmes.find(
+        (item) => item.id === mapping?.programmeId,
+      );
+      const cohort = optionSnapshot.cohorts.find(
+        (item) => item.id === mapping?.cohortId,
+      );
+      const period = optionSnapshot.academicPeriods.find(
+        (item) => item.id === mapping?.academicPeriodId,
+      );
+      setProgrammeQuery(programme?.name ?? "");
+      setCohortQuery(
+        cohort
+          ? [
+              cohort.label || cohort.level_label || cohort.code,
+              cohort.year_level ? `Year ${cohort.year_level}` : null,
+              cohort.semester_number
+                ? `Sem ${cohort.semester_number}`
+                : null,
+              cohort.group_name || cohort.group_label || null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : "",
+      );
+      setPeriodQuery(
+        period
+          ? [
+              period.name,
+              period.academic_year,
+              period.starts_on && period.ends_on
+                ? `${period.starts_on} → ${period.ends_on}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : "",
+      );
+    } else {
+      setProgrammeQuery("");
+      setCohortQuery("");
+      setPeriodQuery("");
+    }
     setResolutions((current) => ({
       ...current,
       ...Object.fromEntries(
@@ -396,7 +444,7 @@ export function StaticTimetableImportPage() {
             loaded.review.document.institutionId,
           );
           setOptions(scoped.options);
-          hydrateReview(loaded.review);
+          hydrateReview(loaded.review, true, scoped.options);
           setActiveStep(2);
         }
         setStatus("ready");
@@ -505,7 +553,11 @@ export function StaticTimetableImportPage() {
         "",
         `/admin/static-import?batch=${response.review.batch.id}`,
       );
-      goToStep(2);
+      setActiveStep(1);
+      requestAnimationFrame(() => {
+        sourceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        sourceRef.current?.focus({ preventScroll: true });
+      });
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not import DOCX.",
