@@ -152,30 +152,32 @@ describe("static timetable persistence payload", () => {
   });
 });
 
-
 describe("static timetable academic year evidence", () => {
   it.each([
     ["SEMESTER I TIME-TABLE 2026-2027", "2026-2027", 2026],
     ["SEMESTER I TIME-TABLE 2025/2026", "2025/2026", 2025],
     ["SEMESTER I TIME-TABLE 2026", "2026", 2026],
-  ])("preserves raw academic-year evidence from %s", (title, raw, startYear) => {
-    const parsed = parseStaticTimetableDocument({
-      paragraphs: ["Department of Example", title],
-      tables: [
-        [
-          ["TIME", "MONDAY", "TUESDAY", "WEDNESDAY"],
-          ["08:00-10:00", "EXM 1101 R1", "", ""],
+  ])(
+    "preserves raw academic-year evidence from %s",
+    (title, raw, startYear) => {
+      const parsed = parseStaticTimetableDocument({
+        paragraphs: ["Department of Example", title],
+        tables: [
+          [
+            ["TIME", "MONDAY", "TUESDAY", "WEDNESDAY"],
+            ["08:00-10:00", "EXM 1101 R1", "", ""],
+          ],
+          [
+            ["COURSE CODE", "TITLE", "HOURS PER WEEK", "LECTURER"],
+            ["EXM 1101", "Example Course", "2 hours", "Dr Example"],
+          ],
         ],
-        [
-          ["COURSE CODE", "TITLE", "HOURS PER WEEK", "LECTURER"],
-          ["EXM 1101", "Example Course", "2 hours", "Dr Example"],
-        ],
-      ],
-    });
-    const evidence = buildStaticTimetableEvidence(parsed);
+      });
+      const evidence = buildStaticTimetableEvidence(parsed);
 
-    expect(parsed.metadata.academicYearRaw).toBe(raw);
-    expect(parsed.metadata.academicYear).toBe(startYear);
-    expect(evidence.proposedTargets[0]?.academicYearRaw).toBe(raw);
-  });
+      expect(parsed.metadata.academicYearRaw).toBe(raw);
+      expect(parsed.metadata.academicYear).toBe(startYear);
+      expect(evidence.proposedTargets[0]?.academicYearRaw).toBe(raw);
+    },
+  );
 });

@@ -1,11 +1,5 @@
 import { Button } from "@base-ui/react/button";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   createAcademicPeriod,
   createClassGroup,
@@ -211,11 +205,11 @@ export function StaticTimetableImportPage() {
     [review, targetId],
   );
   const selectedMapping = selectedTarget
-    ? mappings[selectedTarget.id] ?? {
+    ? (mappings[selectedTarget.id] ?? {
         programmeId: "",
         cohortId: "",
         academicPeriodId: "",
-      }
+      })
     : { programmeId: "", cohortId: "", academicPeriodId: "" };
 
   const programmeOptions = useMemo<SearchOption[]>(
@@ -332,17 +326,17 @@ export function StaticTimetableImportPage() {
     const targetSessions = sessionsForTarget(target);
     return Boolean(
       mapping?.programmeId &&
-        mapping.cohortId &&
-        mapping.academicPeriodId &&
-        targetPeriodHasDates(target) &&
-        blockersForTarget(target).every(
-          (warning) => (resolutions[warning.id] ?? "").trim().length > 0,
-        ) &&
-        targetSessions.length > 0 &&
-        targetSessions.every(
-          (session) =>
-            session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
-        ),
+      mapping.cohortId &&
+      mapping.academicPeriodId &&
+      targetPeriodHasDates(target) &&
+      blockersForTarget(target).every(
+        (warning) => (resolutions[warning.id] ?? "").trim().length > 0,
+      ) &&
+      targetSessions.length > 0 &&
+      targetSessions.every(
+        (session) =>
+          session.courseCodeDraft.trim() && session.courseNameDraft.trim(),
+      ),
     );
   }
 
@@ -392,7 +386,9 @@ export function StaticTimetableImportPage() {
         setToken(accessToken);
         const initial = await getStaticTimetableImportOptions(accessToken);
         setOptions(initial.options);
-        const batchId = new URLSearchParams(window.location.search).get("batch");
+        const batchId = new URLSearchParams(window.location.search).get(
+          "batch",
+        );
         if (batchId) {
           const loaded = await getStaticTimetableImport(accessToken, batchId);
           const scoped = await getStaticTimetableImportOptions(
@@ -584,8 +580,7 @@ export function StaticTimetableImportPage() {
           const raced = refreshed.programmes.find(
             (programme) =>
               normalize(programme.name) === normalize(name) ||
-              normalize(programme.code ?? "") ===
-                normalize(programmeForm.code),
+              normalize(programme.code ?? "") === normalize(programmeForm.code),
           );
           if (!raced) throw caught;
           programmeId = raced.id;
@@ -601,7 +596,9 @@ export function StaticTimetableImportPage() {
       setCreateMode(null);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "Could not create programme.",
+        caught instanceof Error
+          ? caught.message
+          : "Could not create programme.",
       );
     } finally {
       setBusy(false);
@@ -750,7 +747,8 @@ export function StaticTimetableImportPage() {
   async function createTargetDraft(
     target: StaticImportReview["targets"][number],
   ) {
-    if (!token || !review || !targetReady(target) || target.createdDraft) return;
+    if (!token || !review || !targetReady(target) || target.createdDraft)
+      return;
     const mapping = mappings[target.id];
     const targetSessions = sessionsForTarget(target);
     const result = await createStaticTimetableDraft(token, review.batch.id, {
@@ -832,7 +830,8 @@ export function StaticTimetableImportPage() {
 
   function beginProgrammeCreate() {
     setProgrammeForm({
-      name: programmeQuery.trim() || review?.parsed.metadata.departmentName || "",
+      name:
+        programmeQuery.trim() || review?.parsed.metadata.departmentName || "",
       code: "",
     });
     setCreateMode("programme");
@@ -961,7 +960,9 @@ export function StaticTimetableImportPage() {
         </div>
       </nav>
 
-      {error ? <div className="czw-static-import-alert error">{error}</div> : null}
+      {error ? (
+        <div className="czw-static-import-alert error">{error}</div>
+      ) : null}
       {success ? (
         <div className="czw-static-import-alert success">{success}</div>
       ) : null}
@@ -975,7 +976,9 @@ export function StaticTimetableImportPage() {
           <div className="czw-static-import-section-heading">
             <div>
               <span>20% · Source</span>
-              <h2>{review ? "Source captured" : "Upload authoritative DOCX"}</h2>
+              <h2>
+                {review ? "Source captured" : "Upload authoritative DOCX"}
+              </h2>
             </div>
             <small>Maximum 10 MB · structured DOCX · no OCR</small>
           </div>
@@ -986,7 +989,9 @@ export function StaticTimetableImportPage() {
                 <select
                   value={institutionId}
                   disabled={busy}
-                  onChange={(event) => void changeInstitution(event.target.value)}
+                  onChange={(event) =>
+                    void changeInstitution(event.target.value)
+                  }
                 >
                   <option value="">Choose institution</option>
                   {options.institutions.map((institution) => (
@@ -1039,11 +1044,15 @@ export function StaticTimetableImportPage() {
                     <span>sessions</span>
                   </article>
                   <article>
-                    <strong>{review.parsed.summary.timetableContactHours}</strong>
+                    <strong>
+                      {review.parsed.summary.timetableContactHours}
+                    </strong>
                     <span>contact hours</span>
                   </article>
                   <article>
-                    <strong>{review.parsed.summary.courseReferenceCount}</strong>
+                    <strong>
+                      {review.parsed.summary.courseReferenceCount}
+                    </strong>
                     <span>course references</span>
                   </article>
                   <article>
@@ -1103,8 +1112,8 @@ export function StaticTimetableImportPage() {
               const mapping = mappings[target.id];
               const ready = Boolean(
                 mapping?.programmeId &&
-                  mapping.cohortId &&
-                  mapping.academicPeriodId,
+                mapping.cohortId &&
+                mapping.academicPeriodId,
               );
               return (
                 <button
@@ -1126,10 +1135,12 @@ export function StaticTimetableImportPage() {
             <>
               <div className="czw-import-detected-meta">
                 <span>
-                  Detected level: <strong>{selectedTarget.yearLevel ?? "—"}</strong>
+                  Detected level:{" "}
+                  <strong>{selectedTarget.yearLevel ?? "—"}</strong>
                 </span>
                 <span>
-                  Semester: <strong>{selectedTarget.semesterNumber ?? "—"}</strong>
+                  Semester:{" "}
+                  <strong>{selectedTarget.semesterNumber ?? "—"}</strong>
                 </span>
                 <span>
                   Academic year:{" "}
@@ -1540,7 +1551,9 @@ export function StaticTimetableImportPage() {
               </details>
 
               <details className="czw-import-details">
-                <summary>View and edit all {targetSessions.length} sessions</summary>
+                <summary>
+                  View and edit all {targetSessions.length} sessions
+                </summary>
                 <div className="czw-static-import-table-wrap">
                   <table>
                     <thead>
@@ -1629,9 +1642,7 @@ export function StaticTimetableImportPage() {
                         <li key={course.candidateKey}>
                           <strong>{course.courseCodeRaw}</strong> —{" "}
                           {course.courseName}
-                          {course.lecturerRaw
-                            ? ` · ${course.lecturerRaw}`
-                            : ""}
+                          {course.lecturerRaw ? ` · ${course.lecturerRaw}` : ""}
                         </li>
                       ))}
                     </ul>

@@ -296,7 +296,6 @@ export async function createStaticTimetableDraft(
   }>(response);
 }
 
-
 export async function patchStaticTimetableTargetMapping(
   accessToken: string,
   batchId: string,

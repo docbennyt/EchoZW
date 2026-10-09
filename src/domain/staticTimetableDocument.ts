@@ -261,9 +261,7 @@ function parseMetadata(
       ? compact(suffixDepartment)
       : null;
   const academicYearRaw =
-    allText
-      .match(/\b(20\d{2}\s*[-/]\s*20\d{2})\b/)?.[1]
-      ?.replace(/\s+/g, "") ??
+    allText.match(/\b(20\d{2}\s*[-/]\s*20\d{2})\b/)?.[1]?.replace(/\s+/g, "") ??
     allText.match(/\b(20\d{2})\b/)?.[1] ??
     null;
   const academicYear = academicYearRaw

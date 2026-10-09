@@ -201,8 +201,7 @@ async function inferCanonicalSuggestions(
       normalizeAcademicYear(period.academic_year) ===
         normalizeAcademicYear(
           parsed.metadata.academicYearRaw ?? parsed.metadata.academicYear,
-        ) &&
-      Number(period.period_number) === parsed.metadata.semesterNumber,
+        ) && Number(period.period_number) === parsed.metadata.semesterNumber,
   );
   const academicPeriodId = periods.length === 1 ? String(periods[0].id) : null;
   return { programmeId, cohortId, academicPeriodId };
@@ -720,7 +719,8 @@ export async function getStaticTimetableImport(
 
   const targetDrafts = new Map<string, Record<string, unknown>>();
   let createdDraft: null | Record<string, unknown> = null;
-  for (const versionRow of (versionQuery.data ?? []) as unknown as JsonRecord[]) {
+  for (const versionRow of (versionQuery.data ??
+    []) as unknown as JsonRecord[]) {
     const timetable = await supabase
       .from("timetables")
       .select("public_slug")
