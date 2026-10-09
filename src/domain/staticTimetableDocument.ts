@@ -1,4 +1,4 @@
-export const STATIC_TIMETABLE_DOCX_PARSER_VERSION = "static-docx-matrix-v2";
+export const STATIC_TIMETABLE_DOCX_PARSER_VERSION = "static-docx-matrix-v3";
 
 export type StaticTimetableDocumentStructure = {
   paragraphs: string[];
@@ -7,6 +7,7 @@ export type StaticTimetableDocumentStructure = {
 
 export type StaticTimetableMetadata = {
   departmentName: string | null;
+  academicYearRaw: string | null;
   academicYear: number | null;
   yearLevel: number | null;
   semesterNumber: number | null;
@@ -259,7 +260,13 @@ function parseMetadata(
     : suffixDepartment
       ? compact(suffixDepartment)
       : null;
-  const yearMatch = allText.match(/\b(20\d{2})\b/)?.[1] ?? null;
+  const academicYearRaw =
+    allText.match(/\b(20\d{2}\s*[-/]\s*20\d{2})\b/)?.[1]?.replace(/\s+/g, "") ??
+    allText.match(/\b(20\d{2})\b/)?.[1] ??
+    null;
+  const academicYear = academicYearRaw
+    ? Number(academicYearRaw.slice(0, 4))
+    : null;
   const titleMatch = allText.match(
     /Part\s+(\d+)\s+Semester\s+(\d+)\s+([^\n]*?Timetable)/i,
   );
@@ -273,7 +280,8 @@ function parseMetadata(
     : "";
   return {
     departmentName,
-    academicYear: yearMatch ? Number(yearMatch) : null,
+    academicYearRaw,
+    academicYear,
     yearLevel: titleMatch ? Number(titleMatch[1]) : null,
     semesterNumber,
     modeLabel: mode || null,

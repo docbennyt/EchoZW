@@ -8,6 +8,12 @@ const expectedBackendSha = process.env.EXPECTED_BACKEND_SHA;
 const diagnosticFeedUrl = process.env.CALENDERZW_STAGING_FEED_URL;
 const checks = [];
 const failures = [];
+const releasePropagationTimeoutMs = Number(
+  process.env.CALENDERZW_RELEASE_WAIT_TIMEOUT_MS ?? 90_000,
+);
+const releasePropagationPollMs = Number(
+  process.env.CALENDERZW_RELEASE_WAIT_POLL_MS ?? 3_000,
+);
 
 function redact(value) {
   return String(value).replace(
@@ -46,6 +52,66 @@ async function get(pathname, headers = {}) {
     },
     redirect: "manual",
   });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readReleaseIdentity() {
+  const response = await get("/__release", { Accept: "application/json" });
+  const text = await response.text();
+  let json = null;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // The caller records and validates the final response.
+  }
+  return { response, text, json };
+}
+
+async function waitForExpectedReleaseIdentity() {
+  if (!expectedReleaseSha) return readReleaseIdentity();
+
+  const startedAt = Date.now();
+  let last = await readReleaseIdentity();
+  while (
+    last.response.status === 200 &&
+    last.json?.sourceSha !== expectedReleaseSha &&
+    Date.now() - startedAt < releasePropagationTimeoutMs
+  ) {
+    console.log(
+      JSON.stringify({
+        name: "__release propagation wait",
+        expectedSourceSha: expectedReleaseSha,
+        observedSourceSha: last.json?.sourceSha ?? null,
+        workerVersion: last.json?.workerVersion ?? null,
+      }),
+    );
+    await sleep(releasePropagationPollMs);
+    last = await readReleaseIdentity();
+  }
+  return last;
+}
+
+const {
+  response: release,
+  text: releaseText,
+  json: releaseJson,
+} = await waitForExpectedReleaseIdentity();
+record("__release", release, { body: releaseText.slice(0, 500) });
+if (release.status !== 200) fail("__release did not return 200.");
+if (!releaseJson) {
+  fail("__release did not return JSON.");
+}
+if (releaseJson?.runtime !== "cloudflare-workers") {
+  fail("__release runtime is not cloudflare-workers.");
+}
+if (releaseJson?.stage !== "cloudflare-staging") {
+  fail("__release stage is not cloudflare-staging.");
+}
+if (expectedReleaseSha && releaseJson?.sourceSha !== expectedReleaseSha) {
+  fail(`__release did not include expected SHA ${expectedReleaseSha}.`);
 }
 
 async function expectHtml(pathname, name) {
@@ -125,26 +191,6 @@ await expectNotHtml404(
   "/calendar/download/00000000-0000-4000-8000-000000000000.ics",
   "invalid calendar download",
 );
-
-const release = await get("/__release", { Accept: "application/json" });
-const releaseText = await release.text();
-record("__release", release, { body: releaseText.slice(0, 500) });
-if (release.status !== 200) fail("__release did not return 200.");
-let releaseJson = null;
-try {
-  releaseJson = JSON.parse(releaseText);
-} catch {
-  fail("__release did not return JSON.");
-}
-if (releaseJson?.runtime !== "cloudflare-workers") {
-  fail("__release runtime is not cloudflare-workers.");
-}
-if (releaseJson?.stage !== "cloudflare-staging") {
-  fail("__release stage is not cloudflare-staging.");
-}
-if (expectedReleaseSha && releaseJson?.sourceSha !== expectedReleaseSha) {
-  fail(`__release did not include expected SHA ${expectedReleaseSha}.`);
-}
 
 const runtimeConfig = await get("/runtime-config.js", {
   Accept: "application/javascript,*/*",

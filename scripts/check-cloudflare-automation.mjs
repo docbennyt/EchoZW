@@ -30,6 +30,11 @@ assert(
   "staging smoke must verify the exact deployed source SHA.",
 );
 assert(
+  smoke.includes("waitForExpectedReleaseIdentity") &&
+    smoke.includes("CALENDERZW_RELEASE_WAIT_TIMEOUT_MS"),
+  "staging smoke must wait for the custom domain to serve the exact deployed SHA before checking assets.",
+);
+assert(
   stagingWorkflow.includes('checked_out_sha="$(git rev-parse HEAD)"') &&
     stagingWorkflow.includes(
       "--var SOURCE_SHA:${{ steps.exact-head.outputs.sha }}",

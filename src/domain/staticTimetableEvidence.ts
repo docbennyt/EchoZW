@@ -50,10 +50,7 @@ function fallbackTarget(parsed: StaticTimetableParseResult) {
     yearLevel,
     semesterRaw: semesterNumber === null ? null : `Semester ${semesterNumber}`,
     semesterNumber,
-    academicYearRaw:
-      parsed.metadata.academicYear === null
-        ? null
-        : String(parsed.metadata.academicYear),
+    academicYearRaw: parsed.metadata.academicYearRaw,
     confidence:
       yearLevel === null || semesterNumber === null || !parsed.metadata.title
         ? 0.55
@@ -79,10 +76,7 @@ function targetFromCourse(
     yearLevel,
     semesterRaw: semesterNumber === null ? null : `Semester ${semesterNumber}`,
     semesterNumber,
-    academicYearRaw:
-      parsed.metadata.academicYear === null
-        ? null
-        : String(parsed.metadata.academicYear),
+    academicYearRaw: parsed.metadata.academicYearRaw,
     confidence: course.targetKey ? 0.9 : 0.55,
     normalizedPayload: {
       source: course.targetKey

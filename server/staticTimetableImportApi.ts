@@ -5,6 +5,7 @@ import {
   createStaticTimetableImport,
   getStaticTimetableImport,
   getStaticTimetableImportOptions,
+  updateStaticTimetableImportTargetMapping,
   StaticTimetableImportError,
 } from "./staticTimetableImportRepository.js";
 
@@ -18,6 +19,12 @@ const ACCEPTED_DOCX_MIME_TYPES = new Set([
   "application/x-zip-compressed",
 ]);
 const uuid = z.string().uuid();
+const targetMappingSchema = z.object({
+  programmeId: uuid.nullable(),
+  cohortId: uuid.nullable(),
+  academicPeriodId: uuid.nullable(),
+});
+
 const draftSchema = z.object({
   targetId: uuid.nullable().optional(),
   programmeId: uuid,
@@ -51,7 +58,10 @@ const draftSchema = z.object({
 });
 
 function sendJson(res: ServerResponse, status: number, body: unknown) {
-  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
+  res.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+  });
   res.end(JSON.stringify(body));
 }
 
@@ -199,6 +209,33 @@ export async function handleStaticTimetableImportAdminApi(
         bytes,
       });
       sendJson(res, 201, { review });
+    } catch (error) {
+      sendError(res, error);
+    }
+    return true;
+  }
+
+  const targetMatch = url.pathname.match(
+    /^\/api\/admin\/static-timetable-imports\/([0-9a-f-]+)\/targets\/([0-9a-f-]+)$/i,
+  );
+  if (targetMatch) {
+    try {
+      if (req.method !== "PATCH") {
+        sendJson(res, 405, {
+          error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." },
+        });
+        return true;
+      }
+      const batchId = uuid.parse(targetMatch[1]);
+      const targetId = uuid.parse(targetMatch[2]);
+      const parsed = targetMappingSchema.parse(await readJson(req));
+      sendJson(res, 200, {
+        review: await updateStaticTimetableImportTargetMapping({
+          batchId,
+          targetId,
+          ...parsed,
+        }),
+      });
     } catch (error) {
       sendError(res, error);
     }

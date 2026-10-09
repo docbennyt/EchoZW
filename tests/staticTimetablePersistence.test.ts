@@ -7,11 +7,12 @@ import {
 import {
   buildStaticTimetablePersistencePayload,
   canReuseStaticTimetableImportBatch,
+  inferCanonicalSuggestionsFromOptions,
 } from "../server/staticTimetableImportRepository";
 
 describe("static timetable persistence payload", () => {
-  it("uses a v2 parser boundary so old v1 batches do not poison reparses", () => {
-    expect(STATIC_TIMETABLE_DOCX_PARSER_VERSION).toBe("static-docx-matrix-v2");
+  it("uses a v3 parser boundary so older semantic batches do not poison reparses", () => {
+    expect(STATIC_TIMETABLE_DOCX_PARSER_VERSION).toBe("static-docx-matrix-v3");
 
     expect(
       canReuseStaticTimetableImportBatch({
@@ -24,11 +25,17 @@ describe("static timetable persistence payload", () => {
         importMode: "static_timetable_document",
         parserVersion: "static-docx-matrix-v2",
       }),
+    ).toBe(false);
+    expect(
+      canReuseStaticTimetableImportBatch({
+        importMode: "static_timetable_document",
+        parserVersion: "static-docx-matrix-v3",
+      }),
     ).toBe(true);
     expect(
       canReuseStaticTimetableImportBatch({
         importMode: "cohort_docx",
-        parserVersion: "static-docx-matrix-v2",
+        parserVersion: "static-docx-matrix-v3",
       }),
     ).toBe(true);
   });
@@ -143,5 +150,89 @@ describe("static timetable persistence payload", () => {
         }),
       ]),
     );
+  });
+});
+
+describe("static timetable academic year evidence", () => {
+  it.each([
+    ["SEMESTER I TIME-TABLE 2026-2027", "2026-2027", 2026],
+    ["SEMESTER I TIME-TABLE 2025/2026", "2025/2026", 2025],
+    ["SEMESTER I TIME-TABLE 2026", "2026", 2026],
+  ])(
+    "preserves raw academic-year evidence from %s",
+    (title, raw, startYear) => {
+      const parsed = parseStaticTimetableDocument({
+        paragraphs: ["Department of Example", title],
+        tables: [
+          [
+            ["TIME", "MONDAY", "TUESDAY", "WEDNESDAY"],
+            ["08:00-10:00", "EXM 1101 R1", "", ""],
+          ],
+          [
+            ["COURSE CODE", "TITLE", "HOURS PER WEEK", "LECTURER"],
+            ["EXM 1101", "Example Course", "2 hours", "Dr Example"],
+          ],
+        ],
+      });
+      const evidence = buildStaticTimetableEvidence(parsed);
+
+      expect(parsed.metadata.academicYearRaw).toBe(raw);
+      expect(parsed.metadata.academicYear).toBe(startYear);
+      expect(evidence.proposedTargets[0]?.academicYearRaw).toBe(raw);
+    },
+  );
+
+  it("matches future v3 parses to canonical academic periods that preserve year ranges", () => {
+    const parsed = parseStaticTimetableDocument({
+      paragraphs: [
+        "Department of E-Commerce",
+        "E-COMMERCE DEPARTMENT SEMESTER I TIME-TABLE 2026-2027",
+      ],
+      tables: [
+        [
+          ["TIME", "MONDAY", "TUESDAY", "WEDNESDAY"],
+          ["08:00-10:00", "BEC 1101 R1", "", ""],
+        ],
+        [
+          ["Part 1 Semester 1"],
+          ["Course Code", "Course Title", "Contact Hours", "Lecturer"],
+          ["BEC 1101", "E-Commerce Foundations", "2 hours", "Dr Example"],
+        ],
+      ],
+    });
+
+    const suggestions = inferCanonicalSuggestionsFromOptions(
+      {
+        programmes: [
+          {
+            id: "programme-1",
+            name: "E-Commerce",
+            short_name: null,
+            code: "BEC",
+          },
+        ],
+        cohorts: [
+          {
+            id: "cohort-1",
+            programme_id: "programme-1",
+            label: "Part 1",
+            level_label: null,
+            code: "P1",
+          },
+        ],
+        academicPeriods: [
+          {
+            id: "period-2026-2027-s1",
+            academic_year: "2026-2027",
+            period_number: 1,
+          },
+        ],
+      },
+      parsed,
+    );
+
+    expect(parsed.metadata.academicYearRaw).toBe("2026-2027");
+    expect(suggestions.programmeId).toBe("programme-1");
+    expect(suggestions.academicPeriodId).toBe("period-2026-2027-s1");
   });
 });

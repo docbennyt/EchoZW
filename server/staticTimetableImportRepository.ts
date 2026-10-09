@@ -132,7 +132,7 @@ export async function getStaticTimetableImportOptions(
     const { data, error } = await supabase
       .from("cohorts")
       .select(
-        "id,programme_id,code,label,level_label,intake_label,group_label,status",
+        "id,programme_id,code,label,level_label,intake_label,group_name,group_label,year_level,semester_number,status",
       )
       .in("programme_id", programmeIds)
       .eq("status", "active")
@@ -155,12 +155,14 @@ export async function getStaticTimetableImportOptions(
   };
 }
 
-async function inferCanonicalSuggestions(
-  institutionId: string,
+export function inferCanonicalSuggestionsFromOptions(
+  options: {
+    programmes: JsonRecord[];
+    cohorts: JsonRecord[];
+    academicPeriods: JsonRecord[];
+  },
   parsed: StaticTimetableParseResult,
-  env: NodeJS.ProcessEnv,
 ) {
-  const options = await getStaticTimetableImportOptions(institutionId, env);
   const department = normalizeText(parsed.metadata.departmentName);
   const programmes = (options.programmes as JsonRecord[]).filter(
     (programme) => {
@@ -191,14 +193,36 @@ async function inferCanonicalSuggestions(
   });
   const cohortId = cohorts.length === 1 ? String(cohorts[0].id) : null;
 
+  const normalizeAcademicYear = (value: unknown) =>
+    String(value ?? "")
+      .trim()
+      .replace(/\s+/g, "")
+      .replace("/", "-");
   const periods = (options.academicPeriods as JsonRecord[]).filter(
     (period) =>
-      String(period.academic_year) ===
-        String(parsed.metadata.academicYear ?? "") &&
-      Number(period.period_number) === parsed.metadata.semesterNumber,
+      normalizeAcademicYear(period.academic_year) ===
+        normalizeAcademicYear(
+          parsed.metadata.academicYearRaw ?? parsed.metadata.academicYear,
+        ) && Number(period.period_number) === parsed.metadata.semesterNumber,
   );
   const academicPeriodId = periods.length === 1 ? String(periods[0].id) : null;
   return { programmeId, cohortId, academicPeriodId };
+}
+
+async function inferCanonicalSuggestions(
+  institutionId: string,
+  parsed: StaticTimetableParseResult,
+  env: NodeJS.ProcessEnv,
+) {
+  const options = await getStaticTimetableImportOptions(institutionId, env);
+  return inferCanonicalSuggestionsFromOptions(
+    {
+      programmes: options.programmes as JsonRecord[],
+      cohorts: options.cohorts as JsonRecord[],
+      academicPeriods: options.academicPeriods as JsonRecord[],
+    },
+    parsed,
+  );
 }
 
 function parserSummaryPayload(parsed: StaticTimetableParseResult) {
@@ -638,7 +662,7 @@ export async function getStaticTimetableImport(
   const targetsQuery = await supabase
     .from("import_targets")
     .select(
-      "id,target_key,title_raw,academic_unit_name_raw,year_level,semester_number,academic_year_raw,review_status",
+      "id,target_key,title_raw,academic_unit_name_raw,year_level,semester_number,academic_year_raw,review_status,matched_programme_id,matched_cohort_id,matched_academic_period_id",
     )
     .eq("import_batch_id", batchId)
     .order("target_key");
@@ -701,37 +725,41 @@ export async function getStaticTimetableImport(
   const document = asRecord(documentQuery.data);
   const versionQuery = await supabase
     .from("timetable_versions")
-    .select("id,timetable_id")
-    .eq("import_batch_id", batchId)
-    .maybeSingle();
+    .select("id,timetable_id,import_target_id")
+    .eq("import_batch_id", batchId);
   if (versionQuery.error) {
     dbError(
       "STATIC_IMPORT_DATABASE_UNAVAILABLE",
-      "Could not check the created static timetable draft.",
+      "Could not check the created static timetable drafts.",
       versionQuery.error,
     );
   }
 
+  const targetDrafts = new Map<string, Record<string, unknown>>();
   let createdDraft: null | Record<string, unknown> = null;
-  if (versionQuery.data) {
-    const version = asRecord(versionQuery.data);
+  for (const versionRow of (versionQuery.data ??
+    []) as unknown as JsonRecord[]) {
     const timetable = await supabase
       .from("timetables")
       .select("public_slug")
-      .eq("id", String(version.timetable_id))
+      .eq("id", String(versionRow.timetable_id))
       .maybeSingle();
     const count = await supabase
       .from("timetable_sessions")
       .select("id", { count: "exact", head: true })
-      .eq("timetable_version_id", String(version.id));
-    createdDraft = {
-      timetableId: String(version.timetable_id),
-      draftVersionId: String(version.id),
+      .eq("timetable_version_id", String(versionRow.id));
+    const draft = {
+      timetableId: String(versionRow.timetable_id),
+      draftVersionId: String(versionRow.id),
       publicSlug: timetable.data
         ? String(asRecord(timetable.data).public_slug ?? "")
         : "",
       sessionCount: count.count ?? 0,
     };
+    createdDraft ??= draft;
+    if (versionRow.import_target_id) {
+      targetDrafts.set(String(versionRow.import_target_id), draft);
+    }
   }
 
   return {
@@ -790,6 +818,16 @@ export async function getStaticTimetableImport(
         ? String(target.academic_year_raw)
         : null,
       reviewStatus: String(target.review_status),
+      matchedProgrammeId: target.matched_programme_id
+        ? String(target.matched_programme_id)
+        : null,
+      matchedCohortId: target.matched_cohort_id
+        ? String(target.matched_cohort_id)
+        : null,
+      matchedAcademicPeriodId: target.matched_academic_period_id
+        ? String(target.matched_academic_period_id)
+        : null,
+      createdDraft: targetDrafts.get(String(target.id)) ?? null,
       candidateKeys: candidateTargetRows
         .filter((link) => String(link.import_target_id) === String(target.id))
         .map((link) => {
@@ -803,6 +841,159 @@ export async function getStaticTimetableImport(
     suggestions: asRecord(summary.suggestions ?? {}),
     createdDraft,
   };
+}
+
+export async function updateStaticTimetableImportTargetMapping(
+  input: {
+    batchId: string;
+    targetId: string;
+    programmeId: string | null;
+    cohortId: string | null;
+    academicPeriodId: string | null;
+  },
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const supabase = client(env);
+  const batch = await supabase
+    .from("import_batches")
+    .select("id,source_document_id")
+    .eq("id", input.batchId)
+    .maybeSingle();
+  if (batch.error) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not load the static timetable import.",
+      batch.error,
+    );
+  }
+  if (!batch.data) {
+    throw new StaticTimetableImportError(
+      "STATIC_IMPORT_NOT_FOUND",
+      "Static timetable import not found.",
+      404,
+    );
+  }
+
+  const source = await supabase
+    .from("source_documents")
+    .select("institution_id")
+    .eq("id", String(asRecord(batch.data).source_document_id))
+    .maybeSingle();
+  if (source.error || !source.data) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not load the source institution.",
+      source.error,
+    );
+  }
+  const institutionId = String(asRecord(source.data).institution_id);
+
+  const target = await supabase
+    .from("import_targets")
+    .select("id,import_batch_id")
+    .eq("id", input.targetId)
+    .eq("import_batch_id", input.batchId)
+    .maybeSingle();
+  if (target.error) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not load the detected timetable target.",
+      target.error,
+    );
+  }
+  if (!target.data) {
+    throw new StaticTimetableImportError(
+      "STATIC_IMPORT_TARGET_NOT_FOUND",
+      "The detected timetable target does not belong to this import.",
+      404,
+    );
+  }
+
+  if (input.programmeId) {
+    const programme = await supabase
+      .from("programmes")
+      .select("id,institution_id")
+      .eq("id", input.programmeId)
+      .maybeSingle();
+    if (
+      programme.error ||
+      !programme.data ||
+      String(asRecord(programme.data).institution_id) !== institutionId
+    ) {
+      throw new StaticTimetableImportError(
+        "STATIC_IMPORT_CANONICAL_MAPPING_MISMATCH",
+        "Programme must belong to the source institution.",
+        422,
+      );
+    }
+  }
+
+  if (input.cohortId) {
+    if (!input.programmeId) {
+      throw new StaticTimetableImportError(
+        "STATIC_IMPORT_CANONICAL_MAPPING_MISMATCH",
+        "Choose a programme before choosing a class.",
+        422,
+      );
+    }
+    const cohort = await supabase
+      .from("cohorts")
+      .select("id,programme_id")
+      .eq("id", input.cohortId)
+      .maybeSingle();
+    if (
+      cohort.error ||
+      !cohort.data ||
+      String(asRecord(cohort.data).programme_id) !== input.programmeId
+    ) {
+      throw new StaticTimetableImportError(
+        "STATIC_IMPORT_CANONICAL_MAPPING_MISMATCH",
+        "Class must belong to the selected programme.",
+        422,
+      );
+    }
+  }
+
+  if (input.academicPeriodId) {
+    const period = await supabase
+      .from("academic_periods")
+      .select("id,institution_id")
+      .eq("id", input.academicPeriodId)
+      .maybeSingle();
+    if (
+      period.error ||
+      !period.data ||
+      String(asRecord(period.data).institution_id) !== institutionId
+    ) {
+      throw new StaticTimetableImportError(
+        "STATIC_IMPORT_CANONICAL_MAPPING_MISMATCH",
+        "Academic period must belong to the source institution.",
+        422,
+      );
+    }
+  }
+
+  const updated = await supabase
+    .from("import_targets")
+    .update({
+      matched_programme_id: input.programmeId,
+      matched_cohort_id: input.cohortId,
+      matched_academic_period_id: input.academicPeriodId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.targetId)
+    .eq("import_batch_id", input.batchId)
+    .select("id")
+    .maybeSingle();
+  if (updated.error || !updated.data) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not persist the canonical timetable mapping.",
+      updated.error,
+    );
+  }
+
+  return getStaticTimetableImport(input.batchId, env);
 }
 
 export async function createStaticTimetableDraft(
