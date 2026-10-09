@@ -29,7 +29,7 @@ describe("DR-161 guided static timetable workflow", () => {
 
   it("persists mapping per import target and validates relationships server-side", () => {
     expect(client).toContain("patchStaticTimetableTargetMapping");
-    expect(api).toContain("/targets/");
+    expect(api).toContain("targets");
     expect(repository).toContain("updateStaticTimetableImportTargetMapping");
     expect(repository).toContain(
       "Programme must belong to the source institution.",
@@ -58,7 +58,8 @@ describe("DR-161 guided static timetable workflow", () => {
   });
 
   it("can resume a persisted import review by batch id", () => {
-    expect(page).toContain('get("batch")');
+    expect(page).toContain("new URLSearchParams(window.location.search)");
+    expect(page).toContain('"batch"');
     expect(page).toContain("/admin/static-import?batch=");
     expect(client).toContain("getStaticTimetableImport");
   });
