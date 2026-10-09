@@ -112,13 +112,22 @@ describe("DR-120 static document import architecture", () => {
     expect(main).toContain("StaticTimetableImportPage");
   });
 
-  it("shows the reviewer sessions, references, ignored rows and unparsed evidence", () => {
-    expect(reviewPage).toContain("Session verification");
-    expect(reviewPage).toContain("Course reference evidence");
-    expect(reviewPage).toContain("Unparsed timetable-looking cells");
-    expect(reviewPage).toContain("Ignored structural evidence");
-    expect(reviewPage).toContain("sourceTableIndex");
-    expect(reviewPage).toContain("rawText");
+  it("guides the reviewer through mapping, exception review, source evidence and draft creation", () => {
+    expect(reviewPage).toContain("20% · Source");
+    expect(reviewPage).toContain("50% · Match");
+    expect(reviewPage).toContain("80% · Review");
+    expect(reviewPage).toContain("100% · Draft");
+    expect(reviewPage).toContain("Search or type");
+    expect(reviewPage).toContain("Create & use");
+    expect(reviewPage).toContain("Apply programme to all");
+    expect(reviewPage).toContain("Apply academic period to all");
+    expect(reviewPage).toContain("Resolve exceptions, not the whole document");
+    expect(reviewPage).toContain("Source evidence · read-only audit trail");
+    expect(reviewPage).toContain("Nothing will be published.");
+    expect(staticApi).toContain("/targets/");
+    expect(repository).toContain("matched_programme_id");
+    expect(repository).toContain("matched_cohort_id");
+    expect(repository).toContain("matched_academic_period_id");
   });
 
   it("documents the exact HIT Biotechnology conservation invariants", () => {
