@@ -1,0 +1,33 @@
+name: DR-161 Guided Test Format Repair
+
+on:
+  push:
+    branches:
+      - DR-161-guided-import-flow
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: DR-161-guided-import-flow
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - run: npx prettier --write tests/staticTimetableGuidedFlow.test.ts
+      - name: Commit formatting and remove temporary workflow
+        run: |
+          rm .github/workflows/dr161-guided-test-format.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style(dr-161): format guided flow contract"
+          git push origin HEAD:DR-161-guided-import-flow
