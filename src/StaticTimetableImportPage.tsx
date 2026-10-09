@@ -419,32 +419,46 @@ export function StaticTimetableImportPage() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (!selectedTarget) {
-      setProgrammeQuery("");
-      setCohortQuery("");
-      setPeriodQuery("");
-      return;
-    }
-    const mapping = mappings[selectedTarget.id];
+  function selectTarget(nextTargetId: string) {
+    setTargetId(nextTargetId);
+    const mapping = mappings[nextTargetId];
     const programme = options.programmes.find(
       (item) => item.id === mapping?.programmeId,
     );
-    const cohort = cohortOptions.find((item) => item.id === mapping?.cohortId);
-    const period = periodOptions.find(
+    const cohort = options.cohorts.find(
+      (item) => item.id === mapping?.cohortId,
+    );
+    const period = options.academicPeriods.find(
       (item) => item.id === mapping?.academicPeriodId,
     );
     setProgrammeQuery(programme?.name ?? "");
-    setCohortQuery(cohort?.label ?? "");
-    setPeriodQuery(period?.label ?? "");
+    setCohortQuery(
+      cohort
+        ? [
+            cohort.label || cohort.level_label || cohort.code,
+            cohort.year_level ? `Year ${cohort.year_level}` : null,
+            cohort.semester_number ? `Sem ${cohort.semester_number}` : null,
+            cohort.group_name || cohort.group_label || null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        : "",
+    );
+    setPeriodQuery(
+      period
+        ? [
+            period.name,
+            period.academic_year,
+            period.starts_on && period.ends_on
+              ? `${period.starts_on} → ${period.ends_on}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        : "",
+    );
     setCreateMode(null);
-  }, [
-    selectedTarget?.id,
-    mappings,
-    options.programmes,
-    cohortOptions,
-    periodOptions,
-  ]);
+  }
 
   async function changeInstitution(nextId: string) {
     setInstitutionId(nextId);
@@ -1099,7 +1113,7 @@ export function StaticTimetableImportPage() {
                   role="tab"
                   aria-selected={selectedTarget?.id === target.id}
                   className={selectedTarget?.id === target.id ? "active" : ""}
-                  onClick={() => setTargetId(target.id)}
+                  onClick={() => selectTarget(target.id)}
                 >
                   <strong>{target.titleRaw}</strong>
                   <span>{ready ? "Mapped" : "Needs mapping"}</span>
@@ -1450,7 +1464,7 @@ export function StaticTimetableImportPage() {
                 role="tab"
                 aria-selected={selectedTarget?.id === target.id}
                 className={selectedTarget?.id === target.id ? "active" : ""}
-                onClick={() => setTargetId(target.id)}
+                onClick={() => selectTarget(target.id)}
               >
                 <strong>{target.titleRaw}</strong>
                 <span>{sessionsForTarget(target).length} sessions</span>
