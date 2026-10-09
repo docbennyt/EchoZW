@@ -17,6 +17,15 @@ const runtimePublicConfig = readFileSync(
   "server/runtimePublicConfig.ts",
   "utf8",
 );
+const healthApi = readFileSync("server/healthApi.ts", "utf8");
+const cloudflareSmoke = readFileSync(
+  "scripts/smoke-cloudflare-staging.mjs",
+  "utf8",
+);
+const cloudflarePreviewWorkflow = readFileSync(
+  ".github/workflows/cloudflare-pr-preview.yml",
+  "utf8",
+);
 const deploymentDocs = readFileSync(
   "docs/DEPLOYMENT_VERCEL_RAILWAY.md",
   "utf8",
@@ -115,9 +124,23 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
 
   it("reports Railway release metadata and structured production startup failures", () => {
     expect(runtimePublicConfig).toContain("RAILWAY_GIT_COMMIT_SHA");
+    expect(healthApi).toContain("/api/health/release");
+    expect(healthApi).toContain("railway-node");
     expect(productionServer).toContain('event: "app.startup_config_error"');
     expect(productionServer).toContain("Secret values are not logged");
     expect(productionServer).toContain("process.env.PORT ?? 80");
     expect(productionServer).toContain('server.listen(port, "0.0.0.0"');
+  });
+
+  it("does not let Cloudflare exact-head smoke imply same-SHA Railway compatibility", () => {
+    expect(cloudflareSmoke).toContain("/api/health/release");
+    expect(cloudflareSmoke).toContain("EXPECTED_BACKEND_SHA");
+    expect(cloudflareSmoke).toContain(
+      "Backend integration compatibility not asserted",
+    );
+    expect(cloudflarePreviewWorkflow).toContain("EXPECTED_BACKEND_SHA");
+    expect(cloudflarePreviewWorkflow).toContain(
+      "same-SHA Railway compatibility is not implied",
+    );
   });
 });

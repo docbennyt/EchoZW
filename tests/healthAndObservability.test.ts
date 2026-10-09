@@ -1,7 +1,10 @@
 import { Readable } from "node:stream";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { describe, expect, it, vi } from "vitest";
-import { handleHealthRequest } from "../server/healthApi";
+import {
+  backendReleaseIdentity,
+  handleHealthRequest,
+} from "../server/healthApi";
 import {
   classifyRoute,
   sanitizeForLog,
@@ -67,6 +70,47 @@ describe("health and observability", () => {
 
     expect(capture.statusCode).toBe(200);
     expect(JSON.parse(capture.body)).toEqual({ status: "ok" });
+  });
+
+  it("serves safe backend release identity for Railway smoke checks", async () => {
+    const { response, capture } = makeResponse();
+
+    await expect(
+      handleHealthRequest(makeRequest("GET", "/api/health/release"), response, {
+        NODE_ENV: "production",
+        RAILWAY_ENVIRONMENT_NAME: "production",
+        RAILWAY_SERVICE_NAME: "EchoZW",
+        RAILWAY_GIT_COMMIT_SHA: "57551920ba1c",
+        SUPABASE_SECRET_KEY: "server-secret",
+      } as NodeJS.ProcessEnv),
+    ).resolves.toBe(true);
+
+    expect(capture.statusCode).toBe(200);
+    const body = JSON.parse(capture.body);
+    expect(body).toEqual({
+      runtime: "railway-node",
+      environment: "production",
+      sourceSha: "57551920ba1c",
+      service: "EchoZW",
+    });
+    expect(capture.body).not.toContain("server-secret");
+  });
+
+  it("builds backend release identity from safe platform metadata only", () => {
+    expect(
+      backendReleaseIdentity({
+        NODE_ENV: "production",
+        RAILWAY_ENVIRONMENT_NAME: "production",
+        RAILWAY_SERVICE_NAME: "EchoZW",
+        RAILWAY_GIT_COMMIT_SHA: "railway-sha",
+        SUPABASE_SECRET_KEY: "server-secret",
+      } as NodeJS.ProcessEnv),
+    ).toEqual({
+      runtime: "railway-node",
+      environment: "production",
+      sourceSha: "railway-sha",
+      service: "EchoZW",
+    });
   });
 
   it("ready health catches schema incompatibility without exposing secrets", async () => {

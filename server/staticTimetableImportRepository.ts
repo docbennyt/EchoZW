@@ -20,6 +20,17 @@ type SupabaseErrorLike = {
 const STATIC_TIMETABLE_IMPORT_MODE = "static_timetable_document";
 const LEGACY_STATIC_TIMETABLE_IMPORT_MODE = "cohort_docx";
 
+export function canReuseStaticTimetableImportBatch(input: {
+  importMode: string | null | undefined;
+  parserVersion: string | null | undefined;
+}) {
+  return (
+    input.parserVersion === STATIC_TIMETABLE_DOCX_PARSER_VERSION &&
+    (input.importMode === STATIC_TIMETABLE_IMPORT_MODE ||
+      input.importMode === LEGACY_STATIC_TIMETABLE_IMPORT_MODE)
+  );
+}
+
 export class StaticTimetableImportError extends Error {
   constructor(
     public readonly code: string,

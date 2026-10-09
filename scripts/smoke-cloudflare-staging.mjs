@@ -4,6 +4,7 @@ const origin = new URL(
   process.env.CALENDERZW_STAGING_ORIGIN ?? "https://next.calender.aido.co.zw",
 );
 const expectedReleaseSha = process.env.EXPECTED_RELEASE_SHA;
+const expectedBackendSha = process.env.EXPECTED_BACKEND_SHA;
 const diagnosticFeedUrl = process.env.CALENDERZW_STAGING_FEED_URL;
 const checks = [];
 const failures = [];
@@ -164,6 +165,41 @@ const healthText = await health.text();
 record("api health live", health, { body: healthText.slice(0, 500) });
 if (health.status !== 200) fail("api health live did not return 200.");
 
+const backendRelease = await get("/api/health/release", {
+  Accept: "application/json",
+});
+const backendReleaseText = await backendRelease.text();
+record("backend release identity", backendRelease, {
+  body: backendReleaseText.slice(0, 500),
+});
+let backendReleaseJson = null;
+if (backendRelease.status === 200) {
+  try {
+    backendReleaseJson = JSON.parse(backendReleaseText);
+  } catch {
+    fail("backend release identity did not return JSON.");
+  }
+  if (!backendReleaseJson?.sourceSha) {
+    fail("backend release identity did not include a source SHA.");
+  }
+  if (
+    expectedBackendSha &&
+    backendReleaseJson?.sourceSha !== expectedBackendSha
+  ) {
+    fail(
+      `backend release identity did not include expected SHA ${expectedBackendSha}.`,
+    );
+  }
+} else if (expectedBackendSha) {
+  fail(
+    "backend release identity is unavailable while EXPECTED_BACKEND_SHA is required.",
+  );
+} else {
+  console.log(
+    "Backend integration compatibility not asserted: /api/health/release is unavailable on the bridged legacy backend.",
+  );
+}
+
 if (diagnosticFeedUrl) {
   const result = spawnSync(
     process.platform === "win32" ? "npm.cmd" : "npm",
@@ -196,5 +232,9 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `PASS: Cloudflare staging smoke passed for ${origin.origin} with ${checks.length} HTTP checks.`,
+  `PASS: Cloudflare staging smoke passed for ${origin.origin} with ${checks.length} HTTP checks. Backend compatibility ${
+    backendReleaseJson?.sourceSha
+      ? `reported ${backendReleaseJson.sourceSha}`
+      : "was not asserted"
+  }.`,
 );

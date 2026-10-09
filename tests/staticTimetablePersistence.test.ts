@@ -1,9 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { buildStaticTimetableEvidence } from "../src/domain/staticTimetableEvidence";
-import { parseStaticTimetableDocument } from "../src/domain/staticTimetableDocument";
-import { buildStaticTimetablePersistencePayload } from "../server/staticTimetableImportRepository";
+import {
+  parseStaticTimetableDocument,
+  STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+} from "../src/domain/staticTimetableDocument";
+import {
+  buildStaticTimetablePersistencePayload,
+  canReuseStaticTimetableImportBatch,
+} from "../server/staticTimetableImportRepository";
 
 describe("static timetable persistence payload", () => {
+  it("uses a v2 parser boundary so old v1 batches do not poison reparses", () => {
+    expect(STATIC_TIMETABLE_DOCX_PARSER_VERSION).toBe("static-docx-matrix-v2");
+
+    expect(
+      canReuseStaticTimetableImportBatch({
+        importMode: "static_timetable_document",
+        parserVersion: "static-docx-matrix-v1",
+      }),
+    ).toBe(false);
+    expect(
+      canReuseStaticTimetableImportBatch({
+        importMode: "static_timetable_document",
+        parserVersion: "static-docx-matrix-v2",
+      }),
+    ).toBe(true);
+    expect(
+      canReuseStaticTimetableImportBatch({
+        importMode: "cohort_docx",
+        parserVersion: "static-docx-matrix-v2",
+      }),
+    ).toBe(true);
+  });
+
   it("drops meaningless blank cells but keeps meaningful ignored evidence", () => {
     const parsed = parseStaticTimetableDocument({
       paragraphs: [

@@ -1,4 +1,4 @@
-export const STATIC_TIMETABLE_DOCX_PARSER_VERSION = "static-docx-matrix-v1";
+export const STATIC_TIMETABLE_DOCX_PARSER_VERSION = "static-docx-matrix-v2";
 
 export type StaticTimetableDocumentStructure = {
   paragraphs: string[];
