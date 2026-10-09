@@ -53,6 +53,7 @@ const classGroupSchema = z.object({
 const academicPeriodSchema = z.object({
   institutionId: z.string().uuid(),
   name: z.string().min(1),
+  academicYear: z.string().trim().nullable().optional(),
   startsOn: z.string().min(1),
   endsOn: z.string().min(1),
   active: z.boolean().optional(),

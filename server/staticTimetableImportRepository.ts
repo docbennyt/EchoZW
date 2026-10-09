@@ -155,12 +155,14 @@ export async function getStaticTimetableImportOptions(
   };
 }
 
-async function inferCanonicalSuggestions(
-  institutionId: string,
+export function inferCanonicalSuggestionsFromOptions(
+  options: {
+    programmes: JsonRecord[];
+    cohorts: JsonRecord[];
+    academicPeriods: JsonRecord[];
+  },
   parsed: StaticTimetableParseResult,
-  env: NodeJS.ProcessEnv,
 ) {
-  const options = await getStaticTimetableImportOptions(institutionId, env);
   const department = normalizeText(parsed.metadata.departmentName);
   const programmes = (options.programmes as JsonRecord[]).filter(
     (programme) => {
@@ -205,6 +207,22 @@ async function inferCanonicalSuggestions(
   );
   const academicPeriodId = periods.length === 1 ? String(periods[0].id) : null;
   return { programmeId, cohortId, academicPeriodId };
+}
+
+async function inferCanonicalSuggestions(
+  institutionId: string,
+  parsed: StaticTimetableParseResult,
+  env: NodeJS.ProcessEnv,
+) {
+  const options = await getStaticTimetableImportOptions(institutionId, env);
+  return inferCanonicalSuggestionsFromOptions(
+    {
+      programmes: options.programmes as JsonRecord[],
+      cohorts: options.cohorts as JsonRecord[],
+      academicPeriods: options.academicPeriods as JsonRecord[],
+    },
+    parsed,
+  );
 }
 
 function parserSummaryPayload(parsed: StaticTimetableParseResult) {

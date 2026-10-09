@@ -15,6 +15,7 @@ import {
   type StaticImportSession,
   uploadStaticTimetableDocx,
 } from "./staticTimetableImportClient";
+import { createReadyDraftsSequentially } from "./staticTimetableDraftWorkflow";
 import { createClient } from "./utils/supabase/client";
 
 const EMPTY_OPTIONS: StaticImportOptions = {
@@ -731,6 +732,9 @@ export function StaticTimetableImportPage() {
           const result = await createAcademicPeriod(token, {
             institutionId,
             name,
+            academicYear:
+              selectedTarget.academicYearRaw ??
+              review?.parsed.metadata.academicYearRaw,
             startsOn: periodForm.startsOn,
             endsOn: periodForm.endsOn,
           });
@@ -830,9 +834,10 @@ export function StaticTimetableImportPage() {
   }
 
   async function refreshReviewAfterDraft() {
-    if (!token || !review) return;
+    if (!token || !review) return null;
     const refreshed = await getStaticTimetableImport(token, review.batch.id);
     hydrateReview(refreshed.review, false);
+    return refreshed.review;
   }
 
   async function createAllReadyDrafts() {
@@ -841,19 +846,18 @@ export function StaticTimetableImportPage() {
     setError("");
     setSuccess("");
     try {
-      let created = 0;
-      for (const target of review.targets) {
-        if (targetReady(target) && !target.createdDraft) {
-          await createTargetDraft(target);
-          created += 1;
-        }
-      }
-      await refreshReviewAfterDraft();
-      setSuccess(
-        created
-          ? `${created} review draft${created === 1 ? "" : "s"} created. Nothing has been published.`
-          : "No additional drafts were ready to create.",
-      );
+      const result = await createReadyDraftsSequentially({
+        targets: review.targets,
+        isReady: targetReady,
+        createDraft: createTargetDraft,
+        refreshReview: async () => {
+          const refreshed = await refreshReviewAfterDraft();
+          if (!refreshed) throw new Error("Could not refresh import review.");
+          return refreshed;
+        },
+      });
+      if (result.error) setError(result.message);
+      else setSuccess(result.message);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not create drafts.",

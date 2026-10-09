@@ -41,6 +41,7 @@ export type AdminAcademicPeriod = {
   institutionId: string;
   institutionName: string;
   name: string;
+  academicYear: string | null;
   startsOn: string | null;
   endsOn: string | null;
   active: boolean;

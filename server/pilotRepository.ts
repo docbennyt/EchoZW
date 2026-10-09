@@ -219,6 +219,7 @@ function mapAcademicPeriod(row: JsonRecord): AdminAcademicPeriod {
     institutionId: String(row.institution_id),
     institutionName: institution?.name ? String(institution.name) : "",
     name: String(row.name),
+    academicYear: row.academic_year ? String(row.academic_year) : null,
     startsOn: row.starts_on ? String(row.starts_on) : null,
     endsOn: row.ends_on ? String(row.ends_on) : null,
     active: Boolean(row.active),
@@ -386,7 +387,7 @@ async function requireAcademicPeriod(id: string) {
     client
       .from("academic_periods")
       .select(
-        "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+        "id, institution_id, name, academic_year, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -432,6 +433,20 @@ function deriveAcademicYear(
   if (endsOn) return endsOn.slice(0, 4);
   const match = name.match(/\b(20\d{2})\b/);
   return match?.[1] ?? new Date().getUTCFullYear().toString();
+}
+
+function normalizeAcademicYearInput(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  const normalized = trimmed.replace(/\s*([-/])\s*/g, "$1");
+  if (!/^20\d{2}(?:[-/](?:20\d{2}|\d{2}))?$/.test(normalized)) {
+    throw new PilotApiError(
+      "VALIDATION_ERROR",
+      "Academic year must look like 2026, 2026-2027, or 2025/2026.",
+      422,
+    );
+  }
+  return normalized;
 }
 
 function derivePeriodNumber(name: string) {
@@ -1069,7 +1084,7 @@ export async function listAcademicPeriods(institutionId?: string) {
   let query = client
     .from("academic_periods")
     .select(
-      "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+      "id, institution_id, name, academic_year, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
     )
     .order("starts_on", { ascending: false })
     .order("name");
@@ -1087,6 +1102,7 @@ export async function listAcademicPeriods(institutionId?: string) {
 export async function createAcademicPeriod(input: {
   institutionId: string;
   name: string;
+  academicYear?: string | null;
   startsOn: string;
   endsOn: string;
   active?: boolean;
@@ -1106,6 +1122,9 @@ export async function createAcademicPeriod(input: {
     );
   }
   const institution = await requireInstitution(input.institutionId);
+  const academicYear =
+    normalizeAcademicYearInput(input.academicYear) ??
+    deriveAcademicYear(input.name, input.startsOn, input.endsOn);
   const client = createPilotAdminClient();
   const data = await expectData(
     client
@@ -1115,18 +1134,14 @@ export async function createAcademicPeriod(input: {
         name: input.name.trim(),
         starts_on: input.startsOn,
         ends_on: input.endsOn,
-        academic_year: deriveAcademicYear(
-          input.name,
-          input.startsOn,
-          input.endsOn,
-        ),
+        academic_year: academicYear,
         period_number: derivePeriodNumber(input.name),
         active: input.active ?? true,
         status: input.active === false ? "archived" : "confirmed",
         updated_at: new Date().toISOString(),
       })
       .select(
-        "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+        "id, institution_id, name, academic_year, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
       )
       .single(),
     "DATABASE_UNAVAILABLE",
@@ -1140,6 +1155,7 @@ export async function updateAcademicPeriod(
   input: Partial<{
     institutionId: string;
     name: string;
+    academicYear: string | null;
     startsOn: string;
     endsOn: string;
     active: boolean;
@@ -1159,6 +1175,11 @@ export async function updateAcademicPeriod(
   await requireInstitution(institutionId);
   const client = createPilotAdminClient();
   const name = input.name?.trim() || current.name;
+  const academicYear =
+    input.academicYear !== undefined
+      ? (normalizeAcademicYearInput(input.academicYear) ??
+        deriveAcademicYear(name, startsOn, endsOn))
+      : (current.academicYear ?? deriveAcademicYear(name, startsOn, endsOn));
   const active = input.active ?? current.active;
   const data = await expectData(
     client
@@ -1168,7 +1189,7 @@ export async function updateAcademicPeriod(
         name,
         starts_on: startsOn,
         ends_on: endsOn,
-        academic_year: deriveAcademicYear(name, startsOn, endsOn),
+        academic_year: academicYear,
         period_number: derivePeriodNumber(name),
         active,
         status: active ? "confirmed" : "archived",
@@ -1176,7 +1197,7 @@ export async function updateAcademicPeriod(
       })
       .eq("id", id)
       .select(
-        "id, institution_id, name, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
+        "id, institution_id, name, academic_year, starts_on, ends_on, active, created_at, updated_at, institutions(name)",
       )
       .single(),
     "DATABASE_UNAVAILABLE",

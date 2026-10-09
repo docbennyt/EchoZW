@@ -236,6 +236,7 @@ export function createAcademicPeriod(
   input: {
     institutionId: string;
     name: string;
+    academicYear?: string | null;
     startsOn: string;
     endsOn: string;
     active?: boolean;
@@ -257,6 +258,7 @@ export function updateAcademicPeriod(
   input: Partial<{
     institutionId: string;
     name: string;
+    academicYear: string | null;
     startsOn: string;
     endsOn: string;
     active: boolean;

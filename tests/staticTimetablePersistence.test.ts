@@ -7,6 +7,7 @@ import {
 import {
   buildStaticTimetablePersistencePayload,
   canReuseStaticTimetableImportBatch,
+  inferCanonicalSuggestionsFromOptions,
 } from "../server/staticTimetableImportRepository";
 
 describe("static timetable persistence payload", () => {
@@ -180,4 +181,58 @@ describe("static timetable academic year evidence", () => {
       expect(evidence.proposedTargets[0]?.academicYearRaw).toBe(raw);
     },
   );
+
+  it("matches future v3 parses to canonical academic periods that preserve year ranges", () => {
+    const parsed = parseStaticTimetableDocument({
+      paragraphs: [
+        "Department of E-Commerce",
+        "E-COMMERCE DEPARTMENT SEMESTER I TIME-TABLE 2026-2027",
+      ],
+      tables: [
+        [
+          ["TIME", "MONDAY", "TUESDAY", "WEDNESDAY"],
+          ["08:00-10:00", "BEC 1101 R1", "", ""],
+        ],
+        [
+          ["Part 1 Semester 1"],
+          ["Course Code", "Course Title", "Contact Hours", "Lecturer"],
+          ["BEC 1101", "E-Commerce Foundations", "2 hours", "Dr Example"],
+        ],
+      ],
+    });
+
+    const suggestions = inferCanonicalSuggestionsFromOptions(
+      {
+        programmes: [
+          {
+            id: "programme-1",
+            name: "E-Commerce",
+            short_name: null,
+            code: "BEC",
+          },
+        ],
+        cohorts: [
+          {
+            id: "cohort-1",
+            programme_id: "programme-1",
+            label: "Part 1",
+            level_label: null,
+            code: "P1",
+          },
+        ],
+        academicPeriods: [
+          {
+            id: "period-2026-2027-s1",
+            academic_year: "2026-2027",
+            period_number: 1,
+          },
+        ],
+      },
+      parsed,
+    );
+
+    expect(parsed.metadata.academicYearRaw).toBe("2026-2027");
+    expect(suggestions.programmeId).toBe("programme-1");
+    expect(suggestions.academicPeriodId).toBe("period-2026-2027-s1");
+  });
 });
