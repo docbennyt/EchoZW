@@ -1,6 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { checkSupabaseConnectivity } from "./supabase/connectivity.js";
-import { buildRuntimePublicConfig } from "./runtimePublicConfig.js";
+import {
+  buildRuntimePublicConfig,
+  releaseShaFromEnv,
+} from "./runtimePublicConfig.js";
 import { checkSchemaCompatibility } from "./schemaCompatibility.js";
 import { validateSupabaseProductionConfig } from "./supabase/config.js";
 
@@ -15,6 +18,13 @@ export type ReadinessResult = {
   };
 };
 
+export type BackendReleaseIdentity = {
+  runtime: "railway-node" | "node";
+  environment: string | null;
+  sourceSha: string | null;
+  service: string | null;
+};
+
 function sendJson(
   res: ServerResponse,
   status: number,
@@ -27,6 +37,20 @@ function sendJson(
     ...headers,
   });
   res.end(JSON.stringify(body));
+}
+
+export function backendReleaseIdentity(
+  env: NodeJS.ProcessEnv = process.env,
+): BackendReleaseIdentity {
+  return {
+    runtime:
+      env.RAILWAY_ENVIRONMENT_NAME || env.RAILWAY_SERVICE_NAME
+        ? "railway-node"
+        : "node",
+    environment: env.RAILWAY_ENVIRONMENT_NAME ?? env.NODE_ENV ?? null,
+    sourceSha: releaseShaFromEnv(env),
+    service: env.RAILWAY_SERVICE_NAME ?? null,
+  };
 }
 
 export async function checkReadiness(
@@ -82,6 +106,11 @@ export async function handleHealthRequest(
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
   if (req.method === "GET" && requestUrl.pathname === "/api/health/live") {
     sendJson(res, 200, { status: "ok" });
+    return true;
+  }
+
+  if (req.method === "GET" && requestUrl.pathname === "/api/health/release") {
+    sendJson(res, 200, backendReleaseIdentity(env));
     return true;
   }
 

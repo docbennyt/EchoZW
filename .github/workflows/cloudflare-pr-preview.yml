@@ -22,6 +22,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CALENDERZW_STAGING_ORIGIN: https://next.calender.aido.co.zw
       CALENDERZW_STAGING_FEED_URL: ${{ secrets.CALENDERZW_STAGING_FEED_URL }}
+      EXPECTED_BACKEND_SHA: ${{ vars.EXPECTED_BACKEND_SHA }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       IS_SAME_REPO_PR: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
@@ -110,6 +111,11 @@ jobs:
               echo "- Deploy: attempted with Cloudflare staging environment"
               echo "- Worker version: \`${{ steps.release.outputs.worker_version }}\`"
               echo "- Smoke: required and completed before this summary step"
+              if [ -n "${EXPECTED_BACKEND_SHA}" ]; then
+                echo "- Backend integration: required Railway/backend SHA \`${EXPECTED_BACKEND_SHA}\`"
+              else
+                echo "- Backend integration: release identity is reported when available; same-SHA Railway compatibility is not implied by this Worker preview"
+              fi
             else
               echo "- Deploy: skipped because this PR is not from the base repository"
               echo "- Smoke: skipped with deploy"
@@ -131,6 +137,7 @@ jobs:
           - Worker version: \`${{ steps.release.outputs.worker_version }}\`
           - Source SHA reported by /__release: \`${{ steps.release.outputs.source_sha }}\`
           - Production DNS/runtime unchanged.
+          - Backend compatibility: this Worker preview does not imply same-SHA Railway backend compatibility unless \`EXPECTED_BACKEND_SHA\` is configured and enforced.
 
           This workflow checks out the immutable PR head SHA, verifies the repository, deploys Cloudflare staging with \`SOURCE_SHA\`, and runs the live staging smoke before reporting evidence.
           EOF
