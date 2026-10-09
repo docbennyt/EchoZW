@@ -371,9 +371,7 @@ export function StaticTimetableImportPage() {
           ? [
               cohort.label || cohort.level_label || cohort.code,
               cohort.year_level ? `Year ${cohort.year_level}` : null,
-              cohort.semester_number
-                ? `Sem ${cohort.semester_number}`
-                : null,
+              cohort.semester_number ? `Sem ${cohort.semester_number}` : null,
               cohort.group_name || cohort.group_label || null,
             ]
               .filter(Boolean)
@@ -555,7 +553,10 @@ export function StaticTimetableImportPage() {
       );
       setActiveStep(1);
       requestAnimationFrame(() => {
-        sourceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        sourceRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
         sourceRef.current?.focus({ preventScroll: true });
       });
     } catch (caught) {
