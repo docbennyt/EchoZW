@@ -5,6 +5,10 @@ const migration = readFileSync(
   "supabase/migrations/0036_static_document_target_draft_jsonb_alias_fix.sql",
   "utf8",
 );
+const precedenceFix = readFileSync(
+  "supabase/migrations/0037_static_document_target_draft_operator_precedence_fix.sql",
+  "utf8",
+);
 
 describe("static target draft JSONB alias hotfix", () => {
   it("addresses jsonb_array_elements output columns explicitly", () => {
@@ -21,6 +25,15 @@ describe("static target draft JSONB alias hotfix", () => {
   it("does not reintroduce bare composite JSON operators", () => {
     expect(migration).not.toContain("session_row->>");
     expect(migration).not.toContain("resolution->>");
+  });
+
+  it("parenthesizes JSON extraction before concatenation", () => {
+    expect(precedenceFix).toContain(
+      "v_target.id::text || '|' || (session_row.value->>'candidateKey')",
+    );
+    expect(precedenceFix).not.toContain(
+      "v_target.id::text || '|' || session_row.value->>'candidateKey'",
+    );
   });
 
   it("preserves guarded draft-only materialization", () => {
