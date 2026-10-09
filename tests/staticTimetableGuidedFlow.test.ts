@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+// Source-level contract for the guided DR-161 operator workflow.
+
 const page = readFileSync("src/StaticTimetableImportPage.tsx", "utf8");
 const parser = readFileSync("src/domain/staticTimetableDocument.ts", "utf8");
 const client = readFileSync("src/staticTimetableImportClient.ts", "utf8");
