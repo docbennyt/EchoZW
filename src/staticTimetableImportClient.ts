@@ -1,5 +1,6 @@
 export type StaticImportMetadata = {
   departmentName: string | null;
+  academicYearRaw: string | null;
   academicYear: number | null;
   yearLevel: number | null;
   semesterNumber: number | null;
@@ -31,6 +32,7 @@ export type StaticImportSession = {
   venueRaw: string | null;
   lecturerRaw: string | null;
   deliveryModeRaw: string | null;
+  warningCodes: string[];
   sourceTableIndex: number;
   sourceRowIndex: number;
   sourceColumnIndex: number;
@@ -113,6 +115,15 @@ export type StaticImportReview = {
     semesterNumber: number | null;
     academicYearRaw: string | null;
     reviewStatus: string;
+    matchedProgrammeId: string | null;
+    matchedCohortId: string | null;
+    matchedAcademicPeriodId: string | null;
+    createdDraft: null | {
+      timetableId: string;
+      draftVersionId: string;
+      publicSlug: string;
+      sessionCount: number;
+    };
     candidateKeys: string[];
   }>;
   suggestions: {
@@ -143,6 +154,10 @@ export type StaticImportOptions = {
     code: string;
     label: string;
     level_label: string;
+    year_level: number | null;
+    semester_number: number | null;
+    group_name: string | null;
+    group_label: string | null;
   }>;
   academicPeriods: Array<{
     id: string;
@@ -279,4 +294,29 @@ export async function createStaticTimetableDraft(
       status: string;
     };
   }>(response);
+}
+
+
+export async function patchStaticTimetableTargetMapping(
+  accessToken: string,
+  batchId: string,
+  targetId: string,
+  input: {
+    programmeId: string | null;
+    cohortId: string | null;
+    academicPeriodId: string | null;
+  },
+) {
+  const response = await fetch(
+    `/api/admin/static-timetable-imports/${batchId}/targets/${targetId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+  return parseResponse<{ review: StaticImportReview }>(response);
 }
