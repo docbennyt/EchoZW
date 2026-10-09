@@ -19,6 +19,8 @@ export type StaticCourseReference = {
   sourceTableIndex: number;
   sourceRowIndex: number;
   rawCells: string[];
+  targetKey: string | null;
+  targetLabel: string | null;
   courseCodeRaw: string;
   courseCode: string;
   courseName: string;
@@ -88,6 +90,7 @@ export type StaticTimetableParseResult = {
   metadata: StaticTimetableMetadata;
   timetableTableIndex: number;
   courseReferenceTableIndex: number | null;
+  courseReferenceTableIndices: number[];
   courses: StaticCourseReference[];
   sessions: StaticTimetableSessionCandidate[];
   unparsed: StaticTimetableUnparsedCandidate[];
@@ -122,6 +125,16 @@ function normalizeCourseCode(value: string) {
   const collapsed = compact(value).replace(/\s+/g, "").toUpperCase();
   const match = collapsed.match(/^([A-Z]{2,6})(\d{3,5})$/);
   return match ? `${match[1]} ${match[2]}` : compact(value).toUpperCase();
+}
+
+function parseSemesterNumber(value: string) {
+  const normalized = compact(value).toUpperCase();
+  const numeric = normalized.match(/\bSEMESTER\s+(\d+)\b/)?.[1];
+  if (numeric) return Number(numeric);
+  const roman = normalized.match(/\bSEMESTER\s+([IVX]+)\b/)?.[1];
+  if (!roman) return null;
+  const values: Record<string, number> = { I: 1, II: 2, III: 3, IV: 4 };
+  return values[roman] ?? null;
 }
 
 function parseClock(value: string) {
@@ -203,13 +216,24 @@ function courseReferenceHeaderIndex(table: string[][]) {
   });
 }
 
+function hasSectionedCourseReferenceRows(table: string[][]) {
+  return table.some((row) =>
+    compact(row[0] ?? "").match(/^Part\s+\d+\s+Semester\s+\d+$/i),
+  );
+}
+
 function detectCourseReferenceTable(
   tables: string[][][],
   timetableIndex: number,
 ) {
   for (let tableIndex = 0; tableIndex < tables.length; tableIndex += 1) {
     if (tableIndex === timetableIndex) continue;
-    if (courseReferenceHeaderIndex(tables[tableIndex]) >= 0) return tableIndex;
+    if (
+      courseReferenceHeaderIndex(tables[tableIndex]) >= 0 ||
+      hasSectionedCourseReferenceRows(tables[tableIndex])
+    ) {
+      return tableIndex;
+    }
   }
   return null;
 }
@@ -225,16 +249,23 @@ function parseMetadata(
     .join("\n")}`;
   const departmentLine =
     allText.match(/Department\s+of\s+([^\n]+)/i)?.[1] ?? null;
+  const suffixDepartment =
+    allText.match(/^([A-Z][A-Z &-]+?)\s+DEPARTMENT\b/im)?.[1] ?? null;
   const departmentName = departmentLine
     ? compact(departmentLine)
         .replace(/\s*[-–—:]\s*20\d{2}.*$/i, "")
         .replace(/\s+20\d{2}.*$/i, "")
         .trim() || null
-    : null;
+    : suffixDepartment
+      ? compact(suffixDepartment)
+      : null;
   const yearMatch = allText.match(/\b(20\d{2})\b/)?.[1] ?? null;
   const titleMatch = allText.match(
     /Part\s+(\d+)\s+Semester\s+(\d+)\s+([^\n]*?Timetable)/i,
   );
+  const semesterNumber = titleMatch
+    ? Number(titleMatch[2])
+    : parseSemesterNumber(allText);
   const mode = titleMatch
     ? compact(titleMatch[3])
         .replace(/\s*Timetable$/i, "")
@@ -244,9 +275,12 @@ function parseMetadata(
     departmentName,
     academicYear: yearMatch ? Number(yearMatch) : null,
     yearLevel: titleMatch ? Number(titleMatch[1]) : null,
-    semesterNumber: titleMatch ? Number(titleMatch[2]) : null,
+    semesterNumber,
     modeLabel: mode || null,
-    title: titleMatch ? compact(titleMatch[0]) : null,
+    title:
+      titleMatch?.[0] ??
+      allText.match(/[^\n]*DEPARTMENT[^\n]*TIME-?TABLE[^\n]*/i)?.[0] ??
+      null,
   };
 }
 
@@ -255,7 +289,9 @@ function parseCourseReferences(
   tableIndex: number,
 ): StaticCourseReference[] {
   const headerRowIndex = courseReferenceHeaderIndex(table);
-  if (headerRowIndex < 0) return [];
+  if (headerRowIndex < 0) {
+    return parseSectionedCourseReferences(table, tableIndex);
+  }
   const header = table[headerRowIndex].map((cell) =>
     compact(cell).toUpperCase(),
   );
@@ -269,6 +305,7 @@ function parseCourseReferences(
   const lecturerIndex = header.findIndex(
     (cell) => cell.includes("LECTURER") || cell.includes("INSTRUCTOR"),
   );
+  const target = inferCourseReferenceTarget(table, headerRowIndex);
 
   return table.slice(headerRowIndex + 1).flatMap((row, offset) => {
     const cells = row.map(compact);
@@ -291,6 +328,8 @@ function parseCourseReferences(
         sourceTableIndex: tableIndex,
         sourceRowIndex: rowIndex,
         rawCells: cells,
+        targetKey: target.key,
+        targetLabel: target.label,
         courseCodeRaw,
         courseCode: normalizeCourseCode(courseCodeRaw),
         courseName,
@@ -299,6 +338,92 @@ function parseCourseReferences(
       },
     ];
   });
+}
+
+function parseSectionedCourseReferences(
+  table: string[][],
+  tableIndex: number,
+): StaticCourseReference[] {
+  const courses: StaticCourseReference[] = [];
+  let currentTarget = {
+    key: null as string | null,
+    label: null as string | null,
+  };
+
+  for (let rowIndex = 0; rowIndex < table.length; rowIndex += 1) {
+    const cells = table[rowIndex].map(compact);
+    const heading = cells.find(Boolean) ?? "";
+    const partMatch = heading.match(/^Part\s+(\d+)\s+Semester\s+(\d+)$/i);
+    if (partMatch) {
+      const label = `Part ${Number(partMatch[1])} Semester ${Number(partMatch[2])}`;
+      currentTarget = {
+        key: `part-${Number(partMatch[1])}-semester-${Number(partMatch[2])}`,
+        label,
+      };
+      continue;
+    }
+
+    const courseCodeRaw = cells[0] ?? "";
+    const courseName = cells[1] ?? "";
+    if (!courseCodeRaw.match(/^[A-Za-z]{2,6}\s*\d{3,5}$/) || !courseName) {
+      continue;
+    }
+
+    courses.push({
+      candidateKey: candidateKey([
+        "course",
+        tableIndex,
+        rowIndex,
+        courseCodeRaw,
+        courseName,
+      ]),
+      sourceTableIndex: tableIndex,
+      sourceRowIndex: rowIndex,
+      rawCells: cells,
+      targetKey: currentTarget.key,
+      targetLabel: currentTarget.label,
+      courseCodeRaw,
+      courseCode: normalizeCourseCode(courseCodeRaw),
+      courseName,
+      hoursPerWeek: null,
+      lecturerRaw: cells[2] || null,
+    });
+  }
+
+  return courses;
+}
+
+function inferCourseReferenceTarget(table: string[][], headerRowIndex: number) {
+  const evidence = table
+    .slice(0, headerRowIndex)
+    .flat()
+    .map(compact)
+    .filter(Boolean)
+    .join(" ");
+  const match = evidence.match(/\bPart\s+(\d+)\s+Semester\s+(\d+)\b/i);
+  if (!match) return { key: null, label: null };
+  const label = `Part ${Number(match[1])} Semester ${Number(match[2])}`;
+  return {
+    key: `part-${Number(match[1])}-semester-${Number(match[2])}`,
+    label,
+  };
+}
+
+function detectCourseReferenceTableIndices(
+  tables: string[][][],
+  timetableIndex: number,
+) {
+  const indices: number[] = [];
+  for (let tableIndex = 0; tableIndex < tables.length; tableIndex += 1) {
+    if (tableIndex === timetableIndex) continue;
+    if (
+      courseReferenceHeaderIndex(tables[tableIndex]) >= 0 ||
+      hasSectionedCourseReferenceRows(tables[tableIndex])
+    ) {
+      indices.push(tableIndex);
+    }
+  }
+  return indices;
 }
 
 function parseSessionCell(raw: string) {
@@ -324,6 +449,14 @@ function parseSessionCell(raw: string) {
   };
 }
 
+function parseSessionCellLines(raw: string) {
+  return raw
+    .split(/\n+/)
+    .map(compact)
+    .filter(Boolean)
+    .map((line) => ({ rawText: line, parsed: parseSessionCell(line) }));
+}
+
 function lunchRowEvidence(row: string[]) {
   const cells = row.map(compact).filter(Boolean);
   if (cells.length === 0) return null;
@@ -346,14 +479,14 @@ export function parseStaticTimetableDocument(
     structure.tables,
     timetableTableIndex,
   );
+  const courseReferenceTableIndices = detectCourseReferenceTableIndices(
+    structure.tables,
+    timetableTableIndex,
+  );
   const timetable = structure.tables[timetableTableIndex];
-  const courses =
-    courseReferenceTableIndex === null
-      ? []
-      : parseCourseReferences(
-          structure.tables[courseReferenceTableIndex],
-          courseReferenceTableIndex,
-        );
+  const courses = courseReferenceTableIndices.flatMap((tableIndex) =>
+    parseCourseReferences(structure.tables[tableIndex], tableIndex),
+  );
   const courseByCode = new Map(
     courses.map((course) => [course.courseCode, course]),
   );
@@ -428,6 +561,20 @@ export function parseStaticTimetableDocument(
       continue;
     }
 
+    const timedLunchEvidence = time ? lunchRowEvidence(row) : null;
+    if (time && timedLunchEvidence) {
+      ignored.push({
+        kind: "break",
+        sourceTableIndex: timetableTableIndex,
+        sourceRowIndex: rowIndex,
+        rawText: timedLunchEvidence,
+        startTime: time.startTime,
+        endTime: time.endTime,
+      });
+      pendingLunchTime = null;
+      continue;
+    }
+
     const lunchEvidence = !time ? lunchRowEvidence(row) : null;
     if (lunchEvidence) {
       ignored.push({
@@ -458,91 +605,96 @@ export function parseStaticTimetableDocument(
         });
         continue;
       }
-      const parsed = parseSessionCell(rawText);
-      const key = candidateKey([
-        "session",
-        timetableTableIndex,
-        rowIndex,
-        columnIndex,
-        label,
-        time.startTime,
-        time.endTime,
+      for (const [lineIndex, line] of parseSessionCellLines(
         rawText,
-      ]);
-      if (!parsed || parsed.malformed) {
-        unparsed.push({
+      ).entries()) {
+        const key = candidateKey([
+          "session",
+          timetableTableIndex,
+          rowIndex,
+          columnIndex,
+          lineIndex,
+          label,
+          time.startTime,
+          time.endTime,
+          line.rawText,
+        ]);
+        if (!line.parsed || line.parsed.malformed) {
+          unparsed.push({
+            candidateKey: key,
+            sourceTableIndex: timetableTableIndex,
+            sourceRowIndex: rowIndex,
+            sourceColumnIndex: columnIndex,
+            rawText: line.rawText,
+            weekday,
+            weekdayLabel: label,
+            startTime: time.startTime,
+            endTime: time.endTime,
+          });
+          warnings.push({
+            code: "MALFORMED_SESSION_CELL",
+            severity: "error",
+            message: `Could not safely interpret ${label} ${time.startTime}–${time.endTime}.`,
+            candidateKey: key,
+            fieldName: "rawText",
+            details: {
+              tableIndex: timetableTableIndex,
+              rowIndex,
+              columnIndex,
+              rawText: line.rawText,
+            },
+          });
+          continue;
+        }
+
+        const parsed = line.parsed;
+        const reference = courseByCode.get(parsed.courseCode) ?? null;
+        const session: StaticTimetableSessionCandidate = {
           candidateKey: key,
           sourceTableIndex: timetableTableIndex,
           sourceRowIndex: rowIndex,
           sourceColumnIndex: columnIndex,
-          rawText,
+          rawText: line.rawText,
           weekday,
           weekdayLabel: label,
           startTime: time.startTime,
           endTime: time.endTime,
-        });
-        warnings.push({
-          code: "MALFORMED_SESSION_CELL",
-          severity: "error",
-          message: `Could not safely interpret ${label} ${time.startTime}–${time.endTime}.`,
-          candidateKey: key,
-          fieldName: "rawText",
-          details: {
-            tableIndex: timetableTableIndex,
-            rowIndex,
-            columnIndex,
-            rawText,
-          },
-        });
-        continue;
-      }
+          courseCodeRaw: parsed.courseCodeRaw,
+          courseCode: parsed.courseCode,
+          courseName: reference?.courseName ?? null,
+          venueRaw: parsed.venueRaw,
+          deliveryModeRaw: parsed.deliveryModeRaw,
+          lecturerRaw: reference?.lecturerRaw ?? null,
+          warningCodes: [],
+        };
 
-      const reference = courseByCode.get(parsed.courseCode) ?? null;
-      const session: StaticTimetableSessionCandidate = {
-        candidateKey: key,
-        sourceTableIndex: timetableTableIndex,
-        sourceRowIndex: rowIndex,
-        sourceColumnIndex: columnIndex,
-        rawText,
-        weekday,
-        weekdayLabel: label,
-        startTime: time.startTime,
-        endTime: time.endTime,
-        courseCodeRaw: parsed.courseCodeRaw,
-        courseCode: parsed.courseCode,
-        courseName: reference?.courseName ?? null,
-        venueRaw: parsed.venueRaw,
-        deliveryModeRaw: parsed.deliveryModeRaw,
-        lecturerRaw: reference?.lecturerRaw ?? null,
-        warningCodes: [],
-      };
-
-      if (!reference) {
-        session.warningCodes.push("COURSE_NOT_IN_REFERENCE");
-        warnings.push({
-          code: "COURSE_NOT_IN_REFERENCE",
-          severity: "error",
-          message: `${parsed.courseCode} appears in the timetable grid but has no matching course-reference row.`,
-          candidateKey: key,
-          fieldName: "courseCode",
-          details: { courseCode: parsed.courseCode, rawText },
-        });
+        if (!reference) {
+          session.warningCodes.push("COURSE_NOT_IN_REFERENCE");
+          warnings.push({
+            code: "COURSE_NOT_IN_REFERENCE",
+            severity: "error",
+            message: `${parsed.courseCode} appears in the timetable grid but has no matching course-reference row.`,
+            candidateKey: key,
+            fieldName: "courseCode",
+            details: { courseCode: parsed.courseCode, rawText: line.rawText },
+          });
+        }
+        if (parsed.deliveryModeRaw) {
+          session.warningCodes.push("DELIVERY_MODE_REVIEW_REQUIRED");
+          warnings.push({
+            code: "DELIVERY_MODE_REVIEW_REQUIRED",
+            severity: "warning",
+            message: `Preserved raw delivery wording “${parsed.deliveryModeRaw}”; reviewer must confirm its operational meaning.`,
+            candidateKey: key,
+            fieldName: "deliveryMode",
+            details: {
+              rawDeliveryMode: parsed.deliveryModeRaw,
+              venueRaw: parsed.venueRaw,
+            },
+          });
+        }
+        sessions.push(session);
       }
-      if (parsed.deliveryModeRaw) {
-        session.warningCodes.push("DELIVERY_MODE_REVIEW_REQUIRED");
-        warnings.push({
-          code: "DELIVERY_MODE_REVIEW_REQUIRED",
-          severity: "warning",
-          message: `Preserved raw delivery wording “${parsed.deliveryModeRaw}”; reviewer must confirm its operational meaning.`,
-          candidateKey: key,
-          fieldName: "deliveryMode",
-          details: {
-            rawDeliveryMode: parsed.deliveryModeRaw,
-            venueRaw: parsed.venueRaw,
-          },
-        });
-      }
-      sessions.push(session);
     }
   }
 
@@ -565,7 +717,12 @@ export function parseStaticTimetableDocument(
     ["yearLevel", metadata.yearLevel],
     ["semesterNumber", metadata.semesterNumber],
   ] as const) {
-    if (value !== null) continue;
+    if (
+      value !== null ||
+      (fieldName === "yearLevel" && courses.some((course) => course.targetKey))
+    ) {
+      continue;
+    }
     warnings.push({
       code: "AMBIGUOUS_DOCUMENT_METADATA",
       severity: "error",
@@ -590,6 +747,7 @@ export function parseStaticTimetableDocument(
     metadata,
     timetableTableIndex,
     courseReferenceTableIndex,
+    courseReferenceTableIndices,
     courses,
     sessions,
     unparsed,

@@ -3,7 +3,9 @@ import {
   parseStaticTimetableDocument,
   STATIC_TIMETABLE_DOCX_PARSER_VERSION,
   type StaticTimetableParseResult,
+  type StaticTimetableIgnoredRecord,
 } from "../src/domain/staticTimetableDocument.js";
+import { buildStaticTimetableEvidence } from "../src/domain/staticTimetableEvidence.js";
 import { readStructuredDocx } from "./docxStructuredReader.js";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 
@@ -14,6 +16,9 @@ type SupabaseErrorLike = {
   details?: string;
   hint?: string;
 };
+
+const STATIC_TIMETABLE_IMPORT_MODE = "static_timetable_document";
+const LEGACY_STATIC_TIMETABLE_IMPORT_MODE = "cohort_docx";
 
 export class StaticTimetableImportError extends Error {
   constructor(
@@ -204,7 +209,10 @@ async function findExistingBatch(
     .from("import_batches")
     .select("id")
     .eq("source_document_id", sourceDocumentId)
-    .eq("import_mode", "cohort_docx")
+    .in("import_mode", [
+      STATIC_TIMETABLE_IMPORT_MODE,
+      LEGACY_STATIC_TIMETABLE_IMPORT_MODE,
+    ])
     .eq("parser_version", STATIC_TIMETABLE_DOCX_PARSER_VERSION)
     .maybeSingle();
   if (query.error) {
@@ -215,6 +223,148 @@ async function findExistingBatch(
     );
   }
   return query.data ? String(asRecord(query.data).id) : null;
+}
+
+function isMeaningfulIgnoredRecord(record: StaticTimetableIgnoredRecord) {
+  return record.kind !== "blank" || record.rawText.trim() !== "";
+}
+
+export function buildStaticTimetablePersistencePayload(
+  parsed: StaticTimetableParseResult,
+  input: { filename: string; sha256: string },
+) {
+  const documentCandidateKey = `document:${input.sha256}`;
+  const evidence = buildStaticTimetableEvidence(parsed);
+  const candidateRows = [
+    {
+      candidate_key: documentCandidateKey,
+      source_table: null,
+      source_row: null,
+      source_column: null,
+      source_cell: null,
+      raw_text: parsed.metadata.title ?? input.filename,
+      candidate_type: "non_session",
+      review_status: "valid",
+      normalized_payload: { metadata: parsed.metadata },
+    },
+    ...parsed.courses.map((course) => ({
+      candidate_key: course.candidateKey,
+      source_table: course.sourceTableIndex,
+      source_row: course.sourceRowIndex,
+      source_column: null,
+      source_cell: `r${course.sourceRowIndex}`,
+      raw_text: course.rawCells.join(" | "),
+      candidate_type: "course_catalog",
+      course_code_raw: course.courseCodeRaw,
+      course_name_raw: course.courseName,
+      lecturer_raw: course.lecturerRaw,
+      review_status: "valid",
+      normalized_payload: course,
+    })),
+    ...parsed.sessions.map((session) => ({
+      candidate_key: session.candidateKey,
+      source_table: session.sourceTableIndex,
+      source_row: session.sourceRowIndex,
+      source_column: session.sourceColumnIndex,
+      source_cell: `r${session.sourceRowIndex}c${session.sourceColumnIndex}`,
+      raw_text: session.rawText,
+      candidate_type: "session",
+      course_code_raw: session.courseCodeRaw,
+      course_name_raw: session.courseName,
+      day_raw: session.weekdayLabel,
+      weekday: session.weekday,
+      time_raw: `${session.startTime}-${session.endTime}`,
+      start_time: session.startTime,
+      end_time: session.endTime,
+      venue_raw: session.venueRaw,
+      lecturer_raw: session.lecturerRaw,
+      delivery_mode_raw: session.deliveryModeRaw,
+      review_status: session.warningCodes.some(
+        (code) => code === "COURSE_NOT_IN_REFERENCE",
+      )
+        ? "invalid"
+        : session.warningCodes.length
+          ? "warning"
+          : "valid",
+      normalized_payload: session,
+    })),
+    ...parsed.unparsed.map((candidate) => ({
+      candidate_key: candidate.candidateKey,
+      source_table: candidate.sourceTableIndex,
+      source_row: candidate.sourceRowIndex,
+      source_column: candidate.sourceColumnIndex,
+      source_cell: `r${candidate.sourceRowIndex}c${candidate.sourceColumnIndex}`,
+      raw_text: candidate.rawText,
+      candidate_type: "session",
+      day_raw: candidate.weekdayLabel,
+      weekday: candidate.weekday,
+      time_raw: `${candidate.startTime}-${candidate.endTime}`,
+      start_time: candidate.startTime,
+      end_time: candidate.endTime,
+      review_status: "invalid",
+      normalized_payload: candidate,
+    })),
+    ...parsed.ignored
+      .filter(isMeaningfulIgnoredRecord)
+      .map((record, index) => ({
+        candidate_key: `ignored:${record.sourceTableIndex}:${record.sourceRowIndex}:${index}`,
+        source_table: record.sourceTableIndex,
+        source_row: record.sourceRowIndex,
+        source_column: null,
+        source_cell: `r${record.sourceRowIndex}`,
+        raw_text: record.rawText,
+        candidate_type: "ignored_row",
+        time_raw:
+          record.startTime && record.endTime
+            ? `${record.startTime}-${record.endTime}`
+            : null,
+        start_time: record.startTime,
+        end_time: record.endTime,
+        review_status: "ignored",
+        normalized_payload: record,
+      })),
+  ];
+  const candidateKeys = new Set(
+    candidateRows.map((candidate) => candidate.candidate_key),
+  );
+
+  return {
+    documentCandidateKey,
+    candidateRows,
+    warningRows: parsed.warnings
+      .map((warning) => ({
+        candidate_key: warning.candidateKey ?? documentCandidateKey,
+        warning_code: warning.code,
+        severity: warning.severity === "error" ? "blocking" : "warning",
+        message: warning.message,
+        field_name: warning.fieldName,
+        suggested_value: null,
+      }))
+      .filter((warning) => candidateKeys.has(warning.candidate_key)),
+    targetRows: evidence.proposedTargets.map((target) => ({
+      target_key: target.targetKey,
+      title_raw: target.titleRaw,
+      academic_unit_name_raw: target.departmentNameRaw,
+      year_level_raw: target.yearLevelRaw,
+      year_level: target.yearLevel,
+      semester_raw: target.semesterRaw,
+      semester_number: target.semesterNumber,
+      academic_year_raw: target.academicYearRaw,
+      confidence: target.confidence,
+      review_status: target.confidence >= 0.85 ? "valid" : "warning",
+      normalized_payload: target.normalizedPayload,
+    })),
+    candidateTargetRows: evidence.candidateTargets
+      .filter((target) => candidateKeys.has(target.candidateKey))
+      .map((target) => ({
+        candidate_key: target.candidateKey,
+        target_key: target.targetKey,
+        applicability_raw: target.applicabilityRaw,
+        confidence: target.confidence,
+        review_status: target.reviewStatus,
+        normalized_payload: target.normalizedPayload,
+      })),
+  };
 }
 
 export async function createStaticTimetableImport(
@@ -286,7 +436,7 @@ export async function createStaticTimetableImport(
         mime_type: mimeType,
         file_size_bytes: input.bytes.length,
         sha256,
-        document_type: "cohort_timetable_docx",
+        document_type: "static_timetable_document",
         source_status: "uploaded",
         uploaded_by: input.actorId,
         parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
@@ -385,110 +535,21 @@ export async function createStaticTimetableImport(
     parsed,
     env,
   );
-  const documentCandidateKey = `document:${sha256}`;
-  const candidateRows = [
-    {
-      candidate_key: documentCandidateKey,
-      source_table: null,
-      source_row: null,
-      source_column: null,
-      source_cell: null,
-      raw_text: parsed.metadata.title ?? input.filename,
-      candidate_type: "non_session",
-      review_status: "valid",
-      normalized_payload: { metadata: parsed.metadata },
-    },
-    ...parsed.courses.map((course) => ({
-      candidate_key: course.candidateKey,
-      source_table: course.sourceTableIndex,
-      source_row: course.sourceRowIndex,
-      source_column: null,
-      source_cell: `r${course.sourceRowIndex}`,
-      raw_text: course.rawCells.join(" | "),
-      candidate_type: "course_catalog",
-      course_code_raw: course.courseCodeRaw,
-      course_name_raw: course.courseName,
-      lecturer_raw: course.lecturerRaw,
-      review_status: "valid",
-      normalized_payload: course,
-    })),
-    ...parsed.sessions.map((session) => ({
-      candidate_key: session.candidateKey,
-      source_table: session.sourceTableIndex,
-      source_row: session.sourceRowIndex,
-      source_column: session.sourceColumnIndex,
-      source_cell: `r${session.sourceRowIndex}c${session.sourceColumnIndex}`,
-      raw_text: session.rawText,
-      candidate_type: "session",
-      course_code_raw: session.courseCodeRaw,
-      course_name_raw: session.courseName,
-      day_raw: session.weekdayLabel,
-      weekday: session.weekday,
-      time_raw: `${session.startTime}-${session.endTime}`,
-      start_time: session.startTime,
-      end_time: session.endTime,
-      venue_raw: session.venueRaw,
-      lecturer_raw: session.lecturerRaw,
-      delivery_mode_raw: session.deliveryModeRaw,
-      review_status: session.warningCodes.some(
-        (code) => code === "COURSE_NOT_IN_REFERENCE",
-      )
-        ? "invalid"
-        : session.warningCodes.length
-          ? "warning"
-          : "valid",
-      normalized_payload: session,
-    })),
-    ...parsed.unparsed.map((candidate) => ({
-      candidate_key: candidate.candidateKey,
-      source_table: candidate.sourceTableIndex,
-      source_row: candidate.sourceRowIndex,
-      source_column: candidate.sourceColumnIndex,
-      source_cell: `r${candidate.sourceRowIndex}c${candidate.sourceColumnIndex}`,
-      raw_text: candidate.rawText,
-      candidate_type: "session",
-      day_raw: candidate.weekdayLabel,
-      weekday: candidate.weekday,
-      time_raw: `${candidate.startTime}-${candidate.endTime}`,
-      start_time: candidate.startTime,
-      end_time: candidate.endTime,
-      review_status: "invalid",
-      normalized_payload: candidate,
-    })),
-    ...parsed.ignored.map((record, index) => ({
-      candidate_key: `ignored:${record.sourceTableIndex}:${record.sourceRowIndex}:${index}`,
-      source_table: record.sourceTableIndex,
-      source_row: record.sourceRowIndex,
-      source_column: null,
-      source_cell: `r${record.sourceRowIndex}`,
-      raw_text: record.rawText,
-      candidate_type: "ignored_row",
-      time_raw:
-        record.startTime && record.endTime
-          ? `${record.startTime}-${record.endTime}`
-          : null,
-      start_time: record.startTime,
-      end_time: record.endTime,
-      review_status: "ignored",
-      normalized_payload: record,
-    })),
-  ];
-  const warningRows = parsed.warnings.map((warning) => ({
-    candidate_key: warning.candidateKey ?? documentCandidateKey,
-    warning_code: warning.code,
-    severity: warning.severity === "error" ? "blocking" : "warning",
-    message: warning.message,
-    field_name: warning.fieldName,
-    suggested_value: null,
-  }));
+  const { candidateRows, warningRows, targetRows, candidateTargetRows } =
+    buildStaticTimetablePersistencePayload(parsed, {
+      filename: input.filename,
+      sha256,
+    });
 
-  const persisted = await supabase.rpc("persist_static_document_import", {
+  const persisted = await supabase.rpc("persist_static_document_import_v2", {
     p_source_document_id: documentId,
     p_actor_id: input.actorId,
     p_parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
     p_summary: { ...parserSummaryPayload(parsed), suggestions },
     p_candidates: candidateRows,
     p_warnings: warningRows,
+    p_targets: targetRows,
+    p_candidate_targets: candidateTargetRows,
   });
   if (persisted.error || !persisted.data) {
     dbError(
@@ -557,6 +618,51 @@ export async function getStaticTimetableImport(
       row.candidate_key ? String(row.candidate_key) : null,
     ]),
   );
+  const candidateIdsByKey = new Map(
+    candidateRows.map((row) => [
+      row.candidate_key ? String(row.candidate_key) : "",
+      String(row.id),
+    ]),
+  );
+  const targetsQuery = await supabase
+    .from("import_targets")
+    .select(
+      "id,target_key,title_raw,academic_unit_name_raw,year_level,semester_number,academic_year_raw,review_status",
+    )
+    .eq("import_batch_id", batchId)
+    .order("target_key");
+  const hasTargetTable =
+    !targetsQuery.error ||
+    (targetsQuery.error as SupabaseErrorLike).code !== "42P01";
+  if (targetsQuery.error && hasTargetTable) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not load static timetable target evidence.",
+      targetsQuery.error,
+    );
+  }
+  const targetRows = hasTargetTable
+    ? ((targetsQuery.data ?? []) as unknown as JsonRecord[])
+    : [];
+  let candidateTargetRows: JsonRecord[] = [];
+  if (hasTargetTable && targetRows.length > 0 && candidateRows.length > 0) {
+    const targetLinksQuery = await supabase
+      .from("import_candidate_targets")
+      .select("candidate_id,import_target_id")
+      .in(
+        "import_target_id",
+        targetRows.map((row) => String(row.id)),
+      );
+    if (targetLinksQuery.error) {
+      dbError(
+        "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+        "Could not load static timetable target applicability.",
+        targetLinksQuery.error,
+      );
+    }
+    candidateTargetRows = (targetLinksQuery.data ??
+      []) as unknown as JsonRecord[];
+  }
   let warningRows: JsonRecord[] = [];
   if (candidateRows.length > 0) {
     const warningsQuery = await supabase
@@ -654,6 +760,35 @@ export async function getStaticTimetableImport(
       resolutionNote: row.resolution_note ? String(row.resolution_note) : null,
       resolvedAt: row.resolved_at ? String(row.resolved_at) : null,
     })),
+    targets: targetRows.map((target) => ({
+      id: String(target.id),
+      targetKey: String(target.target_key),
+      titleRaw: String(target.title_raw),
+      academicUnitNameRaw: target.academic_unit_name_raw
+        ? String(target.academic_unit_name_raw)
+        : null,
+      yearLevel:
+        target.year_level === null || target.year_level === undefined
+          ? null
+          : Number(target.year_level),
+      semesterNumber:
+        target.semester_number === null || target.semester_number === undefined
+          ? null
+          : Number(target.semester_number),
+      academicYearRaw: target.academic_year_raw
+        ? String(target.academic_year_raw)
+        : null,
+      reviewStatus: String(target.review_status),
+      candidateKeys: candidateTargetRows
+        .filter((link) => String(link.import_target_id) === String(target.id))
+        .map((link) => {
+          const candidateId = String(link.candidate_id);
+          return [...candidateIdsByKey.entries()].find(
+            ([, id]) => id === candidateId,
+          )?.[0];
+        })
+        .filter((value): value is string => Boolean(value)),
+    })),
     suggestions: asRecord(summary.suggestions ?? {}),
     createdDraft,
   };
@@ -662,6 +797,7 @@ export async function getStaticTimetableImport(
 export async function createStaticTimetableDraft(
   input: {
     batchId: string;
+    targetId?: string | null;
     actorId: string;
     programmeId: string;
     cohortId: string;
@@ -671,18 +807,51 @@ export async function createStaticTimetableDraft(
   },
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  const { data, error } = await client(env).rpc(
-    "materialize_static_document_draft",
-    {
-      p_import_batch_id: input.batchId,
-      p_actor_id: input.actorId,
-      p_programme_id: input.programmeId,
-      p_cohort_id: input.cohortId,
-      p_academic_period_id: input.academicPeriodId,
-      p_resolutions: input.resolutions,
-      p_sessions: input.sessions,
-    },
-  );
+  const supabase = client(env);
+  let targetId = input.targetId ?? null;
+  if (!targetId) {
+    const targets = await supabase
+      .from("import_targets")
+      .select("id")
+      .eq("import_batch_id", input.batchId);
+    const missingTargetTable =
+      targets.error && (targets.error as SupabaseErrorLike).code === "42P01";
+    if (targets.error && !missingTargetTable) {
+      dbError(
+        "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+        "Could not inspect static timetable import targets.",
+        targets.error,
+      );
+    }
+    const rows = missingTargetTable
+      ? []
+      : ((targets.data ?? []) as unknown as JsonRecord[]);
+    if (rows.length === 1) targetId = String(rows[0].id);
+  }
+
+  const rpcName = targetId
+    ? "materialize_static_document_target_draft"
+    : "materialize_static_document_draft";
+  const rpcInput = targetId
+    ? {
+        p_import_target_id: targetId,
+        p_actor_id: input.actorId,
+        p_programme_id: input.programmeId,
+        p_cohort_id: input.cohortId,
+        p_academic_period_id: input.academicPeriodId,
+        p_resolutions: input.resolutions,
+        p_sessions: input.sessions,
+      }
+    : {
+        p_import_batch_id: input.batchId,
+        p_actor_id: input.actorId,
+        p_programme_id: input.programmeId,
+        p_cohort_id: input.cohortId,
+        p_academic_period_id: input.academicPeriodId,
+        p_resolutions: input.resolutions,
+        p_sessions: input.sessions,
+      };
+  const { data, error } = await supabase.rpc(rpcName, rpcInput);
   if (error) {
     const message = String((error as SupabaseErrorLike).message ?? "");
     const known = [

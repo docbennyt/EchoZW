@@ -9,6 +9,10 @@ const watcherGuard = readFileSync(
   "supabase/migrations/0032_static_document_watcher_guard.sql",
   "utf8",
 );
+const multiTargetMigration = readFileSync(
+  "supabase/migrations/0034_static_document_multi_target_import.sql",
+  "utf8",
+);
 const adminApi = readFileSync("server/adminApi.ts", "utf8");
 const staticApi = readFileSync("server/staticTimetableImportApi.ts", "utf8");
 const repository = readFileSync(
@@ -40,8 +44,49 @@ describe("DR-120 static document import architecture", () => {
     expect(migration).toContain(
       "on conflict (source_document_id, parser_version)",
     );
-    expect(repository).toContain('.rpc("persist_static_document_import"');
+    expect(repository).toContain('.rpc("persist_static_document_import_v2"');
     expect(repository).toContain("/${sha256}/source.docx`");
+  });
+
+  it("keeps blank timetable cells out of persisted candidate evidence", () => {
+    expect(multiTargetMigration).toContain("persist_static_document_import_v2");
+    expect(multiTargetMigration).toContain(
+      "candidate->>'candidate_type' = 'ignored_row'",
+    );
+    expect(multiTargetMigration).toContain(
+      "candidate #>> '{normalized_payload,kind}'",
+    );
+    expect(repository).toContain("isMeaningfulIgnoredRecord");
+    expect(repository).toContain(".filter(isMeaningfulIgnoredRecord)");
+  });
+
+  it("models one document batch with many review targets", () => {
+    expect(multiTargetMigration).toContain(
+      "create table if not exists public.import_targets",
+    );
+    expect(multiTargetMigration).toContain(
+      "create table if not exists public.import_candidate_targets",
+    );
+    expect(multiTargetMigration).toContain(
+      "add column if not exists import_target_id",
+    );
+    expect(multiTargetMigration).toContain(
+      "drop index if exists public.timetable_versions_static_import_batch_unique",
+    );
+    expect(multiTargetMigration).toContain(
+      "timetable_versions_static_import_target_unique",
+    );
+    expect(multiTargetMigration).toContain("'static_timetable_document'");
+    expect(multiTargetMigration).toContain(
+      "materialize_static_document_target_draft",
+    );
+    expect(multiTargetMigration).toContain(
+      "where import_target_id = v_target.id",
+    );
+    expect(multiTargetMigration).toContain(
+      "and ct.import_target_id = v_target.id",
+    );
+    expect(multiTargetMigration).toContain("import_target_id");
   });
 
   it("keeps document import draft-only and uses the installed digest schema explicitly", () => {

@@ -104,6 +104,17 @@ export type StaticImportReview = {
     ignored: StaticImportIgnoredRecord[];
   };
   warnings: StaticImportWarning[];
+  targets: Array<{
+    id: string;
+    targetKey: string;
+    titleRaw: string;
+    academicUnitNameRaw: string | null;
+    yearLevel: number | null;
+    semesterNumber: number | null;
+    academicYearRaw: string | null;
+    reviewStatus: string;
+    candidateKeys: string[];
+  }>;
   suggestions: {
     programmeId?: string | null;
     cohortId?: string | null;
@@ -229,6 +240,7 @@ export async function createStaticTimetableDraft(
   accessToken: string,
   batchId: string,
   input: {
+    targetId?: string | null;
     programmeId: string;
     cohortId: string;
     academicPeriodId: string;
