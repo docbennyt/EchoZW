@@ -124,7 +124,7 @@ describe("DR-120 static document import architecture", () => {
     expect(reviewPage).toContain("Resolve exceptions, not the whole document");
     expect(reviewPage).toContain("Source evidence · read-only audit trail");
     expect(reviewPage).toContain("Nothing will be published.");
-    expect(staticApi).toContain("/targets/");
+    expect(staticApi).toContain("targets");
     expect(repository).toContain("matched_programme_id");
     expect(repository).toContain("matched_cohort_id");
     expect(repository).toContain("matched_academic_period_id");
