@@ -12,7 +12,7 @@ const repository = readFileSync(
 
 describe("DR-161 guided static timetable workflow", () => {
   it("uses the v3 parser boundary and keeps raw academic-year evidence", () => {
-    expect(parser).toContain('static-docx-matrix-v3');
+    expect(parser).toContain("static-docx-matrix-v3");
     expect(parser).toContain("academicYearRaw");
   });
 
