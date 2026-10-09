@@ -51,6 +51,7 @@ describe("DR-161 guided static timetable workflow", () => {
   });
 
   it("uses exception-first review and keeps forensic evidence secondary", () => {
+    expect(page).toContain("We found");
     expect(page).toContain("Resolve exceptions, not the whole document");
     expect(page).toContain("View and edit all");
     expect(page).toContain("Source evidence · read-only audit trail");
