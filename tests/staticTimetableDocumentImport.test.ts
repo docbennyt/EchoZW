@@ -50,6 +50,10 @@ describe("DR-120 static document import architecture", () => {
     expect(repository).toContain("RAW_SOURCE_UNRESOLVED_GRACE_MS");
     expect(repository).toContain("RAW_SOURCE_SUCCESS_GRACE_MS");
     expect(repository).toContain("rawDeleteEligibleAt");
+    expect(repository).toContain("private_raw_source_cleanup");
+    expect(
+      readFileSync("server/staticTimetableRawCleanup.ts", "utf8"),
+    ).toContain("cleanupEligibleStaticTimetableRawSources");
   });
 
   it("keeps blank timetable cells out of persisted candidate evidence", () => {

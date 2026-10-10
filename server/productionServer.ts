@@ -28,6 +28,7 @@ import { handlePilotCalendarRequest } from "./pilotCalendarApi.js";
 import { handlePublicTimetableRequest } from "./publicTimetableApi.js";
 import { handlePushNotificationRequest } from "./pushNotificationApi.js";
 import { startPushNotificationWorker } from "./pushNotificationWorker.js";
+import { startStaticTimetableRawCleanupWorker } from "./staticTimetableRawCleanupWorker.js";
 import {
   buildRuntimePublicConfig,
   releaseShaFromEnv,
@@ -329,10 +330,14 @@ const server = createServer(async (req, res) => {
 
 const sourceProcessingWorker = startSourceProcessingWorker(process.env);
 const pushNotificationWorker = startPushNotificationWorker(process.env);
+const staticTimetableRawCleanupWorker = startStaticTimetableRawCleanupWorker(
+  process.env,
+);
 
 function shutdown() {
   sourceProcessingWorker.stop();
   pushNotificationWorker.stop();
+  staticTimetableRawCleanupWorker.stop();
   server.close(() => process.exit(0));
 }
 
