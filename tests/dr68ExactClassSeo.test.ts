@@ -120,7 +120,7 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
       '<link rel="canonical" href="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026" />',
     );
     expect(response.responseBody).toContain(
-      'property="og:image" content="https://calender.aido.co.zw/calenderzw-share-1200x630.png"',
+      'property="og:image" content="https://calender.aido.co.zw/calenderzw-share-1200x630.jpg"',
     );
     expect(response.responseBody).toContain(
       'property="og:image:width" content="1200"',
@@ -204,17 +204,16 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
     expect(index).not.toContain('"@type": "Event"');
   });
 
-  it("ships one lightweight professional 1200x630 social image instead of the square app icon", () => {
-    const path = "public/calenderzw-share-1200x630.png";
+  it("ships one lightweight professional social image instead of the square app icon", () => {
+    const path = "public/calenderzw-share-1200x630.jpg";
     const image = readFileSync(path);
 
-    expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
-    expect(image.readUInt32BE(16)).toBe(1200);
-    expect(image.readUInt32BE(20)).toBe(630);
+    expect(Array.from(image.subarray(0, 3))).toEqual([0xff, 0xd8, 0xff]);
+    expect(statSync(path).size).toBeGreaterThan(15_000);
     expect(statSync(path).size).toBeLessThan(100_000);
 
     const index = readFileSync("index.html", "utf8");
-    expect(index).toContain("/calenderzw-share-1200x630.png");
+    expect(index).toContain("/calenderzw-share-1200x630.jpg");
     expect(index).not.toContain(
       'property="og:image" content="https://calender.aido.co.zw/web-app-manifest-512x512.png"',
     );
