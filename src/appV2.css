@@ -1946,3 +1946,20 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* DR-173 WhatsApp CTA contrast */
+a[href*="wa.me"] svg,
+a[href*="whatsapp.com"] svg,
+button[aria-label*="WhatsApp" i] svg,
+a[aria-label*="WhatsApp" i] svg {
+  color: #fff !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+}
+
+a[href*="wa.me"],
+a[href*="whatsapp.com"],
+button[aria-label*="WhatsApp" i],
+a[aria-label*="WhatsApp" i] {
+  color: #fff;
+}
