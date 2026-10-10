@@ -37,6 +37,8 @@ describe("SPA metadata injection", () => {
     expect(html).toContain(
       'rel="canonical" href="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"',
     );
+    expect(html).toContain("calenderzw-share-2026-10-10.png");
+    expect(html).toContain('property="og:image:type" content="image/png"');
     expect(html).not.toContain("/calendar/feed/");
   });
 });
