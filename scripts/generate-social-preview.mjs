@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,13 +23,20 @@ const encoded = (
 
 const bytes = Buffer.from(encoded, "base64");
 
+const sha256 = createHash("sha256").update(bytes).digest("hex");
+const expectedSha256 =
+  "c4fff38c4c9bc524ed42bfd44b99f7afd46fa030b50a6baad7de287fa2a214ad";
+
 if (
-  bytes.length < 15_000 ||
+  bytes.length !== 21_719 ||
   bytes[0] !== 0xff ||
   bytes[1] !== 0xd8 ||
-  bytes[2] !== 0xff
+  bytes[2] !== 0xff ||
+  sha256 !== expectedSha256
 ) {
-  throw new Error("CalenderZW social preview source did not decode to a valid JPEG.");
+  throw new Error(
+    "CalenderZW social preview source did not decode to the approved JPEG asset.",
+  );
 }
 
 await mkdir(dirname(outputPath), { recursive: true });
@@ -39,6 +47,7 @@ console.log(
     event: "social.preview.generated",
     path: "public/calenderzw-share-1200x630.jpg",
     bytes: bytes.length,
+    sha256,
     sourceParts: parts.length,
   }),
 );
