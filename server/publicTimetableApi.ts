@@ -5,6 +5,7 @@ import {
   PilotApiError,
 } from "./pilotRepository.js";
 import { getTimetablePublicDisplaySettings } from "./timetablePublicSettingsRepository.js";
+import { resolveRecurringSessions } from "../src/domain/resolvedSchedule.js";
 
 function sendJson(
   res: ServerResponse,
@@ -86,7 +87,11 @@ export async function handlePublicTimetableRequest(
         timetable.timetableId,
       );
       sendJson(res, 200, {
-        timetable: { ...timetable, publicDisplay },
+        timetable: {
+          ...timetable,
+          publicDisplay,
+          effectiveSessions: resolveRecurringSessions(timetable),
+        },
       });
     } catch (error) {
       sendError(res, error);

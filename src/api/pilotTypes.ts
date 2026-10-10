@@ -291,6 +291,8 @@ export type PublicTimetable = {
   versionNumber: number;
   /** Always returned by the DR-62 public API; optional here only for rolling-deploy compatibility. */
   publicDisplay?: TimetablePublicDisplaySettings;
+  /** Backward-compatible effective projection for non-React consumers. Raw source sessions remain in `sessions`. */
+  effectiveSessions?: PublicTimetableSession[];
   sessions: PublicTimetableSession[];
   corrections?: TimetableCorrectionDirective[];
   exceptions?: TimetableSessionException[];
