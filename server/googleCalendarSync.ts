@@ -20,8 +20,8 @@ import {
   deleteGoogleEventSyncRecord,
   getCurrentPublishedVersionId,
   getGoogleCredential,
-  listActiveGoogleSubscriptions,
   listGoogleEventSyncRecords,
+  listSyncableGoogleSubscriptions,
   saveGoogleCredential,
   updateGoogleSubscription,
   upsertGoogleEventSyncRecord,
@@ -695,7 +695,7 @@ export async function syncGoogleSubscriptionsForTimetable(
   if (!getPublicGoogleCalendarStatus(env).enabled) {
     return { attempted: 0, succeeded: 0, failed: 0 };
   }
-  const subscriptions = await listActiveGoogleSubscriptions(timetableId, env);
+  const subscriptions = await listSyncableGoogleSubscriptions(timetableId, env);
   let succeeded = 0;
   let failed = 0;
   for (const subscription of subscriptions) {

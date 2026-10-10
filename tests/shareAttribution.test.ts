@@ -41,8 +41,10 @@ describe("DR-47 class share attribution", () => {
     expect(payload.url).toBe(
       "https://calender.aido.co.zw/t/hit-cs-1?src=onboarding_success",
     );
-    expect(payload.message).toContain("see tomorrow's classes");
-    expect(payload.message).toContain("add it to your calendar");
+    expect(payload.message).toContain("timetable is now live on CalenderZW");
+    expect(payload.message).toContain(
+      "add the full timetable to your calendar in one tap",
+    );
     expect(payload.message).not.toMatch(
       /automatically subscribed|private-token/i,
     );
