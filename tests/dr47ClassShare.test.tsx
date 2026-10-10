@@ -176,9 +176,7 @@ describe("DR-47 class viral loop", () => {
     expect(payload.url).toBe(
       `http://localhost:3000/t/${timetable.publicSlug}?src=onboarding_success`,
     );
-    expect(payload.text).toContain(
-      "timetable is now live on CalenderZW 🎓",
-    );
+    expect(payload.text).toContain("timetable is now live on CalenderZW 🎓");
     expect(payload.text).toContain(
       "See tomorrow's classes and add the full timetable to your calendar in one tap.",
     );
