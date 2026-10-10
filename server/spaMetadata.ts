@@ -8,7 +8,7 @@ export type SpaMetadata = {
   robots?: string;
 };
 
-export const DEFAULT_SOCIAL_IMAGE_PATH = "/calenderzw-share-1200x630.png";
+export const DEFAULT_SOCIAL_IMAGE_PATH = "/calenderzw-share-1200x630.jpg";
 
 function escapeHtml(value: string) {
   return value
