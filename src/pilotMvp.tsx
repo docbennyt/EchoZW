@@ -2242,7 +2242,7 @@ function TimetableDocumentUploadPrompt() {
   return (
     <Surface
       title="Add timetable"
-      subtitle="Start with the document whenever the class has a supported DOCX."
+      subtitle="Start with the document whenever the class has a supported timetable source."
       actions={
         <a className="primary" href="/admin/static-import">
           <FileUp size={18} />
@@ -2254,11 +2254,11 @@ function TimetableDocumentUploadPrompt() {
         <article className="pilot-card">
           <div className="pilot-card-meta">
             <strong>Upload timetable document</strong>
-            <span>DOCX to auto-filled review draft.</span>
+            <span>DOCX, Excel, CSV or PDF to review draft.</span>
             <span>Parser evidence, warnings and raw source stay visible.</span>
           </div>
           <div className="pilot-card-actions">
-            <a href="/admin/static-import">Upload DOCX</a>
+            <a href="/admin/static-import">Upload timetable</a>
           </div>
         </article>
         <article className="pilot-card">

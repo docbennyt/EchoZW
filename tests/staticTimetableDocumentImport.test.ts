@@ -45,7 +45,11 @@ describe("DR-120 static document import architecture", () => {
       "on conflict (source_document_id, parser_version)",
     );
     expect(repository).toContain('.rpc("persist_static_document_import_v2"');
-    expect(repository).toContain("/${sha256}/source.docx`");
+    expect(repository).toContain("source.${extension}`");
+    expect(repository).toContain("parsed.parserVersion");
+    expect(repository).toContain("RAW_SOURCE_UNRESOLVED_GRACE_MS");
+    expect(repository).toContain("RAW_SOURCE_SUCCESS_GRACE_MS");
+    expect(repository).toContain("rawDeleteEligibleAt");
   });
 
   it("keeps blank timetable cells out of persisted candidate evidence", () => {
@@ -102,11 +106,12 @@ describe("DR-120 static document import architecture", () => {
     expect(staticApi).not.toContain("/publish");
   });
 
-  it("requires operational-admin auth and constrains DOCX upload content", () => {
+  it("requires operational-admin auth and constrains timetable source upload content", () => {
     expect(adminApi).toContain("requireOperationalAdmin");
     expect(adminApi).toContain("handleStaticTimetableImportAdminApi");
-    expect(staticApi).toContain("DOCX_MIME_REQUIRED");
-    expect(staticApi).toContain("ACCEPTED_DOCX_MIME_TYPES");
+    expect(staticApi).toContain("/source");
+    expect(staticApi).toContain("sourceContextSchema");
+    expect(staticApi).toContain("buildCzwImportTemplateXlsx");
     expect(staticApi).not.toContain("details: error.details");
     expect(main).toContain("/admin/static-import");
     expect(main).toContain("StaticTimetableImportPage");
