@@ -13,7 +13,8 @@ import {
   type StaticImportOptions,
   type StaticImportReview,
   type StaticImportSession,
-  uploadStaticTimetableDocx,
+  downloadCzwImportTemplate,
+  uploadStaticTimetableSource,
 } from "./staticTimetableImportClient";
 import { createReadyDraftsSequentially } from "./staticTimetableDraftWorkflow";
 import { createClient } from "./utils/supabase/client";
@@ -191,6 +192,12 @@ export function StaticTimetableImportPage() {
     name: "",
     startsOn: "",
     endsOn: "",
+  });
+  const [sourceContext, setSourceContext] = useState({
+    programmeName: "",
+    scopeLabel: "",
+    academicYear: "",
+    semesterNumber: "",
   });
 
   const sourceRef = useRef<HTMLElement>(null);
@@ -540,10 +547,18 @@ export function StaticTimetableImportPage() {
     setError("");
     setSuccess("");
     try {
-      const response = await uploadStaticTimetableDocx({
+      const response = await uploadStaticTimetableSource({
         accessToken: token,
         institutionId,
         file,
+        context: {
+          programmeName: sourceContext.programmeName.trim() || null,
+          scopeLabel: sourceContext.scopeLabel.trim() || null,
+          academicYear: sourceContext.academicYear.trim() || null,
+          semesterNumber: sourceContext.semesterNumber
+            ? Number(sourceContext.semesterNumber)
+            : null,
+        },
       });
       hydrateReview(response.review);
       await refreshOptions(response.review.document.institutionId);
@@ -562,10 +577,42 @@ export function StaticTimetableImportPage() {
       });
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "Could not import DOCX.",
+        caught instanceof Error
+          ? caught.message
+          : "Could not import timetable source.",
       );
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveTemplate() {
+    if (!token) return;
+    try {
+      const blob = await downloadCzwImportTemplate(token);
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = "CZW Timetable Import v1.xlsx";
+      anchor.click();
+      URL.revokeObjectURL(href);
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Could not download template.",
+      );
+    }
+  }
+
+  async function copyPrompt() {
+    try {
+      const response = await fetch("/templates/czw-timetable-ai-prompt-v1.md");
+      const prompt = await response.text();
+      await navigator.clipboard.writeText(prompt);
+      setSuccess("AI conversion prompt copied.");
+    } catch {
+      setError("Could not copy the AI conversion prompt.");
     }
   }
 
@@ -1033,14 +1080,33 @@ export function StaticTimetableImportPage() {
           <div className="czw-static-import-section-heading">
             <div>
               <span>20% · Source</span>
-              <h2>
-                {review ? "Source captured" : "Upload authoritative DOCX"}
-              </h2>
+              <h2>{review ? "Source captured" : "Upload timetable"}</h2>
             </div>
-            <small>Maximum 10 MB · structured DOCX · no OCR</small>
+            <small>
+              Maximum 10 MB · Word, Excel, CSV, CZW JSON, searchable PDF · no
+              OCR
+            </small>
           </div>
           {!review ? (
             <div className="czw-static-import-upload-grid">
+              <div className="czw-import-template-actions">
+                <button
+                  type="button"
+                  className="czw-button-secondary"
+                  disabled={busy}
+                  onClick={() => void saveTemplate()}
+                >
+                  Download CZW template
+                </button>
+                <button
+                  type="button"
+                  className="czw-button-secondary"
+                  disabled={busy}
+                  onClick={() => void copyPrompt()}
+                >
+                  Copy AI conversion prompt
+                </button>
+              </div>
               <label>
                 Institution
                 <select
@@ -1059,12 +1125,70 @@ export function StaticTimetableImportPage() {
                 </select>
               </label>
               <label>
-                DOCX timetable
+                Timetable source
                 <input
                   type="file"
-                  accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept=".docx,.xlsx,.csv,.json,.pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/json,application/pdf"
                   disabled={busy}
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              <label>
+                Programme context <span>(optional)</span>
+                <input
+                  value={sourceContext.programmeName}
+                  disabled={busy}
+                  placeholder="E-Commerce, Biomedical Engineering..."
+                  onChange={(event) =>
+                    setSourceContext((current) => ({
+                      ...current,
+                      programmeName: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Class / scope <span>(optional)</span>
+                <input
+                  value={sourceContext.scopeLabel}
+                  disabled={busy}
+                  placeholder="Part 1, Part 2 Semester 1..."
+                  onChange={(event) =>
+                    setSourceContext((current) => ({
+                      ...current,
+                      scopeLabel: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Academic year <span>(optional)</span>
+                <input
+                  value={sourceContext.academicYear}
+                  disabled={busy}
+                  placeholder="2026-2027"
+                  onChange={(event) =>
+                    setSourceContext((current) => ({
+                      ...current,
+                      academicYear: event.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Semester <span>(optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="4"
+                  value={sourceContext.semesterNumber}
+                  disabled={busy}
+                  onChange={(event) =>
+                    setSourceContext((current) => ({
+                      ...current,
+                      semesterNumber: event.target.value,
+                    }))
+                  }
                 />
               </label>
               <Button

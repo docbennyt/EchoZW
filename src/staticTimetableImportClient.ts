@@ -216,26 +216,54 @@ export async function getStaticTimetableImportOptions(
   return parseResponse<{ options: StaticImportOptions }>(response);
 }
 
-export async function uploadStaticTimetableDocx(input: {
+export type StaticImportSourceContext = {
+  programmeName?: string | null;
+  scopeLabel?: string | null;
+  academicYear?: string | null;
+  semesterNumber?: number | null;
+};
+
+export async function uploadStaticTimetableSource(input: {
   accessToken: string;
   institutionId: string;
   file: File;
+  context?: StaticImportSourceContext;
 }) {
   const response = await fetch(
-    `/api/admin/static-timetable-imports/docx?institutionId=${encodeURIComponent(input.institutionId)}`,
+    `/api/admin/static-timetable-imports/source?institutionId=${encodeURIComponent(input.institutionId)}`,
     {
       method: "POST",
       headers: {
         Authorization: `Bearer ${input.accessToken}`,
-        "Content-Type":
-          input.file.type ||
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "Content-Type": input.file.type || "application/octet-stream",
         "x-calenderzw-filename": encodeURIComponent(input.file.name),
+        ...(input.context
+          ? {
+              "x-calenderzw-import-context": encodeURIComponent(
+                JSON.stringify(input.context),
+              ),
+            }
+          : {}),
       },
       body: input.file,
     },
   );
   return parseResponse<{ review: StaticImportReview }>(response);
+}
+
+export const uploadStaticTimetableDocx = uploadStaticTimetableSource;
+
+export async function downloadCzwImportTemplate(accessToken: string) {
+  const response = await fetch(
+    "/api/admin/static-timetable-imports/template.xlsx",
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    },
+  );
+  if (!response.ok) {
+    await parseResponse(response);
+  }
+  return response.blob();
 }
 
 export async function getStaticTimetableImport(

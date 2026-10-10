@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
 import {
-  parseStaticTimetableDocument,
   STATIC_TIMETABLE_DOCX_PARSER_VERSION,
   type StaticTimetableParseResult,
   type StaticTimetableIgnoredRecord,
 } from "../src/domain/staticTimetableDocument.js";
 import { buildStaticTimetableEvidence } from "../src/domain/staticTimetableEvidence.js";
-import { readStructuredDocx } from "./docxStructuredReader.js";
+import {
+  extractStaticTimetableSource,
+  type StaticTimetableSourceContext,
+} from "./staticTimetableInputAdapters.js";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 
 type JsonRecord = Record<string, unknown>;
@@ -19,6 +21,8 @@ type SupabaseErrorLike = {
 
 const STATIC_TIMETABLE_IMPORT_MODE = "static_timetable_document";
 const LEGACY_STATIC_TIMETABLE_IMPORT_MODE = "cohort_docx";
+const RAW_SOURCE_SUCCESS_GRACE_MS = 24 * 60 * 60 * 1000;
+const RAW_SOURCE_UNRESOLVED_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function canReuseStaticTimetableImportBatch(input: {
   importMode: string | null | undefined;
@@ -236,8 +240,13 @@ function parserSummaryPayload(parsed: StaticTimetableParseResult) {
   };
 }
 
+function rawDeleteEligibleAt(graceMs: number, now = new Date()) {
+  return new Date(now.getTime() + graceMs).toISOString();
+}
+
 async function findExistingBatch(
   sourceDocumentId: string,
+  parserVersion: string,
   env: NodeJS.ProcessEnv,
 ) {
   const query = await client(env)
@@ -248,7 +257,7 @@ async function findExistingBatch(
       STATIC_TIMETABLE_IMPORT_MODE,
       LEGACY_STATIC_TIMETABLE_IMPORT_MODE,
     ])
-    .eq("parser_version", STATIC_TIMETABLE_DOCX_PARSER_VERSION)
+    .eq("parser_version", parserVersion)
     .maybeSingle();
   if (query.error) {
     dbError(
@@ -262,6 +271,30 @@ async function findExistingBatch(
 
 function isMeaningfulIgnoredRecord(record: StaticTimetableIgnoredRecord) {
   return record.kind !== "blank" || record.rawText.trim() !== "";
+}
+
+function groupEquivalentWarnings(
+  warnings: Array<{
+    candidate_key: string;
+    warning_code: string;
+    severity: string;
+    message: string;
+    field_name: string | null;
+    suggested_value: null;
+  }>,
+) {
+  const seen = new Set<string>();
+  return warnings.filter((warning) => {
+    const key = [
+      warning.warning_code,
+      warning.severity,
+      warning.field_name ?? "",
+      warning.message,
+    ].join("\u001f");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export function buildStaticTimetablePersistencePayload(
@@ -366,16 +399,16 @@ export function buildStaticTimetablePersistencePayload(
   return {
     documentCandidateKey,
     candidateRows,
-    warningRows: parsed.warnings
-      .map((warning) => ({
+    warningRows: groupEquivalentWarnings(
+      parsed.warnings.map((warning) => ({
         candidate_key: warning.candidateKey ?? documentCandidateKey,
         warning_code: warning.code,
         severity: warning.severity === "error" ? "blocking" : "warning",
         message: warning.message,
         field_name: warning.fieldName,
         suggested_value: null,
-      }))
-      .filter((warning) => candidateKeys.has(warning.candidate_key)),
+      })),
+    ).filter((warning) => candidateKeys.has(warning.candidate_key)),
     targetRows: evidence.proposedTargets.map((target) => ({
       target_key: target.targetKey,
       title_raw: target.titleRaw,
@@ -409,23 +442,17 @@ export async function createStaticTimetableImport(
     filename: string;
     mimeType: string;
     bytes: Buffer;
+    context?: StaticTimetableSourceContext;
   },
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  if (!input.filename.toLocaleLowerCase("en").endsWith(".docx")) {
-    throw new StaticTimetableImportError(
-      "DOCX_REQUIRED",
-      "Static timetable import currently accepts DOCX files only.",
-      422,
-    );
-  }
-
   const supabase = client(env);
   const sha256 = createHash("sha256").update(input.bytes).digest("hex");
-  const storagePath = `${input.institutionId}/${sha256}/source.docx`;
-  const mimeType =
-    input.mimeType ||
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  const extension =
+    input.filename.toLocaleLowerCase("en").match(/\.([a-z0-9]+)$/)?.[1] ??
+    "bin";
+  const storagePath = `${input.institutionId}/${sha256}/source.${extension}`;
+  const mimeType = input.mimeType || "application/octet-stream";
 
   const sourceLookup = await supabase
     .from("source_documents")
@@ -474,7 +501,7 @@ export async function createStaticTimetableImport(
         document_type: "static_timetable_document",
         source_status: "uploaded",
         uploaded_by: input.actorId,
-        parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+        parser_version: "pending",
         metadata: {},
       })
       .select("*")
@@ -508,7 +535,46 @@ export async function createStaticTimetableImport(
   }
 
   const documentId = String(asRecord(sourceDocument).id);
-  const existingBatchId = await findExistingBatch(documentId, env);
+  let parsed: StaticTimetableParseResult;
+  let sourceKind: string;
+  try {
+    const extraction = await extractStaticTimetableSource({
+      filename: input.filename,
+      mimeType,
+      bytes: input.bytes,
+      context: input.context,
+    });
+    parsed = extraction.parsed;
+    sourceKind = extraction.kind;
+  } catch (error) {
+    const parserError = error instanceof Error ? error.message : "UNKNOWN";
+    await supabase
+      .from("source_documents")
+      .update({
+        source_status: "rejected",
+        parser_version: "unsupported",
+        metadata: { parserError },
+      })
+      .eq("id", documentId);
+    throw new StaticTimetableImportError(
+      parserError === "STATIC_IMPORT_UNSUPPORTED_SOURCE"
+        ? "STATIC_IMPORT_UNSUPPORTED_SOURCE"
+        : "STATIC_IMPORT_PARSE_FAILED",
+      parserError === "PDF_TEXT_LAYER_EMPTY"
+        ? "This PDF does not expose a searchable text layer. Use the CZW template or AI conversion prompt; OCR is outside this MVP."
+        : parserError === "PDF_TEXT_TIMETABLE_UNSUPPORTED"
+          ? "This searchable PDF text is not structured enough for deterministic import. Use the CZW template or AI conversion prompt."
+          : "CalenderZW could not safely interpret this timetable source. The source evidence was retained for audit and no timetable was created.",
+      422,
+      { parserError },
+    );
+  }
+
+  const existingBatchId = await findExistingBatch(
+    documentId,
+    parsed.parserVersion,
+    env,
+  );
   if (existingBatchId) {
     return getStaticTimetableImport(existingBatchId, env);
   }
@@ -517,7 +583,7 @@ export async function createStaticTimetableImport(
     .from("source_documents")
     .update({
       source_status: "parsing",
-      parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
+      parser_version: parsed.parserVersion,
     })
     .eq("id", documentId);
   if (parsingStatusError) {
@@ -528,33 +594,23 @@ export async function createStaticTimetableImport(
     );
   }
 
-  let parsed: StaticTimetableParseResult;
-  try {
-    parsed = parseStaticTimetableDocument(readStructuredDocx(input.bytes));
-  } catch (error) {
-    const parserError = error instanceof Error ? error.message : "UNKNOWN";
-    await supabase
-      .from("source_documents")
-      .update({
-        source_status: "rejected",
-        parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
-        metadata: { parserError },
-      })
-      .eq("id", documentId);
-    throw new StaticTimetableImportError(
-      "DOCX_PARSE_FAILED",
-      "CalenderZW could not safely interpret this DOCX timetable. The source evidence was retained for audit and no timetable was created.",
-      422,
-      { parserError },
-    );
-  }
-
   const { error: parsedStatusError } = await supabase
     .from("source_documents")
     .update({
       source_status: "parsed",
-      parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
-      metadata: { parsedMetadata: parsed.metadata },
+      parser_version: parsed.parserVersion,
+      metadata: {
+        parsedMetadata: parsed.metadata,
+        sourceKind,
+        operatorContext: input.context ?? null,
+        rawRetention: {
+          policy: "private_raw_source_cleanup",
+          rawDeleteEligibleAt: rawDeleteEligibleAt(
+            RAW_SOURCE_UNRESOLVED_GRACE_MS,
+          ),
+          reason: "unresolved_or_failed_import_review",
+        },
+      },
     })
     .eq("id", documentId);
   if (parsedStatusError) {
@@ -579,8 +635,13 @@ export async function createStaticTimetableImport(
   const persisted = await supabase.rpc("persist_static_document_import_v2", {
     p_source_document_id: documentId,
     p_actor_id: input.actorId,
-    p_parser_version: STATIC_TIMETABLE_DOCX_PARSER_VERSION,
-    p_summary: { ...parserSummaryPayload(parsed), suggestions },
+    p_parser_version: parsed.parserVersion,
+    p_summary: {
+      ...parserSummaryPayload(parsed),
+      suggestions,
+      sourceKind,
+      operatorContext: input.context ?? null,
+    },
     p_candidates: candidateRows,
     p_warnings: warningRows,
     p_targets: targetRows,
@@ -1087,6 +1148,54 @@ export async function createStaticTimetableDraft(
     );
   }
   const record = asRecord(row);
+  const batch = await supabase
+    .from("import_batches")
+    .select("source_document_id")
+    .eq("id", input.batchId)
+    .maybeSingle();
+  if (batch.error || !batch.data) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not load the static timetable source for retention cleanup.",
+      batch.error,
+    );
+  }
+  const sourceDocumentId = String(asRecord(batch.data).source_document_id);
+  const sourceDocument = await supabase
+    .from("source_documents")
+    .select("metadata")
+    .eq("id", sourceDocumentId)
+    .maybeSingle();
+  if (sourceDocument.error || !sourceDocument.data) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not load raw source retention metadata.",
+      sourceDocument.error,
+    );
+  }
+  const currentMetadata = asRecord(
+    asRecord(sourceDocument.data).metadata ?? {},
+  );
+  const retentionUpdated = await supabase
+    .from("source_documents")
+    .update({
+      metadata: {
+        ...currentMetadata,
+        rawRetention: {
+          policy: "private_raw_source_cleanup",
+          rawDeleteEligibleAt: rawDeleteEligibleAt(RAW_SOURCE_SUCCESS_GRACE_MS),
+          reason: "verified_draft_created",
+        },
+      },
+    })
+    .eq("id", sourceDocumentId);
+  if (retentionUpdated.error) {
+    dbError(
+      "STATIC_IMPORT_DATABASE_UNAVAILABLE",
+      "Could not update raw source retention metadata.",
+      retentionUpdated.error,
+    );
+  }
   return {
     timetableId: String(record.timetable_id),
     draftVersionId: String(record.draft_version_id),

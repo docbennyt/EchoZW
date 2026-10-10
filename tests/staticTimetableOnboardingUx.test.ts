@@ -20,7 +20,9 @@ describe("static timetable import discoverability", () => {
     expect(manualFormIndex).toBeGreaterThan(-1);
     expect(uploadPromptIndex).toBeLessThan(manualFormIndex);
     expect(adminWorkspace).toContain("Upload timetable document");
-    expect(adminWorkspace).toContain("DOCX to auto-filled review draft.");
+    expect(adminWorkspace).toContain(
+      "DOCX, Excel, CSV or PDF to review draft.",
+    );
     expect(adminWorkspace).toContain("Fallback for unsupported formats.");
   });
 });

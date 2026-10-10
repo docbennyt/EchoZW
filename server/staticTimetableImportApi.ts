@@ -1,5 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
+import { buildCzwImportTemplateXlsx } from "./staticTimetableInputAdapters.js";
 import {
   createStaticTimetableDraft,
   createStaticTimetableImport,
@@ -9,16 +10,16 @@ import {
   StaticTimetableImportError,
 } from "./staticTimetableImportRepository.js";
 
-const MAX_DOCX_BYTES = 10 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 10 * 1024 * 1024;
 const DOCX_MIME_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-const ACCEPTED_DOCX_MIME_TYPES = new Set([
-  DOCX_MIME_TYPE,
-  "application/octet-stream",
-  "application/zip",
-  "application/x-zip-compressed",
-]);
 const uuid = z.string().uuid();
+const sourceContextSchema = z.object({
+  programmeName: z.string().trim().max(250).nullable().optional(),
+  scopeLabel: z.string().trim().max(250).nullable().optional(),
+  academicYear: z.string().trim().max(20).nullable().optional(),
+  semesterNumber: z.coerce.number().int().min(1).max(4).nullable().optional(),
+});
 const targetMappingSchema = z.object({
   programmeId: uuid.nullable(),
   cohortId: uuid.nullable(),
@@ -99,7 +100,7 @@ async function readRawBody(req: IncomingMessage, limit: number) {
   if (Number.isFinite(declared) && declared > limit) {
     throw new StaticTimetableImportError(
       "FILE_TOO_LARGE",
-      "The DOCX file exceeds the 10 MB import limit.",
+      "The timetable source exceeds the 10 MB import limit.",
       413,
     );
   }
@@ -111,7 +112,7 @@ async function readRawBody(req: IncomingMessage, limit: number) {
     if (size > limit) {
       throw new StaticTimetableImportError(
         "FILE_TOO_LARGE",
-        "The DOCX file exceeds the 10 MB import limit.",
+        "The timetable source exceeds the 10 MB import limit.",
         413,
       );
     }
@@ -120,7 +121,7 @@ async function readRawBody(req: IncomingMessage, limit: number) {
   if (size === 0) {
     throw new StaticTimetableImportError(
       "EMPTY_FILE",
-      "Choose a DOCX timetable document to import.",
+      "Choose a timetable source to import.",
       422,
     );
   }
@@ -157,21 +158,29 @@ function filenameFromHeader(req: IncomingMessage) {
   }
 }
 
-function docxMimeFromRequest(req: IncomingMessage) {
+function mimeFromRequest(req: IncomingMessage) {
   const mimeType = String(
     req.headers["content-type"] ?? "application/octet-stream",
   )
     .split(";")[0]
     .trim()
     .toLowerCase();
-  if (!ACCEPTED_DOCX_MIME_TYPES.has(mimeType)) {
+  return mimeType || "application/octet-stream";
+}
+
+function sourceContextFromRequest(req: IncomingMessage) {
+  const raw = req.headers["x-calenderzw-import-context"];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (!value) return undefined;
+  try {
+    return sourceContextSchema.parse(JSON.parse(decodeURIComponent(value)));
+  } catch {
     throw new StaticTimetableImportError(
-      "DOCX_MIME_REQUIRED",
-      "Static timetable import accepts DOCX documents only.",
-      415,
+      "IMPORT_CONTEXT_INVALID",
+      "The optional import context is not valid.",
+      422,
     );
   }
-  return DOCX_MIME_TYPE;
 }
 
 export async function handleStaticTimetableImportAdminApi(
@@ -195,18 +204,41 @@ export async function handleStaticTimetableImportAdminApi(
     return true;
   }
 
-  if (req.method === "POST" && url.pathname === `${base}/docx`) {
+  if (req.method === "GET" && url.pathname === `${base}/template.xlsx`) {
+    try {
+      const bytes = await buildCzwImportTemplateXlsx();
+      res.writeHead(200, {
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition":
+          'attachment; filename="CZW Timetable Import v1.xlsx"',
+        "Cache-Control": "no-store",
+      });
+      res.end(bytes);
+    } catch (error) {
+      sendError(res, error);
+    }
+    return true;
+  }
+
+  if (
+    req.method === "POST" &&
+    (url.pathname === `${base}/docx` || url.pathname === `${base}/source`)
+  ) {
     try {
       const institutionId = uuid.parse(url.searchParams.get("institutionId"));
       const filename = filenameFromHeader(req);
-      const mimeType = docxMimeFromRequest(req);
-      const bytes = await readRawBody(req, MAX_DOCX_BYTES);
+      const mimeType =
+        url.pathname === `${base}/docx` ? DOCX_MIME_TYPE : mimeFromRequest(req);
+      const bytes = await readRawBody(req, MAX_SOURCE_BYTES);
+      const context = sourceContextFromRequest(req);
       const review = await createStaticTimetableImport({
         institutionId,
         actorId: user.id,
         filename,
         mimeType,
         bytes,
+        context,
       });
       sendJson(res, 201, { review });
     } catch (error) {

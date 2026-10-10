@@ -32,6 +32,7 @@
     "@supabase/supabase-js": "^2.112.1",
     "@untitledui/icons": "^0.0.22",
     "@vitejs/plugin-react": "latest",
+    "exceljs": "^4.4.0",
     "lucide-react": "latest",
     "pdf-parse": "^1.1.1",
     "qrcode": "latest",

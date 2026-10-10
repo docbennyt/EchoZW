@@ -87,7 +87,7 @@ export type StaticTimetableIgnoredRecord = {
 };
 
 export type StaticTimetableParseResult = {
-  parserVersion: typeof STATIC_TIMETABLE_DOCX_PARSER_VERSION;
+  parserVersion: string;
   metadata: StaticTimetableMetadata;
   timetableTableIndex: number;
   courseReferenceTableIndex: number | null;
@@ -437,21 +437,29 @@ function detectCourseReferenceTableIndices(
 function parseSessionCell(raw: string) {
   const normalized = raw.replace(/\r/g, "").trim();
   if (!normalized) return null;
-  const segments = normalized.split("/").map(compact).filter(Boolean);
-  const physical = segments[0] ?? "";
-  const deliveryModeRaw =
-    segments.length > 1 ? segments.slice(1).join(" / ") : null;
-  const firstLine = physical.split(/\n/).map(compact).filter(Boolean).join(" ");
-  const courseMatch = firstLine.match(/^([A-Za-z]{2,6}\s*\d{3,5})\b/i);
+  const firstLine = normalized
+    .split(/\n/)
+    .map(compact)
+    .filter(Boolean)
+    .join(" ");
+  const courseMatch = firstLine.match(/\b([A-Za-z]{2,6}\s*\d{3,5})\b/i);
   if (!courseMatch) return { malformed: true as const };
   const courseCodeRaw = compact(courseMatch[1]);
-  const remainder = compact(firstLine.slice(courseMatch[0].length));
-  const parenthesizedVenue = remainder.match(/^\((.+)\)$/);
-  const venueRaw = compact(parenthesizedVenue?.[1] ?? remainder) || null;
+  const beforeCode = compact(firstLine.slice(0, courseMatch.index));
+  const afterCode = compact(
+    firstLine.slice((courseMatch.index ?? 0) + courseMatch[0].length),
+  );
+  const courseNameRaw = beforeCode.replace(/[/–—-]\s*$/, "").trim() || null;
+  const slashDelivery = afterCode.match(/^(.+?)\s+\/\s+(.+)$/);
+  const venueCandidate = compact(slashDelivery?.[1] ?? afterCode);
+  const deliveryModeRaw = slashDelivery ? compact(slashDelivery[2]) : null;
+  const parenthesizedVenue = venueCandidate.match(/^\((.+)\)$/);
+  const venueRaw = compact(parenthesizedVenue?.[1] ?? venueCandidate) || null;
   return {
     malformed: false as const,
     courseCodeRaw,
     courseCode: normalizeCourseCode(courseCodeRaw),
+    courseNameRaw,
     venueRaw,
     deliveryModeRaw,
   };
@@ -669,7 +677,7 @@ export function parseStaticTimetableDocument(
           endTime: time.endTime,
           courseCodeRaw: parsed.courseCodeRaw,
           courseCode: parsed.courseCode,
-          courseName: reference?.courseName ?? null,
+          courseName: reference?.courseName ?? parsed.courseNameRaw ?? null,
           venueRaw: parsed.venueRaw,
           deliveryModeRaw: parsed.deliveryModeRaw,
           lecturerRaw: reference?.lecturerRaw ?? null,
