@@ -82,7 +82,7 @@ afterEach(() => {
 });
 
 describe("public timetable client correction propagation", () => {
-  it("returns the effective recurring overlay and bypasses browser HTTP cache", async () => {
+  it("preserves raw sessions, exposes the effective recurring overlay, and bypasses browser HTTP cache", async () => {
     const raw = correctedTimetable();
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ timetable: raw }), {
@@ -101,8 +101,15 @@ describe("public timetable client correction propagation", () => {
         headers: { Accept: "application/json" },
       }),
     );
-    expect(timetable.sessions).toHaveLength(1);
+    expect(timetable.sessions).toEqual(raw.sessions);
     expect(timetable.sessions[0]).toEqual(
+      expect.objectContaining({
+        stableSessionKey: "source_778238ed6e5a0718deaa192c",
+        weekday: 3,
+      }),
+    );
+    expect(timetable.effectiveSessions).toHaveLength(1);
+    expect(timetable.effectiveSessions?.[0]).toEqual(
       expect.objectContaining({
         stableSessionKey: "correction-a52cab41-e429-4684-b971-a87110507a55",
         courseCode: "ISE4105",
@@ -112,7 +119,7 @@ describe("public timetable client correction propagation", () => {
       }),
     );
     expect(
-      timetable.sessions.some(
+      timetable.effectiveSessions?.some(
         (session) =>
           session.stableSessionKey === "source_778238ed6e5a0718deaa192c",
       ),

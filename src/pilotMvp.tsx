@@ -94,7 +94,7 @@ import {
   getInstitutionIdentity,
   getUpcomingOccurrences,
 } from "./domain/publicTimetable";
-import { resolveRecurringSessions } from "./domain/resolvedSchedule";
+import { selectEffectiveRecurringSessions } from "./domain/resolvedSchedule";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 
 const weekdayLabels = [
@@ -3503,7 +3503,9 @@ function ClassRepDashboard({
   const nextClass = timetable
     ? getUpcomingOccurrences(timetable, new Date(), 1)[0]
     : null;
-  const currentSchedule = timetable ? resolveRecurringSessions(timetable) : [];
+  const currentSchedule = timetable
+    ? selectEffectiveRecurringSessions(timetable)
+    : [];
 
   return (
     <div className="pilot-stack">
@@ -3703,7 +3705,7 @@ function ClassRepDashboard({
             <select
               value={correctionForm.stableSessionKey}
               onChange={(event) => {
-                const selected = timetable?.sessions.find(
+                const selected = currentSchedule.find(
                   (item) => item.stableSessionKey === event.target.value,
                 );
                 setCorrectionForm((current) => ({
@@ -3722,7 +3724,7 @@ function ClassRepDashboard({
               }}
             >
               <option value="">Add new recurring class</option>
-              {timetable?.sessions.map((sessionItem) => (
+              {currentSchedule.map((sessionItem) => (
                 <option
                   key={sessionItem.stableSessionKey}
                   value={sessionItem.stableSessionKey}
@@ -4202,7 +4204,7 @@ function LegacyPublicTimetableMvpScreen({ slug }: { slug: string }) {
       map.set(day, []);
     }
     for (const session of timetable
-      ? resolveRecurringSessions(timetable)
+      ? selectEffectiveRecurringSessions(timetable)
       : []) {
       map.get(session.weekday)?.push(session);
     }
@@ -4597,7 +4599,7 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
       map.set(day, []);
     }
     for (const session of timetable
-      ? resolveRecurringSessions(timetable)
+      ? selectEffectiveRecurringSessions(timetable)
       : []) {
       map.get(session.weekday)?.push(session);
     }
@@ -4821,7 +4823,7 @@ export function PublicTimetableMvpScreen({ slug }: { slug: string }) {
           <h2>{timetable.programme}</h2>
           <p>
             {formatClassGroupLabel(timetable.classGroup)} -{" "}
-            {timetable.sessions.length} weekly classes
+            {selectEffectiveRecurringSessions(timetable).length} weekly classes
           </p>
           <p>{reminderChoice.title} reminders</p>
         </div>

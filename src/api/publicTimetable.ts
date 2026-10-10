@@ -1,7 +1,9 @@
 import type { PublicTimetable } from "./pilotTypes";
-import { resolveRecurringSessions } from "../domain/resolvedSchedule";
+import { selectEffectiveRecurringSessions } from "../domain/resolvedSchedule";
 
-export async function fetchPublicTimetable(publicSlug: string) {
+export async function fetchPublicTimetable(
+  publicSlug: string,
+): Promise<PublicTimetable> {
   const response = await fetch(
     `/api/public/timetables/${encodeURIComponent(publicSlug)}`,
     {
@@ -22,12 +24,8 @@ export async function fetchPublicTimetable(publicSlug: string) {
     throw error;
   }
 
-  const effectiveSessions =
-    body.timetable.effectiveSessions ??
-    resolveRecurringSessions(body.timetable);
-
   return {
     ...body.timetable,
-    sessions: effectiveSessions,
+    effectiveSessions: selectEffectiveRecurringSessions(body.timetable),
   } satisfies PublicTimetable;
 }
