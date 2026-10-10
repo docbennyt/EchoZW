@@ -176,7 +176,9 @@ describe("DR-47 class viral loop", () => {
     expect(payload.url).toBe(
       `http://localhost:3000/t/${timetable.publicSlug}?src=onboarding_success`,
     );
-    expect(payload.text).toContain("timetable is now live on CalenderZW 🎓");
+    expect(payload.text).toContain(
+      "timetable is now live on CalenderZW 🎓",
+    );
     expect(payload.text).toContain(
       "See tomorrow's classes and add the full timetable to your calendar in one tap.",
     );
@@ -205,7 +207,9 @@ describe("DR-47 class viral loop", () => {
     );
     await waitFor(() => expect(clipboard).toHaveBeenCalledTimes(1));
     const copied = String(clipboard.mock.calls[0][0]);
-    expect(copied).toContain("Class 1.1 timetable is now live on CalenderZW 🎓");
+    expect(copied).toContain(
+      "Class 1.1 timetable is now live on CalenderZW 🎓",
+    );
     expect(copied).toContain(
       "See tomorrow's classes and add the full timetable to your calendar in one tap.",
     );
