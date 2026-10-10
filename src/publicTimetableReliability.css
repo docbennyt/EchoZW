@@ -985,9 +985,36 @@ button.pt-method:hover {
   backdrop-filter: blur(16px);
 }
 
+.pt-sticky-cta {
+  align-items: stretch;
+  gap: 7px;
+}
+
 .pt-sticky-cta .pt-button {
-  width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
   min-height: 52px;
+}
+
+.pt-whatsapp-channel-link {
+  flex: 0 0 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #0a9f47;
+  color: #fff;
+  text-decoration: none;
+}
+
+.pt-whatsapp-channel-link svg {
+  width: 27px;
+  height: 27px;
+}
+
+.pt-whatsapp-channel-link:focus-visible {
+  outline: 3px solid #132e26;
+  outline-offset: 2px;
 }
 
 @media (max-width: 900px) {
@@ -1094,7 +1121,7 @@ button.pt-method:hover {
   }
 
   .pt-sticky-cta {
-    display: block;
+    display: flex;
   }
 
   .pt-footer-inner {
