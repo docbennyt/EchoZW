@@ -1001,15 +1001,36 @@ button.pt-method:hover {
   flex: 0 0 52px;
   display: grid;
   place-items: center;
-  border-radius: 9px;
-  background: #0a9f47;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #18b957 0%, #0aa448 100%);
   color: #fff;
   text-decoration: none;
+  box-shadow:
+    0 10px 24px rgba(10, 159, 71, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition:
+    transform 140ms ease,
+    filter 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.pt-whatsapp-channel-link:hover {
+  filter: brightness(1.03);
+  box-shadow:
+    0 12px 28px rgba(10, 159, 71, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.pt-whatsapp-channel-link:active {
+  transform: scale(0.97);
 }
 
 .pt-whatsapp-channel-link svg {
-  width: 27px;
-  height: 27px;
+  width: 29px;
+  height: 29px;
+  color: #fff;
+  fill: currentColor;
 }
 
 .pt-whatsapp-channel-link:focus-visible {
