@@ -8,7 +8,7 @@ export type SpaMetadata = {
   robots?: string;
 };
 
-export const DEFAULT_SOCIAL_IMAGE_PATH = "/calenderzw-share-1200x630.png";
+export const DEFAULT_SOCIAL_IMAGE_PATH = "/calenderzw-share-2026-10-10.png";
 
 function escapeHtml(value: string) {
   return value
@@ -61,6 +61,8 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   next = upsertMeta(next, "property", "og:url", canonicalUrl);
   next = upsertMeta(next, "property", "og:type", "website");
   next = upsertMeta(next, "property", "og:image", ogImage);
+  next = upsertMeta(next, "property", "og:image:secure_url", ogImage);
+  next = upsertMeta(next, "property", "og:image:type", "image/png");
   next = upsertMeta(next, "property", "og:image:width", "1200");
   next = upsertMeta(next, "property", "og:image:height", "630");
   next = upsertMeta(
