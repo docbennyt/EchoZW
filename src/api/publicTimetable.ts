@@ -22,8 +22,12 @@ export async function fetchPublicTimetable(publicSlug: string) {
     throw error;
   }
 
+  const effectiveSessions =
+    body.timetable.effectiveSessions ??
+    resolveRecurringSessions(body.timetable);
+
   return {
     ...body.timetable,
-    sessions: resolveRecurringSessions(body.timetable),
+    sessions: effectiveSessions,
   } satisfies PublicTimetable;
 }
