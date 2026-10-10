@@ -25,7 +25,11 @@
     "worker:automation:check": "node scripts/check-cloudflare-automation.mjs",
     "worker:validate": "npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --dry-run --outdir .wrangler-dry-run",
     "worker:smoke:staging": "node scripts/smoke-cloudflare-staging.mjs",
-    "worker:deploy:staging": "npm run verify && npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc"
+    "worker:deploy:staging": "npm run verify && npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc",
+    "social:asset": "node scripts/generate-social-preview.mjs",
+    "predev": "npm run social:asset",
+    "pretest": "npm run social:asset",
+    "prebuild": "npm run social:asset"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
