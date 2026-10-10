@@ -134,7 +134,13 @@ export function resolveRecurringSessions(
   }
 
   const corrections = (timetable.corrections ?? [])
-    .filter((correction) => correction.active)
+    .filter(
+      (correction) =>
+        correction.active &&
+        !correction.replacedById &&
+        !correction.supersededAt &&
+        !correction.revokedAt,
+    )
     .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
 
   for (const correction of corrections) {
@@ -163,6 +169,12 @@ export function resolveRecurringSessions(
     if (left.weekday !== right.weekday) return left.weekday - right.weekday;
     return left.startTime.localeCompare(right.startTime);
   });
+}
+
+export function selectEffectiveRecurringSessions(
+  timetable: PublicTimetable,
+): PublicTimetableSession[] {
+  return timetable.effectiveSessions ?? resolveRecurringSessions(timetable);
 }
 
 function buildExtraSession(

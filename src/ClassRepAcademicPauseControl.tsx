@@ -13,6 +13,7 @@ import type {
   AcademicPauseReason,
   PublicTimetable,
 } from "./api/pilotTypes";
+import { selectEffectiveRecurringSessions } from "./domain/resolvedSchedule";
 import "./classRepAcademicPauseControl.css";
 
 const reasonOptions: Array<{ value: AcademicPauseReason; label: string }> = [
@@ -232,6 +233,9 @@ export function ClassRepAcademicPauseAction({
   };
 
   const scopeSession = form.scopeType === "session";
+  const effectiveRecurringSessions = timetable
+    ? selectEffectiveRecurringSessions(timetable)
+    : [];
 
   return (
     <>
@@ -297,13 +301,14 @@ export function ClassRepAcademicPauseAction({
                       type="radio"
                       checked={scopeSession}
                       name="dr58-scope"
-                      disabled={!timetable?.sessions.length}
+                      disabled={!effectiveRecurringSessions.length}
                       onChange={() =>
                         resetPreview({
                           ...form,
                           scopeType: "session",
                           stableSessionKey:
-                            timetable?.sessions[0]?.stableSessionKey ?? "",
+                            effectiveRecurringSessions[0]?.stableSessionKey ??
+                            "",
                         })
                       }
                     />
@@ -327,7 +332,7 @@ export function ClassRepAcademicPauseAction({
                         })
                       }
                     >
-                      {timetable?.sessions.map((session) => (
+                      {effectiveRecurringSessions.map((session) => (
                         <option
                           key={session.stableSessionKey}
                           value={session.stableSessionKey}

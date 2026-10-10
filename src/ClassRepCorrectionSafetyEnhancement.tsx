@@ -56,6 +56,7 @@ import {
   formatOccurrenceTime,
   getUpcomingOccurrences,
 } from "./domain/publicTimetable";
+import { selectEffectiveRecurringSessions } from "./domain/resolvedSchedule";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 import { buildClassSharePayload } from "./domain/shareAttribution";
 import { createClient as createSupabaseBrowserClient } from "./utils/supabase/client";
@@ -422,9 +423,11 @@ export function ClassRepCorrectionWorkspace({
   }
 
   function selectExistingSession(stableSessionKey: string) {
-    const selected = timetable?.sessions.find(
-      (session) => session.stableSessionKey === stableSessionKey,
-    );
+    const selected = timetable
+      ? selectEffectiveRecurringSessions(timetable).find(
+          (session) => session.stableSessionKey === stableSessionKey,
+        )
+      : undefined;
     setEditingCorrection(null);
     recurringMutationKeyRef.current = newMutationKey();
     setRecurringForm((current) => ({
@@ -664,13 +667,16 @@ export function ClassRepCorrectionWorkspace({
   const nextClass = timetable
     ? getUpcomingOccurrences(timetable, new Date(), 1)[0]
     : null;
+  const effectiveRecurringSessions = timetable
+    ? selectEffectiveRecurringSessions(timetable)
+    : [];
   const scheduleDays = [
-    ...new Set((timetable?.sessions ?? []).map((session) => session.weekday)),
+    ...new Set(effectiveRecurringSessions.map((session) => session.weekday)),
   ].sort((left, right) => left - right);
   const activeScheduleDay = scheduleDays.includes(selectedDay)
     ? selectedDay
     : (scheduleDays[0] ?? selectedDay);
-  const activeSchedule = (timetable?.sessions ?? []).filter(
+  const activeSchedule = effectiveRecurringSessions.filter(
     (session) => session.weekday === activeScheduleDay,
   );
   const tomorrowSessions = tomorrow?.sessions ?? [];
@@ -995,7 +1001,7 @@ export function ClassRepCorrectionWorkspace({
               <span className="dr57-card-label">Weekly schedule</span>
               <h3>Current class rhythm</h3>
             </div>
-            <small>{timetable?.sessions.length ?? 0} recurring classes</small>
+            <small>{effectiveRecurringSessions.length} recurring classes</small>
           </div>
 
           {scheduleDays.length ? (
@@ -1199,11 +1205,11 @@ export function ClassRepCorrectionWorkspace({
                       checked={Boolean(recurringForm.stableSessionKey)}
                       disabled={
                         Boolean(editingCorrection) ||
-                        !timetable?.sessions.length
+                        !effectiveRecurringSessions.length
                       }
                       onChange={() =>
                         selectExistingSession(
-                          timetable?.sessions[0]?.stableSessionKey ?? "",
+                          effectiveRecurringSessions[0]?.stableSessionKey ?? "",
                         )
                       }
                     />
@@ -1238,7 +1244,7 @@ export function ClassRepCorrectionWorkspace({
                         selectExistingSession(event.target.value)
                       }
                     >
-                      {timetable?.sessions.map((session) => (
+                      {effectiveRecurringSessions.map((session) => (
                         <option
                           key={session.stableSessionKey}
                           value={session.stableSessionKey}

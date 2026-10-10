@@ -477,9 +477,10 @@ describe("DR-168 SE 4.1 effective schedule contract", () => {
     });
   });
 
-  it("uses server-provided effectiveSessions for React consumers and preserves the no-store fetch contract", async () => {
+  it("preserves raw sessions while exposing server-provided effectiveSessions for React consumers", async () => {
     const raw = se41Timetable();
     const effectiveSessions = resolveRecurringSessions(raw);
+    const rawSessions = structuredClone(raw.sessions);
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -502,9 +503,17 @@ describe("DR-168 SE 4.1 effective schedule contract", () => {
         headers: { Accept: "application/json" },
       }),
     );
-    expect(timetable.sessions).toEqual(effectiveSessions);
-    expect(timetable.sessions).toHaveLength(15);
-    expect(ise4105Times(timetable.sessions)).toEqual([
+    expect(timetable.sessions).toEqual(rawSessions);
+    expect(timetable.sessions).toContainEqual(
+      expect.objectContaining({
+        stableSessionKey: WEDNESDAY_ISE4105_KEY,
+        weekday: 3,
+        startTime: "12:15:00",
+      }),
+    );
+    expect(timetable.effectiveSessions).toEqual(effectiveSessions);
+    expect(timetable.effectiveSessions).toHaveLength(15);
+    expect(ise4105Times(timetable.effectiveSessions ?? [])).toEqual([
       "2:12:15:00-13:15:00:N109",
       "4:08:00:00-10:00:00:S107",
     ]);
