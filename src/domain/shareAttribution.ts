@@ -40,7 +40,7 @@ export function buildAttributedClassUrl(
 
 export function buildClassShareMessage(classLabel: string, url: string) {
   const cleanLabel = classLabel.trim() || "Class";
-  return `${cleanLabel} timetable is live on CalenderZW — see tomorrow's classes and add it to your calendar: ${url}`;
+  return `${cleanLabel} timetable is now live on CalenderZW. Open it to see upcoming classes and add the full timetable to your calendar in one tap: ${url}`;
 }
 
 export function buildClassSharePayload(input: {
@@ -49,7 +49,7 @@ export function buildClassSharePayload(input: {
   source: ClassShareSource;
 }) {
   const url = buildAttributedClassUrl(input.publicUrl, input.source);
-  const text = `${input.classLabel.trim() || "Class"} timetable is live on CalenderZW — see tomorrow's classes and add it to your calendar:`;
+  const text = `${input.classLabel.trim() || "Class"} timetable is now live on CalenderZW. Open it to see upcoming classes and add the full timetable to your calendar in one tap:`;
   return {
     title: `${input.classLabel.trim() || "Class"} timetable`,
     text,
