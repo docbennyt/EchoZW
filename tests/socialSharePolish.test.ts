@@ -13,9 +13,13 @@ describe("CalenderZW social sharing polish", () => {
   });
 
   it("keeps the WhatsApp CTA icon white on green", () => {
-    const css = readFileSync("src/appV2.css", "utf8");
+    const css = `${readFileSync("src/appV2.css", "utf8")}\n${readFileSync(
+      "src/publicTimetableReliability.css",
+      "utf8",
+    )}`;
     expect(css).toContain("DR-173 WhatsApp CTA contrast");
     expect(css).toContain('a[href*="wa.me"] svg');
+    expect(css).toContain(".pt-whatsapp-channel-link svg path");
     expect(css).toContain("color: #fff !important");
   });
 
@@ -28,7 +32,8 @@ describe("CalenderZW social sharing polish", () => {
     expect(source).not.toContain(
       "timetable is live on CalenderZW — see tomorrow",
     );
-    expect(source).toContain("timetable is now live on CalenderZW");
+    expect(source).toContain("timetable is now live on CalenderZW 🎓");
+    expect(source).toContain("See tomorrow's classes");
     expect(source).toContain(
       "add the full timetable to your calendar in one tap",
     );
