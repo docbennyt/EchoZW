@@ -1,12 +1,16 @@
 import { EventEmitter } from "node:events";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const repositoryMocks = vi.hoisted(() => ({
   createTimetable: vi.fn(),
   getTimetableEditor: vi.fn(),
   publishTimetable: vi.fn(),
+}));
+
+const googleSyncMocks = vi.hoisted(() => ({
+  syncGoogleSubscriptionsForTimetable: vi.fn(),
 }));
 
 vi.mock("../server/pilotRepository", async () => {
@@ -21,6 +25,8 @@ vi.mock("../server/pilotRepository", async () => {
     publishTimetable: repositoryMocks.publishTimetable,
   };
 });
+
+vi.mock("../server/googleCalendarSync", () => googleSyncMocks);
 
 import { handlePilotAdminApi } from "../server/pilotAdminApi";
 
@@ -88,6 +94,15 @@ const editor = {
 };
 
 describe("pilot timetable admin API contracts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    googleSyncMocks.syncGoogleSubscriptionsForTimetable.mockResolvedValue({
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+    });
+  });
+
   it("returns timetable and draftVersion when timetable metadata is created", async () => {
     repositoryMocks.createTimetable.mockResolvedValueOnce(editor);
 
@@ -153,6 +168,33 @@ describe("pilot timetable admin API contracts", () => {
         attempted: 0,
         succeeded: 0,
         failed: 0,
+      },
+    });
+  });
+
+  it("retries Google propagation for a timetable without requiring another publication", async () => {
+    googleSyncMocks.syncGoogleSubscriptionsForTimetable.mockResolvedValueOnce({
+      attempted: 2,
+      succeeded: 1,
+      failed: 1,
+    });
+
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync"),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(
+      googleSyncMocks.syncGoogleSubscriptionsForTimetable,
+    ).toHaveBeenCalledWith("tt-1");
+    expect(body()).toEqual({
+      googleCalendarSync: {
+        attempted: 2,
+        succeeded: 1,
+        failed: 1,
       },
     });
   });

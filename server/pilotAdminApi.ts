@@ -396,6 +396,16 @@ export async function handlePilotAdminApi(
       });
       return true;
     }
+
+    const googleSyncMatch = requestUrl.pathname.match(
+      /^\/api\/admin\/timetables\/([^/]+)\/google-calendar-sync$/,
+    );
+    if (req.method === "POST" && googleSyncMatch) {
+      const timetableId = decodeURIComponent(googleSyncMatch[1]);
+      const googleCalendarSync = await syncGoogleCalendars(timetableId);
+      sendJson(res, 200, { googleCalendarSync });
+      return true;
+    }
   } catch (error) {
     sendPilotError(res, error);
     return true;

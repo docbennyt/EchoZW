@@ -107,7 +107,7 @@ export async function deleteGoogleCredential(
     throw databaseError("Could not remove Google Calendar access.", error);
 }
 
-export async function listActiveGoogleSubscriptions(
+export async function listSyncableGoogleSubscriptions(
   timetableId: string,
   env: NodeJS.ProcessEnv = process.env,
 ) {
@@ -116,7 +116,7 @@ export async function listActiveGoogleSubscriptions(
     .select("*")
     .eq("timetable_id", timetableId)
     .eq("provider", "google_api")
-    .eq("status", "active")
+    .in("status", ["active", "failed"])
     .is("revoked_at", null);
   if (error)
     throw databaseError("Could not load Google Calendar subscriptions.", error);
