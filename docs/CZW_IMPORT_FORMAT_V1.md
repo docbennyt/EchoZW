@@ -11,6 +11,12 @@ Supported source paths:
 - Existing structured DOCX best effort.
 - Searchable/text-layer PDF only when the text already contains deterministic tabular rows.
 
+
+Recommended AI normalization prompt:
+
+- `/templates/czw-timetable-ai-prompt-v1.1.md` — classification-first prompt revision. It keeps the frozen `czw-import-format-v1` output contract unchanged while forcing the model to identify timetable scope/layout before extraction.
+- `/templates/czw-timetable-ai-prompt-v1.md` — original prompt revision retained for reproducibility.
+
 Unsupported:
 
 - OCR.
