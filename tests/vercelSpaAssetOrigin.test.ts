@@ -28,13 +28,26 @@ function loadVercelHeaderRules(): HeaderRule[] {
 }
 
 describe("Vercel SPA asset-origin contract", () => {
-  it("never serves /find or /t HTML from Railway while Vercel owns hashed assets", () => {
+  it("keeps static SPA routes on Vercel while allowing exact class pages to use server-rendered SEO HTML", () => {
     const rewrites = loadVercelRewrites();
 
-    for (const source of ["/find", "/t/:path*"]) {
+    for (const source of ["/find", "/assets/:path*"]) {
       const route = rewrites.find((rewrite) => rewrite.source === source);
       expect(route?.destination ?? "").not.toContain("railway.app");
     }
+
+    expect(rewrites).toContainEqual({
+      source: "/t/:slug",
+      destination: "https://calender.up.railway.app/t/:slug",
+    });
+    expect(rewrites).toContainEqual({
+      source: "/t/:slug/google",
+      destination: "https://calender.up.railway.app/t/:slug/google",
+    });
+    expect(rewrites).not.toContainEqual({
+      source: "/t/:path*",
+      destination: expect.stringContaining("railway.app"),
+    });
   });
 
   it("keeps backend-only routes on Railway and the SPA shell on Vercel", () => {

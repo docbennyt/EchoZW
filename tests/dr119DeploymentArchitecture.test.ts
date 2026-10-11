@@ -61,6 +61,10 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
       `${railwayOrigin}/runtime-config.js`,
     );
     expect(rewrites.get("/sitemap.xml")).toBe(`${railwayOrigin}/sitemap.xml`);
+    expect(rewrites.get("/t/:slug")).toBe(`${railwayOrigin}/t/:slug`);
+    expect(rewrites.get("/t/:slug/google")).toBe(
+      `${railwayOrigin}/t/:slug/google`,
+    );
     expect(rewrites.get("/t/:path*")).toBeUndefined();
     expect(rewrites.get("/find")).toBeUndefined();
     expect(vercel.rewrites.at(-1)).toEqual({
@@ -80,6 +84,9 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     const sitemapIndex = vercel.rewrites.findIndex(
       (rewrite) => rewrite.source === "/sitemap.xml",
     );
+    const classSeoIndex = vercel.rewrites.findIndex(
+      (rewrite) => rewrite.source === "/t/:slug",
+    );
     const fallbackIndex = vercel.rewrites.findIndex(
       (rewrite) => rewrite.source === "/:path*",
     );
@@ -88,7 +95,8 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(calendarDownloadIndex).toBeGreaterThan(calendarFeedIndex);
     expect(sitemapIndex).toBeGreaterThan(apiIndex);
     expect(sitemapIndex).toBeGreaterThan(calendarDownloadIndex);
-    expect(fallbackIndex).toBeGreaterThan(sitemapIndex);
+    expect(classSeoIndex).toBeGreaterThan(sitemapIndex);
+    expect(fallbackIndex).toBeGreaterThan(classSeoIndex);
   });
 
   it("preserves legacy redirects and the public OAuth callback", () => {
