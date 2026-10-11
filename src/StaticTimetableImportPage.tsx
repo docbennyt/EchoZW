@@ -607,10 +607,10 @@ export function StaticTimetableImportPage() {
 
   async function copyPrompt() {
     try {
-      const response = await fetch("/templates/czw-timetable-ai-prompt-v1.md");
+      const response = await fetch("/templates/czw-timetable-ai-prompt-v1.1.md");
       const prompt = await response.text();
       await navigator.clipboard.writeText(prompt);
-      setSuccess("AI conversion prompt copied.");
+      setSuccess("AI conversion prompt v1.1 copied.");
     } catch {
       setError("Could not copy the AI conversion prompt.");
     }
