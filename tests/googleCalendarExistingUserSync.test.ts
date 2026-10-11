@@ -268,7 +268,7 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     googleRepositoryMocks.listSyncableGoogleSubscriptions.mockResolvedValue([
       { id: "sub-existing", status: "active" },
     ]);
-    vi.mocked(fetch).mockImplementation(async (url: string | URL) => {
+    vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
       const value = String(url);
       if (value === "https://oauth2.googleapis.com/token") {
         return okJson({ access_token: "access-token" });
@@ -294,7 +294,7 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
 
     vi.mocked(fetch).mockClear();
     vi.mocked(fetch).mockImplementation(
-      async (url: string | URL, init?: RequestInit) => {
+      async (url: string | URL | Request, init?: RequestInit) => {
         const value = String(url);
         if (value === "https://oauth2.googleapis.com/token") {
           return okJson({ access_token: "access-token" });
