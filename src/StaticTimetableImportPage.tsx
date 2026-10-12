@@ -620,7 +620,7 @@ export function StaticTimetableImportPage() {
       }
       await navigator.clipboard.writeText(prompt);
       setError("");
-      setSuccess("Workbook prompt copied. Attach the template and timetable to your AI.");
+      setSuccess("Workbook prompt copied. Attach both files to your AI.");
     } catch {
       setError("Could not copy the AI workbook prompt.");
     }
@@ -1118,9 +1118,7 @@ export function StaticTimetableImportPage() {
                 </button>
               </div>
               <p className="czw-import-ai-instructions">
-                Download the blank template, attach it and your original
-                timetable to your AI, paste the prompt, then upload its completed
-                XLSX file here.
+                Attach the template and timetable to your AI; upload its XLSX here.
               </p>
               <label>
                 Institution
