@@ -607,31 +607,22 @@ export function StaticTimetableImportPage() {
 
   async function copyPrompt() {
     try {
-      const response = await fetch(
-        "/templates/czw-timetable-ai-workbook-prompt-v2.md",
-        { cache: "no-store" },
-      );
-      if (
-        !response.ok ||
-        response.headers.get("content-type")?.includes("text/html")
-      ) {
+      const promptPath = "/templates/czw-timetable-ai-workbook-prompt-v2.md";
+      const response = await fetch(promptPath, { cache: "no-store" });
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!response.ok || contentType.includes("text/html")) {
         throw new Error("AI conversion prompt unavailable.");
       }
       const prompt = await response.text();
-      if (
-        !prompt.includes("CZW — one-shot AI timetable-to-Excel conversion")
-      ) {
+      const signature = "CZW — one-shot AI timetable-to-Excel conversion";
+      if (!prompt.includes(signature)) {
         throw new Error("AI conversion prompt is invalid.");
       }
       await navigator.clipboard.writeText(prompt);
       setError("");
-      setSuccess(
-        "Workbook conversion prompt copied. Attach both the downloaded CZW template and the original timetable to your AI.",
-      );
+      setSuccess("Workbook prompt copied. Attach the template and timetable to your AI.");
     } catch {
-      setError(
-        "Could not copy the workbook conversion prompt. Please try again.",
-      );
+      setError("Could not copy the AI workbook prompt.");
     }
   }
 
@@ -1127,10 +1118,9 @@ export function StaticTimetableImportPage() {
                 </button>
               </div>
               <p className="czw-import-ai-instructions">
-                AI workflow: download the blank CZW template, attach it together
-                with the original timetable to your AI, paste the copied
-                workbook prompt, then upload the returned .xlsx file here.
-                Keep the four required sheet names unchanged.
+                Download the blank template, attach it and your original
+                timetable to your AI, paste the prompt, then upload its completed
+                XLSX file here.
               </p>
               <label>
                 Institution
