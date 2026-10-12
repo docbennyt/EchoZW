@@ -101,3 +101,41 @@ Rules:
 - Missing lecturers are not blockers by themselves.
 - Missing normalized venues are not blockers while `venueRaw` evidence exists.
 - All imports remain draft-only until the existing guarded publication path is used.
+
+## AI-to-XLSX workflow (recommended; prompt v2)
+
+The importer remains `czw-import-format-v1`, but the button **Copy AI conversion prompt** now copies
+`/templates/czw-timetable-ai-workbook-prompt-v2.md`. This version asks an external AI
+to **return a real filled Excel workbook, not raw JSON**, because CZW already accepts
+the XLSX template. Prompt revision v1 and classification-first v1.1 remain archived.
+
+Operator flow:
+
+1. Download the blank **CZW Timetable Import v1.xlsx** from the Admin page.
+2. In a capable AI chat, attach **both** that actual workbook and the original
+   timetable source (all relevant pages) and paste the copied prompt exactly once.
+3. Check the resulting workbook's `Targets`, `Courses` and `Sessions` tabs.
+   `Source` intentionally has only one metadata row; it is not the schedule.
+4. Upload the returned XLSX to CZW, confirm canonical mappings and review
+   exceptions; create drafts through the existing guarded flow. No auto-publish.
+
+Workbook-required sheets (headers unchanged):
+
+- `Source`: `version,title,institution,academic_unit,academic_year,semester_number`
+- `Targets`: `target_key,title,academic_unit,year_level,semester_number,academic_year`
+- `Courses`: `target_key,course_code,course_name,hours_per_week,lecturer`
+- `Sessions`: `target_key,course_code,course_name,weekday,start_time,end_time,venue,lecturer,delivery_mode`
+
+A fifth `Review Notes` sheet may contain human audit/uncertainty notes. **The existing
+XLSX adapter does not ingest this notes sheet as a blocker**; operators must review
+it before upload. The full AI-generated workbook is review evidence, not
+publication authority.
+
+The downloadable workbook now starts with empty Targets/Courses/Sessions rows
+and a version-only Source row to prevent example data accidentally being imported.
+
+**Limits:** no model can guarantee one-shot success when the source is unreadable,
+the file-editing tool cannot export XLSX, or the timetable is fundamentally
+ambiguous. This workflow reduces routine manual work while requiring explicit
+failure/notes instead of hallucinated data. An exam timetable is not a recurring
+class timetable and must not be converted into a weekly class schedule.
