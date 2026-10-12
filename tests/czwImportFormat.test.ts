@@ -194,6 +194,10 @@ describe("CZW Import Format v1", () => {
     const source = workbook.getWorksheet("Source");
 
     expect(source?.getCell("A2").value).toBe(CZW_IMPORT_FORMAT_VERSION);
+    expect(source?.getCell("B2").value ?? "").toBe("");
+    expect(workbook.getWorksheet("Targets")?.rowCount).toBe(1);
+    expect(workbook.getWorksheet("Courses")?.rowCount).toBe(1);
+    expect(workbook.getWorksheet("Sessions")?.rowCount).toBe(1);
     expect(workbook.getWorksheet("Sessions")?.getCell("A1").value).toBe(
       "target_key",
     );
