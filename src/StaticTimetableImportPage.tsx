@@ -607,7 +607,9 @@ export function StaticTimetableImportPage() {
 
   async function copyPrompt() {
     try {
-      const response = await fetch("/templates/czw-timetable-ai-workbook-prompt-v2.md");
+      const response = await fetch(
+        "/templates/czw-timetable-ai-workbook-prompt-v2.md",
+      );
       const prompt = await response.text();
       await navigator.clipboard.writeText(prompt);
       setSuccess("AI workbook prompt copied.");
