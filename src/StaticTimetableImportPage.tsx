@@ -607,22 +607,12 @@ export function StaticTimetableImportPage() {
 
   async function copyPrompt() {
     try {
-      const promptPath = "/templates/czw-timetable-ai-workbook-prompt-v2.md";
-      const response = await fetch(promptPath, { cache: "no-store" });
-      const contentType = response.headers.get("content-type") ?? "";
-      if (!response.ok || contentType.includes("text/html")) {
-        throw new Error("AI conversion prompt unavailable.");
-      }
+      const response = await fetch("/templates/czw-timetable-ai-workbook-prompt-v2.md");
       const prompt = await response.text();
-      const signature = "CZW — one-shot AI timetable-to-Excel conversion";
-      if (!prompt.includes(signature)) {
-        throw new Error("AI conversion prompt is invalid.");
-      }
       await navigator.clipboard.writeText(prompt);
-      setError("");
-      setSuccess("Workbook prompt copied. Attach both files to your AI.");
+      setSuccess("AI workbook prompt copied.");
     } catch {
-      setError("Could not copy the AI workbook prompt.");
+      setError("Could not copy the AI conversion prompt.");
     }
   }
 
@@ -1114,12 +1104,9 @@ export function StaticTimetableImportPage() {
                   disabled={busy}
                   onClick={() => void copyPrompt()}
                 >
-                  Copy AI conversion prompt
+                  Copy AI workbook prompt
                 </button>
               </div>
-              <p className="czw-import-ai-instructions">
-                Attach the template and timetable to your AI; upload its XLSX here.
-              </p>
               <label>
                 Institution
                 <select
