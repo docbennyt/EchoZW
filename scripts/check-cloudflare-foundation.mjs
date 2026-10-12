@@ -97,9 +97,17 @@ assert(
 );
 assert(
   worker.includes('url.pathname === "/api/edge/source-documents"') &&
+    worker.includes("assertSourceUploadAuth") &&
+    worker.includes("EDGE_SOURCE_UPLOAD_SECRET") &&
+    worker.includes("SOURCE_UPLOAD_AUTH_REQUIRED") &&
     worker.includes("SOURCE_BUCKET.put") &&
     worker.includes("SOURCE_PROCESSING_QUEUE.send"),
-  "source document uploads must write private R2 and enqueue processing.",
+  "source document uploads must authenticate, write private R2, and enqueue processing.",
+);
+assert(
+  worker.indexOf("assertSourceUploadAuth") <
+    worker.indexOf("SOURCE_BUCKET.put"),
+  "source document upload auth must run before private R2 writes.",
 );
 assert(
   worker.includes("async queue(batch)") &&

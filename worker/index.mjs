@@ -261,6 +261,42 @@ function assertSourceUploadBindings(env) {
   return null;
 }
 
+function assertSourceUploadAuth(request, env) {
+  const expected = env.EDGE_SOURCE_UPLOAD_SECRET?.trim();
+  if (!expected) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_AUTH_NOT_CONFIGURED",
+          message: "Source upload authentication is not configured.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+
+  const auth = request.headers.get("authorization") ?? "";
+  const bearerMatch = auth.match(/^Bearer\s+(.+)$/i);
+  const supplied =
+    bearerMatch?.[1]?.trim() ??
+    request.headers.get("x-calenderzw-edge-upload-secret")?.trim() ??
+    "";
+
+  if (!supplied || supplied !== expected) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_AUTH_REQUIRED",
+          message: "Authenticated source upload access is required.",
+        },
+      },
+      { status: 401 },
+    );
+  }
+
+  return null;
+}
+
 function safeCalendarFileName(value) {
   return value
     .toLowerCase()
@@ -440,6 +476,9 @@ async function handleSourceDocumentUpload(request, env, ctx) {
 
   const bindingError = assertSourceUploadBindings(env);
   if (bindingError) return bindingError;
+
+  const authError = assertSourceUploadAuth(request, env);
+  if (authError) return authError;
 
   const declaredSize = Number(request.headers.get("content-length") ?? 0);
   if (

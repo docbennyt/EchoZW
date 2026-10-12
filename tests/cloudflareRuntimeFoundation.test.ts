@@ -149,6 +149,12 @@ describe("Cloudflare runtime foundation", () => {
 
   it("has a native private source upload path that writes R2 and queues processing", () => {
     expect(worker).toContain('url.pathname === "/api/edge/source-documents"');
+    expect(worker).toContain("assertSourceUploadAuth");
+    expect(worker).toContain("EDGE_SOURCE_UPLOAD_SECRET");
+    expect(worker).toContain("SOURCE_UPLOAD_AUTH_REQUIRED");
+    expect(worker.indexOf("assertSourceUploadAuth")).toBeLessThan(
+      worker.indexOf("SOURCE_BUCKET.put"),
+    );
     expect(worker).toContain("SOURCE_BUCKET.put");
     expect(worker).toContain("SOURCE_PROCESSING_QUEUE.send");
     expect(worker).toContain("source_document_uploaded");

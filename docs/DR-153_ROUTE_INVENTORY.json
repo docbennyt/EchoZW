@@ -1,0 +1,656 @@
+{
+  "generatedAt": "2026-10-12",
+  "repository": "docbennyt/EchoZW",
+  "branch": "DR-153-cloudflare-native-api-transport",
+  "baseBranch": "Calender",
+  "cloudflareStagingOrigin": "https://next.calender.aido.co.zw",
+  "productionOrigin": "https://calender.aido.co.zw",
+  "legend": {
+    "native": "Handled by worker/index.mjs before LEGACY_BACKEND_ORIGIN.",
+    "native-if-configured": "Handled by worker/index.mjs before the bridge when required bindings/secrets/config exist; otherwise fails closed or falls through according to route contract.",
+    "static-assets": "Owned by Cloudflare Static Assets/Vite build, with Worker guarding missing /assets/* responses.",
+    "redirect": "Worker-native redirect with no Railway dependency.",
+    "bridged": "Still proxied through LEGACY_BACKEND_ORIGIN and therefore not Cloudflare-only.",
+    "not-migrated": "Known production capability without native Cloudflare transport yet."
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "authPolicy": "public",
+      "applicationService": "Vite SPA static asset shell",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "static-assets",
+      "contractTests": ["scripts/smoke-browser-release.mjs"],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/find",
+      "authPolicy": "public",
+      "applicationService": "Vite SPA static asset shell plus public timetable list API",
+      "databaseDependencies": [
+        "published timetable discovery via /api/public/timetables"
+      ],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "static-assets",
+      "contractTests": [
+        "scripts/smoke-browser-release.mjs",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/t/:slug",
+      "authPolicy": "public",
+      "applicationService": "Vite SPA route with public timetable details API",
+      "databaseDependencies": [
+        "published timetables",
+        "sessions",
+        "corrections",
+        "exceptions",
+        "pauses"
+      ],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "static-assets",
+      "contractTests": [
+        "scripts/smoke-browser-release.mjs",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/t/:slug/google",
+      "authPolicy": "public",
+      "applicationService": "Vite SPA Google connect return route",
+      "databaseDependencies": ["calendar subscriptions via Google status APIs"],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "static-assets",
+      "contractTests": ["scripts/smoke-browser-release.mjs"],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Provider-level Google OAuth callback still migrates with DR-171/DR-153 Google slice."
+    },
+    {
+      "method": "GET",
+      "path": "/assets/*",
+      "authPolicy": "public",
+      "applicationService": "Cloudflare Static Assets immutable build files",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "static-assets",
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs",
+        "scripts/smoke-browser-release.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/__release",
+      "authPolicy": "public-safe release identity",
+      "applicationService": "worker release identity",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native",
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/runtime-config.js",
+      "authPolicy": "public browser-safe config only",
+      "applicationService": "runtimePublicConfig",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native",
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/live",
+      "authPolicy": "public health",
+      "applicationService": "Worker liveness",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native",
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/release",
+      "authPolicy": "public-safe release identity",
+      "applicationService": "Worker backend release identity",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native",
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": null
+    },
+    {
+      "method": "GET",
+      "path": "/api/health/ready",
+      "authPolicy": "public readiness",
+      "applicationService": "schemaCompatibility and Supabase connectivity",
+      "databaseDependencies": ["Supabase REST schema compatibility checks"],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native",
+      "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Readiness is only production-cutover evidence when all required Supabase secrets are configured in Cloudflare."
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/timetables",
+      "authPolicy": "public",
+      "applicationService": "publicTimetableCore.listPublicTimetables",
+      "databaseDependencies": [
+        "institutions",
+        "programmes",
+        "class groups",
+        "published timetable versions"
+      ],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native-if-configured",
+      "contractTests": [
+        "tests/publicTimetableCore.test.ts",
+        "tests/dr66FinderDiscoveryContract.test.ts",
+        "scripts/smoke-browser-release.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Requires Cloudflare Supabase server config for native path."
+    },
+    {
+      "method": "GET",
+      "path": "/api/public/timetables/:slug",
+      "authPolicy": "public",
+      "applicationService": "publicTimetableCore.getPublicTimetableBySlug",
+      "databaseDependencies": [
+        "published versions",
+        "raw sessions",
+        "effective sessions",
+        "corrections",
+        "exceptions",
+        "pauses"
+      ],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native-if-configured",
+      "contractTests": [
+        "tests/publicTimetableCore.test.ts",
+        "tests/dr66FinderDiscoveryContract.test.ts",
+        "scripts/smoke-browser-release.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Requires Cloudflare Supabase server config for native path."
+    },
+    {
+      "method": "GET/HEAD",
+      "path": "/calendar/feed/:token.ics",
+      "authPolicy": "private bearer-by-unguessable-feed-token",
+      "applicationService": "pilotCalendarCore.buildRevisionAwareCalendar",
+      "databaseDependencies": [
+        "calendar subscriptions",
+        "published timetable projection",
+        "feed activity"
+      ],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": ["analytics waitUntil for feed activity"],
+      "cloudflareStatus": "native-if-configured",
+      "contractTests": [
+        "tests/publicTimetableCore.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Requires Cloudflare Supabase server config and private token hash secret parity."
+    },
+    {
+      "method": "GET/HEAD",
+      "path": "/calendar/download/:subscriptionId.ics",
+      "authPolicy": "private by subscription id; no index",
+      "applicationService": "pilotCalendarCore.buildRevisionAwareCalendar",
+      "databaseDependencies": [
+        "calendar subscriptions",
+        "published timetable projection"
+      ],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native-if-configured",
+      "contractTests": [
+        "tests/publicTimetableCore.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Requires Cloudflare Supabase server config and subscription lookup parity."
+    },
+    {
+      "method": "POST",
+      "path": "/api/edge/source-documents",
+      "authPolicy": "service-to-service bearer secret",
+      "applicationService": "Worker source intake to private R2 plus source processing queue",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": ["SOURCE_PROCESSING_QUEUE", "SOURCE_BUCKET"],
+      "cloudflareStatus": "native-if-configured",
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
+      ],
+      "lastProvenRuntime": "Pending next exact-head Cloudflare preview after auth smoke",
+      "remainingBlocker": "Queue consumer currently ACKs source_document_uploaded; deterministic parsing/review persistence is still a later DR-153/DR-161 parity slice."
+    },
+    {
+      "method": "POST",
+      "path": "/api/calendar/subscriptions",
+      "authPolicy": "public subscription creation with anonymous session cookie",
+      "applicationService": "handleCalendarRequest",
+      "databaseDependencies": [
+        "calendar subscriptions",
+        "subscriber profile when provided"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/deploymentSmoke.test.ts",
+        "tests/googleCalendarDirectSync.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker Request/Response adapter around subscription creation and cookie semantics."
+    },
+    {
+      "method": "POST",
+      "path": "/api/calendar/subscriptions/:id/revoke",
+      "authPolicy": "subscription owner / possession of subscription id",
+      "applicationService": "handleCalendarRequest",
+      "databaseDependencies": ["calendar subscriptions"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/deploymentSmoke.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs native mutation adapter and idempotent revoke contract."
+    },
+    {
+      "method": "GET",
+      "path": "/api/calendar/google/connect",
+      "authPolicy": "Google OAuth state tied to subscription",
+      "applicationService": "googleCalendarSync authorization URL",
+      "databaseDependencies": ["calendar subscriptions", "google oauth state"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/googleCalendarDirectSync.test.ts",
+        "tests/googleCalendarExistingUserSync.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker OAuth redirect/callback adapter after DR-171 merge."
+    },
+    {
+      "method": "GET",
+      "path": "/api/calendar/google/callback",
+      "authPolicy": "Google OAuth callback state and code validation",
+      "applicationService": "googleCalendarSync OAuth exchange and managed-event sync",
+      "databaseDependencies": [
+        "calendar subscriptions",
+        "google credentials",
+        "calendar_event_sync_records"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": ["Google reconciliation retry path"],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/googleCalendarDirectSync.test.ts",
+        "tests/googleCalendarExistingUserSync.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker OAuth callback adapter and authorized Google provider canary."
+    },
+    {
+      "method": "POST",
+      "path": "/api/calendar/google/disconnect",
+      "authPolicy": "subscription owner / managed Google credential",
+      "applicationService": "handleCalendarRequest Google disconnect",
+      "databaseDependencies": [
+        "calendar subscriptions",
+        "google credentials",
+        "calendar_event_sync_records"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [
+        "Google provider delete/revoke where authorized"
+      ],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/googleCalendarDirectSync.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker adapter and safe provider revocation handling."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/session",
+      "authPolicy": "Supabase bearer/staff session",
+      "applicationService": "handleAdminRequest.requireStaffUser",
+      "databaseDependencies": [
+        "staff users",
+        "class rep assignments",
+        "permissions"
+      ],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse auth adapter"
+      ],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/adminAuth.test.ts",
+        "tests/adminScopedRoutes.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "First authenticated admin Worker adapter still required."
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/my/timetables",
+      "authPolicy": "Supabase bearer/staff session",
+      "applicationService": "handleAdminRequest.requireStaffUser",
+      "databaseDependencies": [
+        "class rep assignments",
+        "published timetable scope"
+      ],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse auth adapter"
+      ],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/adminScopedRoutes.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Worker auth/session adapter and scoped assignment response."
+    },
+    {
+      "method": "POST/PATCH/DELETE",
+      "path": "/api/admin/timetables/:id/corrections*",
+      "authPolicy": "timetable editor / class rep scoped assignment",
+      "applicationService": "correctionsAdminApi",
+      "databaseDependencies": [
+        "correction directives",
+        "audit records",
+        "calendar revisions",
+        "Google sync queue/retry state"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": ["Google reconciliation trigger"],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/correctionMutationsClient.test.ts",
+        "tests/effectiveTimetableContract.test.ts",
+        "tests/googleCalendarExistingUserSync.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs native authenticated mutation adapter and correction-to-calendar reconciliation proof."
+    },
+    {
+      "method": "POST/PATCH/DELETE",
+      "path": "/api/admin/timetables/:id/exceptions*",
+      "authPolicy": "timetable editor / class rep scoped assignment",
+      "applicationService": "correctionsAdminApi",
+      "databaseDependencies": [
+        "exception directives",
+        "audit records",
+        "calendar revisions"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/correctionMutationsClient.test.ts",
+        "tests/effectiveTimetableContract.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs native authenticated mutation adapter."
+    },
+    {
+      "method": "GET/POST/PATCH/DELETE",
+      "path": "/api/admin/timetables/:id/pauses*",
+      "authPolicy": "timetable editor / operational admin",
+      "applicationService": "academicPauseAdminApi",
+      "databaseDependencies": ["academic pauses", "audit records"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/adminScopedRoutes.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker admin adapter."
+    },
+    {
+      "method": "GET/POST/PATCH",
+      "path": "/api/admin/institutions|programmes|class-groups|academic-periods|timetables*",
+      "authPolicy": "operational admin",
+      "applicationService": "pilotAdminApi",
+      "databaseDependencies": [
+        "canonical academic entities",
+        "timetables",
+        "sessions",
+        "publication records"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": ["publication audit"],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/adminScopedRoutes.test.ts",
+        "tests/staticTimetableGuidedFlow.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker admin adapter and guarded publication parity."
+    },
+    {
+      "method": "GET/POST/PATCH",
+      "path": "/api/admin/static-timetable-imports*",
+      "authPolicy": "operational admin",
+      "applicationService": "staticTimetableImportApi",
+      "databaseDependencies": [
+        "source_documents",
+        "import_batches",
+        "import_targets",
+        "candidate mappings",
+        "draft timetables"
+      ],
+      "nodeOnlyDependencies": [
+        "multipart/body parsing and Node XLSX/DOCX/PDF dependencies"
+      ],
+      "backgroundDependencies": ["raw source cleanup worker"],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/staticTimetableImport*.test.ts",
+        "tests/staticTimetableRawCleanup.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker-compatible body parsing and parser boundary audit; current Cloudflare source upload path is only intake."
+    },
+    {
+      "method": "GET/POST/PATCH/DELETE",
+      "path": "/api/admin/staff*",
+      "authPolicy": "staff manager",
+      "applicationService": "staffAdminApi",
+      "databaseDependencies": [
+        "staff users",
+        "staff assignments",
+        "Supabase Auth invitations"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": ["email/invite delivery through Supabase"],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/adminAuth.test.ts",
+        "tests/dr56StaffOnboardingSecurity.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker admin auth adapter and invitation flow parity."
+    },
+    {
+      "method": "GET/POST/PATCH",
+      "path": "/api/admin/source-gateway*",
+      "authPolicy": "operational admin",
+      "applicationService": "sourceGatewayAdminApi",
+      "databaseDependencies": [
+        "source snapshots",
+        "mapping tables",
+        "processing state"
+      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": ["source processing worker"],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/sourceSnapshotApi.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker admin adapter and processing trigger parity."
+    },
+    {
+      "method": "POST",
+      "path": "/api/internal/source-snapshots",
+      "authPolicy": "internal source relay secret",
+      "applicationService": "sourceSnapshotApi",
+      "databaseDependencies": ["source snapshots", "parse jobs"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": ["source parse/reconciliation jobs"],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/sourceSnapshotApi.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker internal-auth adapter or retirement in favor of R2/Queue source intake."
+    },
+    {
+      "method": "POST",
+      "path": "/api/analytics/events",
+      "authPolicy": "public event ingestion with sanitization",
+      "applicationService": "analyticsApi",
+      "databaseDependencies": ["analytics events"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/deploymentSmoke.test.ts",
+        "tests/healthAndObservability.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker adapter and abuse/rate-limit controls."
+    },
+    {
+      "method": "GET/POST",
+      "path": "/api/payments*",
+      "authPolicy": "public checkout plus provider callbacks",
+      "applicationService": "paymentApi",
+      "databaseDependencies": ["payment purchases", "payment audit"],
+      "nodeOnlyDependencies": ["PesePay Node-side gateway calls"],
+      "backgroundDependencies": ["payment provider callbacks"],
+      "cloudflareStatus": "bridged",
+      "contractTests": [
+        "tests/paymentDomain.test.ts",
+        "tests/paymentReconciliation.test.ts"
+      ],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker payment adapter and callback verification."
+    },
+    {
+      "method": "POST",
+      "path": "/api/public/timetable-requests|/api/public/feedback",
+      "authPolicy": "public with validation",
+      "applicationService": "growthCaptureApi",
+      "databaseDependencies": ["growth requests", "feedback"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/deploymentSmoke.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker adapter and public abuse controls."
+    },
+    {
+      "method": "GET/PATCH",
+      "path": "/api/admin/growth*|/api/admin/analytics*",
+      "authPolicy": "operational admin/founder",
+      "applicationService": "growthInboxAdminApi and adminAnalyticsApi",
+      "databaseDependencies": ["growth inbox", "analytics aggregates"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/healthAndObservability.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker admin adapter."
+    },
+    {
+      "method": "POST",
+      "path": "/api/push*",
+      "authPolicy": "public subscription plus authenticated/admin sends where applicable",
+      "applicationService": "pushNotificationApi",
+      "databaseDependencies": ["push subscriptions", "notification jobs"],
+      "nodeOnlyDependencies": ["web-push package runtime compatibility"],
+      "backgroundDependencies": ["PUSH_QUEUE"],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/deploymentSmoke.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker-compatible web-push/send strategy and queue consumer parity."
+    },
+    {
+      "method": "QUEUE",
+      "path": "SOURCE_PROCESSING_QUEUE",
+      "authPolicy": "Cloudflare Queue binding",
+      "applicationService": "Worker queue(batch)",
+      "databaseDependencies": [],
+      "nodeOnlyDependencies": [],
+      "backgroundDependencies": ["SOURCE_BUCKET"],
+      "cloudflareStatus": "native-incomplete",
+      "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
+      "lastProvenRuntime": "Cloudflare exact-head preview",
+      "remainingBlocker": "Consumer currently ACKs source_document_uploaded and does not yet parse into Supabase review evidence."
+    },
+    {
+      "method": "SCHEDULED",
+      "path": "static raw cleanup",
+      "authPolicy": "runtime scheduled job",
+      "applicationService": "staticTimetableRawCleanupWorker",
+      "databaseDependencies": [
+        "source_documents metadata",
+        "Supabase Storage timetable-sources"
+      ],
+      "nodeOnlyDependencies": ["Node production-server startup worker"],
+      "backgroundDependencies": ["hourly cleanup interval on Railway Node"],
+      "cloudflareStatus": "bridged",
+      "contractTests": ["tests/staticTimetableRawCleanup.test.ts"],
+      "lastProvenRuntime": "Railway Node backend",
+      "remainingBlocker": "Needs Worker scheduled handler or explicit production-retained Node replacement before Railway retirement."
+    }
+  ]
+}
