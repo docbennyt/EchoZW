@@ -210,11 +210,11 @@ describe("CZW Import Format v1", () => {
       (await buildCzwImportTemplateXlsx()) as unknown as ArrayBuffer,
     );
     const source = workbook.getWorksheet("Source");
-    if (source) source.getCell("B2").value = "IME timetable";
-    if (source)
-      source.getCell("D2").value = "Industrial and Manufacturing Engineering";
-    if (source) source.getCell("E2").value = "2025-2026";
-    if (source) source.getCell("F2").value = 1;
+    if (!source) throw new Error("Missing source worksheet");
+    source.getCell("B2").value = "IME timetable";
+    source.getCell("D2").value = "Industrial and Manufacturing Engineering";
+    source.getCell("E2").value = "2025-2026";
+    source.getCell("F2").value = 1;
 
     const targets = workbook.getWorksheet("Targets");
     targets?.addRow([
