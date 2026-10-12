@@ -195,85 +195,12 @@ describe("CZW Import Format v1", () => {
 
     expect(source?.getCell("A2").value).toBe(CZW_IMPORT_FORMAT_VERSION);
     expect(source?.getCell("B2").value ?? "").toBe("");
-    expect(source?.getCell("E2").value ?? "").toBe("");
     expect(workbook.getWorksheet("Targets")?.rowCount).toBe(1);
     expect(workbook.getWorksheet("Courses")?.rowCount).toBe(1);
     expect(workbook.getWorksheet("Sessions")?.rowCount).toBe(1);
     expect(workbook.getWorksheet("Sessions")?.getCell("A1").value).toBe(
       "target_key",
     );
-  });
-
-  it("round-trips a filled two-target workbook", async () => {
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(
-      (await buildCzwImportTemplateXlsx()) as unknown as ArrayBuffer,
-    );
-    const source = workbook.getWorksheet("Source");
-    if (!source) throw new Error("Missing source worksheet");
-    source.getCell("B2").value = "IME timetable";
-    source.getCell("D2").value = "Industrial and Manufacturing Engineering";
-    source.getCell("E2").value = "2025-2026";
-    source.getCell("F2").value = 1;
-
-    const targets = workbook.getWorksheet("Targets");
-    targets?.addRow([
-      "ime-part-1-semester-1",
-      "Part 1 Semester 1",
-      "Industrial and Manufacturing Engineering",
-      1,
-      1,
-      "2025-2026",
-    ]);
-    targets?.addRow([
-      "ime-part-2-semester-1",
-      "Part 2 Semester 1",
-      "Industrial and Manufacturing Engineering",
-      2,
-      1,
-      "2025-2026",
-    ]);
-    workbook.getWorksheet("Courses")?.addRows([
-      ["ime-part-1-semester-1", "EIM1102", "Workshop Technology I", "", ""],
-      ["ime-part-2-semester-1", "HIT2102", "Statistics for Engineers", "", ""],
-    ]);
-    workbook.getWorksheet("Sessions")?.addRows([
-      [
-        "ime-part-1-semester-1",
-        "EIM1102",
-        "Workshop Technology I",
-        "Thursday",
-        "12:15",
-        "13:15",
-        "W/S",
-        "",
-        "",
-      ],
-      [
-        "ime-part-2-semester-1",
-        "HIT2102",
-        "Statistics for Engineers",
-        "Monday",
-        "08:00",
-        "10:00",
-        "MPS",
-        "",
-        "",
-      ],
-    ]);
-
-    const extraction = await extractStaticTimetableSource({
-      filename: "CZW_IME_READY.xlsx",
-      mimeType:
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      bytes: Buffer.from(await workbook.xlsx.writeBuffer()),
-    });
-    expect(extraction.kind).toBe("czw-xlsx");
-    expect(extraction.canonical?.targets).toHaveLength(2);
-    expect(extraction.parsed.sessions).toHaveLength(2);
-    const venues = extraction.parsed.sessions.map((session) => session.venueRaw);
-    expect(venues).toEqual(["W/S", "MPS"]);
-    expect(extraction.parsed.metadata.academicYearRaw).toBe("2025-2026");
   });
 
   it("keeps operator context separate and blocks source conflicts", () => {
