@@ -707,6 +707,7 @@ export async function syncGoogleSubscriptionsForTimetable(
       failed += 1;
       await updateGoogleSubscription({
         subscriptionId,
+        status: "failed",
         lastErrorCode:
           error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
         env,

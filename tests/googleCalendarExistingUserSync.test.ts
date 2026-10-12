@@ -264,6 +264,93 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     ).toHaveBeenCalledWith("tt-se41", env);
   });
 
+  it("records a temporary Google failure and later reconciles the same existing event without duplicates", async () => {
+    googleRepositoryMocks.listSyncableGoogleSubscriptions.mockResolvedValue([
+      { id: "sub-existing", status: "active" },
+    ]);
+    vi.mocked(fetch).mockImplementation(async (url: string | URL | Request) => {
+      const value = String(url);
+      if (value === "https://oauth2.googleapis.com/token") {
+        return okJson({ access_token: "access-token" });
+      }
+      return okJson({ error: { code: 503 } }, 503);
+    });
+
+    const failed = await syncGoogleSubscriptionsForTimetable("tt-se41", env);
+
+    expect(failed).toEqual({ attempted: 1, succeeded: 0, failed: 1 });
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        subscriptionId: "sub-existing",
+        status: "failed",
+        lastErrorCode: "GOOGLE_API_FAILED",
+      }),
+    );
+
+    vi.mocked(fetch).mockClear();
+    vi.mocked(fetch).mockImplementation(
+      async (url: string | URL | Request, init?: RequestInit) => {
+        const value = String(url);
+        if (value === "https://oauth2.googleapis.com/token") {
+          return okJson({ access_token: "access-token" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-ise4105?sendUpdates=none",
+          ) &&
+          init?.method === "PUT"
+        ) {
+          return okJson({ id: "event-ise4105" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-removed?sendUpdates=none",
+          ) &&
+          init?.method === "DELETE"
+        ) {
+          return new Response(null, { status: 204 });
+        }
+        throw new Error(
+          `Unexpected Google API request during retry: ${init?.method} ${value}`,
+        );
+      },
+    );
+    googleRepositoryMocks.updateGoogleSubscription.mockClear();
+
+    const retried = await syncGoogleSubscriptionsForTimetable("tt-se41", env);
+
+    expect(retried).toEqual({ attempted: 1, succeeded: 1, failed: 0 });
+    expect(fetch).not.toHaveBeenCalledWith(
+      "https://www.googleapis.com/calendar/v3/calendars",
+      expect.anything(),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/events/event-ise4105?sendUpdates=none"),
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/events/event-removed?sendUpdates=none"),
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).toHaveBeenCalledTimes(1);
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        subscriptionId: "sub-existing",
+        status: "active",
+        lastErrorCode: null,
+      }),
+    );
+  });
+
   it("queries active and failed subscriptions as syncable, while excluding revoked rows", () => {
     const source = readFileSync("server/googleCalendarRepository.ts", "utf8");
 

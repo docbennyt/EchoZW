@@ -43,6 +43,12 @@ const routes = [
     mustContain: [/Software Engineering|ISE|Part 4\.1/i, /Add to Calendar/i],
   },
   {
+    path: "/t/ime-1-1-semester-1-2026",
+    label: "ime-class",
+    timetable: true,
+    mustContain: [/IME|Part 1\.1|Semester 1/i, /Add to Calendar/i],
+  },
+  {
     path: "/t/hit-sbt-1-1-august-semester-2026/google",
     label: "google-connect",
     mustContain: [/Google|calendar|CalenderZW/i],
@@ -66,6 +72,15 @@ function absolute(path) {
 
 function contentType(response) {
   return response.headers()["content-type"] ?? "";
+}
+
+async function waitForBodyPattern(page, pattern) {
+  await page.waitForFunction(
+    ({ source, flags }) =>
+      new RegExp(source, flags).test(document.body.innerText),
+    { source: pattern.source, flags: pattern.flags },
+    { timeout: 20_000 },
+  );
 }
 
 async function verifyMissingAssetDoesNotServeHtml() {
@@ -169,6 +184,17 @@ for (const viewport of [
           null,
           { timeout: 15_000 },
         );
+      }
+
+      for (const pattern of route.mustContain) {
+        await waitForBodyPattern(page, pattern);
+      }
+      if (route.timetable) {
+        await waitForBodyPattern(
+          page,
+          /\b(?:Mon|Tue|Wed|Thu|Fri|Monday|Tuesday|Wednesday|Thursday|Friday)\b/i,
+        );
+        await waitForBodyPattern(page, /\b\d{1,2}:\d{2}\b/);
       }
 
       const bodyText = (await page.locator("body").innerText()).trim();
