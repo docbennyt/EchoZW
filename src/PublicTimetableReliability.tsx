@@ -27,6 +27,7 @@ import {
   formatClassGroupLabel,
   formatOccurrenceTime,
   formatPublishedTimestamp,
+  formatTimetableShareClassLabel,
   getUpcomingOccurrences,
 } from "./domain/publicTimetable";
 import {
@@ -750,7 +751,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   function classSharePayload(source: ClassShareSource) {
     if (!timetable) return null;
     return buildClassSharePayload({
-      classLabel: formatClassGroupLabel(timetable.classGroup),
+      classLabel: formatTimetableShareClassLabel(timetable),
       publicUrl,
       source,
     });

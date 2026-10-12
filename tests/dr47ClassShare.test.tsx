@@ -130,7 +130,7 @@ describe("DR-47 class viral loop", () => {
     window.history.replaceState(
       {},
       "",
-      `/t/${timetable.publicSlug}?src=class_share`,
+      `/t/${timetable.publicSlug}?sr=class_share`,
     );
     const nativeShare = window.navigator.share as ReturnType<typeof vi.fn>;
     render(<PublicTimetableReliability slug={timetable.publicSlug} />);
@@ -174,12 +174,13 @@ describe("DR-47 class viral loop", () => {
       url: string;
     };
     expect(payload.url).toBe(
-      `http://localhost:3000/t/${timetable.publicSlug}?src=onboarding_success`,
+      `http://localhost:3000/t/${timetable.publicSlug}?sr=onboarding_success`,
     );
-    expect(payload.text).toContain("timetable is now live on CalenderZW");
     expect(payload.text).toContain(
-      "add the full timetable to your calendar in one tap",
+      "HIT Computer Science Part 1.1 timetable is live! 🎓",
     );
+    expect(payload.text).toContain("See tomorrow's lectures");
+    expect(payload.text).toContain("add the full timetable to your calendar.");
     expect(JSON.stringify(payload)).not.toContain("private-token");
     expect(mocks.track).toHaveBeenCalledWith(
       "timetable_shared",
@@ -205,11 +206,12 @@ describe("DR-47 class viral loop", () => {
     );
     await waitFor(() => expect(clipboard).toHaveBeenCalledTimes(1));
     const copied = String(clipboard.mock.calls[0][0]);
-    expect(copied).toContain("Class 1.1 timetable is now live on CalenderZW");
     expect(copied).toContain(
-      "add the full timetable to your calendar in one tap",
+      "HIT Computer Science Part 1.1 timetable is live! 🎓",
     );
-    expect(copied).toContain(`?src=class_share`);
+    expect(copied).toContain("See tomorrow's lectures");
+    expect(copied).toContain("add the full timetable to your calendar.");
+    expect(copied).toContain(`?sr=class_share`);
     expect(copied).not.toContain("private-token");
     expect(mocks.track).toHaveBeenCalledWith(
       "timetable_shared",

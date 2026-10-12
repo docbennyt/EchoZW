@@ -19,18 +19,17 @@ const shell = `
 describe("SPA metadata injection", () => {
   it("injects public timetable metadata without exposing private feed URLs", () => {
     const html = injectSpaMetadata(shell, {
-      title: "HIT · BTech Computer Science · Class 1.1",
+      title: "HIT · Computer Science · Part 1.1",
       description:
         "August Semester 2026 published timetable. View your classes and add them to your calendar with CalenderZW.",
       canonicalPath: "/t/hit-ics-1-1-august-semester-2026",
     });
 
+    expect(html).toContain("<title>HIT · Computer Science · Part 1.1</title>");
     expect(html).toContain(
-      "<title>HIT · BTech Computer Science · Class 1.1</title>",
+      'property="og:title" content="HIT · Computer Science · Part 1.1"',
     );
-    expect(html).toContain(
-      'property="og:title" content="HIT · BTech Computer Science · Class 1.1"',
-    );
+    expect(html).toContain('property="og:image:type" content="image/png"');
     expect(html).toContain(
       'property="og:url" content="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"',
     );

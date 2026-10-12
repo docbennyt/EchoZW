@@ -173,7 +173,7 @@ describe("DR-64 student Add-to-Calendar conversion", () => {
       level: 1,
       name: "BTech Computer Science",
     });
-    expect(screen.getByText("Class 1.1")).toBeInTheDocument();
+    expect(screen.getByText("Part 1.1")).toBeInTheDocument();
     expect(screen.getByText(/Updated/i)).toBeInTheDocument();
     expect(screen.getByText("Next class")).toBeInTheDocument();
     expect(

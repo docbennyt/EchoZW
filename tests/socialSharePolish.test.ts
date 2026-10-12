@@ -116,11 +116,9 @@ describe("CalenderZW social sharing polish", () => {
     expect(source).not.toContain(
       "timetable is live on CalenderZW — see tomorrow",
     );
-    expect(source).toContain("timetable is now live on CalenderZW 🎓");
-    expect(source).toContain("See tomorrow's classes");
-    expect(source).toContain(
-      "add the full timetable to your calendar in one tap",
-    );
+    expect(source).toContain("timetable is live! 🎓");
+    expect(source).toContain("See tomorrow's lectures");
+    expect(source).toContain("add the full timetable to your calendar.");
   });
 
   it("ships a complete non-blank branded 1200x630 PNG social image", () => {
@@ -130,6 +128,7 @@ describe("CalenderZW social sharing polish", () => {
     const { width, height, pixels, stride } = decodePngRgb(path);
     let brightPixels = 0;
     let greenPixels = 0;
+    let amberPixels = 0;
     let darkPixels = 0;
     let colorVariance = 0;
 
@@ -142,7 +141,8 @@ describe("CalenderZW social sharing polish", () => {
         const max = Math.max(r, g, b);
         const min = Math.min(r, g, b);
         if (r > 210 && g > 210 && b > 210) brightPixels += 1;
-        if (g > 120 && g > r * 1.1 && g > b * 1.1) greenPixels += 1;
+        if (g > 70 && g >= r * 0.7 && g > b * 1.25) greenPixels += 1;
+        if (r > 190 && g > 130 && b < 90) amberPixels += 1;
         if (r < 24 && g < 24 && b < 24) darkPixels += 1;
         colorVariance += max - min;
       }
@@ -150,6 +150,7 @@ describe("CalenderZW social sharing polish", () => {
 
     expect(brightPixels).toBeGreaterThan(100);
     expect(greenPixels).toBeGreaterThan(100);
+    expect(amberPixels).toBeGreaterThan(25);
     expect(darkPixels).toBeLessThan(200);
     expect(colorVariance).toBeGreaterThan(10_000);
   });
