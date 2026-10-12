@@ -35,7 +35,7 @@ describe("DR-174 classification-first AI workbook prompt", () => {
       'Set version literally to "czw-import-format-v1"',
     );
     expect(workbookPrompt).toContain(
-      "do not turn it into a conversation",
+      "Do not turn it into a conversation",
     );
   });
 
