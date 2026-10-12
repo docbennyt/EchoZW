@@ -611,11 +611,16 @@ export function StaticTimetableImportPage() {
         "/templates/czw-timetable-ai-workbook-prompt-v2.md",
         { cache: "no-store" },
       );
-      if (!response.ok || response.headers.get("content-type")?.includes("text/html")) {
+      if (
+        !response.ok ||
+        response.headers.get("content-type")?.includes("text/html")
+      ) {
         throw new Error("AI conversion prompt unavailable.");
       }
       const prompt = await response.text();
-      if (!prompt.includes("CZW — one-shot AI timetable-to-Excel conversion")) {
+      if (
+        !prompt.includes("CZW — one-shot AI timetable-to-Excel conversion")
+      ) {
         throw new Error("AI conversion prompt is invalid.");
       }
       await navigator.clipboard.writeText(prompt);
@@ -624,7 +629,9 @@ export function StaticTimetableImportPage() {
         "Workbook conversion prompt copied. Attach both the downloaded CZW template and the original timetable to your AI.",
       );
     } catch {
-      setError("Could not copy the workbook conversion prompt. Please try again.");
+      setError(
+        "Could not copy the workbook conversion prompt. Please try again.",
+      );
     }
   }
 
