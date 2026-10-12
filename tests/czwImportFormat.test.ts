@@ -210,10 +210,11 @@ describe("CZW Import Format v1", () => {
       (await buildCzwImportTemplateXlsx()) as unknown as ArrayBuffer,
     );
     const source = workbook.getWorksheet("Source");
-    source?.getCell("B2").setValue("IME timetable");
-    source?.getCell("D2").setValue("Industrial and Manufacturing Engineering");
-    source?.getCell("E2").setValue("2025-2026");
-    source?.getCell("F2").setValue(1);
+    if (source) source.getCell("B2").value = "IME timetable";
+    if (source)
+      source.getCell("D2").value = "Industrial and Manufacturing Engineering";
+    if (source) source.getCell("E2").value = "2025-2026";
+    if (source) source.getCell("F2").value = 1;
 
     const targets = workbook.getWorksheet("Targets");
     targets?.addRow([
@@ -268,7 +269,7 @@ describe("CZW Import Format v1", () => {
       bytes: Buffer.from(await workbook.xlsx.writeBuffer()),
     });
     expect(extraction.kind).toBe("czw-xlsx");
-    expect(extraction.parsed.targets).toHaveLength(2);
+    expect(extraction.canonical?.targets).toHaveLength(2);
     expect(extraction.parsed.sessions).toHaveLength(2);
     expect(extraction.parsed.sessions.map((session) => session.venueRaw)).toEqual([
       "W/S",
