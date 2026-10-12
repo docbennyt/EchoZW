@@ -110,11 +110,37 @@ function getRelativeLabel(dateKey: string, timeZone: string, now: Date) {
 }
 
 export function formatClassGroupLabel(value: string) {
-  return /^class\s+/i.test(value) ? value : `Class ${value}`;
+  const trimmed = value.trim();
+  if (/^part\s+/i.test(trimmed)) return trimmed;
+  if (/^class\s+/i.test(trimmed)) {
+    return trimmed.replace(/^class\s+/i, "Part ");
+  }
+  return `Part ${trimmed}`;
 }
 
 export function getInstitutionIdentity(timetable: PublicTimetable) {
   return timetable.institutionShortName?.trim() || timetable.institution;
+}
+
+export function formatProgrammeDisplayLabel(value: string) {
+  const trimmed = value.trim();
+  return (
+    trimmed
+      .replace(/^b\.?\s*tech(?:nology)?\s+/i, "")
+      .replace(/^b\.?\s*sc(?:ience)?\s+/i, "")
+      .replace(
+        /^bachelor(?:'s)?\s+(?:of\s+)?(?:technology|science)\s+(?:in\s+)?/i,
+        "",
+      )
+      .trim() || trimmed
+  );
+}
+
+export function formatTimetableShareClassLabel(timetable: PublicTimetable) {
+  const institution = getInstitutionIdentity(timetable);
+  const programme = formatProgrammeDisplayLabel(timetable.programme);
+  const classGroup = formatClassGroupLabel(timetable.classGroup);
+  return `${institution} ${programme} ${classGroup}`.replace(/\s+/g, " ");
 }
 
 export function formatPublishedTimestamp(
@@ -143,9 +169,10 @@ export function formatOccurrenceTime(date: Date, timeZone: string) {
 export function buildPublicTimetableMetadata(timetable: PublicTimetable) {
   const institution = getInstitutionIdentity(timetable);
   const classGroup = formatClassGroupLabel(timetable.classGroup);
+  const programme = formatProgrammeDisplayLabel(timetable.programme);
   return {
-    title: `${institution} · ${timetable.programme} · ${classGroup} timetable | CalenderZW`,
-    description: `${timetable.academicPeriod} timetable for ${timetable.programme}, ${classGroup} at ${institution}. View published classes and add the schedule to your calendar with CalenderZW.`,
+    title: `${institution} · ${programme} · ${classGroup} timetable | CalenderZW`,
+    description: `${timetable.academicPeriod} timetable for ${programme}, ${classGroup} at ${institution}. View published lectures and add the schedule to your calendar with CalenderZW.`,
     canonicalPath: `/t/${timetable.publicSlug}`,
   };
 }

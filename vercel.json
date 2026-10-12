@@ -42,7 +42,33 @@
       "destination": "https://calender.up.railway.app/sitemap.xml"
     },
     {
-      "source": "/:path*",
+      "source": "/t/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": {
+            "re": ".*(bot|crawler|spider|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|Discordbot|TelegramBot|WhatsApp|Pinterest|SkypeUriPreview|Google-Structured-Data-Testing-Tool).*"
+          }
+        }
+      ],
+      "destination": "https://calender.up.railway.app/t/:slug"
+    },
+    {
+      "source": "/t/:slug/google",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": {
+            "re": ".*(bot|crawler|spider|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Slackbot|Discordbot|TelegramBot|WhatsApp|Pinterest|SkypeUriPreview|Google-Structured-Data-Testing-Tool).*"
+          }
+        }
+      ],
+      "destination": "https://calender.up.railway.app/t/:slug/google"
+    },
+    {
+      "source": "/:path((?!assets/).*)",
       "destination": "/index.html"
     }
   ],

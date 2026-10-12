@@ -23,7 +23,7 @@ describe("DR-47 class share attribution", () => {
         "https://calender.aido.co.zw/t/hit-cs-1?utm_source=old#private",
         "class_rep",
       ),
-    ).toBe("https://calender.aido.co.zw/t/hit-cs-1?src=class_rep");
+    ).toBe("https://calender.aido.co.zw/t/hit-cs-1?sr=class_rep");
     expect(() =>
       buildAttributedClassUrl(
         "https://calender.aido.co.zw/calendar/feed/private-token.ics",
@@ -34,19 +34,19 @@ describe("DR-47 class share attribution", () => {
 
   it("builds WhatsApp-friendly copy without implying that opening the link subscribes", () => {
     const payload = buildClassSharePayload({
-      classLabel: "Class 1.1",
+      classLabel: "HIT Biotechnology Part 1.1",
       publicUrl: "https://calender.aido.co.zw/t/hit-cs-1",
       source: "onboarding_success",
     });
     expect(payload.url).toBe(
-      "https://calender.aido.co.zw/t/hit-cs-1?src=onboarding_success",
+      "https://calender.aido.co.zw/t/hit-cs-1?sr=onboarding_success",
     );
     expect(payload.message).toContain(
-      "Class 1.1 timetable is now live on CalenderZW 🎓",
+      "HIT Biotechnology Part 1.1 timetable is live! 🎓",
     );
-    expect(payload.message).toContain("See tomorrow's classes");
+    expect(payload.message).toContain("See tomorrow's lectures");
     expect(payload.message).toContain(
-      "add the full timetable to your calendar in one tap.",
+      "add the full timetable to your calendar.",
     );
     expect(payload.message).toContain("\n\nhttps://calender.aido.co.zw/");
     expect(payload.message).not.toMatch(
@@ -57,9 +57,14 @@ describe("DR-47 class share attribution", () => {
   it("reads shared-link attribution only when it is allowlisted", () => {
     expect(
       readClassShareSource(
-        "https://calender.aido.co.zw/t/hit-cs-1?src=class_share",
+        "https://calender.aido.co.zw/t/hit-cs-1?sr=class_share",
       ),
     ).toBe("class_share");
+    expect(
+      readClassShareSource(
+        "https://calender.aido.co.zw/t/hit-cs-1?src=class_rep",
+      ),
+    ).toBe("class_rep");
     expect(
       readClassShareSource(
         "https://calender.aido.co.zw/t/hit-cs-1?src=user-identity",
