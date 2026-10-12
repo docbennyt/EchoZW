@@ -23,6 +23,8 @@ jobs:
       CALENDERZW_STAGING_ORIGIN: https://next.calender.aido.co.zw
       CALENDERZW_STAGING_FEED_URL: ${{ secrets.CALENDERZW_STAGING_FEED_URL }}
       EXPECTED_BACKEND_SHA: ${{ vars.EXPECTED_BACKEND_SHA }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       IS_SAME_REPO_PR: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
@@ -65,7 +67,15 @@ jobs:
         run: npm run worker:check
 
       - name: Wrangler dry-run validation
-        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --dry-run --outdir .wrangler-dry-run --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }}
+        run: |
+          npx wrangler@4.147.0 deploy \
+            --env staging \
+            --config wrangler.jsonc \
+            --dry-run \
+            --outdir .wrangler-dry-run \
+            --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }} \
+            --var SUPABASE_URL:${SUPABASE_URL} \
+            --var VITE_SUPABASE_PUBLISHABLE_KEY:${VITE_SUPABASE_PUBLISHABLE_KEY}
 
       - name: Deploy Cloudflare staging
         id: deploy
@@ -75,6 +85,8 @@ jobs:
             --env staging \
             --config wrangler.jsonc \
             --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }} \
+            --var SUPABASE_URL:${SUPABASE_URL} \
+            --var VITE_SUPABASE_PUBLISHABLE_KEY:${VITE_SUPABASE_PUBLISHABLE_KEY} \
             --tag sha-${{ steps.exact-head.outputs.sha }} \
             --message "PR ${{ github.event.pull_request.number }} ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
