@@ -204,7 +204,7 @@ describe("CZW Import Format v1", () => {
     );
   });
 
-  it("round-trips a filled downloaded template with two targets and raw venues", async () => {
+  it("round-trips a filled two-target workbook", async () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(
       (await buildCzwImportTemplateXlsx()) as unknown as ArrayBuffer,
@@ -271,10 +271,8 @@ describe("CZW Import Format v1", () => {
     expect(extraction.kind).toBe("czw-xlsx");
     expect(extraction.canonical?.targets).toHaveLength(2);
     expect(extraction.parsed.sessions).toHaveLength(2);
-    expect(extraction.parsed.sessions.map((session) => session.venueRaw)).toEqual([
-      "W/S",
-      "MPS",
-    ]);
+    const venues = extraction.parsed.sessions.map((session) => session.venueRaw);
+    expect(venues).toEqual(["W/S", "MPS"]);
     expect(extraction.parsed.metadata.academicYearRaw).toBe("2025-2026");
   });
 
