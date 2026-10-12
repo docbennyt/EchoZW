@@ -97,14 +97,6 @@
   gap: 10px;
 }
 
-.czw-import-ai-instructions {
-  grid-column: 1 / -1;
-  margin: -4px 0 2px;
-  color: #5b6f63;
-  font-size: 0.88rem;
-  line-height: 1.45;
-}
-
 .czw-static-import label {
   display: grid;
   gap: 7px;
