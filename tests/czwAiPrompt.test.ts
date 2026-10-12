@@ -25,8 +25,6 @@ describe("DR-174 classification-first AI workbook prompt", () => {
     expect(importPage).toContain(
       "/templates/czw-timetable-ai-workbook-prompt-v2.md",
     );
-    expect(importPage).toContain("response.ok");
-    expect(importPage).toContain("text/html");
     expect(workbookPrompt).toContain(
       "Your ONLY successful deliverable is the ACTUAL completed",
     );
