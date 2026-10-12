@@ -516,7 +516,7 @@ async function workbookBuffer() {
       "academic_year",
       "semester_number",
     ],
-    [CZW_IMPORT_FORMAT_VERSION, "Example timetable", "", "", "2026-2027", 1],
+    [CZW_IMPORT_FORMAT_VERSION, "", "", "", "", ""],
   ]);
   const targets = workbook.addWorksheet("Targets");
   targets.addRows([
@@ -528,12 +528,10 @@ async function workbookBuffer() {
       "semester_number",
       "academic_year",
     ],
-    ["part-1-semester-1", "Part 1 Semester 1", "", 1, 1, "2026-2027"],
   ]);
   const courses = workbook.addWorksheet("Courses");
   courses.addRows([
     ["target_key", "course_code", "course_name", "hours_per_week", "lecturer"],
-    ["part-1-semester-1", "HIT 1101", "Technopreneurship I", 2, ""],
   ]);
   const sessions = workbook.addWorksheet("Sessions");
   sessions.addRows([
@@ -548,22 +546,18 @@ async function workbookBuffer() {
       "lecturer",
       "delivery_mode",
     ],
-    [
-      "part-1-semester-1",
-      "HIT 1101",
-      "Technopreneurship I",
-      "Monday",
-      "08:00",
-      "10:00",
-      "Room 1",
-      "",
-      "",
-    ],
   ]);
   for (const sheet of workbook.worksheets) {
-    sheet.getRow(1).font = { bold: true };
+    sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    sheet.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF105A42" },
+    };
+    sheet.getRow(1).height = 24;
+    sheet.views = [{ state: "frozen", ySplit: 1 }];
     sheet.columns.forEach((column) => {
-      column.width = 22;
+      column.width = 23;
     });
   }
   const buffer = await workbook.xlsx.writeBuffer();
