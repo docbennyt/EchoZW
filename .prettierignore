@@ -7,3 +7,7 @@ test-results/
 .agents/
 CalenderZW-VPS/
 CalenderZW_Antigravity_Landing_Pack/
+
+# AI prompt assets are literal copied instructions; do not reflow their text.
+public/templates/czw-timetable-ai-prompt-v1.1.md
+public/templates/czw-timetable-ai-workbook-prompt-v2.md
