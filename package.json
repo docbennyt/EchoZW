@@ -25,6 +25,7 @@
     "worker:automation:check": "node scripts/check-cloudflare-automation.mjs",
     "worker:validate": "npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --dry-run --outdir .wrangler-dry-run",
     "worker:smoke:staging": "node scripts/smoke-cloudflare-staging.mjs",
+    "browser:smoke:release": "node scripts/smoke-browser-release.mjs",
     "worker:deploy:staging": "npm run verify && npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc"
   },
   "dependencies": {

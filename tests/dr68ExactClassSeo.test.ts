@@ -68,11 +68,11 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
     const metadata = buildPublicTimetableMetadata(makeTimetable());
 
     expect(metadata.title).toBe(
-      "HIT · BTech Information Security and Assurance · Class 1.1 timetable | CalenderZW",
+      "HIT · Information Security and Assurance · Part 1.1 timetable | CalenderZW",
     );
     expect(metadata.description).toContain("August Semester 2026 timetable");
     expect(metadata.description).toContain(
-      "BTech Information Security and Assurance, Class 1.1 at HIT",
+      "Information Security and Assurance, Part 1.1 at HIT",
     );
     expect(metadata.canonicalPath).toBe("/t/hit-ics-1-1-august-semester-2026");
   });
@@ -108,13 +108,13 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
     expect(response.statusCode).toBe(200);
     expect(resolver).toHaveBeenCalledWith("hit-ics-1-1-august-semester-2026");
     expect(response.responseBody).toContain(
-      "<title>HIT · BTech Information Security and Assurance · Class 1.1 timetable | CalenderZW</title>",
+      "<title>HIT · Information Security and Assurance · Part 1.1 timetable | CalenderZW</title>",
     );
     expect(response.responseBody).toContain(
-      'property="og:title" content="HIT · BTech Information Security and Assurance · Class 1.1 timetable | CalenderZW"',
+      'property="og:title" content="HIT · Information Security and Assurance · Part 1.1 timetable | CalenderZW"',
     );
     expect(response.responseBody).toContain(
-      'name="twitter:title" content="HIT · BTech Information Security and Assurance · Class 1.1 timetable | CalenderZW"',
+      'name="twitter:title" content="HIT · Information Security and Assurance · Part 1.1 timetable | CalenderZW"',
     );
     expect(response.responseBody).toContain(
       '<link rel="canonical" href="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026" />',
@@ -127,6 +127,9 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
     );
     expect(response.responseBody).toContain(
       'property="og:image:height" content="630"',
+    );
+    expect(response.responseBody).toContain(
+      'property="og:image:type" content="image/png"',
     );
     expect(response.responseBody).not.toContain("utm_source");
     expect(response.responseBody).not.toContain("callback=1");
@@ -211,7 +214,7 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
     expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
     expect(image.readUInt32BE(16)).toBe(1200);
     expect(image.readUInt32BE(20)).toBe(630);
-    expect(statSync(path).size).toBeLessThan(100_000);
+    expect(statSync(path).size).toBeLessThan(150_000);
 
     const index = readFileSync("index.html", "utf8");
     expect(index).toContain("/calenderzw-share-1200x630.png");

@@ -63,6 +63,7 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   next = upsertMeta(next, "property", "og:image", ogImage);
   next = upsertMeta(next, "property", "og:image:width", "1200");
   next = upsertMeta(next, "property", "og:image:height", "630");
+  next = upsertMeta(next, "property", "og:image:type", "image/png");
   next = upsertMeta(
     next,
     "property",
