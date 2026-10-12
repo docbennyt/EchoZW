@@ -82,6 +82,16 @@ jobs:
         env:
           EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}
 
+      - name: Install browser runtime
+        if: ${{ inputs.run_smoke }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser zero-blank-page release smoke
+        if: ${{ inputs.run_smoke }}
+        run: npm run browser:smoke:release
+        env:
+          CALENDERZW_BROWSER_SMOKE_BASE_URL: ${{ env.CALENDERZW_STAGING_ORIGIN }}
+
       - name: Deployment evidence summary
         if: ${{ always() }}
         run: |
@@ -92,5 +102,6 @@ jobs:
             echo "- Exact SHA: \`${{ steps.exact-head.outputs.sha }}\`"
             echo "- Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
             echo "- Smoke requested: \`${{ inputs.run_smoke }}\`"
+            echo "- Browser zero-blank-page smoke requested with staging smoke: \`${{ inputs.run_smoke }}\`"
             echo "- Production DNS unchanged by this workflow."
           } >> "$GITHUB_STEP_SUMMARY"

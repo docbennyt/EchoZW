@@ -194,7 +194,7 @@ describe("public student flow", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("HIT")).toBeInTheDocument();
-    expect(screen.getByText("Class 1.1")).toBeInTheDocument();
+    expect(screen.getByText("Part 1.1")).toBeInTheDocument();
     expect(screen.getByText("August Semester 2026")).toBeInTheDocument();
     expect(screen.getByText(/Published by CalenderZW/i)).toBeInTheDocument();
     expect(screen.getByText(/Next class/i)).toBeInTheDocument();

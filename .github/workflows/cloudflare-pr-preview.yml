@@ -84,6 +84,16 @@ jobs:
         env:
           EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}
 
+      - name: Install browser runtime
+        if: ${{ env.IS_SAME_REPO_PR == 'true' }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser zero-blank-page release smoke
+        if: ${{ env.IS_SAME_REPO_PR == 'true' }}
+        run: npm run browser:smoke:release
+        env:
+          CALENDERZW_BROWSER_SMOKE_BASE_URL: ${{ env.CALENDERZW_STAGING_ORIGIN }}
+
       - name: Read deployed release identity
         id: release
         if: ${{ env.IS_SAME_REPO_PR == 'true' }}
@@ -110,7 +120,7 @@ jobs:
             if [ "${IS_SAME_REPO_PR}" = "true" ]; then
               echo "- Deploy: attempted with Cloudflare staging environment"
               echo "- Worker version: \`${{ steps.release.outputs.worker_version }}\`"
-              echo "- Smoke: required and completed before this summary step"
+              echo "- Smoke: HTTP/runtime smoke and browser zero-blank-page smoke required before this summary step"
               if [ -n "${EXPECTED_BACKEND_SHA}" ]; then
                 echo "- Backend integration: required Railway/backend SHA \`${EXPECTED_BACKEND_SHA}\`"
               else
@@ -136,6 +146,7 @@ jobs:
           - Staging origin: ${CALENDERZW_STAGING_ORIGIN}
           - Worker version: \`${{ steps.release.outputs.worker_version }}\`
           - Source SHA reported by /__release: \`${{ steps.release.outputs.source_sha }}\`
+          - Browser release smoke: rendered public routes, validated static asset MIME types, and opened Add to Calendar from the deployed staging origin.
           - Production DNS/runtime unchanged.
           - Backend compatibility: this Worker preview does not imply same-SHA Railway backend compatibility unless \`EXPECTED_BACKEND_SHA\` is configured and enforced.
 

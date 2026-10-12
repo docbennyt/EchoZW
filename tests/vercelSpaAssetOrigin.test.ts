@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 type Rewrite = {
   source: string;
   destination: string;
+  has?: Array<{
+    type: string;
+    key: string;
+    value?: string | { re?: string };
+  }>;
 };
 
 type HeaderRule = {
@@ -28,26 +33,30 @@ function loadVercelHeaderRules(): HeaderRule[] {
 }
 
 describe("Vercel SPA asset-origin contract", () => {
-  it("keeps static SPA routes on Vercel while allowing exact class pages to use server-rendered SEO HTML", () => {
+  it("keeps browser SPA routes on Vercel while allowing crawler-only class SEO HTML", () => {
     const rewrites = loadVercelRewrites();
 
-    for (const source of ["/find", "/assets/:path*"]) {
+    for (const source of ["/find", "/assets/:path*", "/t/:path*"]) {
       const route = rewrites.find((rewrite) => rewrite.source === source);
       expect(route?.destination ?? "").not.toContain("railway.app");
     }
 
-    expect(rewrites).toContainEqual({
-      source: "/t/:slug",
-      destination: "https://calender.up.railway.app/t/:slug",
-    });
-    expect(rewrites).toContainEqual({
-      source: "/t/:slug/google",
-      destination: "https://calender.up.railway.app/t/:slug/google",
-    });
-    expect(rewrites).not.toContainEqual({
-      source: "/t/:path*",
-      destination: expect.stringContaining("railway.app"),
-    });
+    const classPage = rewrites.find((rewrite) => rewrite.source === "/t/:slug");
+    const googlePage = rewrites.find(
+      (rewrite) => rewrite.source === "/t/:slug/google",
+    );
+    for (const route of [classPage, googlePage]) {
+      expect(route?.destination).toContain("railway.app");
+      expect(route?.has).toEqual([
+        expect.objectContaining({
+          type: "header",
+          key: "user-agent",
+          value: expect.objectContaining({
+            re: expect.stringContaining("WhatsApp"),
+          }),
+        }),
+      ]);
+    }
   });
 
   it("keeps backend-only routes on Railway and the SPA shell on Vercel", () => {
@@ -74,7 +83,7 @@ describe("Vercel SPA asset-origin contract", () => {
       destination: "https://calender.up.railway.app/sitemap.xml",
     });
     expect(rewrites.at(-1)).toEqual({
-      source: "/:path*",
+      source: "/:path((?!assets/).*)",
       destination: "/index.html",
     });
   });

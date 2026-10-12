@@ -3,6 +3,8 @@ import type { PublicTimetable } from "../src/api/pilotTypes";
 import {
   buildPublicTimetableMetadata,
   formatClassGroupLabel,
+  formatProgrammeDisplayLabel,
+  formatTimetableShareClassLabel,
   getUpcomingOccurrences,
 } from "../src/domain/publicTimetable";
 
@@ -54,15 +56,28 @@ function makeTimetable(
 
 describe("public timetable helpers", () => {
   it("formats a class-group label for students", () => {
-    expect(formatClassGroupLabel("1.1")).toBe("Class 1.1");
-    expect(formatClassGroupLabel("Class 2.2")).toBe("Class 2.2");
+    expect(formatClassGroupLabel("1.1")).toBe("Part 1.1");
+    expect(formatClassGroupLabel("Class 2.2")).toBe("Part 2.2");
+    expect(formatClassGroupLabel("Part 4.1")).toBe("Part 4.1");
+  });
+
+  it("formats timetable share class labels with student-facing programme language", () => {
+    expect(formatProgrammeDisplayLabel("BTech Computer Science")).toBe(
+      "Computer Science",
+    );
+    expect(formatProgrammeDisplayLabel("BSc Biotechnology")).toBe(
+      "Biotechnology",
+    );
+    expect(formatTimetableShareClassLabel(makeTimetable())).toBe(
+      "HIT Computer Science Part 1.1",
+    );
   });
 
   it("builds timetable-specific share metadata", () => {
     expect(buildPublicTimetableMetadata(makeTimetable())).toEqual({
-      title: "HIT · BTech Computer Science · Class 1.1 timetable | CalenderZW",
+      title: "HIT · Computer Science · Part 1.1 timetable | CalenderZW",
       description:
-        "August Semester 2026 timetable for BTech Computer Science, Class 1.1 at HIT. View published classes and add the schedule to your calendar with CalenderZW.",
+        "August Semester 2026 timetable for Computer Science, Part 1.1 at HIT. View published lectures and add the schedule to your calendar with CalenderZW.",
       canonicalPath: "/t/hit-ics-1-1-august-semester-2026",
     });
   });

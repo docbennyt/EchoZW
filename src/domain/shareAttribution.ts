@@ -18,7 +18,10 @@ export function sanitizeClassShareSource(
 
 export function readClassShareSource(url: string): ClassShareSource | null {
   try {
-    return sanitizeClassShareSource(new URL(url).searchParams.get("src"));
+    const parsed = new URL(url);
+    return sanitizeClassShareSource(
+      parsed.searchParams.get("sr") ?? parsed.searchParams.get("src"),
+    );
   } catch {
     return null;
   }
@@ -34,13 +37,13 @@ export function buildAttributedClassUrl(
   }
   url.search = "";
   url.hash = "";
-  url.searchParams.set("src", source);
+  url.searchParams.set("sr", source);
   return url.toString();
 }
 
 export function buildClassShareMessage(classLabel: string, url: string) {
   const cleanLabel = classLabel.trim() || "Class";
-  return `${cleanLabel} timetable is now live on CalenderZW 🎓\n\nSee tomorrow's classes and add the full timetable to your calendar in one tap.\n\n${url}`;
+  return `${cleanLabel} timetable is live! 🎓\n\nSee tomorrow's lectures and add the full timetable to your calendar.\n\n${url}`;
 }
 
 export function buildClassSharePayload(input: {
@@ -50,7 +53,7 @@ export function buildClassSharePayload(input: {
 }) {
   const url = buildAttributedClassUrl(input.publicUrl, input.source);
   const cleanLabel = input.classLabel.trim() || "Class";
-  const text = `${cleanLabel} timetable is now live on CalenderZW 🎓\n\nSee tomorrow's classes and add the full timetable to your calendar in one tap.`;
+  const text = `${cleanLabel} timetable is live! 🎓\n\nSee tomorrow's lectures and add the full timetable to your calendar.`;
   return {
     title: `${cleanLabel} timetable`,
     text,

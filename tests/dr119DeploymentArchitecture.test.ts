@@ -7,7 +7,15 @@ const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
 const vercel = JSON.parse(readFileSync("vercel.json", "utf8")) as {
   buildCommand: string;
   outputDirectory: string;
-  rewrites: Array<{ source: string; destination: string }>;
+  rewrites: Array<{
+    source: string;
+    destination: string;
+    has?: Array<{
+      type: string;
+      key: string;
+      value?: string | { re?: string };
+    }>;
+  }>;
   redirects: Array<{ source: string; destination: string; permanent: boolean }>;
 };
 const dockerfile = readFileSync("Dockerfile", "utf8");
@@ -61,14 +69,31 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
       `${railwayOrigin}/runtime-config.js`,
     );
     expect(rewrites.get("/sitemap.xml")).toBe(`${railwayOrigin}/sitemap.xml`);
-    expect(rewrites.get("/t/:slug")).toBe(`${railwayOrigin}/t/:slug`);
-    expect(rewrites.get("/t/:slug/google")).toBe(
+    const classPageRewrite = vercel.rewrites.find(
+      (rewrite) => rewrite.source === "/t/:slug",
+    );
+    const classGoogleRewrite = vercel.rewrites.find(
+      (rewrite) => rewrite.source === "/t/:slug/google",
+    );
+    expect(classPageRewrite?.destination).toBe(`${railwayOrigin}/t/:slug`);
+    expect(classGoogleRewrite?.destination).toBe(
       `${railwayOrigin}/t/:slug/google`,
     );
+    for (const rewrite of [classPageRewrite, classGoogleRewrite]) {
+      expect(rewrite?.has).toEqual([
+        expect.objectContaining({
+          type: "header",
+          key: "user-agent",
+          value: expect.objectContaining({
+            re: expect.stringContaining("WhatsApp"),
+          }),
+        }),
+      ]);
+    }
     expect(rewrites.get("/t/:path*")).toBeUndefined();
     expect(rewrites.get("/find")).toBeUndefined();
     expect(vercel.rewrites.at(-1)).toEqual({
-      source: "/:path*",
+      source: "/:path((?!assets/).*)",
       destination: "/index.html",
     });
 
@@ -88,7 +113,7 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
       (rewrite) => rewrite.source === "/t/:slug",
     );
     const fallbackIndex = vercel.rewrites.findIndex(
-      (rewrite) => rewrite.source === "/:path*",
+      (rewrite) => rewrite.source === "/:path((?!assets/).*)",
     );
     expect(apiIndex).toBeGreaterThanOrEqual(0);
     expect(calendarFeedIndex).toBeGreaterThan(apiIndex);
