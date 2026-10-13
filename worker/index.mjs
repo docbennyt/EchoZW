@@ -501,18 +501,6 @@ async function handleNativeAdminSession(request, env) {
     );
   }
 
-  if (!hasSupabaseServerConfig(env)) {
-    return json(
-      {
-        error: {
-          code: "AUTH_CONFIGURATION_ERROR",
-          message: "CalenderZW staff authorization is not configured.",
-        },
-      },
-      { status: 503 },
-    );
-  }
-
   try {
     const context = await requireStaffUser(
       {
