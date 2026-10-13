@@ -9,7 +9,7 @@ import { GoogleCalendarConnectPage } from "./GoogleCalendarDirectConnect";
 import { FeedbackPage, TimetableRequestPage } from "./GrowthCapturePages";
 import { GrowthInboxPage } from "./GrowthInboxPage";
 import { HeroTrustProof } from "./HeroTrustProof";
-import { PilotOfferEnhancement } from "./PilotOfferEnhancement";
+import { PaynowDemoPage, PilotOfferEnhancement } from "./PilotOfferEnhancement";
 import { MarketingEnhancements } from "./ProductionUxEnhancements";
 import { PublicTimetableReliability } from "./PublicTimetableReliability";
 import { StaticTimetableImportPage } from "./StaticTimetableImportPage";
@@ -89,6 +89,10 @@ function RootApp() {
 
   if (path === PASSWORD_RESET_PATH || path === AUTH_CONFIRM_PATH) {
     return <AuthSetupPage />;
+  }
+
+  if (path === "/paynow-demo" || path === "/paynow-demo/") {
+    return <PaynowDemoPage />;
   }
 
   if (path === "/request" || path === "/request/") {
