@@ -4,7 +4,11 @@
   --pricing-muted: #52685d;
   --pricing-gold: #ecac32;
   background:
-    radial-gradient(circle at 90% 3%, rgba(236, 172, 50, 0.09), transparent 30%),
+    radial-gradient(
+      circle at 90% 3%,
+      rgba(236, 172, 50, 0.09),
+      transparent 30%
+    ),
     #f7f4eb;
   padding-block: clamp(4.25rem, 8vw, 7.5rem);
   color: var(--pricing-ink);
@@ -70,7 +74,10 @@
   color: #485c52;
   cursor: pointer;
   font-weight: 750;
-  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
 }
 
 .czw-pricing-switch button small {
@@ -197,7 +204,9 @@
   color: #173f30;
   font-weight: 800;
   text-align: center;
-  transition: transform 160ms ease, background 160ms ease;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
 }
 
 .czw-pricing-action:hover {

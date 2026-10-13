@@ -1,4 +1,10 @@
-import { Check, ArrowRight, Minus, GraduationCap, ShieldCheck } from "lucide-react";
+import {
+  Check,
+  ArrowRight,
+  Minus,
+  GraduationCap,
+  ShieldCheck,
+} from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BRAND } from "./config/brand";
@@ -52,8 +58,16 @@ function Feature({
   included?: boolean;
 }) {
   return (
-    <li className={included ? "czw-pricing-feature" : "czw-pricing-feature is-off"}>
-      {included ? <Check size={17} aria-hidden="true" /> : <Minus size={17} aria-hidden="true" />}
+    <li
+      className={
+        included ? "czw-pricing-feature" : "czw-pricing-feature is-off"
+      }
+    >
+      {included ? (
+        <Check size={17} aria-hidden="true" />
+      ) : (
+        <Minus size={17} aria-hidden="true" />
+      )}
       <span>{children}</span>
     </li>
   );
@@ -69,7 +83,9 @@ function StudentPlanCard({
   const detail = MARKETING_STUDENT_PLANS[plan];
   const featured = plan === "complete";
   return (
-    <article className={featured ? "czw-pricing-card is-popular" : "czw-pricing-card"}>
+    <article
+      className={featured ? "czw-pricing-card is-popular" : "czw-pricing-card"}
+    >
       {featured ? <div className="czw-pricing-ribbon">Most popular</div> : null}
       <div className="czw-pricing-card-intro">
         <h3>{detail.title}</h3>
@@ -85,7 +101,9 @@ function StudentPlanCard({
           : "Billed once for 2 semesters"}
       </p>
       <a
-        className={featured ? "czw-pricing-action is-primary" : "czw-pricing-action"}
+        className={
+          featured ? "czw-pricing-action is-primary" : "czw-pricing-action"
+        }
         href={marketingDemoCheckoutHref(plan, billing)}
       >
         View Paynow demo <ArrowRight size={17} aria-hidden="true" />
@@ -136,16 +154,26 @@ function MarketingPricingSection() {
   const [billing, setBilling] = useState<MarketingBillingPeriod>("monthly");
 
   return (
-    <section id="pricing" className="czw-section czw-pricing-section" aria-labelledby="czw-pricing-title">
+    <section
+      id="pricing"
+      className="czw-section czw-pricing-section"
+      aria-labelledby="czw-pricing-title"
+    >
       <div className="czw-shell">
         <div className="czw-pricing-heading">
           <div>
             <span className="czw-kicker">Simple, student-first pricing</span>
             <h2 id="czw-pricing-title">One less thing to worry about.</h2>
-            <p>Stay organised with your classes. Add exams when you need them.</p>
+            <p>
+              Stay organised with your classes. Add exams when you need them.
+            </p>
           </div>
           <div className="czw-pricing-switch-wrap">
-            <div className="czw-pricing-switch" role="group" aria-label="Billing period">
+            <div
+              className="czw-pricing-switch"
+              role="group"
+              aria-label="Billing period"
+            >
               <button
                 type="button"
                 aria-pressed={billing === "monthly"}
@@ -164,7 +192,9 @@ function MarketingPricingSection() {
               </button>
             </div>
             <span className="czw-pricing-announcement" role="status">
-              {billing === "monthly" ? "Monthly prices shown." : "Academic-year prices shown; billed once for two semesters."}
+              {billing === "monthly"
+                ? "Monthly prices shown."
+                : "Academic-year prices shown; billed once for two semesters."}
             </span>
           </div>
         </div>
@@ -175,24 +205,31 @@ function MarketingPricingSection() {
           <InstitutionCard />
         </div>
         <p className="czw-pricing-demo-disclaimer">
-          Payment links open a demonstration only. No money is collected or access activated.
-          Yearly student prices equal 12 monthly payments, covering 2 semesters.
+          Payment links open a demonstration only. No money is collected or
+          access activated. Yearly student prices equal 12 monthly payments,
+          covering 2 semesters.
         </p>
 
         <aside className="czw-timely-offer" aria-label="Timely student offer">
-          <div className="czw-timely-orbit" aria-hidden="true"><GraduationCap size={32} /></div>
+          <div className="czw-timely-orbit" aria-hidden="true">
+            <GraduationCap size={32} />
+          </div>
           <div className="czw-timely-copy">
             <span className="czw-timely-eyebrow">More than a timetable</span>
             <h3>Meet Timely. Your university years, organised.</h3>
             <p>
-              One student. Parts 1–4. Personalised Timely features, plus Nicolas,
-              your human study coach for original writing guidance, research
-              structure and responsible referencing.
+              One student. Parts 1–4. Personalised Timely features, plus
+              Nicolas, your human study coach for original writing guidance,
+              research structure and responsible referencing.
             </p>
           </div>
           <div className="czw-timely-purchase">
-            <strong>US$25 <span>one-time</span></strong>
-            <span className="czw-timely-scope">Single-student Parts 1–4 offer · Enquire about availability</span>
+            <strong>
+              US$25 <span>one-time</span>
+            </strong>
+            <span className="czw-timely-scope">
+              Single-student Parts 1–4 offer · Enquire about availability
+            </span>
             <a href={SALES_HREF} className="czw-timely-contact">
               Contact Sales <ArrowRight size={17} aria-hidden="true" />
             </a>
@@ -223,16 +260,23 @@ export function PaynowDemoPage() {
   return (
     <main className="czw-paynow-demo-page">
       <div className="czw-paynow-demo-shell">
-        <a href="/" className="czw-paynow-demo-brand" aria-label="CalenderZW home">
+        <a
+          href="/"
+          className="czw-paynow-demo-brand"
+          aria-label="CalenderZW home"
+        >
           <img src={BRAND.wordmarkPath} alt="CalenderZW" />
         </a>
         <div className="czw-paynow-demo-card">
-          <div className="czw-paynow-demo-icon"><ShieldCheck size={27} aria-hidden="true" /></div>
+          <div className="czw-paynow-demo-icon">
+            <ShieldCheck size={27} aria-hidden="true" />
+          </div>
           <span className="czw-kicker">Paynow checkout demonstration</span>
           <h1>Preview only. No payment will be taken.</h1>
           <p>
-            This is a CalenderZW demonstration page, not a Paynow-hosted checkout.
-            No real or test transaction will be created and no subscription is activated.
+            This is a CalenderZW demonstration page, not a Paynow-hosted
+            checkout. No real or test transaction will be created and no
+            subscription is activated.
           </p>
           {selection ? (
             <div className="czw-paynow-demo-summary" aria-label="Selected plan">
@@ -242,15 +286,25 @@ export function PaynowDemoPage() {
               </div>
               <div>
                 <span>Billing</span>
-                <strong>{selection.billing === "monthly" ? "Monthly" : "Yearly · 2 semesters"}</strong>
+                <strong>
+                  {selection.billing === "monthly"
+                    ? "Monthly"
+                    : "Yearly · 2 semesters"}
+                </strong>
               </div>
               <div>
                 <span>Illustrative total</span>
-                <strong>{marketingPrice(marketingAmountMinor(selection.plan, selection.billing))}</strong>
+                <strong>
+                  {marketingPrice(
+                    marketingAmountMinor(selection.plan, selection.billing),
+                  )}
+                </strong>
               </div>
             </div>
           ) : (
-            <p className="czw-paynow-demo-error">No valid pricing plan was selected.</p>
+            <p className="czw-paynow-demo-error">
+              No valid pricing plan was selected.
+            </p>
           )}
           <a className="czw-pricing-action is-primary" href="/#pricing">
             Back to pricing <ArrowRight size={17} aria-hidden="true" />

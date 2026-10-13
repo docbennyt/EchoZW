@@ -20,19 +20,29 @@ describe("CZW marketing price catalogue", () => {
     expect(MARKETING_YEAR_MONTHS).toBe(12);
     expect(marketingAmountMinor("essentials", "yearly")).toBe(600);
     expect(marketingAmountMinor("complete", "yearly")).toBe(1200);
-    expect(marketingPrice(marketingAmountMinor("essentials", "monthly"))).toBe("US$0.50");
-    expect(marketingPrice(marketingAmountMinor("complete", "monthly"))).toBe("US$1");
+    expect(marketingPrice(marketingAmountMinor("essentials", "monthly"))).toBe(
+      "US$0.50",
+    );
+    expect(marketingPrice(marketingAmountMinor("complete", "monthly"))).toBe(
+      "US$1",
+    );
   });
 
   it("keeps demo URLs local and rejects unknown or forged selections", () => {
     expect(marketingDemoCheckoutHref("complete", "yearly")).toBe(
       "/paynow-demo?plan=complete&billing=yearly",
     );
-    expect(readMarketingDemoSelection("?plan=complete&billing=yearly")).toEqual({
-      plan: "complete",
-      billing: "yearly",
-    });
-    expect(readMarketingDemoSelection("?plan=institution&billing=yearly")).toBeNull();
-    expect(readMarketingDemoSelection("?plan=complete&billing=weekly")).toBeNull();
+    expect(readMarketingDemoSelection("?plan=complete&billing=yearly")).toEqual(
+      {
+        plan: "complete",
+        billing: "yearly",
+      },
+    );
+    expect(
+      readMarketingDemoSelection("?plan=institution&billing=yearly"),
+    ).toBeNull();
+    expect(
+      readMarketingDemoSelection("?plan=complete&billing=weekly"),
+    ).toBeNull();
   });
 });

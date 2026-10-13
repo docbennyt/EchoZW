@@ -70,7 +70,8 @@ const staticRouteMetadata: Record<string, SeoRouteMetadata> = {
 const noindexRouteMetadata: Record<string, SeoRouteMetadata> = {
   "/paynow-demo": {
     title: "Payment demonstration | CalenderZW",
-    description: "Illustrative student pricing checkout. No payment is accepted.",
+    description:
+      "Illustrative student pricing checkout. No payment is accepted.",
     canonicalPath: "/paynow-demo",
     robots: "noindex, nofollow",
   },
