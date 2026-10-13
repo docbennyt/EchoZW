@@ -85,6 +85,19 @@ assert(
   "native health routes must run before the legacy backend bridge.",
 );
 assert(
+  worker.includes("handleNativeAdminSession") &&
+    worker.includes('url.pathname === "/api/admin/session"') &&
+    worker.includes("requireStaffUser") &&
+    worker.includes("createSupabaseUserClient(accessToken, env)") &&
+    worker.includes("createSupabaseAdminClient(env)"),
+  "admin session reads must have a native Worker auth adapter.",
+);
+assert(
+  worker.indexOf("handleNativeAdminSession") <
+    worker.indexOf("Transitional staging bridge only"),
+  "native admin session route must run before the legacy backend bridge.",
+);
+assert(
   worker.includes("handleNativeCalendarIcs") &&
     worker.includes('url.pathname.startsWith("/calendar/feed/")') &&
     worker.includes('url.pathname.startsWith("/calendar/download/")'),

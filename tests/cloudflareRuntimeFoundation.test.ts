@@ -87,6 +87,17 @@ describe("Cloudflare runtime foundation", () => {
     );
   });
 
+  it("routes staff session reads through native Worker auth before the backend bridge", () => {
+    expect(worker).toContain("handleNativeAdminSession");
+    expect(worker).toContain('url.pathname === "/api/admin/session"');
+    expect(worker).toContain("requireStaffUser");
+    expect(worker).toContain("createSupabaseUserClient(accessToken, env)");
+    expect(worker).toContain("createSupabaseAdminClient(env)");
+    expect(worker.indexOf("handleNativeAdminSession")).toBeLessThan(
+      worker.indexOf("Transitional staging bridge only"),
+    );
+  });
+
   it("serves calendar feed and download ICS through native Worker transport when configured", () => {
     expect(worker).toContain("handleNativeCalendarIcs");
     expect(worker).toContain('url.pathname.startsWith("/calendar/feed/")');

@@ -20,6 +20,9 @@ import {
 } from "../server/pilotRepository.ts";
 import { buildRevisionAwareCalendar } from "../server/pilotCalendarCore.ts";
 import { recordCalendarFeedActivity } from "../server/analyticsRepository.ts";
+import { AdminAuthError, requireStaffUser } from "../server/supabase/auth.ts";
+import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
+import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
 import { classifyAnalyticsClient } from "../src/domain/analytics.ts";
 import { sha256Base64Url } from "../src/domain/token.ts";
 
@@ -49,6 +52,30 @@ function json(body, init = {}) {
 
 function publicApiError(error) {
   if (error instanceof PilotApiError) {
+    return json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: error.status },
+    );
+  }
+
+  return json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "We could not complete that request. Please try again.",
+      },
+    },
+    { status: 500 },
+  );
+}
+
+function adminAuthError(error) {
+  if (error instanceof AdminAuthError) {
     return json(
       {
         error: {
@@ -466,6 +493,55 @@ async function handleNativePublicTimetableApi(request, env) {
   return null;
 }
 
+async function handleNativeAdminSession(request, env) {
+  if (request.method !== "GET") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  if (!hasSupabaseServerConfig(env)) {
+    return json(
+      {
+        error: {
+          code: "AUTH_CONFIGURATION_ERROR",
+          message: "CalenderZW staff authorization is not configured.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const context = await requireStaffUser(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+        method: request.method,
+        url: new URL(request.url).pathname,
+      },
+      {
+        createUserClient: (accessToken) =>
+          createSupabaseUserClient(accessToken, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+
+    return json({
+      authenticated: true,
+      admin: true,
+      user: context.user,
+      staff: context.staff,
+      permissions: context.permissions,
+      assignments: context.assignments,
+    });
+  } catch (error) {
+    return adminAuthError(error);
+  }
+}
+
 async function handleSourceDocumentUpload(request, env, ctx) {
   if (request.method !== "POST") {
     return json(
@@ -671,6 +747,10 @@ export default {
 
     if (url.pathname === "/api/edge/source-documents") {
       return handleSourceDocumentUpload(request, env, ctx);
+    }
+
+    if (url.pathname === "/api/admin/session") {
+      return handleNativeAdminSession(request, env);
     }
 
     if (

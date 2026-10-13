@@ -6,7 +6,7 @@ Machine-readable source: [DR-153_ROUTE_INVENTORY.json](./DR-153_ROUTE_INVENTORY.
 
 ## Summary
 
-- Native/native-if-configured Worker routes: release identity, runtime config, health/readiness, public timetable reads, calendar feed/download ICS, and authenticated edge source document intake.
+- Native/native-if-configured Worker routes: release identity, runtime config, health/readiness, public timetable reads, staff session read, calendar feed/download ICS, and authenticated edge source document intake.
 - Static Cloudflare asset ownership: SPA routes, class deep links, `/t/:slug/google`, and immutable `/assets/*` files remain owned by the same deployed Vite build.
 - Bridged routes: authenticated Admin/Class Rep mutations, calendar subscription creation, Google OAuth/callback/disconnect, payments, analytics, growth capture/admin, push, internal source snapshots, static import review/drafts, and scheduled cleanup still require the Railway Node backend.
 - Native incomplete background route: `SOURCE_PROCESSING_QUEUE` is bound and receives authenticated source upload messages, but currently ACKs `source_document_uploaded` rather than parsing into Supabase review evidence.
@@ -24,6 +24,7 @@ Machine-readable source: [DR-153_ROUTE_INVENTORY.json](./DR-153_ROUTE_INVENTORY.
 | GET      | `/api/public/timetables/:slug`           | public                       | native when Supabase config is present       | `tests/publicTimetableCore.test.ts`         |
 | GET/HEAD | `/calendar/feed/:token.ics`              | private feed token           | native when Supabase/token config is present | `scripts/smoke-cloudflare-staging.mjs`      |
 | GET/HEAD | `/calendar/download/:subscriptionId.ics` | private subscription id      | native when Supabase config is present       | `scripts/smoke-cloudflare-staging.mjs`      |
+| GET      | `/api/admin/session`                     | staff bearer token           | native when Supabase config is present       | `tests/adminAuth.test.ts`                   |
 | POST     | `/api/edge/source-documents`             | service bearer secret        | native when R2/Queue/secret are present      | authenticated staging smoke                 |
 
 ## Current Bridged Runtime Surface
@@ -35,7 +36,6 @@ The JSON inventory lists each bridged route family with auth policy, service own
 - `/api/calendar/google/connect`
 - `/api/calendar/google/callback`
 - `/api/calendar/google/disconnect`
-- `/api/admin/session`
 - `/api/admin/my/timetables`
 - `/api/admin/timetables/:id/corrections*`
 - `/api/admin/timetables/:id/exceptions*`
@@ -64,4 +64,4 @@ The exact-head Cloudflare smoke now proves:
 4. the Worker dispatches `source_document_uploaded` to `SOURCE_PROCESSING_QUEUE`;
 5. the response reports `queued: true` without exposing the secret.
 
-This is the first authenticated native Worker workflow. It is not yet full Admin/Class Rep parity; those route families remain bridged until their auth/session adapters are migrated.
+This is the first authenticated native Worker workflow. `GET /api/admin/session` now has a native Worker adapter too, with anonymous rejection covered by staging smoke. A successful 200 staff-session canary still requires a real staging staff access token. Admin/Class Rep mutation route families remain bridged until their Request/Response adapters are migrated.

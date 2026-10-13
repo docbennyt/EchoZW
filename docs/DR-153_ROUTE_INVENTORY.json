@@ -372,17 +372,16 @@
         "class rep assignments",
         "permissions"
       ],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse auth adapter"
-      ],
+      "nodeOnlyDependencies": [],
       "backgroundDependencies": [],
-      "cloudflareStatus": "bridged",
+      "cloudflareStatus": "native-if-configured",
       "contractTests": [
         "tests/adminAuth.test.ts",
-        "tests/adminScopedRoutes.test.ts"
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "scripts/smoke-cloudflare-staging.mjs"
       ],
-      "lastProvenRuntime": "Railway Node backend",
-      "remainingBlocker": "First authenticated admin Worker adapter still required."
+      "lastProvenRuntime": "Pending next exact-head Cloudflare preview after native auth adapter",
+      "remainingBlocker": "A real 200 staff-session canary requires CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN; unauthenticated boundary is covered by staging smoke."
     },
     {
       "method": "GET",
