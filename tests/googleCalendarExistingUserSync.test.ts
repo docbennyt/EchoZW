@@ -112,6 +112,35 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
         }
         if (
           value.includes(
+            "/calendars/cal-existing/events?privateExtendedProperty=calenderzwTimetableId%3Dtt-se41",
+          ) &&
+          init?.method === "GET"
+        ) {
+          return okJson({
+            items: [
+              {
+                id: "event-ise4105",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+              {
+                id: "event-removed",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-wed-removed",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+            ],
+          });
+        }
+        if (
+          value.includes(
             "/calendars/cal-existing/events/event-ise4105?sendUpdates=none",
           ) &&
           init?.method === "PUT"
@@ -301,6 +330,35 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
         }
         if (
           value.includes(
+            "/calendars/cal-existing/events?privateExtendedProperty=calenderzwTimetableId%3Dtt-se41",
+          ) &&
+          init?.method === "GET"
+        ) {
+          return okJson({
+            items: [
+              {
+                id: "event-ise4105",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+              {
+                id: "event-removed",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-wed-removed",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+            ],
+          });
+        }
+        if (
+          value.includes(
             "/calendars/cal-existing/events/event-ise4105?sendUpdates=none",
           ) &&
           init?.method === "PUT"
@@ -348,6 +406,209 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
         status: "active",
         lastErrorCode: null,
       }),
+    );
+  });
+
+  it("deletes orphaned CalenderZW-managed Google events even when the local sync row is missing", async () => {
+    googleRepositoryMocks.listGoogleEventSyncRecords.mockResolvedValue([
+      {
+        internal_event_id: "ise4105-tue-corrected",
+        external_event_id: "event-ise4105",
+        content_hash: "stale-hash",
+      },
+    ]);
+    vi.mocked(fetch).mockImplementation(
+      async (url: string | URL | Request, init?: RequestInit) => {
+        const value = String(url);
+        if (value === "https://oauth2.googleapis.com/token") {
+          return okJson({ access_token: "access-token" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events?privateExtendedProperty=calenderzwTimetableId%3Dtt-se41",
+          ) &&
+          init?.method === "GET"
+        ) {
+          return okJson({
+            items: [
+              {
+                id: "event-ise4105",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+              {
+                id: "event-orphaned-wednesday",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-wed-removed",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+            ],
+          });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-ise4105?sendUpdates=none",
+          ) &&
+          init?.method === "PUT"
+        ) {
+          return okJson({ id: "event-ise4105" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-orphaned-wednesday?sendUpdates=none",
+          ) &&
+          init?.method === "DELETE"
+        ) {
+          return new Response(null, { status: 204 });
+        }
+        throw new Error(
+          `Unexpected Google API request while deleting orphan: ${init?.method} ${value}`,
+        );
+      },
+    );
+
+    const result = await syncGoogleSubscription("sub-existing", env);
+
+    expect(result).toMatchObject({
+      created: 0,
+      updated: 1,
+      deleted: 1,
+      unchanged: 0,
+    });
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/events?privateExtendedProperty=calenderzwTimetableId%3Dtt-se41",
+      ),
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/events/event-orphaned-wednesday?sendUpdates=none",
+      ),
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(
+      googleRepositoryMocks.deleteGoogleEventSyncRecord,
+    ).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionId: "sub-existing",
+        internalEventId: "ise4105-wed-removed",
+      }),
+    );
+  });
+
+  it("adopts existing CalenderZW-managed Google events when mappings are missing instead of creating duplicates", async () => {
+    googleRepositoryMocks.listGoogleEventSyncRecords.mockResolvedValue([]);
+    vi.mocked(fetch).mockImplementation(
+      async (url: string | URL | Request, init?: RequestInit) => {
+        const value = String(url);
+        if (value === "https://oauth2.googleapis.com/token") {
+          return okJson({ access_token: "access-token" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events?privateExtendedProperty=calenderzwTimetableId%3Dtt-se41",
+          ) &&
+          init?.method === "GET"
+        ) {
+          return okJson({
+            items: [
+              {
+                id: "event-existing-tuesday",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+              {
+                id: "event-orphaned-wednesday",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-wed-removed",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+              {
+                id: "event-duplicate-tuesday",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+            ],
+          });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-existing-tuesday?sendUpdates=none",
+          ) &&
+          init?.method === "PUT"
+        ) {
+          return okJson({ id: "event-existing-tuesday" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-orphaned-wednesday?sendUpdates=none",
+          ) &&
+          init?.method === "DELETE"
+        ) {
+          return new Response(null, { status: 204 });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-duplicate-tuesday?sendUpdates=none",
+          ) &&
+          init?.method === "DELETE"
+        ) {
+          return new Response(null, { status: 204 });
+        }
+        throw new Error(
+          `Unexpected Google API request while adopting managed event: ${init?.method} ${value}`,
+        );
+      },
+    );
+
+    const result = await syncGoogleSubscription("sub-existing", env);
+
+    expect(result).toMatchObject({
+      created: 0,
+      updated: 1,
+      deleted: 2,
+      unchanged: 0,
+    });
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/calendars/cal-existing/events?sendUpdates=none",
+      ),
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionId: "sub-existing",
+        internalEventId: "ise4105-tue-corrected",
+        externalEventId: "event-existing-tuesday",
+        syncStatus: "active",
+      }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "/events/event-duplicate-tuesday?sendUpdates=none",
+      ),
+      expect.objectContaining({ method: "DELETE" }),
     );
   });
 

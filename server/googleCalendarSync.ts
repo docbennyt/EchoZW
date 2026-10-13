@@ -61,6 +61,11 @@ type GoogleEventPayload = {
   };
 };
 
+type GoogleManagedRemoteEvent = {
+  id: string;
+  stableSessionKey: string;
+};
+
 const googleCalendarApi = "https://www.googleapis.com/calendar/v3";
 const googleTokenEndpoint = "https://oauth2.googleapis.com/token";
 const googleRevokeEndpoint = "https://oauth2.googleapis.com/revoke";
@@ -200,6 +205,62 @@ async function googleApiRequest(input: {
   }
   if (response.status === 204) return null;
   return parseGoogleJson(response);
+}
+
+function getNestedRecord(value: unknown, key: string) {
+  const nested = asRecord(value)?.[key];
+  return nested && typeof nested === "object" ? asRecord(nested) : null;
+}
+
+function googleManagedEventFromItem(
+  item: unknown,
+  timetableId: string,
+): GoogleManagedRemoteEvent | null {
+  const record = item && typeof item === "object" ? asRecord(item) : null;
+  const id = record?.id ? String(record.id) : null;
+  const extendedProperties = getNestedRecord(record, "extendedProperties");
+  const privateProperties = getNestedRecord(extendedProperties, "private");
+  const itemTimetableId = privateProperties?.calenderzwTimetableId
+    ? String(privateProperties.calenderzwTimetableId)
+    : null;
+  const stableSessionKey = privateProperties?.calenderzwStableSessionKey
+    ? String(privateProperties.calenderzwStableSessionKey)
+    : null;
+  if (!id || itemTimetableId !== timetableId || !stableSessionKey) {
+    return null;
+  }
+  return { id, stableSessionKey };
+}
+
+async function listRemoteManagedEvents(input: {
+  accessToken: string;
+  calendarId: string;
+  timetableId: string;
+}) {
+  const events: GoogleManagedRemoteEvent[] = [];
+  let pageToken: string | null = null;
+  do {
+    const params = new URLSearchParams({
+      privateExtendedProperty: `calenderzwTimetableId=${input.timetableId}`,
+      showDeleted: "false",
+      singleEvents: "false",
+      maxResults: "2500",
+      fields: "items(id,extendedProperties/private),nextPageToken",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const data = await googleApiRequest({
+      accessToken: input.accessToken,
+      path: `/calendars/${encodeURIComponent(input.calendarId)}/events?${params.toString()}`,
+      method: "GET",
+    });
+    const items = Array.isArray(data?.items) ? data.items : [];
+    for (const item of items) {
+      const event = googleManagedEventFromItem(item, input.timetableId);
+      if (event) events.push(event);
+    }
+    pageToken = data?.nextPageToken ? String(data.nextPageToken) : null;
+  } while (pageToken);
+  return events;
 }
 
 async function exchangeAuthorizationCode(input: {
@@ -496,7 +557,24 @@ export async function syncGoogleSubscription(
   const previousById = new Map(
     previousRecords.map((row) => [String(row.internal_event_id), row]),
   );
+  const remoteManagedEvents = await listRemoteManagedEvents({
+    accessToken,
+    calendarId,
+    timetableId,
+  });
+  const remoteManagedByStableKey = new Map<
+    string,
+    GoogleManagedRemoteEvent[]
+  >();
+  for (const event of remoteManagedEvents) {
+    remoteManagedByStableKey.set(event.stableSessionKey, [
+      ...(remoteManagedByStableKey.get(event.stableSessionKey) ?? []),
+      event,
+    ]);
+  }
   const nextIds = new Set<string>();
+  const retainedRemoteEventIds = new Set<string>();
+  const deletedRemoteEventIds = new Set<string>();
   let created = 0;
   let updated = 0;
   let deleted = 0;
@@ -511,11 +589,13 @@ export async function syncGoogleSubscription(
     });
     const hash = contentHash(payload);
     const previous = previousById.get(event.stableSessionKey);
+    const remoteMatches = remoteManagedByStableKey.get(event.stableSessionKey);
     const externalEventId = previous?.external_event_id
       ? String(previous.external_event_id)
-      : null;
+      : (remoteMatches?.[0]?.id ?? null);
 
     if (externalEventId && previous?.content_hash === hash) {
+      retainedRemoteEventIds.add(externalEventId);
       unchanged += 1;
       continue;
     }
@@ -548,6 +628,7 @@ export async function syncGoogleSubscription(
       remoteEventId = createdEventId;
       created += 1;
     }
+    retainedRemoteEventIds.add(remoteEventId);
 
     await upsertGoogleEventSyncRecord({
       subscriptionId,
@@ -574,12 +655,26 @@ export async function syncGoogleSubscription(
         method: "DELETE",
         allowMissing: true,
       });
+      deletedRemoteEventIds.add(externalEventId);
     }
     await deleteGoogleEventSyncRecord({
       subscriptionId,
       internalEventId,
       env,
     });
+    deleted += 1;
+  }
+
+  for (const event of remoteManagedEvents) {
+    if (retainedRemoteEventIds.has(event.id)) continue;
+    if (deletedRemoteEventIds.has(event.id)) continue;
+    await googleApiRequest({
+      accessToken,
+      path: `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(event.id)}?sendUpdates=none`,
+      method: "DELETE",
+      allowMissing: true,
+    });
+    deletedRemoteEventIds.add(event.id);
     deleted += 1;
   }
 
