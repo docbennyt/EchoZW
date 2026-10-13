@@ -1,0 +1,38 @@
+name: Temporary PR112 formatting fix
+
+on:
+  push:
+    branches:
+      - feat/marketing-pricing-student-institution-20261013
+    paths:
+      - .github/workflows/pr112-temporary-formatter.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - run: npm ci
+      - name: Format only the five files flagged by CI
+        run: |
+          npx prettier --write src/domain/seo.ts src/pilotOfferEnhancement.css src/PilotOfferEnhancement.tsx tests/marketingPricing.test.ts tests/PilotOfferEnhancement.test.tsx
+          git diff --check
+      - name: Commit the formatting-only correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/domain/seo.ts src/pilotOfferEnhancement.css src/PilotOfferEnhancement.tsx tests/marketingPricing.test.ts tests/PilotOfferEnhancement.test.tsx
+          if ! git diff --cached --quiet; then
+            git commit -m "style: apply repository Prettier formatting to PR112 pricing files"
+            git push origin HEAD:feat/marketing-pricing-student-institution-20261013
+          fi
