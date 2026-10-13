@@ -1,7 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import {
+  previewGoogleSubscriptionSync,
   previewGoogleSubscriptionsForTimetable,
+  syncGoogleSubscription,
   syncGoogleSubscriptionsForTimetable,
 } from "./googleCalendarSync.js";
 import {
@@ -12,6 +14,7 @@ import {
   createTimetable,
   createTimetableSession,
   deleteTimetableSession,
+  getCalendarSubscriptionById,
   getTimetableEditor,
   listAcademicPeriods,
   listClassGroups,
@@ -38,6 +41,7 @@ const institutionSchema = z.object({
 const googleCalendarSyncSchema = z
   .object({
     dryRun: z.boolean().optional(),
+    subscriptionId: z.string().uuid().optional(),
   })
   .optional();
 
@@ -133,6 +137,43 @@ function sendPilotError(res: ServerResponse, error: unknown) {
 
 function getUserId(user: { id: string }) {
   return user.id;
+}
+
+async function assertTargetedGoogleSubscription(
+  timetableId: string,
+  subscriptionId: string,
+) {
+  const subscription = (await getCalendarSubscriptionById(
+    subscriptionId,
+  )) as Record<string, unknown> | null;
+  if (!subscription?.id) {
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
+  }
+  if (subscription.provider !== "google_api") {
+    throw new PilotApiError(
+      "SUBSCRIPTION_PROVIDER_INVALID",
+      "This subscription is not a Google Calendar connection.",
+      400,
+    );
+  }
+  if (String(subscription.timetable_id) !== timetableId) {
+    throw new PilotApiError(
+      "SUBSCRIPTION_TIMETABLE_MISMATCH",
+      "This Google Calendar connection does not belong to the requested timetable.",
+      403,
+    );
+  }
+  if (subscription.revoked_at || subscription.status === "disconnected") {
+    throw new PilotApiError(
+      "SUBSCRIPTION_DISCONNECTED",
+      "This Google Calendar connection is disconnected and must be reconnected.",
+      409,
+    );
+  }
 }
 
 function parseUrl(req: IncomingMessage) {
@@ -412,9 +453,20 @@ export async function handlePilotAdminApi(
     if (req.method === "POST" && googleSyncMatch) {
       const timetableId = decodeURIComponent(googleSyncMatch[1]);
       const parsed = googleCalendarSyncSchema.parse(await readJson(req));
-      const googleCalendarSync = parsed?.dryRun
-        ? await previewGoogleSubscriptionsForTimetable(timetableId)
-        : await syncGoogleCalendars(timetableId);
+      let googleCalendarSync;
+      if (parsed?.subscriptionId) {
+        await assertTargetedGoogleSubscription(
+          timetableId,
+          parsed.subscriptionId,
+        );
+        googleCalendarSync = parsed.dryRun
+          ? await previewGoogleSubscriptionSync(parsed.subscriptionId)
+          : await syncGoogleSubscription(parsed.subscriptionId);
+      } else {
+        googleCalendarSync = parsed?.dryRun
+          ? await previewGoogleSubscriptionsForTimetable(timetableId)
+          : await syncGoogleCalendars(timetableId);
+      }
       sendJson(res, 200, { googleCalendarSync });
       return true;
     }
