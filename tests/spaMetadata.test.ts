@@ -31,6 +31,14 @@ describe("SPA metadata injection", () => {
     );
     expect(html).toContain('property="og:image:type" content="image/png"');
     expect(html).toContain(
+      'property="og:image" content="https://calender.aido.co.zw/og/calendarzw-own-your-semester-wide.png?v=2"',
+    );
+    expect(html).toContain('property="og:image:width" content="1731"');
+    expect(html).toContain(
+      'property="og:image" content="https://calender.aido.co.zw/og/calendarzw-own-your-semester-square.png?v=2"',
+    );
+    expect(html).toContain('property="og:image:width" content="1254"');
+    expect(html).toContain(
       'property="og:url" content="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026"',
     );
     expect(html).toContain(

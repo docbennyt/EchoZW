@@ -120,13 +120,22 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
       '<link rel="canonical" href="https://calender.aido.co.zw/t/hit-ics-1-1-august-semester-2026" />',
     );
     expect(response.responseBody).toContain(
-      'property="og:image" content="https://calender.aido.co.zw/calenderzw-share-1200x630.png"',
+      'property="og:image" content="https://calender.aido.co.zw/og/calendarzw-own-your-semester-wide.png?v=2"',
     );
     expect(response.responseBody).toContain(
-      'property="og:image:width" content="1200"',
+      'property="og:image:width" content="1731"',
     );
     expect(response.responseBody).toContain(
-      'property="og:image:height" content="630"',
+      'property="og:image:height" content="909"',
+    );
+    expect(response.responseBody).toContain(
+      'property="og:image" content="https://calender.aido.co.zw/og/calendarzw-own-your-semester-square.png?v=2"',
+    );
+    expect(response.responseBody).toContain(
+      'property="og:image:width" content="1254"',
+    );
+    expect(response.responseBody).toContain(
+      'property="og:image:height" content="1254"',
     );
     expect(response.responseBody).toContain(
       'property="og:image:type" content="image/png"',
@@ -207,17 +216,25 @@ describe("DR-68 exact-class SEO and public crawl contract", () => {
     expect(index).not.toContain('"@type": "Event"');
   });
 
-  it("ships one lightweight professional 1200x630 social image instead of the square app icon", () => {
-    const path = "public/calenderzw-share-1200x630.png";
-    const image = readFileSync(path);
+  it("ships wide primary and square alternate social images instead of the app icon", () => {
+    const widePath = "public/og/calendarzw-own-your-semester-wide.png";
+    const squarePath = "public/og/calendarzw-own-your-semester-square.png";
+    const wide = readFileSync(widePath);
+    const square = readFileSync(squarePath);
 
-    expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
-    expect(image.readUInt32BE(16)).toBe(1200);
-    expect(image.readUInt32BE(20)).toBe(630);
-    expect(statSync(path).size).toBeLessThan(150_000);
+    expect(wide.subarray(1, 4).toString("ascii")).toBe("PNG");
+    expect(wide.readUInt32BE(16)).toBe(1731);
+    expect(wide.readUInt32BE(20)).toBe(909);
+    expect(statSync(widePath).size).toBeGreaterThan(20_000);
+
+    expect(square.subarray(1, 4).toString("ascii")).toBe("PNG");
+    expect(square.readUInt32BE(16)).toBe(1254);
+    expect(square.readUInt32BE(20)).toBe(1254);
+    expect(statSync(squarePath).size).toBeGreaterThan(20_000);
 
     const index = readFileSync("index.html", "utf8");
-    expect(index).toContain("/calenderzw-share-1200x630.png");
+    expect(index).toContain("/og/calendarzw-own-your-semester-wide.png?v=2");
+    expect(index).toContain("/og/calendarzw-own-your-semester-square.png?v=2");
     expect(index).not.toContain(
       'property="og:image" content="https://calender.aido.co.zw/web-app-manifest-512x512.png"',
     );

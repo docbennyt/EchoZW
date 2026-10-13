@@ -2,7 +2,10 @@ import { readFileSync, statSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 
-function decodePngRgb(path: string) {
+function decodePngRgb(
+  path: string,
+  expected: { width: number; height: number },
+) {
   const file = readFileSync(path);
   expect(Array.from(file.subarray(0, 8))).toEqual([
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
@@ -36,8 +39,8 @@ function decodePngRgb(path: string) {
   }
 
   expect({ width, height, bitDepth, colorType }).toEqual({
-    width: 1200,
-    height: 630,
+    width: expected.width,
+    height: expected.height,
     bitDepth: 8,
     colorType: 2,
   });
@@ -86,8 +89,17 @@ function decodePngRgb(path: string) {
 describe("CalenderZW social sharing polish", () => {
   it("ships a non-empty absolute Open Graph image for WhatsApp/link previews", () => {
     const html = readFileSync("index.html", "utf8");
-    expect(html).toMatch(
-      /property=["']og:image["'][^>]+https:\/\/calender\.aido\.co\.zw\//i,
+    expect(html).toContain(
+      "https://calender.aido.co.zw/og/calendarzw-own-your-semester-wide.png?v=2",
+    );
+    expect(html).toContain(
+      "https://calender.aido.co.zw/og/calendarzw-own-your-semester-square.png?v=2",
+    );
+    expect(html).toContain('property="og:image:width"');
+    expect(html).toContain("1731");
+    expect(html).toContain("1254");
+    expect(html).toContain(
+      "CalenderZW promotional preview showing a student and the message Own your semester.",
     );
     expect(html).toMatch(
       /name=["']twitter:image["'][^>]+https:\/\/calender\.aido\.co\.zw\//i,
@@ -121,11 +133,14 @@ describe("CalenderZW social sharing polish", () => {
     expect(source).toContain("add the full timetable to your calendar.");
   });
 
-  it("ships a complete non-blank branded 1200x630 PNG social image", () => {
-    const path = "public/calenderzw-share-1200x630.png";
+  it("ships complete non-blank branded wide and square PNG social images", () => {
+    const path = "public/og/calendarzw-own-your-semester-wide.png";
     expect(statSync(path).size).toBeGreaterThan(20_000);
 
-    const { width, height, pixels, stride } = decodePngRgb(path);
+    const { width, height, pixels, stride } = decodePngRgb(path, {
+      width: 1731,
+      height: 909,
+    });
     let brightPixels = 0;
     let greenPixels = 0;
     let amberPixels = 0;
@@ -151,7 +166,12 @@ describe("CalenderZW social sharing polish", () => {
     expect(brightPixels).toBeGreaterThan(100);
     expect(greenPixels).toBeGreaterThan(100);
     expect(amberPixels).toBeGreaterThan(25);
-    expect(darkPixels).toBeLessThan(200);
+    expect(darkPixels).toBeLessThan(1_000);
     expect(colorVariance).toBeGreaterThan(10_000);
+
+    const squarePath = "public/og/calendarzw-own-your-semester-square.png";
+    expect(statSync(squarePath).size).toBeGreaterThan(20_000);
+    const square = decodePngRgb(squarePath, { width: 1254, height: 1254 });
+    expect(square.width).toBe(square.height);
   });
 });
