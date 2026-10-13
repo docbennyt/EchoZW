@@ -607,10 +607,12 @@ export function StaticTimetableImportPage() {
 
   async function copyPrompt() {
     try {
-      const response = await fetch("/templates/czw-timetable-ai-prompt-v1.md");
+      const response = await fetch(
+        "/templates/czw-timetable-ai-workbook-prompt-v2.md",
+      );
       const prompt = await response.text();
       await navigator.clipboard.writeText(prompt);
-      setSuccess("AI conversion prompt copied.");
+      setSuccess("AI workbook prompt copied.");
     } catch {
       setError("Could not copy the AI conversion prompt.");
     }
@@ -1104,7 +1106,7 @@ export function StaticTimetableImportPage() {
                   disabled={busy}
                   onClick={() => void copyPrompt()}
                 >
-                  Copy AI conversion prompt
+                  Copy AI workbook prompt
                 </button>
               </div>
               <label>
