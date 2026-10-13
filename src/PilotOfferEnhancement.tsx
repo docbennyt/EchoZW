@@ -1,5 +1,5 @@
 import { Check, ArrowRight, Minus, GraduationCap, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BRAND } from "./config/brand";
 import {
@@ -48,7 +48,7 @@ function Feature({
   children,
   included = true,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   included?: boolean;
 }) {
   return (
@@ -136,7 +136,7 @@ function MarketingPricingSection() {
   const [billing, setBilling] = useState<MarketingBillingPeriod>("monthly");
 
   return (
-    <section className="czw-section czw-pricing-section" aria-labelledby="czw-pricing-title">
+    <section id="pricing" className="czw-section czw-pricing-section" aria-labelledby="czw-pricing-title">
       <div className="czw-shell">
         <div className="czw-pricing-heading">
           <div>
