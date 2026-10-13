@@ -68,6 +68,12 @@ const staticRouteMetadata: Record<string, SeoRouteMetadata> = {
 };
 
 const noindexRouteMetadata: Record<string, SeoRouteMetadata> = {
+  "/paynow-demo": {
+    title: "Payment demonstration | CalenderZW",
+    description: "Illustrative student pricing checkout. No payment is accepted.",
+    canonicalPath: "/paynow-demo",
+    robots: "noindex, nofollow",
+  },
   "/account/settings": {
     title: "Calendar settings | CalenderZW",
     description: "Manage a CalenderZW calendar connection.",
