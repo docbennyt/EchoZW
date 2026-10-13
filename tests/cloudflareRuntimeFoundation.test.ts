@@ -66,6 +66,47 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).not.toContain("productionServer");
   });
 
+  it("routes public timetable reads through native Worker transport when configured", () => {
+    expect(worker).toContain("handleNativePublicTimetableApi");
+    expect(worker).toContain("cloudflare-native-public-api");
+    expect(worker.indexOf("handleNativePublicTimetableApi")).toBeLessThan(
+      worker.indexOf("Transitional staging bridge only"),
+    );
+  });
+
+  it("serves release, health, and runtime config without the legacy backend bridge", () => {
+    expect(worker).toContain('url.pathname === "/runtime-config.js"');
+    expect(worker).toContain('url.pathname === "/api/health/live"');
+    expect(worker).toContain('url.pathname === "/api/health/release"');
+    expect(worker).toContain('url.pathname === "/api/health/ready"');
+    expect(worker).toContain("serveRuntimeConfig");
+    expect(worker).toContain("backendReleasePayload");
+    expect(worker).toContain("checkReadiness");
+    expect(worker.indexOf('url.pathname === "/api/health/live"')).toBeLessThan(
+      worker.indexOf("Transitional staging bridge only"),
+    );
+  });
+
+  it("routes staff session reads through native Worker auth before the backend bridge", () => {
+    expect(worker).toContain("handleNativeAdminSession");
+    expect(worker).toContain('url.pathname === "/api/admin/session"');
+    expect(worker).toContain("requireStaffUser");
+    expect(worker).toContain("createSupabaseUserClient(accessToken, env)");
+    expect(worker).toContain("createSupabaseAdminClient(env)");
+    expect(worker.indexOf("handleNativeAdminSession")).toBeLessThan(
+      worker.indexOf("Transitional staging bridge only"),
+    );
+  });
+
+  it("serves calendar feed and download ICS through native Worker transport when configured", () => {
+    expect(worker).toContain("handleNativeCalendarIcs");
+    expect(worker).toContain('url.pathname.startsWith("/calendar/feed/")');
+    expect(worker).toContain('url.pathname.startsWith("/calendar/download/")');
+    expect(worker.indexOf("handleNativeCalendarIcs")).toBeLessThan(
+      worker.indexOf("Transitional staging bridge only"),
+    );
+  });
+
   it("binds only isolated staging R2 and Queue resources", () => {
     const staging = wrangler.env?.staging;
     expect(staging?.routes).toContainEqual({
@@ -119,6 +160,12 @@ describe("Cloudflare runtime foundation", () => {
 
   it("has a native private source upload path that writes R2 and queues processing", () => {
     expect(worker).toContain('url.pathname === "/api/edge/source-documents"');
+    expect(worker).toContain("assertSourceUploadAuth");
+    expect(worker).toContain("EDGE_SOURCE_UPLOAD_SECRET");
+    expect(worker).toContain("SOURCE_UPLOAD_AUTH_REQUIRED");
+    expect(worker.indexOf("assertSourceUploadAuth")).toBeLessThan(
+      worker.indexOf("SOURCE_BUCKET.put"),
+    );
     expect(worker).toContain("SOURCE_BUCKET.put");
     expect(worker).toContain("SOURCE_PROCESSING_QUEUE.send");
     expect(worker).toContain("source_document_uploaded");

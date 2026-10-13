@@ -1,11 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { PilotApiError } from "./pilotRepository.js";
 import {
-  getPublishedTimetableBySlug,
-  listPublishedTimetableDiscovery,
-  PilotApiError,
-} from "./pilotRepository.js";
-import { getTimetablePublicDisplaySettings } from "./timetablePublicSettingsRepository.js";
-import { resolveRecurringSessions } from "../src/domain/resolvedSchedule.js";
+  getPublicTimetableResponse,
+  listPublicTimetableDiscoveryResponse,
+} from "./publicTimetableCore.js";
 
 function sendJson(
   res: ServerResponse,
@@ -50,25 +48,9 @@ export async function handlePublicTimetableRequest(
     requestUrl.pathname === "/api/public/timetables"
   ) {
     try {
-      const timetables = (await listPublishedTimetableDiscovery()).map(
-        (timetable) => ({
-          publicSlug: timetable.publicSlug,
-          institutionName: timetable.institutionName,
-          timezone: timetable.institutionTimezone,
-          programmeName: timetable.programmeName,
-          classGroupLabel: timetable.classGroupLabel,
-          academicPeriodName: timetable.academicPeriodName,
-          startsOn: timetable.academicPeriodStartsOn,
-          endsOn: timetable.academicPeriodEndsOn,
-          lastUpdated: timetable.lastUpdated,
-        }),
-      );
-      sendJson(
-        res,
-        200,
-        { timetables },
-        { "Cache-Control": "public, max-age=60, stale-while-revalidate=300" },
-      );
+      sendJson(res, 200, await listPublicTimetableDiscoveryResponse(), {
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+      });
     } catch (error) {
       sendError(res, error);
     }
@@ -80,19 +62,11 @@ export async function handlePublicTimetableRequest(
   );
   if (req.method === "GET" && timetableMatch) {
     try {
-      const timetable = await getPublishedTimetableBySlug(
-        decodeURIComponent(timetableMatch[1]),
+      sendJson(
+        res,
+        200,
+        await getPublicTimetableResponse(decodeURIComponent(timetableMatch[1])),
       );
-      const publicDisplay = await getTimetablePublicDisplaySettings(
-        timetable.timetableId,
-      );
-      sendJson(res, 200, {
-        timetable: {
-          ...timetable,
-          publicDisplay,
-          effectiveSessions: resolveRecurringSessions(timetable),
-        },
-      });
     } catch (error) {
       sendError(res, error);
     }

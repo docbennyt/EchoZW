@@ -63,10 +63,64 @@ assert(
   "staging backend bridge must be explicit and removable.",
 );
 assert(
+  worker.includes("handleNativePublicTimetableApi") &&
+    worker.includes("cloudflare-native-public-api"),
+  "public timetable reads must have a native Worker transport before the backend bridge.",
+);
+assert(
+  worker.indexOf("handleNativePublicTimetableApi") <
+    worker.indexOf("Transitional staging bridge only"),
+  "native public timetable transport must run before the legacy backend bridge.",
+);
+assert(
+  worker.includes('url.pathname === "/runtime-config.js"') &&
+    worker.includes('url.pathname === "/api/health/live"') &&
+    worker.includes('url.pathname === "/api/health/release"') &&
+    worker.includes('url.pathname === "/api/health/ready"'),
+  "health, release identity, and runtime config must be native Worker routes.",
+);
+assert(
+  worker.indexOf('url.pathname === "/api/health/live"') <
+    worker.indexOf("Transitional staging bridge only"),
+  "native health routes must run before the legacy backend bridge.",
+);
+assert(
+  worker.includes("handleNativeAdminSession") &&
+    worker.includes('url.pathname === "/api/admin/session"') &&
+    worker.includes("requireStaffUser") &&
+    worker.includes("createSupabaseUserClient(accessToken, env)") &&
+    worker.includes("createSupabaseAdminClient(env)"),
+  "admin session reads must have a native Worker auth adapter.",
+);
+assert(
+  worker.indexOf("handleNativeAdminSession") <
+    worker.indexOf("Transitional staging bridge only"),
+  "native admin session route must run before the legacy backend bridge.",
+);
+assert(
+  worker.includes("handleNativeCalendarIcs") &&
+    worker.includes('url.pathname.startsWith("/calendar/feed/")') &&
+    worker.includes('url.pathname.startsWith("/calendar/download/")'),
+  "calendar feed and download routes must have native Worker transport before cutover.",
+);
+assert(
+  worker.indexOf("handleNativeCalendarIcs") <
+    worker.indexOf("Transitional staging bridge only"),
+  "native calendar transport must run before the legacy backend bridge.",
+);
+assert(
   worker.includes('url.pathname === "/api/edge/source-documents"') &&
+    worker.includes("assertSourceUploadAuth") &&
+    worker.includes("EDGE_SOURCE_UPLOAD_SECRET") &&
+    worker.includes("SOURCE_UPLOAD_AUTH_REQUIRED") &&
     worker.includes("SOURCE_BUCKET.put") &&
     worker.includes("SOURCE_PROCESSING_QUEUE.send"),
-  "source document uploads must write private R2 and enqueue processing.",
+  "source document uploads must authenticate, write private R2, and enqueue processing.",
+);
+assert(
+  worker.indexOf("assertSourceUploadAuth") <
+    worker.indexOf("SOURCE_BUCKET.put"),
+  "source document upload auth must run before private R2 writes.",
 );
 assert(
   worker.includes("async queue(batch)") &&

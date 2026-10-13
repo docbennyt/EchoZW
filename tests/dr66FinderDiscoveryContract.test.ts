@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const repository = readFileSync("server/pilotRepository.ts", "utf8");
 const publicApi = readFileSync("server/publicTimetableApi.ts", "utf8");
+const publicApiCore = readFileSync("server/publicTimetableCore.ts", "utf8");
 const finder = readFileSync("src/FinderDiscovery.tsx", "utf8");
 const responsiveUx = readFileSync("src/dr66ResponsiveUx.css", "utf8");
 const heroProof = readFileSync("src/HeroTrustProof.tsx", "utf8");
@@ -15,10 +16,13 @@ describe("DR-66 finder discovery contract", () => {
     expect(repository).toContain(
       '.not("current_published_version_id", "is", null)',
     );
-    expect(publicApi).toContain("listPublishedTimetableDiscovery");
-    expect(publicApi).toContain("startsOn: timetable.academicPeriodStartsOn");
-    expect(publicApi).toContain("endsOn: timetable.academicPeriodEndsOn");
-    expect(publicApi).toContain("timezone: timetable.institutionTimezone");
+    expect(publicApi).toContain("listPublicTimetableDiscoveryResponse");
+    expect(publicApiCore).toContain("listPublishedTimetableDiscovery");
+    expect(publicApiCore).toContain(
+      "startsOn: timetable.academicPeriodStartsOn",
+    );
+    expect(publicApiCore).toContain("endsOn: timetable.academicPeriodEndsOn");
+    expect(publicApiCore).toContain("timezone: timetable.institutionTimezone");
   });
 
   it("keeps mobile free of slug utilities and catalogue rails", () => {
