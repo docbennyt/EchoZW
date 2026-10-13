@@ -10,6 +10,7 @@ const repositoryMocks = vi.hoisted(() => ({
 }));
 
 const googleSyncMocks = vi.hoisted(() => ({
+  previewGoogleSubscriptionsForTimetable: vi.fn(),
   syncGoogleSubscriptionsForTimetable: vi.fn(),
 }));
 
@@ -195,6 +196,58 @@ describe("pilot timetable admin API contracts", () => {
         attempted: 2,
         succeeded: 1,
         failed: 1,
+      },
+    });
+  });
+
+  it("previews Google propagation without mutating remote calendars", async () => {
+    googleSyncMocks.previewGoogleSubscriptionsForTimetable.mockResolvedValueOnce(
+      {
+        attempted: 1,
+        succeeded: 1,
+        failed: 0,
+        readOnly: true,
+        previews: [
+          {
+            subscriptionId: "sub-1",
+            readOnly: true,
+            expectedEvents: 15,
+            wouldDelete: 1,
+          },
+        ],
+      },
+    );
+
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        dryRun: true,
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionsForTimetable,
+    ).toHaveBeenCalledWith("tt-1");
+    expect(
+      googleSyncMocks.syncGoogleSubscriptionsForTimetable,
+    ).not.toHaveBeenCalled();
+    expect(body()).toEqual({
+      googleCalendarSync: {
+        attempted: 1,
+        succeeded: 1,
+        failed: 0,
+        readOnly: true,
+        previews: [
+          {
+            subscriptionId: "sub-1",
+            readOnly: true,
+            expectedEvents: 15,
+            wouldDelete: 1,
+          },
+        ],
       },
     });
   });

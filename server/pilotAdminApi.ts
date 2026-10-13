@@ -1,6 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
-import { syncGoogleSubscriptionsForTimetable } from "./googleCalendarSync.js";
+import {
+  previewGoogleSubscriptionsForTimetable,
+  syncGoogleSubscriptionsForTimetable,
+} from "./googleCalendarSync.js";
 import {
   createAcademicPeriod,
   createClassGroup,
@@ -31,6 +34,12 @@ const institutionSchema = z.object({
   timezone: z.string().trim().nullable().optional(),
   active: z.boolean().optional(),
 });
+
+const googleCalendarSyncSchema = z
+  .object({
+    dryRun: z.boolean().optional(),
+  })
+  .optional();
 
 const programmeSchema = z.object({
   institutionId: z.string().uuid(),
@@ -402,7 +411,10 @@ export async function handlePilotAdminApi(
     );
     if (req.method === "POST" && googleSyncMatch) {
       const timetableId = decodeURIComponent(googleSyncMatch[1]);
-      const googleCalendarSync = await syncGoogleCalendars(timetableId);
+      const parsed = googleCalendarSyncSchema.parse(await readJson(req));
+      const googleCalendarSync = parsed?.dryRun
+        ? await previewGoogleSubscriptionsForTimetable(timetableId)
+        : await syncGoogleCalendars(timetableId);
       sendJson(res, 200, { googleCalendarSync });
       return true;
     }
