@@ -335,7 +335,9 @@ describe("pilot timetable admin API contracts", () => {
     expect(body()).toMatchObject({
       error: { code: "GOOGLE_RECONCILIATION_MODE_REQUIRED" },
     });
-    expect(googleSyncMocks.previewGoogleSubscriptionSync).not.toHaveBeenCalled();
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionSync,
+    ).not.toHaveBeenCalled();
     expect(googleSyncMocks.syncGoogleSubscription).not.toHaveBeenCalled();
   });
 
