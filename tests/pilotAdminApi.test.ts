@@ -321,6 +321,24 @@ describe("pilot timetable admin API contracts", () => {
     });
   });
 
+  it("requires explicit dryRun intent before targeting a Google subscription", async () => {
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(body()).toMatchObject({
+      error: { code: "GOOGLE_RECONCILIATION_MODE_REQUIRED" },
+    });
+    expect(googleSyncMocks.previewGoogleSubscriptionSync).not.toHaveBeenCalled();
+    expect(googleSyncMocks.syncGoogleSubscription).not.toHaveBeenCalled();
+  });
+
   it("reconciles one Google subscription without running the bulk sync", async () => {
     const { res, body } = response();
     await handlePilotAdminApi(
