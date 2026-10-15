@@ -572,8 +572,8 @@ export async function syncGoogleSubscription(
       event,
     ]);
   }
-  const remoteManagedEventIds = new Set(
-    remoteManagedEvents.map((event) => event.id),
+  const remoteManagedEventKeysById = new Map(
+    remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
@@ -597,7 +597,8 @@ export async function syncGoogleSubscription(
       ? String(previous.external_event_id)
       : null;
     const previousRemoteStillManaged = previousExternalEventId
-      ? remoteManagedEventIds.has(previousExternalEventId)
+      ? remoteManagedEventKeysById.get(previousExternalEventId) ===
+        event.stableSessionKey
       : false;
     const externalEventId = previousRemoteStillManaged
       ? previousExternalEventId
@@ -798,8 +799,8 @@ export async function previewGoogleSubscriptionSync(
       event,
     ]);
   }
-  const remoteManagedEventIds = new Set(
-    remoteManagedEvents.map((event) => event.id),
+  const remoteManagedEventKeysById = new Map(
+    remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
@@ -823,7 +824,8 @@ export async function previewGoogleSubscriptionSync(
       : null;
     const remoteMatches = remoteManagedByStableKey.get(event.stableSessionKey);
     const previousRemoteStillManaged = previousExternalEventId
-      ? remoteManagedEventIds.has(previousExternalEventId)
+      ? remoteManagedEventKeysById.get(previousExternalEventId) ===
+        event.stableSessionKey
       : false;
     const externalEventId = previousRemoteStillManaged
       ? previousExternalEventId
