@@ -217,8 +217,12 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
         },
       ],
     });
-    expect(googleRepositoryMocks.deleteGoogleEventSyncRecord).not.toHaveBeenCalled();
-    expect(googleRepositoryMocks.upsertGoogleEventSyncRecord).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.deleteGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalledWith(
       expect.stringContaining("/events/event-removed?sendUpdates=none"),
       expect.objectContaining({ method: "DELETE" }),
