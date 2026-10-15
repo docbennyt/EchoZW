@@ -866,10 +866,26 @@ export async function previewGoogleSubscriptionSync(
     wouldDelete += 1;
   }
 
+  // These deletion candidates were actually found in Google with matching
+  // timetable ownership tags. A local mapping alone does not prove that a
+  // remote calendar event is safe to delete.
+  const remoteManagedDeletionCandidates = remoteManagedEvents
+    .filter((event) => !retainedRemoteEventIds.has(event.id))
+    .map((event) => ({
+      stableSessionKey: event.stableSessionKey,
+      externalEventId: event.id,
+    }))
+    .sort(
+      (a, b) =>
+        a.stableSessionKey.localeCompare(b.stableSessionKey) ||
+        a.externalEventId.localeCompare(b.externalEventId),
+    );
+
   return {
     subscriptionId,
     timetableId,
     readOnly: true,
+    remoteManagedDeletionCandidates,
     expectedEvents: projection.events.length,
     remoteManagedEvents: remoteManagedEvents.length,
     localMappings: previousRecords.length,
