@@ -48,6 +48,7 @@ vi.mock("../server/googleCalendarRepository", () => googleRepositoryMocks);
 
 import {
   encryptGoogleRefreshToken,
+  previewGoogleSubscriptionSync,
   syncGoogleSubscription,
   syncGoogleSubscriptionsForTimetable,
 } from "../server/googleCalendarSync";
@@ -200,6 +201,31 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     );
     googleRepositoryMocks.deleteGoogleEventSyncRecord.mockResolvedValue(
       undefined,
+    );
+  });
+
+  it("lists only verified CZW-owned remote deletion candidates during dry-run", async () => {
+    const preview = await previewGoogleSubscriptionSync("sub-existing", env);
+
+    expect(preview).toMatchObject({
+      readOnly: true,
+      wouldDelete: 1,
+      remoteManagedDeletionCandidates: [
+        {
+          stableSessionKey: "ise4105-wed-removed",
+          externalEventId: "event-removed",
+        },
+      ],
+    });
+    expect(
+      googleRepositoryMocks.deleteGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/events/event-removed?sendUpdates=none"),
+      expect.objectContaining({ method: "DELETE" }),
     );
   });
 
@@ -771,6 +797,98 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
         internalEventId: "ise4105-tue-corrected",
         externalEventId: "event-current",
         syncStatus: "active",
+      }),
+    );
+  });
+
+  it("never overwrites an event with a different CZW stable key when the local mapping points to it", async () => {
+    googleRepositoryMocks.listGoogleEventSyncRecords.mockResolvedValue([
+      {
+        internal_event_id: "ise4105-tue-corrected",
+        external_event_id: "event-other-session",
+        content_hash: "stale-hash",
+      },
+    ]);
+    vi.mocked(fetch).mockImplementation(
+      async (url: string | URL | Request, init?: RequestInit) => {
+        const value = String(url);
+        if (value === "https://oauth2.googleapis.com/token") {
+          return okJson({ access_token: "access-token" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events?privateExtendedProperty=calenderzwTimetableId%3Dtt-se41",
+          ) &&
+          init?.method === "GET"
+        ) {
+          return okJson({
+            items: [
+              {
+                id: "event-other-session",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-wed-removed",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+              {
+                id: "event-tuesday",
+                extendedProperties: {
+                  private: {
+                    calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    calenderzwTimetableId: "tt-se41",
+                  },
+                },
+              },
+            ],
+          });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-tuesday?sendUpdates=none",
+          ) &&
+          init?.method === "PUT"
+        ) {
+          return okJson({ id: "event-tuesday" });
+        }
+        if (
+          value.includes(
+            "/calendars/cal-existing/events/event-other-session?sendUpdates=none",
+          ) &&
+          init?.method === "DELETE"
+        ) {
+          return new Response(null, { status: 204 });
+        }
+        throw new Error(
+          `Unexpected Google API request for stable-key mapping regression: ${init?.method} ${value}`,
+        );
+      },
+    );
+
+    const result = await syncGoogleSubscription("sub-existing", env);
+
+    expect(result).toMatchObject({
+      created: 0,
+      updated: 1,
+      deleted: 1,
+      unchanged: 0,
+    });
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/events/event-other-session?sendUpdates=none"),
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/events/event-tuesday?sendUpdates=none"),
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionId: "sub-existing",
+        internalEventId: "ise4105-tue-corrected",
+        externalEventId: "event-tuesday",
       }),
     );
   });
