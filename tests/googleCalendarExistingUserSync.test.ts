@@ -48,6 +48,7 @@ vi.mock("../server/googleCalendarRepository", () => googleRepositoryMocks);
 
 import {
   encryptGoogleRefreshToken,
+  previewGoogleSubscriptionSync,
   syncGoogleSubscription,
   syncGoogleSubscriptionsForTimetable,
 } from "../server/googleCalendarSync";
@@ -200,6 +201,27 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     );
     googleRepositoryMocks.deleteGoogleEventSyncRecord.mockResolvedValue(
       undefined,
+    );
+  });
+
+  it("lists only verified CZW-owned remote deletion candidates during dry-run", async () => {
+    const preview = await previewGoogleSubscriptionSync("sub-existing", env);
+
+    expect(preview).toMatchObject({
+      readOnly: true,
+      wouldDelete: 1,
+      remoteManagedDeletionCandidates: [
+        {
+          stableSessionKey: "ise4105-wed-removed",
+          externalEventId: "event-removed",
+        },
+      ],
+    });
+    expect(googleRepositoryMocks.deleteGoogleEventSyncRecord).not.toHaveBeenCalled();
+    expect(googleRepositoryMocks.upsertGoogleEventSyncRecord).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/events/event-removed?sendUpdates=none"),
+      expect.objectContaining({ method: "DELETE" }),
     );
   });
 
