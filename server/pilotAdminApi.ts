@@ -459,6 +459,13 @@ export async function handlePilotAdminApi(
           timetableId,
           parsed.subscriptionId,
         );
+        if (parsed.dryRun === undefined) {
+          throw new PilotApiError(
+            "GOOGLE_RECONCILIATION_MODE_REQUIRED",
+            "Choose dryRun true for preview or false for a targeted write.",
+            400,
+          );
+        }
         googleCalendarSync = parsed.dryRun
           ? await previewGoogleSubscriptionSync(parsed.subscriptionId)
           : await syncGoogleSubscription(parsed.subscriptionId);
