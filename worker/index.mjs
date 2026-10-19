@@ -1,9 +1,6 @@
-/* global Headers, Response, URL, fetch, Request, crypto, TextEncoder */
+/* global Headers, Response, URL, Request, crypto, TextEncoder, TextDecoder, console */
 
-import {
-  PilotApiError,
-  setPilotRepositoryEnv,
-} from "../server/pilotRepository.ts";
+import { PilotApiError, listInstitutions } from "../server/pilotRepository.ts";
 import {
   getPublicTimetableResponse,
   listPublicTimetableDiscoveryResponse,
@@ -20,26 +17,26 @@ import {
 } from "../server/pilotRepository.ts";
 import { buildRevisionAwareCalendar } from "../server/pilotCalendarCore.ts";
 import { recordCalendarFeedActivity } from "../server/analyticsRepository.ts";
-import { AdminAuthError, requireStaffUser } from "../server/supabase/auth.ts";
+import {
+  AdminAuthError,
+  requireStaffUser,
+  requireOperationalAdmin,
+} from "../server/supabase/auth.ts";
 import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
 import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
-import { classifyAnalyticsClient } from "../src/domain/analytics.ts";
+import {
+  classifyAnalyticsClient,
+  isAnalyticsUuid,
+} from "../src/domain/analytics.ts";
 import { sha256Base64Url } from "../src/domain/token.ts";
+import { subscriptionRequestSchema } from "../src/domain/subscriptions.ts";
+import { createNativeFeedSubscription } from "../server/calendarSubscriptionCore.ts";
 
 const DYNAMIC_PREFIXES = ["/api/", "/calendar/"];
 const DYNAMIC_EXACT_PATHS = new Set([
   "/runtime-config.js",
   "/sitemap.xml",
   "/healthz",
-]);
-const MAX_SOURCE_DOCUMENT_BYTES = 10 * 1024 * 1024;
-const DOCX_MIME_TYPE =
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-const ACCEPTED_DOCX_MIME_TYPES = new Set([
-  DOCX_MIME_TYPE,
-  "application/octet-stream",
-  "application/zip",
-  "application/x-zip-compressed",
 ]);
 
 function json(body, init = {}) {
@@ -136,56 +133,17 @@ function redirectLocation(url) {
   return null;
 }
 
-async function proxyLegacyBackend(request, env) {
-  if (!env.LEGACY_BACKEND_ORIGIN) {
-    return json(
-      {
-        error: {
-          code: "EDGE_BACKEND_NOT_CONFIGURED",
-          message: "The staging backend bridge is not configured.",
-        },
+function unavailable(code = "EDGE_ROUTE_UNAVAILABLE") {
+  return json(
+    {
+      error: {
+        code,
+        message:
+          "This service is temporarily unavailable during backend recovery.",
       },
-      { status: 503 },
-    );
-  }
-
-  const incoming = new URL(request.url);
-  const target = new URL(
-    `${incoming.pathname}${incoming.search}`,
-    env.LEGACY_BACKEND_ORIGIN,
+    },
+    { status: 503 },
   );
-  const headers = new Headers(request.headers);
-  headers.delete("host");
-  headers.set("x-forwarded-host", incoming.host);
-  headers.set("x-forwarded-proto", incoming.protocol.replace(":", ""));
-  headers.set("x-calenderzw-edge-runtime", "cloudflare-staging-bridge");
-
-  const init = {
-    method: request.method,
-    headers,
-    redirect: "manual",
-  };
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = request.body;
-  }
-
-  const upstream = await fetch(target, init);
-  const responseHeaders = new Headers(upstream.headers);
-  applySecurityHeaders(responseHeaders);
-  responseHeaders.set("x-calenderzw-edge-runtime", "cloudflare-staging-bridge");
-
-  if (
-    incoming.pathname.startsWith("/api/") ||
-    incoming.pathname === "/runtime-config.js"
-  ) {
-    responseHeaders.set("cache-control", "no-store");
-  }
-
-  return new Response(upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers: responseHeaders,
-  });
 }
 
 function releasePayload(env) {
@@ -197,7 +155,7 @@ function releasePayload(env) {
     workerVersion: env.CF_VERSION_METADATA?.id ?? null,
     workerVersionTag: env.CF_VERSION_METADATA?.tag ?? null,
     workerVersionTimestamp: env.CF_VERSION_METADATA?.timestamp ?? null,
-    legacyBackendBridge: Boolean(env.LEGACY_BACKEND_ORIGIN),
+    legacyBackendBridge: false,
   };
 }
 
@@ -239,38 +197,8 @@ function notFound() {
   return new Response("Not found.", { status: 404, headers });
 }
 
-function headerValue(headers, name) {
-  return headers.get(name)?.trim() ?? "";
-}
-
 function requestHeaderValue(request, name) {
   return request.headers.get(name)?.trim() ?? "";
-}
-
-function decodeFilename(value) {
-  if (!value) return "";
-  try {
-    return decodeURIComponent(value).trim();
-  } catch {
-    return value.trim();
-  }
-}
-
-function safeFilename(value) {
-  return value.replace(/[^\w.\- ()]/g, "_").slice(0, 180);
-}
-
-function hex(buffer) {
-  return [...new Uint8Array(buffer)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function monthKey(now = new Date()) {
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(
-    2,
-    "0",
-  )}`;
 }
 
 function assertSourceUploadBindings(env) {
@@ -362,11 +290,10 @@ async function writeIcsResponse(request, calendarName, ics, lastModifiedValue) {
   if (requestHasEtag(request, etag)) {
     return new Response(null, { status: 304, headers });
   }
+  headers.set("content-length", String(new TextEncoder().encode(ics).length));
   if (request.method === "HEAD") {
-    headers.set("content-length", "0");
     return new Response(null, { status: 200, headers });
   }
-  headers.set("content-length", String(new TextEncoder().encode(ics).length));
   return new Response(ics, { status: 200, headers });
 }
 
@@ -378,8 +305,8 @@ async function handleNativeCalendarIcs(request, env, ctx) {
     );
   }
 
-  if (!hasSupabaseServerConfig(env)) return null;
-  setPilotRepositoryEnv(env);
+  if (!hasSupabaseServerConfig(env))
+    return unavailable("EDGE_SERVER_CONFIG_MISSING");
 
   const url = new URL(request.url);
   const publicOrigin = env.PUBLIC_APP_URL ?? url.origin;
@@ -394,6 +321,7 @@ async function handleNativeCalendarIcs(request, env, ctx) {
     if (downloadMatch) {
       subscription = await getCalendarSubscriptionById(
         decodeURIComponent(downloadMatch[1]),
+        env,
       );
       if (!subscription || subscription.revoked_at) {
         throw new PilotApiError(
@@ -405,7 +333,7 @@ async function handleNativeCalendarIcs(request, env, ctx) {
     } else if (feedMatch) {
       const token = decodeURIComponent(feedMatch[1]);
       const tokenHash = await sha256Base64Url(token);
-      subscription = await getCalendarSubscriptionByTokenHash(tokenHash);
+      subscription = await getCalendarSubscriptionByTokenHash(tokenHash, env);
       if (!subscription || subscription.revoked_at) {
         throw new PilotApiError("NOT_FOUND", "Calendar feed not found.", 404);
       }
@@ -462,12 +390,11 @@ async function handleNativePublicTimetableApi(request, env) {
     );
   }
 
-  if (!hasSupabaseServerConfig(env)) return null;
-
-  setPilotRepositoryEnv(env);
+  if (!hasSupabaseServerConfig(env))
+    return unavailable("EDGE_SERVER_CONFIG_MISSING");
   try {
     if (url.pathname === "/api/public/timetables") {
-      return json(await listPublicTimetableDiscoveryResponse(), {
+      return json(await listPublicTimetableDiscoveryResponse(env), {
         headers: {
           "cache-control": "public, max-age=60, stale-while-revalidate=300",
           "x-calenderzw-edge-runtime": "cloudflare-native-public-api",
@@ -478,7 +405,7 @@ async function handleNativePublicTimetableApi(request, env) {
     const match = url.pathname.match(/^\/api\/public\/timetables\/([^/]+)$/);
     if (match) {
       return json(
-        await getPublicTimetableResponse(decodeURIComponent(match[1])),
+        await getPublicTimetableResponse(decodeURIComponent(match[1]), env),
         {
           headers: {
             "x-calenderzw-edge-runtime": "cloudflare-native-public-api",
@@ -502,7 +429,12 @@ async function handleNativeAdminSession(request, env) {
   }
 
   try {
-    const context = await requireStaffUser(
+    const url = new URL(request.url);
+    const guard =
+      url.pathname === "/api/admin/institutions"
+        ? requireOperationalAdmin
+        : requireStaffUser;
+    const context = await guard(
       {
         headers: {
           authorization: request.headers.get("authorization") ?? undefined,
@@ -517,6 +449,12 @@ async function handleNativeAdminSession(request, env) {
       },
     );
 
+    if (url.pathname === "/api/admin/institutions") {
+      return json({ institutions: await listInstitutions(env) });
+    }
+    if (url.pathname === "/api/admin/my/timetables") {
+      return json({ timetables: context.assignments });
+    }
     return json({
       authenticated: true,
       admin: true,
@@ -530,7 +468,110 @@ async function handleNativeAdminSession(request, env) {
   }
 }
 
-async function handleSourceDocumentUpload(request, env, ctx) {
+async function handleNativeSubscription(request, env) {
+  if (request.method !== "POST") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+  const url = new URL(request.url);
+  const origin = request.headers.get("origin");
+  if (origin && origin !== url.origin) {
+    return json(
+      {
+        error: {
+          code: "ORIGIN_NOT_ALLOWED",
+          message: "Use the application origin.",
+        },
+      },
+      { status: 403 },
+    );
+  }
+  if (!hasSupabaseServerConfig(env))
+    return unavailable("EDGE_SERVER_CONFIG_MISSING");
+  try {
+    const reader = request.body?.getReader();
+    const chunks = [];
+    let size = 0;
+    if (reader) {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 16384) {
+          await reader.cancel();
+          return json(
+            {
+              error: {
+                code: "BODY_TOO_LARGE",
+                message: "Request body is too large.",
+              },
+            },
+            { status: 413 },
+          );
+        }
+        chunks.push(value);
+      }
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    let body;
+    try {
+      body = JSON.parse(new TextDecoder().decode(bytes));
+    } catch {
+      return json(
+        {
+          error: { code: "VALIDATION_ERROR", message: "Invalid JSON request." },
+        },
+        { status: 422 },
+      );
+    }
+    const parsed = subscriptionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid calendar subscription request.",
+          },
+        },
+        { status: 422 },
+      );
+    }
+    const cookieId = request.headers
+      .get("cookie")
+      ?.split(";")
+      .map((x) => x.trim())
+      .find((x) => x.startsWith("calenderzw_anon_session="))
+      ?.slice("calenderzw_anon_session=".length);
+    const suppliedId = request.headers.get("x-calenderzw-anonymous-id");
+    const anonymousSessionId = isAnalyticsUuid(suppliedId)
+      ? suppliedId
+      : isAnalyticsUuid(cookieId)
+        ? cookieId
+        : crypto.randomUUID();
+    const result = await createNativeFeedSubscription(parsed.data, {
+      publicOrigin: url.origin,
+      anonymousSessionId,
+      env,
+    });
+    return json(result, {
+      status: 201,
+      headers: {
+        "set-cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=31536000`,
+      },
+    });
+  } catch (error) {
+    return publicApiError(error);
+  }
+}
+
+async function handleSourceDocumentUpload(request, env) {
   if (request.method !== "POST") {
     return json(
       { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
@@ -544,132 +585,9 @@ async function handleSourceDocumentUpload(request, env, ctx) {
   const authError = assertSourceUploadAuth(request, env);
   if (authError) return authError;
 
-  const declaredSize = Number(request.headers.get("content-length") ?? 0);
-  if (
-    Number.isFinite(declaredSize) &&
-    declaredSize > MAX_SOURCE_DOCUMENT_BYTES
-  ) {
-    return json(
-      {
-        error: {
-          code: "FILE_TOO_LARGE",
-          message: "The DOCX file exceeds the 10 MB source upload limit.",
-        },
-      },
-      { status: 413 },
-    );
-  }
-
-  const filename = safeFilename(
-    decodeFilename(headerValue(request.headers, "x-calenderzw-filename")),
-  );
-  if (!filename || !filename.toLocaleLowerCase("en").endsWith(".docx")) {
-    return json(
-      {
-        error: {
-          code: "DOCX_REQUIRED",
-          message:
-            "CalenderZW source upload currently accepts DOCX files only.",
-        },
-      },
-      { status: 422 },
-    );
-  }
-
-  const mimeType = headerValue(request.headers, "content-type")
-    .split(";")[0]
-    .trim()
-    .toLowerCase();
-  if (!ACCEPTED_DOCX_MIME_TYPES.has(mimeType)) {
-    return json(
-      {
-        error: {
-          code: "DOCX_MIME_REQUIRED",
-          message: "CalenderZW source upload accepts DOCX documents only.",
-        },
-      },
-      { status: 415 },
-    );
-  }
-
-  const bytes = await request.arrayBuffer();
-  if (bytes.byteLength === 0) {
-    return json(
-      {
-        error: {
-          code: "EMPTY_FILE",
-          message: "Choose a DOCX timetable document to upload.",
-        },
-      },
-      { status: 422 },
-    );
-  }
-  if (bytes.byteLength > MAX_SOURCE_DOCUMENT_BYTES) {
-    return json(
-      {
-        error: {
-          code: "FILE_TOO_LARGE",
-          message: "The DOCX file exceeds the 10 MB source upload limit.",
-        },
-      },
-      { status: 413 },
-    );
-  }
-
-  const signature = new Uint8Array(bytes.slice(0, 4));
-  if (
-    signature[0] !== 0x50 ||
-    signature[1] !== 0x4b ||
-    signature[2] !== 0x03 ||
-    signature[3] !== 0x04
-  ) {
-    return json(
-      {
-        error: {
-          code: "DOCX_ZIP_INVALID",
-          message: "That file is not a valid DOCX ZIP container.",
-        },
-      },
-      { status: 422 },
-    );
-  }
-
-  const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
-  const r2Key = `source-documents/${monthKey()}/${sha256}/source.docx`;
-  await env.SOURCE_BUCKET.put(r2Key, bytes, {
-    httpMetadata: { contentType: DOCX_MIME_TYPE },
-    customMetadata: {
-      sha256,
-      originalFilename: filename,
-      parser: "static-docx-matrix-v1",
-      visibility: "private",
-    },
-  });
-
-  const job = {
-    kind: "source_document_uploaded",
-    r2Key,
-    sha256,
-    originalFilename: filename,
-    mimeType: DOCX_MIME_TYPE,
-    sizeBytes: bytes.byteLength,
-    uploadedAt: new Date().toISOString(),
-  };
-  ctx.waitUntil(env.SOURCE_PROCESSING_QUEUE.send(job));
-
-  return json(
-    {
-      document: {
-        r2Key,
-        sha256,
-        originalFilename: filename,
-        mimeType: DOCX_MIME_TYPE,
-        sizeBytes: bytes.byteLength,
-        queued: true,
-      },
-    },
-    { status: 202 },
-  );
+  // Intake stays closed until parse-to-review processing is implemented. Existing
+  // queued objects are retried/DLQ'd below rather than acknowledged and lost.
+  return unavailable("SOURCE_PROCESSOR_UNAVAILABLE");
 }
 
 async function serveSpaShell(request, env) {
@@ -696,7 +614,7 @@ async function serveAssetOr404(request, env) {
   return withSecurityHeaders(assetResponse);
 }
 
-export default {
+const application = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
@@ -737,8 +655,23 @@ export default {
       return handleSourceDocumentUpload(request, env, ctx);
     }
 
-    if (url.pathname === "/api/admin/session") {
+    if (
+      url.pathname === "/api/admin/session" ||
+      url.pathname === "/api/admin/institutions" ||
+      url.pathname === "/api/admin/my/timetables"
+    ) {
       return handleNativeAdminSession(request, env);
+    }
+
+    if (url.pathname === "/api/calendar/subscriptions") {
+      return handleNativeSubscription(request, env);
+    }
+
+    if (
+      url.pathname === "/api/calendar/google/status" &&
+      request.method === "GET"
+    ) {
+      return json({ enabled: false });
     }
 
     if (
@@ -760,11 +693,10 @@ export default {
       if (nativePublicApi) return nativePublicApi;
     }
 
-    // Transitional staging bridge only. The final Cloudflare runtime replaces
-    // this with native Worker adapters before production cutover. Browser HTML
-    // is NEVER proxied to Railway.
+    // Browser HTML is NEVER proxied to Railway. Unported APIs fail explicitly;
+    // a dead backend is not a recovery fallback.
     if (isDynamicPath(url.pathname)) {
-      return proxyLegacyBackend(request, env);
+      return unavailable();
     }
 
     // P0 guardrail: /assets/* is Worker-first in Wrangler so the Worker can
@@ -790,12 +722,51 @@ export default {
 
   async queue(batch) {
     for (const message of batch.messages) {
-      const body = message.body ?? {};
-      if (body.kind === "source_document_uploaded" && body.r2Key) {
-        message.ack();
-        continue;
-      }
-      message.retry();
+      // No durable processor exists yet. Retry to the configured DLQ; never
+      // acknowledge source_document_uploaded or push messages without work.
+      message.retry({ delaySeconds: 300 });
     }
   },
+};
+
+export default {
+  async fetch(request, env, ctx) {
+    const started = Date.now();
+    const requestId = crypto.randomUUID();
+    let response;
+    try {
+      response = await application.fetch(request, env, ctx);
+    } catch {
+      response = publicApiError(new Error("REQUEST_FAILED"));
+    }
+    const headers = new Headers(response.headers);
+    headers.set("x-request-id", requestId);
+    headers.set("x-calenderzw-source-sha", env.SOURCE_SHA ?? "unknown");
+    // Private feed tokens live in URL paths. Never log a raw URL, query, headers
+    // or provider payload; platform invocation logs/traces are disabled too.
+    const path = new URL(request.url).pathname;
+    const routeClass = path.startsWith("/calendar/")
+      ? "calendar"
+      : path.startsWith("/api/admin/")
+        ? "admin"
+        : path.startsWith("/api/")
+          ? "api"
+          : "asset";
+    console.info(
+      JSON.stringify({
+        event: "edge.request",
+        requestId,
+        release: env.SOURCE_SHA ?? null,
+        routeClass,
+        status: response.status,
+        durationMs: Date.now() - started,
+      }),
+    );
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  },
+  queue: application.queue,
 };

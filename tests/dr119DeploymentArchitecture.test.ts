@@ -27,7 +27,7 @@ const runtimePublicConfig = readFileSync(
 );
 const healthApi = readFileSync("server/healthApi.ts", "utf8");
 const cloudflareSmoke = readFileSync(
-  "scripts/smoke-cloudflare-staging.mjs",
+  "scripts/smoke-native-recovery.mjs",
   "utf8",
 );
 const cloudflarePreviewWorkflow = readFileSync(
@@ -165,15 +165,17 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(productionServer).toContain('server.listen(port, "0.0.0.0"');
   });
 
-  it("does not let Cloudflare exact-head smoke imply same-SHA Railway compatibility", () => {
+  it("requires native backend proof and reports actual deployment check outcomes", () => {
     expect(cloudflareSmoke).toContain("/api/health/release");
-    expect(cloudflareSmoke).toContain("EXPECTED_BACKEND_SHA");
+    expect(cloudflareSmoke).toContain("EXPECTED_RELEASE_SHA");
+    expect(cloudflareSmoke).toContain("legacyBackendBridge === false");
     expect(cloudflareSmoke).toContain(
-      "Backend integration compatibility not asserted",
+      "BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN",
     );
-    expect(cloudflarePreviewWorkflow).toContain("EXPECTED_BACKEND_SHA");
+    expect(cloudflarePreviewWorkflow).toContain("steps.native_smoke.outcome");
+    expect(cloudflarePreviewWorkflow).toContain("steps.browser_smoke.outcome");
     expect(cloudflarePreviewWorkflow).toContain(
-      "same-SHA Railway compatibility is not implied",
+      "Full backend parity: not established",
     );
   });
 });

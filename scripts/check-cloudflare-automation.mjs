@@ -13,7 +13,7 @@ const productionGateWorkflow = await readFile(
   "utf8",
 );
 const worker = await readFile("worker/index.mjs", "utf8");
-const smoke = await readFile("scripts/smoke-cloudflare-staging.mjs", "utf8");
+const smoke = await readFile("scripts/smoke-native-recovery.mjs", "utf8");
 
 function assert(condition, message) {
   if (!condition) {
@@ -26,13 +26,14 @@ assert(
   "__release must expose the exact source SHA supplied by CI.",
 );
 assert(
-  smoke.includes("releaseJson?.sourceSha !== expectedReleaseSha"),
+  smoke.includes("value.sourceSha === process.env.EXPECTED_RELEASE_SHA"),
   "staging smoke must verify the exact deployed source SHA.",
 );
 assert(
-  smoke.includes("waitForExpectedReleaseIdentity") &&
-    smoke.includes("CALENDERZW_RELEASE_WAIT_TIMEOUT_MS"),
-  "staging smoke must wait for the custom domain to serve the exact deployed SHA before checking assets.",
+  smoke.includes("legacyBackendBridge === false") &&
+    smoke.includes("BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN") &&
+    smoke.includes("BLOCKED: CALENDERZW_STAGING_FEED_URL"),
+  "native smoke must fail for a legacy bridge or missing staff/original-feed acceptance credentials.",
 );
 assert(
   stagingWorkflow.includes('checked_out_sha="$(git rev-parse HEAD)"') &&

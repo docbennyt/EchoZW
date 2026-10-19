@@ -21,10 +21,10 @@
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "verify": "npm run lint && npm run format:check && npm test && npm run build && npm run worker:check && npm run worker:automation:check",
-    "worker:check": "node scripts/check-cloudflare-foundation.mjs && node scripts/check-cloudflare-route-inventory.mjs",
+    "worker:check": "node scripts/check-cloudflare-foundation.mjs && node scripts/check-cloudflare-route-inventory.mjs && node scripts/check-no-retired-runtime.mjs",
     "worker:automation:check": "node scripts/check-cloudflare-automation.mjs",
     "worker:validate": "npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --dry-run --outdir .wrangler-dry-run",
-    "worker:smoke:staging": "node scripts/smoke-cloudflare-staging.mjs",
+    "worker:smoke:staging": "node scripts/smoke-native-recovery.mjs",
     "browser:smoke:release": "node scripts/smoke-browser-release.mjs",
     "worker:deploy:staging": "npm run verify && npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc"
   },

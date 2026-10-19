@@ -24,7 +24,6 @@ jobs:
       CALENDERZW_STAGING_FEED_URL: ${{ secrets.CALENDERZW_STAGING_FEED_URL }}
       CALENDERZW_EDGE_SOURCE_UPLOAD_SECRET: ${{ secrets.CALENDERZW_EDGE_SOURCE_UPLOAD_SECRET }}
       CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN: ${{ secrets.CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN }}
-      EXPECTED_BACKEND_SHA: ${{ vars.EXPECTED_BACKEND_SHA }}
       SUPABASE_URL: ${{ vars.SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -99,24 +98,26 @@ jobs:
             --message "PR ${{ github.event.pull_request.number }} ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
       - name: Live staging smoke
+        id: native_smoke
         if: ${{ env.IS_SAME_REPO_PR == 'true' }}
         run: npm run worker:smoke:staging
         env:
           EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}
 
       - name: Install browser runtime
-        if: ${{ env.IS_SAME_REPO_PR == 'true' }}
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' }}
         run: npx playwright install --with-deps chromium
 
       - name: Browser zero-blank-page release smoke
-        if: ${{ env.IS_SAME_REPO_PR == 'true' }}
+        id: browser_smoke
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' }}
         run: npm run browser:smoke:release
         env:
           CALENDERZW_BROWSER_SMOKE_BASE_URL: ${{ env.CALENDERZW_STAGING_ORIGIN }}
 
       - name: Read deployed release identity
         id: release
-        if: ${{ env.IS_SAME_REPO_PR == 'true' }}
+        if: ${{ !cancelled() && steps.deploy.outcome == 'success' }}
         run: |
           node --input-type=module <<'NODE' >> "$GITHUB_OUTPUT"
           const response = await fetch(`${process.env.CALENDERZW_STAGING_ORIGIN}/__release`, {
@@ -140,12 +141,9 @@ jobs:
             if [ "${IS_SAME_REPO_PR}" = "true" ]; then
               echo "- Deploy: attempted with Cloudflare staging environment"
               echo "- Worker version: \`${{ steps.release.outputs.worker_version }}\`"
-              echo "- Smoke: HTTP/runtime smoke and browser zero-blank-page smoke required before this summary step"
-              if [ -n "${EXPECTED_BACKEND_SHA}" ]; then
-                echo "- Backend integration: required Railway/backend SHA \`${EXPECTED_BACKEND_SHA}\`"
-              else
-                echo "- Backend integration: release identity is reported when available; same-SHA Railway compatibility is not implied by this Worker preview"
-              fi
+              echo "- Native recovery smoke: ${{ steps.native_smoke.outcome }}"
+              echo "- Browser smoke: ${{ steps.browser_smoke.outcome }}"
+              echo "- Full recovery parity: NOT established by this public/feed recovery slice."
             else
               echo "- Deploy: skipped because this PR is not from the base repository"
               echo "- Smoke: skipped with deploy"
@@ -166,9 +164,10 @@ jobs:
           - Staging origin: ${CALENDERZW_STAGING_ORIGIN}
           - Worker version: \`${{ steps.release.outputs.worker_version }}\`
           - Source SHA reported by /__release: \`${{ steps.release.outputs.source_sha }}\`
-          - Browser release smoke: rendered public routes, validated static asset MIME types, and opened Add to Calendar from the deployed staging origin.
+          - Native public/feed/staff smoke outcome: ${{ steps.native_smoke.outcome }}.
+          - Browser release smoke outcome: ${{ steps.browser_smoke.outcome }}.
           - Production DNS/runtime unchanged.
-          - Backend compatibility: this Worker preview does not imply same-SHA Railway backend compatibility unless \`EXPECTED_BACKEND_SHA\` is configured and enforced.
+          - Full backend parity: not established; unported routes explicitly return 503. No Railway fallback exists in this candidate.
 
           This workflow checks out the immutable PR head SHA, verifies the repository, deploys Cloudflare staging with \`SOURCE_SHA\`, and runs the live staging smoke before reporting evidence.
           EOF

@@ -59,8 +59,9 @@ assert(
   "the split-release SPA ownership invariant must be explicit in Worker code.",
 );
 assert(
-  worker.includes("LEGACY_BACKEND_ORIGIN"),
-  "staging backend bridge must be explicit and removable.",
+  !worker.includes("LEGACY_BACKEND_ORIGIN") &&
+    !JSON.stringify(wrangler).includes("railway.app"),
+  "Worker runtime/config must not depend on retired Railway.",
 );
 assert(
   worker.includes("handleNativePublicTimetableApi") &&
@@ -69,7 +70,7 @@ assert(
 );
 assert(
   worker.indexOf("handleNativePublicTimetableApi") <
-    worker.indexOf("Transitional staging bridge only"),
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
   "native public timetable transport must run before the legacy backend bridge.",
 );
 assert(
@@ -81,7 +82,7 @@ assert(
 );
 assert(
   worker.indexOf('url.pathname === "/api/health/live"') <
-    worker.indexOf("Transitional staging bridge only"),
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
   "native health routes must run before the legacy backend bridge.",
 );
 assert(
@@ -94,7 +95,7 @@ assert(
 );
 assert(
   worker.indexOf("handleNativeAdminSession") <
-    worker.indexOf("Transitional staging bridge only"),
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
   "native admin session route must run before the legacy backend bridge.",
 );
 assert(
@@ -105,7 +106,7 @@ assert(
 );
 assert(
   worker.indexOf("handleNativeCalendarIcs") <
-    worker.indexOf("Transitional staging bridge only"),
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
   "native calendar transport must run before the legacy backend bridge.",
 );
 assert(
@@ -113,14 +114,12 @@ assert(
     worker.includes("assertSourceUploadAuth") &&
     worker.includes("EDGE_SOURCE_UPLOAD_SECRET") &&
     worker.includes("SOURCE_UPLOAD_AUTH_REQUIRED") &&
-    worker.includes("SOURCE_BUCKET.put") &&
-    worker.includes("SOURCE_PROCESSING_QUEUE.send"),
-  "source document uploads must authenticate, write private R2, and enqueue processing.",
+    worker.includes("SOURCE_PROCESSOR_UNAVAILABLE"),
+  "incomplete source intake must authenticate and fail closed before accepting bytes.",
 );
 assert(
-  worker.indexOf("assertSourceUploadAuth") <
-    worker.indexOf("SOURCE_BUCKET.put"),
-  "source document upload auth must run before private R2 writes.",
+  !worker.includes("message.ack()") && worker.includes("message.retry("),
+  "unprocessed source jobs must never be acknowledged.",
 );
 assert(
   worker.includes("async queue(batch)") &&

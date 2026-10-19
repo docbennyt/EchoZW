@@ -20,7 +20,11 @@ type WranglerConfig = {
       r2_buckets?: Array<{ binding?: string; bucket_name?: string }>;
       queues?: {
         producers?: Array<{ binding?: string; queue?: string }>;
-        consumers?: Array<{ queue?: string; dead_letter_queue?: string }>;
+        consumers?: Array<{
+          queue?: string;
+          dead_letter_queue?: string;
+          max_retries?: number;
+        }>;
       };
       vars?: Record<string, string>;
     };
@@ -60,9 +64,10 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).toContain("NEVER proxied to Railway");
   });
 
-  it("keeps Railway as a staging-only backend bridge rather than an HTML owner", () => {
-    expect(worker).toContain("LEGACY_BACKEND_ORIGIN");
-    expect(worker).toContain("Transitional staging bridge only");
+  it("has no retired backend bridge and fails unported routes explicitly", () => {
+    expect(worker).not.toContain("LEGACY_BACKEND_ORIGIN");
+    expect(worker).toContain("EDGE_ROUTE_UNAVAILABLE");
+    expect(JSON.stringify(wrangler)).not.toContain("railway.app");
     expect(worker).not.toContain("productionServer");
   });
 
@@ -70,7 +75,7 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).toContain("handleNativePublicTimetableApi");
     expect(worker).toContain("cloudflare-native-public-api");
     expect(worker.indexOf("handleNativePublicTimetableApi")).toBeLessThan(
-      worker.indexOf("Transitional staging bridge only"),
+      worker.indexOf("if (isDynamicPath(url.pathname))"),
     );
   });
 
@@ -83,7 +88,7 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).toContain("backendReleasePayload");
     expect(worker).toContain("checkReadiness");
     expect(worker.indexOf('url.pathname === "/api/health/live"')).toBeLessThan(
-      worker.indexOf("Transitional staging bridge only"),
+      worker.indexOf("if (isDynamicPath(url.pathname))"),
     );
   });
 
@@ -94,7 +99,7 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).toContain("createSupabaseUserClient(accessToken, env)");
     expect(worker).toContain("createSupabaseAdminClient(env)");
     expect(worker.indexOf("handleNativeAdminSession")).toBeLessThan(
-      worker.indexOf("Transitional staging bridge only"),
+      worker.indexOf("if (isDynamicPath(url.pathname))"),
     );
   });
 
@@ -103,7 +108,7 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).toContain('url.pathname.startsWith("/calendar/feed/")');
     expect(worker).toContain('url.pathname.startsWith("/calendar/download/")');
     expect(worker.indexOf("handleNativeCalendarIcs")).toBeLessThan(
-      worker.indexOf("Transitional staging bridge only"),
+      worker.indexOf("if (isDynamicPath(url.pathname))"),
     );
   });
 
@@ -144,10 +149,12 @@ describe("Cloudflare runtime foundation", () => {
         {
           queue: "calenderzw-source-processing-staging",
           dead_letter_queue: "calenderzw-source-processing-dlq-staging",
+          max_retries: 5,
         },
         {
           queue: "calenderzw-push-staging",
           dead_letter_queue: "calenderzw-push-dlq-staging",
+          max_retries: 5,
         },
       ]),
     );
@@ -158,19 +165,15 @@ describe("Cloudflare runtime foundation", () => {
     );
   });
 
-  it("has a native private source upload path that writes R2 and queues processing", () => {
+  it("fails incomplete intake closed and preserves queued work for retry/DLQ", () => {
     expect(worker).toContain('url.pathname === "/api/edge/source-documents"');
     expect(worker).toContain("assertSourceUploadAuth");
     expect(worker).toContain("EDGE_SOURCE_UPLOAD_SECRET");
     expect(worker).toContain("SOURCE_UPLOAD_AUTH_REQUIRED");
-    expect(worker.indexOf("assertSourceUploadAuth")).toBeLessThan(
-      worker.indexOf("SOURCE_BUCKET.put"),
-    );
-    expect(worker).toContain("SOURCE_BUCKET.put");
-    expect(worker).toContain("SOURCE_PROCESSING_QUEUE.send");
+    expect(worker).toContain("SOURCE_PROCESSOR_UNAVAILABLE");
+    expect(worker).not.toContain("message.ack()");
+    expect(worker).toContain("message.retry(");
     expect(worker).toContain("source_document_uploaded");
-    expect(worker).toContain("DOCX_ZIP_INVALID");
-    expect(worker).toContain("MAX_SOURCE_DOCUMENT_BYTES");
     expect(worker).toContain("async queue(batch)");
   });
 });

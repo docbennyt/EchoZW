@@ -50,8 +50,9 @@ function isSchemaCompatibilityError(error: SupabaseErrorLike | null) {
  */
 export async function getTimetablePublicDisplaySettings(
   timetableId: string,
+  env?: NodeJS.ProcessEnv,
 ): Promise<TimetablePublicDisplaySettings> {
-  const client = createSupabaseAdminClient();
+  const client = createSupabaseAdminClient(env);
   const { data, error } = await client
     .from("timetable_public_settings")
     .select("show_visual_preview, show_change_alerts")

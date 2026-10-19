@@ -18,6 +18,9 @@ jobs:
       - run: npm run format:check
       - run: npm run test
       - run: npm run build
+      - run: npm run worker:check
+      - run: npm run worker:automation:check
+      - run: npm run worker:validate
       - name: Smoke canonical production start command
         run: |
           NODE_ENV=development PORT=43123 npm start > /tmp/calenderzw-start.log 2>&1 &

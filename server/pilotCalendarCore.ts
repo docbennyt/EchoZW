@@ -8,7 +8,10 @@ export async function buildRevisionAwareCalendar(input: {
   publicOrigin: string;
   env: NodeJS.ProcessEnv;
 }) {
-  const timetable = await getPublishedTimetableById(input.timetableId);
+  const timetable = await getPublishedTimetableById(
+    input.timetableId,
+    input.env,
+  );
   if (!timetable.publishedAt) {
     throw new PilotApiError(
       "TIMETABLE_NOT_PUBLISHED",

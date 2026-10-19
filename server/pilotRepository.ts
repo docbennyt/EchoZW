@@ -47,8 +47,8 @@ export function setPilotRepositoryEnv(env: NodeJS.ProcessEnv) {
   repositoryEnv = env;
 }
 
-function createPilotAdminClient() {
-  return createSupabaseAdminClient(repositoryEnv ?? process.env);
+function createPilotAdminClient(env?: NodeJS.ProcessEnv) {
+  return createSupabaseAdminClient(env ?? repositoryEnv ?? process.env);
 }
 
 function slugify(value: string) {
@@ -713,8 +713,8 @@ async function getEditableVersion(timetableId: string, userId: string) {
   return createInitialDraftVersion(timetableId, userId, nextVersionNumber);
 }
 
-export async function listInstitutions() {
-  const client = createPilotAdminClient();
+export async function listInstitutions(env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("institutions")
@@ -1206,8 +1206,8 @@ export async function updateAcademicPeriod(
   return mapAcademicPeriod(data as unknown as JsonRecord);
 }
 
-export async function listPublishedTimetableDiscovery() {
-  const client = createPilotAdminClient();
+export async function listPublishedTimetableDiscovery(env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const rows = await expectData(
     client
       .from("timetables")
@@ -1862,11 +1862,14 @@ export async function publishTimetable(timetableId: string, userId: string) {
   };
 }
 
-async function getPublishedTimetable(filter: {
-  publicSlug?: string;
-  timetableId?: string;
-}) {
-  const client = createPilotAdminClient();
+async function getPublishedTimetable(
+  filter: {
+    publicSlug?: string;
+    timetableId?: string;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   let query = client
     .from("timetables")
     .select(
@@ -1962,14 +1965,17 @@ async function getPublishedTimetable(filter: {
   const period = asSingle(
     timetableRecord.academic_periods as JsonRecord | JsonRecord[] | null,
   );
-  const pauses = await listActiveAcademicPausesForTimetable({
-    timetableId: String(timetableRecord.id),
-    institutionId: String(timetableRecord.institution_id),
-    programmeId: String(timetableRecord.programme_id),
-    cohortId: String(timetableRecord.cohort_id),
-    startsOn: period?.starts_on ? String(period.starts_on) : null,
-    endsOn: period?.ends_on ? String(period.ends_on) : null,
-  });
+  const pauses = await listActiveAcademicPausesForTimetable(
+    {
+      timetableId: String(timetableRecord.id),
+      institutionId: String(timetableRecord.institution_id),
+      programmeId: String(timetableRecord.programme_id),
+      cohortId: String(timetableRecord.cohort_id),
+      startsOn: period?.starts_on ? String(period.starts_on) : null,
+      endsOn: period?.ends_on ? String(period.ends_on) : null,
+    },
+    env ?? repositoryEnv,
+  );
 
   return {
     timetableId: String(timetableRecord.id),
@@ -2020,26 +2026,35 @@ async function getPublishedTimetable(filter: {
   } satisfies PublicTimetable;
 }
 
-export async function getPublishedTimetableBySlug(publicSlug: string) {
-  return getPublishedTimetable({ publicSlug });
+export async function getPublishedTimetableBySlug(
+  publicSlug: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  return getPublishedTimetable({ publicSlug }, env);
 }
 
-export async function getPublishedTimetableById(timetableId: string) {
-  return getPublishedTimetable({ timetableId });
+export async function getPublishedTimetableById(
+  timetableId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  return getPublishedTimetable({ timetableId }, env);
 }
 
-export async function createCalendarSubscriptionRecord(input: {
-  timetableId: string;
-  provider: string;
-  reminderPreset: string;
-  reminderOffsetsMinutes: number[];
-  timezone: string;
-  anonymousSessionId?: string;
-  rawToken?: string;
-  tokenHash?: string;
-  subscriberContact?: SubscriberContactInput;
-}) {
-  const timetable = await getPublishedTimetableById(input.timetableId);
+export async function createCalendarSubscriptionRecord(
+  input: {
+    timetableId: string;
+    provider: string;
+    reminderPreset: string;
+    reminderOffsetsMinutes: number[];
+    timezone: string;
+    anonymousSessionId?: string;
+    rawToken?: string;
+    tokenHash?: string;
+    subscriberContact?: SubscriberContactInput;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
+  const timetable = await getPublishedTimetableById(input.timetableId, env);
   let normalizedContact: ReturnType<typeof normalizeSubscriberPhone> | null;
   try {
     normalizedContact = input.subscriberContact
@@ -2052,7 +2067,7 @@ export async function createCalendarSubscriptionRecord(input: {
     throw error;
   }
 
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .rpc("create_calendar_subscription_with_profile", {
@@ -2076,8 +2091,11 @@ export async function createCalendarSubscriptionRecord(input: {
   return data as unknown as JsonRecord;
 }
 
-export async function getCalendarSubscriptionById(id: string) {
-  const client = createPilotAdminClient();
+export async function getCalendarSubscriptionById(
+  id: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   return expectData(
     client
       .from("calendar_subscriptions")
@@ -2089,8 +2107,11 @@ export async function getCalendarSubscriptionById(id: string) {
   );
 }
 
-export async function getCalendarSubscriptionByTokenHash(tokenHash: string) {
-  const client = createPilotAdminClient();
+export async function getCalendarSubscriptionByTokenHash(
+  tokenHash: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   return expectData(
     client
       .from("calendar_subscriptions")

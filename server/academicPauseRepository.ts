@@ -290,15 +290,18 @@ export async function createAcademicPause(input: {
   return mapPause(data as JsonRecord);
 }
 
-export async function listActiveAcademicPausesForTimetable(input: {
-  timetableId: string;
-  institutionId: string;
-  programmeId: string;
-  cohortId: string;
-  startsOn: string | null;
-  endsOn: string | null;
-}): Promise<AcademicSchedulePause[]> {
-  let query = client()
+export async function listActiveAcademicPausesForTimetable(
+  input: {
+    timetableId: string;
+    institutionId: string;
+    programmeId: string;
+    cohortId: string;
+    startsOn: string | null;
+    endsOn: string | null;
+  },
+  env?: NodeJS.ProcessEnv,
+): Promise<AcademicSchedulePause[]> {
+  let query = createSupabaseAdminClient(env)
     .from("academic_schedule_pauses")
     .select("*")
     .eq("active", true)
