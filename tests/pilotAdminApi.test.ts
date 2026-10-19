@@ -5,12 +5,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const repositoryMocks = vi.hoisted(() => ({
   createTimetable: vi.fn(),
+  getCalendarSubscriptionById: vi.fn(),
   getTimetableEditor: vi.fn(),
   publishTimetable: vi.fn(),
 }));
 
 const googleSyncMocks = vi.hoisted(() => ({
+  previewGoogleSubscriptionSync: vi.fn(),
   previewGoogleSubscriptionsForTimetable: vi.fn(),
+  syncGoogleSubscription: vi.fn(),
   syncGoogleSubscriptionsForTimetable: vi.fn(),
 }));
 
@@ -22,6 +25,7 @@ vi.mock("../server/pilotRepository", async () => {
   return {
     ...actual,
     createTimetable: repositoryMocks.createTimetable,
+    getCalendarSubscriptionById: repositoryMocks.getCalendarSubscriptionById,
     getTimetableEditor: repositoryMocks.getTimetableEditor,
     publishTimetable: repositoryMocks.publishTimetable,
   };
@@ -101,6 +105,31 @@ describe("pilot timetable admin API contracts", () => {
       attempted: 0,
       succeeded: 0,
       failed: 0,
+    });
+    googleSyncMocks.syncGoogleSubscription.mockResolvedValue({
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      unchanged: 15,
+    });
+    googleSyncMocks.previewGoogleSubscriptionSync.mockResolvedValue({
+      subscriptionId: "99999999-9999-4999-8999-999999999999",
+      timetableId: "tt-1",
+      readOnly: true,
+      expectedEvents: 15,
+      remoteManagedEvents: 16,
+      localMappings: 15,
+      wouldCreate: 0,
+      wouldUpdate: 0,
+      wouldDelete: 1,
+      unchanged: 15,
+    });
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValue({
+      id: "99999999-9999-4999-8999-999999999999",
+      provider: "google_api",
+      timetable_id: "tt-1",
+      status: "active",
+      revoked_at: null,
     });
   });
 
@@ -250,5 +279,178 @@ describe("pilot timetable admin API contracts", () => {
         ],
       },
     });
+  });
+
+  it("previews one Google subscription without running the bulk preview", async () => {
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        dryRun: true,
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(repositoryMocks.getCalendarSubscriptionById).toHaveBeenCalledWith(
+      "99999999-9999-4999-8999-999999999999",
+    );
+    expect(googleSyncMocks.previewGoogleSubscriptionSync).toHaveBeenCalledWith(
+      "99999999-9999-4999-8999-999999999999",
+    );
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionsForTimetable,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleSyncMocks.syncGoogleSubscriptionsForTimetable,
+    ).not.toHaveBeenCalled();
+    expect(body()).toEqual({
+      googleCalendarSync: {
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+        timetableId: "tt-1",
+        readOnly: true,
+        expectedEvents: 15,
+        remoteManagedEvents: 16,
+        localMappings: 15,
+        wouldCreate: 0,
+        wouldUpdate: 0,
+        wouldDelete: 1,
+        unchanged: 15,
+      },
+    });
+  });
+
+  it("requires explicit dryRun intent before targeting a Google subscription", async () => {
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(body()).toMatchObject({
+      error: { code: "GOOGLE_RECONCILIATION_MODE_REQUIRED" },
+    });
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionSync,
+    ).not.toHaveBeenCalled();
+    expect(googleSyncMocks.syncGoogleSubscription).not.toHaveBeenCalled();
+  });
+
+  it("reconciles one Google subscription without running the bulk sync", async () => {
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        dryRun: false,
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(googleSyncMocks.syncGoogleSubscription).toHaveBeenCalledWith(
+      "99999999-9999-4999-8999-999999999999",
+    );
+    expect(
+      googleSyncMocks.syncGoogleSubscriptionsForTimetable,
+    ).not.toHaveBeenCalled();
+    expect(body()).toEqual({
+      googleCalendarSync: {
+        created: 0,
+        updated: 0,
+        deleted: 0,
+        unchanged: 15,
+      },
+    });
+  });
+
+  it("rejects a targeted subscription that belongs to another timetable", async () => {
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValueOnce({
+      id: "99999999-9999-4999-8999-999999999999",
+      provider: "google_api",
+      timetable_id: "other-tt",
+      status: "active",
+      revoked_at: null,
+    });
+
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        dryRun: true,
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(403);
+    expect(body()).toMatchObject({
+      error: { code: "SUBSCRIPTION_TIMETABLE_MISMATCH" },
+    });
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionSync,
+    ).not.toHaveBeenCalled();
+    expect(googleSyncMocks.syncGoogleSubscription).not.toHaveBeenCalled();
+  });
+
+  it("rejects targeted non-Google subscriptions", async () => {
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValueOnce({
+      id: "99999999-9999-4999-8999-999999999999",
+      provider: "apple",
+      timetable_id: "tt-1",
+      status: "active",
+      revoked_at: null,
+    });
+
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        dryRun: true,
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(body()).toMatchObject({
+      error: { code: "SUBSCRIPTION_PROVIDER_INVALID" },
+    });
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionSync,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("rejects targeted disconnected Google subscriptions before provider work", async () => {
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValueOnce({
+      id: "99999999-9999-4999-8999-999999999999",
+      provider: "google_api",
+      timetable_id: "tt-1",
+      status: "disconnected",
+      revoked_at: null,
+    });
+
+    const { res, body } = response();
+    await handlePilotAdminApi(
+      request("POST", "/api/admin/timetables/tt-1/google-calendar-sync", {
+        dryRun: true,
+        subscriptionId: "99999999-9999-4999-8999-999999999999",
+      }),
+      res,
+      { id: "77777777-7777-4777-8777-777777777777" },
+    );
+
+    expect(res.statusCode).toBe(409);
+    expect(body()).toMatchObject({
+      error: { code: "SUBSCRIPTION_DISCONNECTED" },
+    });
+    expect(
+      googleSyncMocks.previewGoogleSubscriptionSync,
+    ).not.toHaveBeenCalled();
   });
 });
