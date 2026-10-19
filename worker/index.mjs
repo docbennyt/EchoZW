@@ -1,4 +1,30 @@
-/* global Headers, Response, URL, fetch, Request, crypto */
+/* global Headers, Response, URL, fetch, Request, crypto, TextEncoder */
+
+import {
+  PilotApiError,
+  setPilotRepositoryEnv,
+} from "../server/pilotRepository.ts";
+import {
+  getPublicTimetableResponse,
+  listPublicTimetableDiscoveryResponse,
+} from "../server/publicTimetableCore.ts";
+import {
+  buildRuntimePublicConfig,
+  runtimeConfigResponseHeaders,
+  serializeRuntimeConfigScript,
+} from "../server/runtimePublicConfig.ts";
+import { checkReadiness } from "../server/healthApi.ts";
+import {
+  getCalendarSubscriptionById,
+  getCalendarSubscriptionByTokenHash,
+} from "../server/pilotRepository.ts";
+import { buildRevisionAwareCalendar } from "../server/pilotCalendarCore.ts";
+import { recordCalendarFeedActivity } from "../server/analyticsRepository.ts";
+import { AdminAuthError, requireStaffUser } from "../server/supabase/auth.ts";
+import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
+import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
+import { classifyAnalyticsClient } from "../src/domain/analytics.ts";
+import { sha256Base64Url } from "../src/domain/token.ts";
 
 const DYNAMIC_PREFIXES = ["/api/", "/calendar/"];
 const DYNAMIC_EXACT_PATHS = new Set([
@@ -22,6 +48,54 @@ function json(body, init = {}) {
   headers.set("cache-control", "no-store");
   applySecurityHeaders(headers);
   return new Response(JSON.stringify(body), { ...init, headers });
+}
+
+function publicApiError(error) {
+  if (error instanceof PilotApiError) {
+    return json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: error.status },
+    );
+  }
+
+  return json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "We could not complete that request. Please try again.",
+      },
+    },
+    { status: 500 },
+  );
+}
+
+function adminAuthError(error) {
+  if (error instanceof AdminAuthError) {
+    return json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: error.status },
+    );
+  }
+
+  return json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "We could not complete that request. Please try again.",
+      },
+    },
+    { status: 500 },
+  );
 }
 
 function applySecurityHeaders(headers) {
@@ -127,6 +201,35 @@ function releasePayload(env) {
   };
 }
 
+function backendReleasePayload(env) {
+  return {
+    runtime: "cloudflare-workers",
+    environment: env.APP_ENV ?? null,
+    sourceSha: env.SOURCE_SHA ?? null,
+    service: "calenderzw-edge",
+    workerVersion: env.CF_VERSION_METADATA?.id ?? null,
+  };
+}
+
+function serveRuntimeConfig(env) {
+  try {
+    const script = serializeRuntimeConfigScript(buildRuntimePublicConfig(env));
+    const headers = new Headers(runtimeConfigResponseHeaders(script.length));
+    applySecurityHeaders(headers);
+    return new Response(script, { status: 200, headers });
+  } catch {
+    return json(
+      {
+        error: {
+          code: "RUNTIME_CONFIG_UNAVAILABLE",
+          message: "Browser runtime configuration is unavailable.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+}
+
 function notFound() {
   const headers = new Headers({
     "content-type": "text/plain; charset=utf-8",
@@ -138,6 +241,10 @@ function notFound() {
 
 function headerValue(headers, name) {
   return headers.get(name)?.trim() ?? "";
+}
+
+function requestHeaderValue(request, name) {
+  return request.headers.get(name)?.trim() ?? "";
 }
 
 function decodeFilename(value) {
@@ -181,6 +288,248 @@ function assertSourceUploadBindings(env) {
   return null;
 }
 
+function assertSourceUploadAuth(request, env) {
+  const expected = env.EDGE_SOURCE_UPLOAD_SECRET?.trim();
+  if (!expected) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_AUTH_NOT_CONFIGURED",
+          message: "Source upload authentication is not configured.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+
+  const auth = request.headers.get("authorization") ?? "";
+  const bearerMatch = auth.match(/^Bearer\s+(.+)$/i);
+  const supplied =
+    bearerMatch?.[1]?.trim() ??
+    request.headers.get("x-calenderzw-edge-upload-secret")?.trim() ??
+    "";
+
+  if (!supplied || supplied !== expected) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_AUTH_REQUIRED",
+          message: "Authenticated source upload access is required.",
+        },
+      },
+      { status: 401 },
+    );
+  }
+
+  return null;
+}
+
+function safeCalendarFileName(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+}
+
+function requestHasEtag(request, etag) {
+  const header = request.headers.get("if-none-match");
+  if (!header) return false;
+  return header
+    .split(",")
+    .map((value) => value.trim())
+    .some((value) => value === "*" || value === etag);
+}
+
+async function writeIcsResponse(request, calendarName, ics, lastModifiedValue) {
+  const etag = `"${await sha256Base64Url(ics)}"`;
+  const lastModified = new Date(lastModifiedValue);
+  if (Number.isNaN(lastModified.getTime())) {
+    throw new Error("Published timetable has an invalid revision timestamp.");
+  }
+  const headers = new Headers({
+    "content-type": "text/calendar; charset=utf-8",
+    "content-disposition": `inline; filename="${safeCalendarFileName(calendarName)}.ics"`,
+    "cache-control": "private, no-cache, max-age=0, must-revalidate",
+    "referrer-policy": "no-referrer",
+    "x-robots-tag": "noindex, nofollow",
+    vary: "Accept-Encoding",
+    etag,
+    "last-modified": lastModified.toUTCString(),
+  });
+  applySecurityHeaders(headers);
+
+  if (requestHasEtag(request, etag)) {
+    return new Response(null, { status: 304, headers });
+  }
+  if (request.method === "HEAD") {
+    headers.set("content-length", "0");
+    return new Response(null, { status: 200, headers });
+  }
+  headers.set("content-length", String(new TextEncoder().encode(ics).length));
+  return new Response(ics, { status: 200, headers });
+}
+
+async function handleNativeCalendarIcs(request, env, ctx) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  if (!hasSupabaseServerConfig(env)) return null;
+  setPilotRepositoryEnv(env);
+
+  const url = new URL(request.url);
+  const publicOrigin = env.PUBLIC_APP_URL ?? url.origin;
+  const downloadMatch = url.pathname.match(
+    /^\/calendar\/download\/([^/]+)\.ics$/,
+  );
+  const feedMatch = url.pathname.match(/^\/calendar\/feed\/([^/]+)\.ics$/);
+
+  try {
+    let subscription;
+    let statusCode = 200;
+    if (downloadMatch) {
+      subscription = await getCalendarSubscriptionById(
+        decodeURIComponent(downloadMatch[1]),
+      );
+      if (!subscription || subscription.revoked_at) {
+        throw new PilotApiError(
+          "NOT_FOUND",
+          "Calendar download not found.",
+          404,
+        );
+      }
+    } else if (feedMatch) {
+      const token = decodeURIComponent(feedMatch[1]);
+      const tokenHash = await sha256Base64Url(token);
+      subscription = await getCalendarSubscriptionByTokenHash(tokenHash);
+      if (!subscription || subscription.revoked_at) {
+        throw new PilotApiError("NOT_FOUND", "Calendar feed not found.", 404);
+      }
+    } else {
+      return null;
+    }
+
+    const timetableId = String(subscription.timetable_id);
+    const reminders = subscription.reminder_offsets_minutes ?? [];
+    const { ics, revision } = await buildRevisionAwareCalendar({
+      timetableId,
+      reminders,
+      publicOrigin,
+      env,
+    });
+    const response = await writeIcsResponse(
+      request,
+      String(subscription.calendar_name),
+      ics,
+      revision.updatedAt,
+    );
+    statusCode = response.status;
+
+    if (feedMatch) {
+      const subscriptionId = String(subscription.id);
+      const client = classifyAnalyticsClient(
+        requestHeaderValue(request, "user-agent"),
+      );
+      ctx.waitUntil(
+        recordCalendarFeedActivity({ subscriptionId, statusCode, client }, env),
+      );
+    }
+
+    return response;
+  } catch (error) {
+    return publicApiError(error);
+  }
+}
+
+function hasSupabaseServerConfig(env) {
+  return Boolean(
+    (env.SUPABASE_URL || env.VITE_SUPABASE_URL) &&
+    (env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY) &&
+    (env.VITE_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY),
+  );
+}
+
+async function handleNativePublicTimetableApi(request, env) {
+  const url = new URL(request.url);
+  if (request.method !== "GET") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  if (!hasSupabaseServerConfig(env)) return null;
+
+  setPilotRepositoryEnv(env);
+  try {
+    if (url.pathname === "/api/public/timetables") {
+      return json(await listPublicTimetableDiscoveryResponse(), {
+        headers: {
+          "cache-control": "public, max-age=60, stale-while-revalidate=300",
+          "x-calenderzw-edge-runtime": "cloudflare-native-public-api",
+        },
+      });
+    }
+
+    const match = url.pathname.match(/^\/api\/public\/timetables\/([^/]+)$/);
+    if (match) {
+      return json(
+        await getPublicTimetableResponse(decodeURIComponent(match[1])),
+        {
+          headers: {
+            "x-calenderzw-edge-runtime": "cloudflare-native-public-api",
+          },
+        },
+      );
+    }
+  } catch (error) {
+    return publicApiError(error);
+  }
+
+  return null;
+}
+
+async function handleNativeAdminSession(request, env) {
+  if (request.method !== "GET") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  try {
+    const context = await requireStaffUser(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+        method: request.method,
+        url: new URL(request.url).pathname,
+      },
+      {
+        createUserClient: (accessToken) =>
+          createSupabaseUserClient(accessToken, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+
+    return json({
+      authenticated: true,
+      admin: true,
+      user: context.user,
+      staff: context.staff,
+      permissions: context.permissions,
+      assignments: context.assignments,
+    });
+  } catch (error) {
+    return adminAuthError(error);
+  }
+}
+
 async function handleSourceDocumentUpload(request, env, ctx) {
   if (request.method !== "POST") {
     return json(
@@ -191,6 +540,9 @@ async function handleSourceDocumentUpload(request, env, ctx) {
 
   const bindingError = assertSourceUploadBindings(env);
   if (bindingError) return bindingError;
+
+  const authError = assertSourceUploadAuth(request, env);
+  if (authError) return authError;
 
   const declaredSize = Number(request.headers.get("content-length") ?? 0);
   if (
@@ -352,6 +704,25 @@ export default {
       return json(releasePayload(env));
     }
 
+    if (url.pathname === "/runtime-config.js") {
+      return serveRuntimeConfig(env);
+    }
+
+    if (url.pathname === "/api/health/live") {
+      return json({ status: "ok" });
+    }
+
+    if (url.pathname === "/api/health/release") {
+      return json(backendReleasePayload(env));
+    }
+
+    if (url.pathname === "/api/health/ready") {
+      const readiness = await checkReadiness(env);
+      return json(readiness, {
+        status: readiness.status === "ready" ? 200 : 503,
+      });
+    }
+
     const redirectTo = redirectLocation(url);
     if (redirectTo) {
       const headers = new Headers({
@@ -364,6 +735,29 @@ export default {
 
     if (url.pathname === "/api/edge/source-documents") {
       return handleSourceDocumentUpload(request, env, ctx);
+    }
+
+    if (url.pathname === "/api/admin/session") {
+      return handleNativeAdminSession(request, env);
+    }
+
+    if (
+      url.pathname.startsWith("/calendar/feed/") ||
+      url.pathname.startsWith("/calendar/download/")
+    ) {
+      const nativeCalendar = await handleNativeCalendarIcs(request, env, ctx);
+      if (nativeCalendar) return nativeCalendar;
+    }
+
+    if (
+      url.pathname === "/api/public/timetables" ||
+      url.pathname.startsWith("/api/public/timetables/")
+    ) {
+      const nativePublicApi = await handleNativePublicTimetableApi(
+        request,
+        env,
+      );
+      if (nativePublicApi) return nativePublicApi;
     }
 
     // Transitional staging bridge only. The final Cloudflare runtime replaces

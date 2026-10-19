@@ -6,6 +6,8 @@ const origin = new URL(
 const expectedReleaseSha = process.env.EXPECTED_RELEASE_SHA;
 const expectedBackendSha = process.env.EXPECTED_BACKEND_SHA;
 const diagnosticFeedUrl = process.env.CALENDERZW_STAGING_FEED_URL;
+const edgeSourceUploadSecret = process.env.CALENDERZW_EDGE_SOURCE_UPLOAD_SECRET;
+const adminAccessToken = process.env.CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN;
 const checks = [];
 const failures = [];
 const releasePropagationTimeoutMs = Number(
@@ -158,6 +160,99 @@ async function expectNotHtml404(pathname, name) {
   }
 }
 
+async function postDocx(pathname, headers = {}) {
+  return fetch(stagingUrl(pathname), {
+    method: "POST",
+    headers: {
+      "User-Agent": "CalenderZW-Cloudflare-Staging-Smoke/1.0",
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "X-CalenderZW-Filename": "cloudflare-auth-smoke.docx",
+      ...headers,
+    },
+    body: new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00]),
+    redirect: "manual",
+  });
+}
+
+async function expectAuthenticatedSourceUploadWorkflow() {
+  const unauthorized = await postDocx("/api/edge/source-documents");
+  const unauthorizedText = await unauthorized.text();
+  record("edge source upload without auth", unauthorized, {
+    body: unauthorizedText.slice(0, 300),
+  });
+  if (unauthorized.status !== 401) {
+    fail(
+      `edge source upload without auth returned ${unauthorized.status}, expected 401.`,
+    );
+  }
+
+  if (!edgeSourceUploadSecret) {
+    fail(
+      "CALENDERZW_EDGE_SOURCE_UPLOAD_SECRET is required for the authenticated source upload smoke.",
+    );
+    return;
+  }
+
+  const authorized = await postDocx("/api/edge/source-documents", {
+    Authorization: `Bearer ${edgeSourceUploadSecret}`,
+  });
+  const authorizedText = await authorized.text();
+  record("edge source upload with auth", authorized, {
+    body: authorizedText
+      .replace(/source-documents\/[^"]+/g, "source-documents/<redacted>")
+      .slice(0, 500),
+  });
+  let json = null;
+  try {
+    json = JSON.parse(authorizedText);
+  } catch {
+    fail("edge source upload with auth did not return JSON.");
+  }
+  if (authorized.status !== 202) {
+    fail(`edge source upload with auth returned ${authorized.status}.`);
+  }
+  if (!json?.document?.queued || !json?.document?.sha256) {
+    fail("edge source upload did not prove R2 write plus queue dispatch.");
+  }
+}
+
+async function expectNativeAdminSessionBoundary() {
+  const anonymous = await get("/api/admin/session", {
+    Accept: "application/json",
+  });
+  const anonymousText = await anonymous.text();
+  record("admin session without auth", anonymous, {
+    body: anonymousText.slice(0, 300),
+  });
+  if (anonymous.status !== 401) {
+    fail(
+      `admin session without auth returned ${anonymous.status}, expected 401.`,
+    );
+  }
+
+  if (!adminAccessToken) {
+    console.log(
+      "Authenticated admin session canary skipped: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN is not set.",
+    );
+    return;
+  }
+
+  const authenticated = await get("/api/admin/session", {
+    Accept: "application/json",
+    Authorization: `Bearer ${adminAccessToken}`,
+  });
+  const authenticatedText = await authenticated.text();
+  record("admin session with auth", authenticated, {
+    body: authenticatedText
+      .replace(/"email":"[^"]+"/g, '"email":"<redacted>"')
+      .slice(0, 500),
+  });
+  if (authenticated.status !== 200) {
+    fail(`admin session with auth returned ${authenticated.status}.`);
+  }
+}
+
 function extractAsset(html, extension) {
   const pattern = new RegExp(
     String.raw`(?:src|href)="([^"]*\/assets\/[^"]+\.${extension})"`,
@@ -210,6 +305,9 @@ const health = await get("/api/health/live", { Accept: "application/json" });
 const healthText = await health.text();
 record("api health live", health, { body: healthText.slice(0, 500) });
 if (health.status !== 200) fail("api health live did not return 200.");
+
+await expectAuthenticatedSourceUploadWorkflow();
+await expectNativeAdminSessionBoundary();
 
 const backendRelease = await get("/api/health/release", {
   Accept: "application/json",
