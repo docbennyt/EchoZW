@@ -1,188 +1,551 @@
-.czw-pilot-offer-section {
-  background: #f5f0e4;
-  padding-block: clamp(4.5rem, 8vw, 7rem);
+/* Marketing pricing: 21st three-card composition, adapted to the CZW design system. */
+.czw-pricing-section {
+  --pricing-ink: #153f31;
+  --pricing-muted: #52685d;
+  --pricing-gold: #ecac32;
+  background:
+    radial-gradient(
+      circle at 90% 3%,
+      rgba(236, 172, 50, 0.09),
+      transparent 30%
+    ),
+    #f7f4eb;
+  padding-block: clamp(4.25rem, 8vw, 7.5rem);
+  color: var(--pricing-ink);
 }
 
-.czw-pilot-offer-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
-  gap: clamp(1.5rem, 4vw, 3.5rem);
-  align-items: stretch;
-  padding: clamp(1.5rem, 4vw, 3.5rem);
-  border: 1px solid rgba(25, 63, 47, 0.16);
-  border-radius: 28px;
-  background: #fffdf8;
-  box-shadow: 0 22px 70px rgba(25, 63, 47, 0.08);
+.czw-pricing-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.75rem;
+  margin-bottom: 2.3rem;
 }
 
-.czw-pilot-offer-copy {
+.czw-pricing-heading > div:first-child {
+  max-width: 44rem;
+}
+
+.czw-pricing-heading h2 {
+  max-width: 15ch;
+  margin: 0.8rem 0 0.7rem;
+  color: #153f31;
+  font-size: clamp(2.3rem, 4.3vw, 3.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.052em;
+}
+
+.czw-pricing-heading p {
+  margin: 0;
+  color: var(--pricing-muted);
+  font-size: clamp(1rem, 1.4vw, 1.1rem);
+  line-height: 1.65;
+}
+
+.czw-pricing-switch-wrap {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 0.5rem;
+  max-width: 100%;
 }
 
-.czw-pilot-offer-copy h2 {
-  max-width: 15ch;
-  margin: 0.65rem 0 1rem;
-  font-size: clamp(2rem, 4.5vw, 3.6rem);
-  line-height: 1.02;
-  letter-spacing: -0.045em;
-  color: #173f30;
+.czw-pricing-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  border: 1px solid #d6ded6;
+  border-radius: 999px;
+  background: #eaece5;
 }
 
-.czw-pilot-offer-copy > p {
-  max-width: 62ch;
-  margin: 0;
-  font-size: clamp(1rem, 1.5vw, 1.12rem);
-  line-height: 1.7;
-  color: #4e5f57;
+.czw-pricing-switch button {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: 0.6rem 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #485c52;
+  cursor: pointer;
+  font-weight: 750;
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease;
 }
 
-.czw-pilot-benefits {
+.czw-pricing-switch button small {
+  font-size: 0.7rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.czw-pricing-switch button.is-active {
+  background: #173f30;
+  color: #fffdf6;
+  box-shadow: 0 3px 9px rgba(20, 55, 42, 0.16);
+}
+
+.czw-pricing-announcement {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #596c60;
+}
+
+.czw-pricing-grid {
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: stretch;
+}
+
+.czw-pricing-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: clamp(1.3rem, 2.5vw, 2.1rem);
+  border: 1px solid #dce4d9;
+  border-radius: 24px;
+  background: #fffefa;
+  box-shadow: 0 8px 28px rgba(22, 63, 46, 0.035);
+}
+
+.czw-pricing-card.is-popular {
+  border: 2px solid #e7b448;
+  box-shadow: 0 16px 46px rgba(25, 63, 47, 0.11);
+  transform: translateY(-0.45rem);
+}
+
+.czw-pricing-ribbon {
+  position: absolute;
+  top: -1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.46rem 1rem;
+  border-radius: 999px;
+  background: #e6af3f;
+  color: #173f30;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+  white-space: nowrap;
+}
+
+.czw-pricing-card-intro h3 {
+  margin: 0 0 0.45rem;
+  color: #153f31;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.czw-pricing-card-intro p {
+  min-height: 3.15rem;
+  margin: 0;
+  color: var(--pricing-muted);
+  font-size: 0.97rem;
+  line-height: 1.55;
+}
+
+.czw-pricing-amount {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-height: 4.2rem;
+  margin-top: 1.4rem;
+}
+
+.czw-pricing-amount strong {
+  color: #12392c;
+  font-size: clamp(2.2rem, 3.1vw, 3.25rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.czw-pricing-amount strong.czw-pricing-custom {
+  font-size: clamp(2rem, 3vw, 2.9rem);
+}
+
+.czw-pricing-amount > span {
+  color: #5b6d62;
+  font-size: 0.89rem;
+  white-space: nowrap;
+}
+
+.czw-pricing-billed {
+  min-height: 2.5rem;
+  margin: 0;
+  color: #61756a;
+  font-size: 0.87rem;
+  line-height: 1.5;
+}
+
+.czw-pricing-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
   width: 100%;
-  margin: 1.6rem 0 1.8rem;
+  margin-top: 0.7rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #173f30;
+  border-radius: 12px;
+  background: transparent;
+  color: #173f30;
+  font-weight: 800;
+  text-align: center;
+  transition:
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.czw-pricing-action:hover {
+  background: #edf3e9;
+  transform: translateY(-2px);
+}
+
+.czw-pricing-action.is-primary {
+  border-color: #173f30;
+  background: #173f30;
+  color: #fffefa;
+}
+
+.czw-pricing-action.is-primary:hover {
+  background: #255b44;
+}
+
+.czw-pricing-card-divider {
+  height: 1px;
+  margin: 1.65rem 0 1.2rem;
+  background: #e6e9e2;
+}
+
+.czw-pricing-includes {
+  margin: 0 0 1rem;
+  color: #173f30;
+  font-size: 0.87rem;
+  font-weight: 800;
+}
+
+.czw-pricing-features {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.czw-pilot-benefits li {
+.czw-pricing-feature {
   display: flex;
-  gap: 0.7rem;
-  align-items: center;
-  color: #283b33;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #304c3d;
 }
 
-.czw-pilot-benefits svg {
+.czw-pricing-feature svg {
   flex: 0 0 auto;
-  padding: 3px;
-  border-radius: 999px;
-  background: #dfe9d7;
+  margin-top: 0.2rem;
+  color: #257957;
+}
+
+.czw-pricing-feature.is-off,
+.czw-pricing-feature.is-off svg {
+  color: #8c958e;
+}
+
+.czw-pricing-institution {
+  background: linear-gradient(170deg, #fffef9, #f1f4ed);
+}
+
+.czw-pricing-demo-disclaimer {
+  margin: 1.1rem 0 0;
+  color: #61756a;
+  font-size: 0.81rem;
+  line-height: 1.55;
+}
+
+.czw-timely-offer {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(13rem, 0.38fr);
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.1rem);
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+  padding: clamp(1.6rem, 4vw, 2.9rem);
+  border-radius: 26px;
+  background: #173f30;
+  color: #fffdf5;
+}
+
+.czw-timely-offer::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: auto -7rem -14rem auto;
+  width: 25rem;
+  height: 25rem;
+  border: 5rem solid rgba(230, 175, 63, 0.15);
+  border-radius: 50%;
+}
+
+.czw-timely-orbit {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 18px;
+  background: #e8b64b;
   color: #173f30;
 }
 
-.czw-pilot-cta {
-  min-height: 46px;
+.czw-timely-eyebrow {
+  color: #f3cf81;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
-.czw-pilot-offer-copy > small {
-  margin-top: 0.8rem;
-  color: #6d786f;
-  font-size: 0.82rem;
+.czw-timely-copy h3 {
+  max-width: 26ch;
+  margin: 0.6rem 0 0.65rem;
+  color: #fffdf5;
+  font-size: clamp(1.65rem, 2.8vw, 2.5rem);
+  line-height: 1.13;
+  letter-spacing: -0.04em;
 }
 
-.czw-pilot-price {
+.czw-timely-copy p {
+  max-width: 63ch;
+  margin: 0;
+  color: #dce8dc;
+  line-height: 1.65;
+  font-size: 0.94rem;
+}
+
+.czw-timely-purchase {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-  padding: clamp(1.35rem, 3vw, 2.2rem);
-  border: 1px solid rgba(220, 180, 80, 0.35);
-  border-radius: 22px;
-  background: #193f30;
-  color: #fffdf8;
+  align-items: stretch;
+  gap: 0.7rem;
 }
 
-.czw-pilot-price > span {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #d9c883;
-}
-
-.czw-pilot-price > strong {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.75rem;
-  align-items: baseline;
-  margin-top: 0.45rem;
-  font-size: clamp(2.4rem, 5vw, 4.25rem);
+.czw-timely-purchase > strong {
+  color: #fffdf5;
+  font-size: clamp(2rem, 3.1vw, 2.8rem);
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
 }
 
-.czw-pilot-price > strong small {
-  font-size: 0.82rem;
-  font-weight: 600;
+.czw-timely-purchase > strong span {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 650;
   letter-spacing: 0;
-  color: #d8ded9;
 }
 
-.czw-pilot-price-divider {
-  height: 1px;
-  margin: 1.5rem 0;
-  background: rgba(255, 255, 255, 0.14);
+.czw-timely-scope {
+  color: #dce8dc;
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
-.czw-pilot-price h3 {
-  margin: 0.45rem 0 0.7rem;
-  font-size: clamp(1.6rem, 3vw, 2.35rem);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-  color: #fffdf8;
+.czw-timely-contact {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding: 0.72rem 1rem;
+  border-radius: 11px;
+  background: #e8b64b;
+  color: #173f30;
+  font-weight: 850;
+  text-align: center;
 }
 
-.czw-pilot-price p {
-  margin: 0;
-  line-height: 1.6;
-  color: #d8ded9;
+.czw-timely-contact:hover {
+  background: #f5ce77;
 }
 
-.czw-pilot-price .czw-pilot-payment-note {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.88rem;
-  color: #f1e4ad;
+/* Paynow preview is intentionally a CZW-owned, non-transactional demo page. */
+.czw-paynow-demo-page {
+  min-height: 100vh;
+  display: grid;
+  align-items: center;
+  padding: clamp(1rem, 4vw, 3rem);
+  background: #f7f4eb;
+  color: #173f30;
 }
 
+.czw-paynow-demo-shell {
+  width: min(100%, 36rem);
+  margin: auto;
+}
+
+.czw-paynow-demo-brand {
+  display: inline-block;
+  margin: 0 0 1.5rem;
+}
+
+.czw-paynow-demo-brand img {
+  max-width: 12.5rem;
+  max-height: 3.5rem;
+  object-fit: contain;
+}
+
+.czw-paynow-demo-card {
+  padding: clamp(1.5rem, 5vw, 2.6rem);
+  border: 1px solid #dce4d9;
+  border-radius: 24px;
+  background: #fffefa;
+  box-shadow: 0 20px 55px rgba(22, 63, 46, 0.075);
+}
+
+.czw-paynow-demo-icon {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 1.2rem;
+  border-radius: 17px;
+  background: #eaf1e6;
+}
+
+.czw-paynow-demo-card h1 {
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  margin: 0.75rem 0 0.8rem;
+}
+
+.czw-paynow-demo-card > p {
+  color: #52685d;
+  line-height: 1.65;
+}
+
+.czw-paynow-demo-summary {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.1rem;
+  margin: 1.5rem 0 1rem;
+  border: 1px solid #e1e8de;
+  border-radius: 14px;
+  background: #f6f8f3;
+}
+
+.czw-paynow-demo-summary div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.8rem;
+}
+
+.czw-paynow-demo-summary span {
+  color: #52685d;
+  font-size: 0.85rem;
+}
+
+.czw-paynow-demo-summary strong {
+  text-align: end;
+}
+
+.czw-paynow-demo-error {
+  font-weight: 750;
+  color: #8c401f !important;
+}
+
+/* Keep the existing final marketing CTA uncluttered. */
 .czw-marketing .czw-final-cta small {
   display: none;
 }
 
-@media (max-width: 800px) {
-  .czw-pilot-offer-card {
-    grid-template-columns: 1fr;
-    border-radius: 22px;
+@media (max-width: 1050px) {
+  .czw-pricing-grid {
+    gap: 0.8rem;
   }
-
-  .czw-pilot-price {
-    order: -1;
+  .czw-pricing-card {
+    padding: 1.4rem 1.1rem;
+  }
+  .czw-timely-offer {
+    grid-template-columns: auto 1fr;
+  }
+  .czw-timely-purchase {
+    grid-column: 2;
+    align-items: flex-start;
+  }
+  .czw-timely-contact {
+    min-width: 11rem;
   }
 }
 
-@media (max-width: 480px) {
-  .czw-pilot-offer-section {
+@media (max-width: 750px) {
+  .czw-pricing-heading {
+    align-items: flex-start;
+  }
+  .czw-pricing-grid {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+  .czw-pricing-card {
+    padding: 1.55rem;
+  }
+  .czw-pricing-card.is-popular {
+    transform: none;
+  }
+  .czw-pricing-card-intro p {
+    min-height: 0;
+  }
+  .czw-pricing-billed {
+    min-height: 0;
+  }
+  .czw-timely-offer {
+    grid-template-columns: 1fr;
+    border-radius: 22px;
+  }
+  .czw-timely-purchase {
+    grid-column: 1;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 430px) {
+  .czw-pricing-section {
     padding-block: 3.5rem;
   }
-
-  .czw-pilot-offer-card {
-    gap: 1.25rem;
-    padding: 1rem;
+  .czw-pricing-switch {
+    width: 100%;
+  }
+  .czw-pricing-switch button {
+    flex: 1;
+    padding-inline: 0.7rem;
+  }
+  .czw-pricing-card {
     border-radius: 18px;
   }
-
-  .czw-pilot-price {
-    padding: 1.25rem;
-    border-radius: 16px;
+  .czw-timely-offer {
+    padding: 1.35rem;
   }
+}
 
-  .czw-pilot-offer-copy {
-    padding: 0.4rem 0.25rem 0.25rem;
-  }
-
-  .czw-pilot-offer-copy h2 {
-    font-size: clamp(1.9rem, 10vw, 2.5rem);
-  }
-
-  .czw-pilot-benefits {
-    margin-block: 1.35rem 1.5rem;
-  }
-
-  .czw-pilot-cta {
-    width: 100%;
-    justify-content: center;
+@media (prefers-reduced-motion: reduce) {
+  .czw-pricing-action,
+  .czw-pricing-switch button {
+    transition: none;
   }
 }

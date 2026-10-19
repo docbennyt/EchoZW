@@ -8,7 +8,23 @@ export type SpaMetadata = {
   robots?: string;
 };
 
-export const DEFAULT_SOCIAL_IMAGE_PATH = "/calenderzw-share-1200x630.png";
+export const DEFAULT_SOCIAL_IMAGE_PATH =
+  "/og/calendarzw-own-your-semester-wide.png?v=2";
+
+const DEFAULT_SOCIAL_IMAGES = [
+  {
+    path: DEFAULT_SOCIAL_IMAGE_PATH,
+    width: 1731,
+    height: 909,
+    alt: "CalenderZW promotional preview showing a student and the message Own your semester.",
+  },
+  {
+    path: "/og/calendarzw-own-your-semester-square.png?v=2",
+    width: 1254,
+    height: 1254,
+    alt: "CalenderZW square promotional preview showing a student and the message Own your semester.",
+  },
+] as const;
 
 function escapeHtml(value: string) {
   return value
@@ -37,6 +53,54 @@ function upsertMeta(
   return html.replace("</head>", `    ${replacement}\n  </head>`);
 }
 
+function removeMeta(html: string, attribute: "name" | "property", key: string) {
+  const pattern = new RegExp(
+    `\\s*<meta\\s+${attribute}="${key}"[\\s\\S]*?\\/?>\\s*`,
+    "g",
+  );
+  return html.replace(pattern, "\n");
+}
+
+function absoluteSocialImageUrl(path: string) {
+  if (/^https?:\/\//.test(path)) return path;
+  return `https://calender.aido.co.zw${path}`;
+}
+
+function renderSocialImageMeta() {
+  return DEFAULT_SOCIAL_IMAGES.map((image) => {
+    const url = absoluteSocialImageUrl(image.path);
+    return [
+      `    <meta property="og:image" content="${escapeHtml(url)}" />`,
+      `    <meta property="og:image:width" content="${image.width}" />`,
+      `    <meta property="og:image:height" content="${image.height}" />`,
+      '    <meta property="og:image:type" content="image/png" />',
+      `    <meta property="og:image:alt" content="${escapeHtml(image.alt)}" />`,
+    ].join("\n");
+  }).join("\n");
+}
+
+function replaceSocialImageMeta(html: string) {
+  let next = html;
+  for (const key of [
+    "og:image",
+    "og:image:secure_url",
+    "og:image:width",
+    "og:image:height",
+    "og:image:type",
+    "og:image:alt",
+  ]) {
+    next = removeMeta(next, "property", key);
+  }
+
+  const imageMeta = `${renderSocialImageMeta()}\n`;
+  const twitterCardPattern =
+    /\s*<meta\s+name="twitter:card"\s+content="[^"]*"\s*\/?>/;
+  if (twitterCardPattern.test(next)) {
+    return next.replace(twitterCardPattern, `\n${imageMeta}$&`);
+  }
+  return next.replace("</head>", `${imageMeta}  </head>`);
+}
+
 export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   const canonicalUrl = `https://calender.aido.co.zw${metadata.canonicalPath}`;
   const title = escapeHtml(metadata.title);
@@ -60,16 +124,7 @@ export function injectSpaMetadata(html: string, metadata: SpaMetadata) {
   next = upsertMeta(next, "property", "og:description", ogDescription);
   next = upsertMeta(next, "property", "og:url", canonicalUrl);
   next = upsertMeta(next, "property", "og:type", "website");
-  next = upsertMeta(next, "property", "og:image", ogImage);
-  next = upsertMeta(next, "property", "og:image:width", "1200");
-  next = upsertMeta(next, "property", "og:image:height", "630");
-  next = upsertMeta(next, "property", "og:image:type", "image/png");
-  next = upsertMeta(
-    next,
-    "property",
-    "og:image:alt",
-    "CalenderZW university timetable calendar",
-  );
+  next = replaceSocialImageMeta(next);
   next = upsertMeta(next, "name", "twitter:card", "summary_large_image");
   next = upsertMeta(next, "name", "twitter:title", ogTitle);
   next = upsertMeta(next, "name", "twitter:description", ogDescription);
