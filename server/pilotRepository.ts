@@ -1278,20 +1278,32 @@ export async function listTimetables(env?: NodeJS.ProcessEnv) {
   const timetables = (rows ?? []) as JsonRecord[];
   // The listing only needs status/IDs. Load versions once rather than fetching
   // every timetable's full version history and session counts separately.
-  const versionRows = timetables.length
-    ? await expectData(
-        client
-          .from("timetable_versions")
-          .select("id, timetable_id, status, version_number")
-          .in(
-            "timetable_id",
-            timetables.map((row) => String(row.id)),
-          )
-          .order("version_number", { ascending: false }),
-        "DATABASE_UNAVAILABLE",
-        "Could not load timetable version summaries.",
-      )
-    : [];
+  const versionRows: JsonRecord[] = [];
+  const pageSize = 500;
+  for (let page = 0; timetables.length && page < 8; page += 1) {
+    const batch = await expectData<JsonRecord[]>(
+      client
+        .from("timetable_versions")
+        .select("id, timetable_id, status, version_number")
+        .in(
+          "timetable_id",
+          timetables.map((row) => String(row.id)),
+        )
+        .order("version_number", { ascending: false })
+        .order("id")
+        .range(page * pageSize, (page + 1) * pageSize - 1),
+      "DATABASE_UNAVAILABLE",
+      "Could not load timetable version summaries.",
+    );
+    versionRows.push(...(batch ?? []));
+    if ((batch?.length ?? 0) < pageSize) break;
+    if (page === 7)
+      throw new PilotApiError(
+        "TIMETABLE_LIST_LIMIT",
+        "Timetable history exceeds the bounded listing limit. Contact an administrator.",
+        503,
+      );
+  }
   const versionsByTimetable = new Map<string, JsonRecord[]>();
   for (const version of (versionRows ?? []) as JsonRecord[]) {
     const key = String(version.timetable_id);

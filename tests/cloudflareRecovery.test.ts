@@ -9,6 +9,8 @@ const state = vi.hoisted(() => ({
   subscriptions: [] as Record<string, unknown>[],
   rpcFailure: false,
   queries: [] as string[],
+  versionRows: null as Record<string, unknown>[] | null,
+  timetableRows: null as Record<string, unknown>[] | null,
 }));
 const timetableId = "08a30b9b-ed8f-4aea-91de-09d4e1124f9a";
 const raw = {
@@ -47,10 +49,11 @@ vi.mock("../server/supabase/adminClient.js", () => ({
     function query(table: string) {
       state.queries.push(table);
       const filters: Array<[string, unknown]> = [];
+      let range: [number, number] = [0, 999];
       const result = (single = false) => {
         const rows: Record<string, unknown[]> = {
-          timetables: [base],
-          timetable_versions: [
+          timetables: state.timetableRows ?? [base],
+          timetable_versions: state.versionRows ?? [
             {
               id: "version-1",
               timetable_id: timetableId,
@@ -113,13 +116,15 @@ vi.mock("../server/supabase/adminClient.js", () => ({
           ],
           class_rep_assignments: [],
         };
-        const filtered = (rows[table] ?? []).filter((row) =>
-          filters.every(([column, value]) =>
-            Array.isArray(value)
-              ? value.includes((row as Record<string, unknown>)[column])
-              : (row as Record<string, unknown>)[column] === value,
-          ),
-        );
+        const filtered = (rows[table] ?? [])
+          .filter((row) =>
+            filters.every(([column, value]) =>
+              Array.isArray(value)
+                ? value.includes((row as Record<string, unknown>)[column])
+                : (row as Record<string, unknown>)[column] === value,
+            ),
+          )
+          .slice(range[0], range[1] + 1);
         return {
           data: single ? (filtered[0] ?? null) : filtered,
           error: state.databaseFailure ? { message: "unavailable" } : null,
@@ -133,6 +138,10 @@ vi.mock("../server/supabase/adminClient.js", () => ({
         },
         in: (column: string, values: unknown[]) => {
           filters.push([column, values]);
+          return chain;
+        },
+        range: (start: number, end: number) => {
+          range = [start, end];
           return chain;
         },
         not: () => chain,
@@ -219,6 +228,8 @@ describe("native recovery with Railway unreachable and no process credentials", 
     state.databaseFailure = false;
     state.rpcFailure = false;
     state.queries = [];
+    state.versionRows = null;
+    state.timetableRows = null;
     state.subscriptions = [
       {
         id: "subscription-1",
@@ -341,6 +352,36 @@ describe("native recovery with Railway unreachable and no process credentials", 
         ).status,
       ).toBe(403);
     }
+  });
+
+  it("loads version summaries beyond the database row cap without misclassifying another timetable", async () => {
+    state.timetableRows = [
+      base,
+      { ...base, id: "second-timetable", public_slug: "second-class" },
+    ];
+    state.versionRows = Array.from({ length: 1200 }, (_, i) => ({
+      id: `history-${i}`,
+      timetable_id: timetableId,
+      status: "published",
+      version_number: 1201 - i,
+    }));
+    state.versionRows.push({
+      id: "second-draft",
+      timetable_id: "second-timetable",
+      status: "draft",
+      version_number: 1,
+    });
+    const response = await request("/api/admin/timetables", {
+      headers: { authorization: "Bearer fixture-access" },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json()).timetables[1].currentDraftVersionId).toBe(
+      "second-draft",
+    );
+    expect(
+      state.queries.filter((table) => table === "timetable_versions"),
+    ).toHaveLength(3);
+    expect(state.queries).not.toContain("timetable_sessions");
   });
 
   it("creates a durable feed subscription with the existing RPC/token contract", async () => {
