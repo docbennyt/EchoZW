@@ -798,7 +798,7 @@ export async function buildInventory(
   const vercelText = await readFile(resolve(root, "vercel.json"), "utf8");
   const wranglerText = await readFile(resolve(root, "wrangler.jsonc"), "utf8");
   const routingState = {
-    workspaceRoot: slash(root),
+    workspaceRoot: ".",
     workerRuntimeBridgePresent:
       bridge || worker.text.includes("LEGACY_BACKEND_ORIGIN"),
     workerConfigBridgePresent: wranglerText.includes("LEGACY_BACKEND_ORIGIN"),

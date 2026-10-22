@@ -668,7 +668,7 @@
     ]
   },
   "routingState": {
-    "workspaceRoot": "C:/Users/User/Documents/aiDo/EchoZW-DR178-recovery",
+    "workspaceRoot": ".",
     "workerRuntimeBridgePresent": false,
     "workerConfigBridgePresent": false,
     "vercelLegacyRewrites": [
