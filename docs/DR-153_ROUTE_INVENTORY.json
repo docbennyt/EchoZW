@@ -775,7 +775,7 @@
     "server/pilotAdminApi.ts": "b2ce79ae6947dde16f0b1f6d9afa1f05836308eb6c89597047ff1255627cb68a",
     "server/pilotCalendarApi.ts": "bcee8f1eb15f4ae1c73cc16b4ab41dbb6e1d3579dd320fb183fa5a3709034c41",
     "server/pilotCalendarCore.ts": "2a0219094ce5f20bee1312f9fc351d9758a4a6976e495081632d414d2ece8bd5",
-    "server/pilotRepository.ts": "b51168e525200b5cc7fce329069ba3aeb326be1b7c51389d8906457e062c242b",
+    "server/pilotRepository.ts": "03139310facc514c021f8b849d68da9e6f890b6dfe5930e251b53e3b076ebdfb",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
     "server/publicTimetableApi.ts": "84901a5a825c5b0b0549221f7f2cfdbe3191db33eaf221f418135e284f91bf73",
     "server/publicTimetableCore.ts": "2e4c1d1a7596e5178cccd1a9124c2d1df47aa1822aa4a202d9b406beea6b7c69",
@@ -904,7 +904,7 @@
     "src/domain/subscriptions.ts": "0039a97c2a32bb3f37140666ae01bade4f42fecc2e851023e46b932d174bc648",
     "src/domain/timetableData.ts": "a0c1217e05b8b288fccadefd670e918d0ea4762893286c5823ede00a5fd2bc7d",
     "src/domain/timetableImport.ts": "3342a941e468ec7260f91de26d89108ec8997f8f558b5211e0a00aa34df4f666",
-    "src/domain/timezone.ts": "7113006d2761a5901968596556d84e13b3d66c54a671862064a2f9204f86c137",
+    "src/domain/timezone.ts": "3afdd3d3909f217f105fbaad1f0dae4bad9f0a942bbaac81c7bf88944674af58",
     "src/domain/token.ts": "15955739c989f80d8f2f356e4aec6d109d618780c474fc9a747542a7175d8366",
     "src/domain/tomorrowSchedule.ts": "1f4f9e702be78d71d3fba8499578855f2abe970c96f76778dcb6a8b8304cd5dd",
     "src/domain/types.ts": "1b897b7838d910a0f9ea42a409dc59a2a9c0a632973a114c9dc9551e35e572a1",
@@ -1183,7 +1183,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1223,7 +1223,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -1313,7 +1313,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1353,7 +1353,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -1415,7 +1415,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2048,
+          "line": 2060,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1440,7 +1440,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 67,
+          "line": 91,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -4194,7 +4194,6 @@
       "businessOwner": "pilotAdminApi",
       "applicationService": "listTimetables",
       "databaseDependencies": [
-        "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables"
       ],
@@ -4307,7 +4306,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1441,
+          "line": 1453,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4372,7 +4371,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1441,
+          "line": 1453,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4557,7 +4556,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4597,7 +4596,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -4698,7 +4697,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4738,7 +4737,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -4841,7 +4840,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4881,7 +4880,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -4982,7 +4981,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5022,7 +5021,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5124,7 +5123,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5164,7 +5163,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5266,7 +5265,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5306,7 +5305,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5407,7 +5406,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5447,7 +5446,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5550,7 +5549,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5590,7 +5589,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5691,7 +5690,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5731,7 +5730,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5833,7 +5832,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5873,7 +5872,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -5964,7 +5963,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6004,7 +6003,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -6096,7 +6095,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6136,7 +6135,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -6191,7 +6190,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1582,
+          "line": 1594,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6256,7 +6255,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1815,
+          "line": 1827,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6321,7 +6320,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1744,
+          "line": 1756,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6495,7 +6494,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6535,7 +6534,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -6631,7 +6630,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6671,7 +6670,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -6739,7 +6738,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2048,
+          "line": 2060,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6764,7 +6763,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 67,
+          "line": 91,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ]
@@ -7093,7 +7092,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7153,7 +7152,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 106,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ],
@@ -7307,7 +7306,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7447,7 +7446,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7657,7 +7656,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2055,
+          "line": 2067,
           "role": "native subscription service / pre-persistence Google gate / existing RPC"
         },
         {
@@ -7689,7 +7688,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2055,
+          "line": 2067,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9183,7 +9182,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2041,
+          "line": 2053,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9326,7 +9325,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9376,7 +9375,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 270,
+          "line": 294,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ],
@@ -9484,7 +9483,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2106,
+          "line": 2118,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9534,7 +9533,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 270,
+          "line": 294,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ],
@@ -9661,7 +9660,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2122,
+          "line": 2134,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9716,7 +9715,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 270,
+          "line": 294,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9849,7 +9848,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2122,
+          "line": 2134,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9904,7 +9903,7 @@
         },
         {
           "file": "src/domain/timezone.ts",
-          "line": 270,
+          "line": 294,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10063,7 +10062,6 @@
       "businessOwner": "seoPublic",
       "applicationService": "buildPublicSitemap",
       "databaseDependencies": [
-        "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables"
       ],
@@ -10134,7 +10132,6 @@
       "businessOwner": "seoPublic",
       "applicationService": "buildPublicSitemap",
       "databaseDependencies": [
-        "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables"
       ],

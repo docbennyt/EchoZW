@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({
   writes: [] as unknown[],
   subscriptions: [] as Record<string, unknown>[],
   rpcFailure: false,
+  queries: [] as string[],
 }));
 const timetableId = "08a30b9b-ed8f-4aea-91de-09d4e1124f9a";
 const raw = {
@@ -44,6 +45,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
       throw new Error("Worker environment lost");
     state.envs.push(env);
     function query(table: string) {
+      state.queries.push(table);
       const filters: Array<[string, unknown]> = [];
       const result = (single = false) => {
         const rows: Record<string, unknown[]> = {
@@ -216,6 +218,7 @@ describe("native recovery with Railway unreachable and no process credentials", 
     state.role = "admin";
     state.databaseFailure = false;
     state.rpcFailure = false;
+    state.queries = [];
     state.subscriptions = [
       {
         id: "subscription-1",
@@ -319,6 +322,10 @@ describe("native recovery with Railway unreachable and no process credentials", 
       expect(response.status, path).toBe(200);
       expect((await response.json())[key], path).toHaveLength(1);
     }
+    expect(
+      state.queries.filter((table) => table === "timetable_versions"),
+    ).toHaveLength(1);
+    expect(state.queries).not.toContain("timetable_sessions");
     state.role = "class_rep";
     for (const path of [
       "/api/admin/programmes",

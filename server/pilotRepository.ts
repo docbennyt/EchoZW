@@ -1276,12 +1276,28 @@ export async function listTimetables(env?: NodeJS.ProcessEnv) {
   );
 
   const timetables = (rows ?? []) as JsonRecord[];
-  const versionsByTimetable = new Map<string, AdminTimetableVersion[]>();
-  for (const row of timetables) {
-    versionsByTimetable.set(
-      String(row.id),
-      await getVersionsForTimetable(String(row.id), env),
-    );
+  // The listing only needs status/IDs. Load versions once rather than fetching
+  // every timetable's full version history and session counts separately.
+  const versionRows = timetables.length
+    ? await expectData(
+        client
+          .from("timetable_versions")
+          .select("id, timetable_id, status, version_number")
+          .in(
+            "timetable_id",
+            timetables.map((row) => String(row.id)),
+          )
+          .order("version_number", { ascending: false }),
+        "DATABASE_UNAVAILABLE",
+        "Could not load timetable version summaries.",
+      )
+    : [];
+  const versionsByTimetable = new Map<string, JsonRecord[]>();
+  for (const version of (versionRows ?? []) as JsonRecord[]) {
+    const key = String(version.timetable_id);
+    const versions = versionsByTimetable.get(key) ?? [];
+    versions.push(version);
+    versionsByTimetable.set(key, versions);
   }
 
   return timetables.map((row: unknown) => {
@@ -1299,13 +1315,9 @@ export async function listTimetables(env?: NodeJS.ProcessEnv) {
       timetableRow.academic_periods as JsonRecord | JsonRecord[] | null,
     );
     const versions = versionsByTimetable.get(String(timetableRow.id)) ?? [];
-    const draft = versions.find(
-      (version: unknown) =>
-        (version as AdminTimetableVersion).status === "draft",
-    );
+    const draft = versions.find((version) => version.status === "draft");
     const published = versions.find(
-      (version: unknown) =>
-        (version as AdminTimetableVersion).status === "published",
+      (version) => version.status === "published",
     );
     return {
       id: String(timetableRow.id),
@@ -1316,7 +1328,7 @@ export async function listTimetables(env?: NodeJS.ProcessEnv) {
       academicPeriodName: period?.name ? String(period.name) : "",
       status: published ? "Published" : "Draft",
       lastUpdated: String(timetableRow.updated_at),
-      currentDraftVersionId: draft?.id ?? null,
+      currentDraftVersionId: draft?.id ? String(draft.id) : null,
       currentPublishedVersionId: timetableRow.current_published_version_id
         ? String(timetableRow.current_published_version_id)
         : null,
