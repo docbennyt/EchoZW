@@ -1,6 +1,13 @@
 /* global Headers, Response, URL, Request, crypto, TextEncoder, TextDecoder, console */
 
-import { PilotApiError, listInstitutions } from "../server/pilotRepository.ts";
+import {
+  PilotApiError,
+  listInstitutions,
+  listProgrammes,
+  listClassGroups,
+  listAcademicPeriods,
+  listTimetables,
+} from "../server/pilotRepository.ts";
 import {
   getPublicTimetableResponse,
   listPublicTimetableDiscoveryResponse,
@@ -156,6 +163,7 @@ function releasePayload(env) {
     workerVersionTag: env.CF_VERSION_METADATA?.tag ?? null,
     workerVersionTimestamp: env.CF_VERSION_METADATA?.timestamp ?? null,
     legacyBackendBridge: false,
+    feedActivityRecording: env.ENABLE_FEED_ACTIVITY === "true",
   };
 }
 
@@ -357,7 +365,7 @@ async function handleNativeCalendarIcs(request, env, ctx) {
     );
     statusCode = response.status;
 
-    if (feedMatch) {
+    if (feedMatch && env.ENABLE_FEED_ACTIVITY === "true") {
       const subscriptionId = String(subscription.id);
       const client = classifyAnalyticsClient(
         requestHeaderValue(request, "user-agent"),
@@ -430,10 +438,11 @@ async function handleNativeAdminSession(request, env) {
 
   try {
     const url = new URL(request.url);
-    const guard =
-      url.pathname === "/api/admin/institutions"
-        ? requireOperationalAdmin
-        : requireStaffUser;
+    const guard = !["/api/admin/session", "/api/admin/my/timetables"].includes(
+      url.pathname,
+    )
+      ? requireOperationalAdmin
+      : requireStaffUser;
     const context = await guard(
       {
         headers: {
@@ -451,6 +460,33 @@ async function handleNativeAdminSession(request, env) {
 
     if (url.pathname === "/api/admin/institutions") {
       return json({ institutions: await listInstitutions(env) });
+    }
+    if (url.pathname === "/api/admin/programmes") {
+      return json({
+        programmes: await listProgrammes(
+          url.searchParams.get("institutionId") ?? undefined,
+          env,
+        ),
+      });
+    }
+    if (url.pathname === "/api/admin/class-groups") {
+      return json({
+        classGroups: await listClassGroups(
+          url.searchParams.get("programmeId") ?? undefined,
+          env,
+        ),
+      });
+    }
+    if (url.pathname === "/api/admin/academic-periods") {
+      return json({
+        academicPeriods: await listAcademicPeriods(
+          url.searchParams.get("institutionId") ?? undefined,
+          env,
+        ),
+      });
+    }
+    if (url.pathname === "/api/admin/timetables") {
+      return json({ timetables: await listTimetables(env) });
     }
     if (url.pathname === "/api/admin/my/timetables") {
       return json({ timetables: context.assignments });
@@ -658,7 +694,13 @@ const application = {
     if (
       url.pathname === "/api/admin/session" ||
       url.pathname === "/api/admin/institutions" ||
-      url.pathname === "/api/admin/my/timetables"
+      url.pathname === "/api/admin/my/timetables" ||
+      [
+        "/api/admin/programmes",
+        "/api/admin/class-groups",
+        "/api/admin/academic-periods",
+        "/api/admin/timetables",
+      ].includes(url.pathname)
     ) {
       return handleNativeAdminSession(request, env);
     }

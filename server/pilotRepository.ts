@@ -497,8 +497,11 @@ function detectOverlap(
   }
 }
 
-async function getVersionsForTimetable(timetableId: string) {
-  const client = createPilotAdminClient();
+async function getVersionsForTimetable(
+  timetableId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   const versions = await expectData(
     client
       .from("timetable_versions")
@@ -820,8 +823,11 @@ export async function updateInstitution(
   return mapInstitution(data as unknown as JsonRecord);
 }
 
-export async function listProgrammes(institutionId?: string) {
-  const client = createPilotAdminClient();
+export async function listProgrammes(
+  institutionId?: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   let query = client
     .from("programmes")
     .select(
@@ -910,8 +916,11 @@ export async function updateProgramme(
   return mapProgramme(data as unknown as JsonRecord);
 }
 
-export async function listClassGroups(programmeId?: string) {
-  const client = createPilotAdminClient();
+export async function listClassGroups(
+  programmeId?: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   let query = client
     .from("cohorts")
     .select(
@@ -1079,8 +1088,11 @@ export async function updateClassGroup(
   return mapClassGroup(data as unknown as JsonRecord);
 }
 
-export async function listAcademicPeriods(institutionId?: string) {
-  const client = createPilotAdminClient();
+export async function listAcademicPeriods(
+  institutionId?: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   let query = client
     .from("academic_periods")
     .select(
@@ -1250,8 +1262,8 @@ export async function listPublishedTimetableDiscovery(env?: NodeJS.ProcessEnv) {
   });
 }
 
-export async function listTimetables() {
-  const client = createPilotAdminClient();
+export async function listTimetables(env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const rows = await expectData(
     client
       .from("timetables")
@@ -1268,7 +1280,7 @@ export async function listTimetables() {
   for (const row of timetables) {
     versionsByTimetable.set(
       String(row.id),
-      await getVersionsForTimetable(String(row.id)),
+      await getVersionsForTimetable(String(row.id), env),
     );
   }
 

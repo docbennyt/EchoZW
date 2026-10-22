@@ -51,6 +51,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
           timetable_versions: [
             {
               id: "version-1",
+              timetable_id: timetableId,
               version_number: 1,
               published_at: "2026-08-01T00:00:00Z",
             },
@@ -82,6 +83,23 @@ vi.mock("../server/supabase/adminClient.js", () => ({
           ],
           calendar_subscriptions: state.subscriptions,
           institutions: [{ id: "institution-1", name: "Test Institute" }],
+          programmes: [
+            {
+              id: "programme-1",
+              institution_id: "institution-1",
+              name: "Engineering",
+            },
+          ],
+          cohorts: [
+            { id: "cohort-1", programme_id: "programme-1", label: "Part 4.1" },
+          ],
+          academic_periods: [
+            {
+              id: "period-1",
+              institution_id: "institution-1",
+              name: "Semester 1",
+            },
+          ],
           staff_users: [
             {
               id: "staff-1",
@@ -94,9 +112,10 @@ vi.mock("../server/supabase/adminClient.js", () => ({
           class_rep_assignments: [],
         };
         const filtered = (rows[table] ?? []).filter((row) =>
-          filters.every(
-            ([column, value]) =>
-              (row as Record<string, unknown>)[column] === value,
+          filters.every(([column, value]) =>
+            Array.isArray(value)
+              ? value.includes((row as Record<string, unknown>)[column])
+              : (row as Record<string, unknown>)[column] === value,
           ),
         );
         return {
@@ -108,6 +127,10 @@ vi.mock("../server/supabase/adminClient.js", () => ({
         select: () => chain,
         eq: (column: string, value: unknown) => {
           filters.push([column, value]);
+          return chain;
+        },
+        in: (column: string, values: unknown[]) => {
+          filters.push([column, values]);
           return chain;
         },
         not: () => chain,
@@ -280,6 +303,37 @@ describe("native recovery with Railway unreachable and no process credentials", 
         })
       ).status,
     ).toBe(403);
+  });
+
+  it("restores every read required by the admin screen as an authorized complete workflow", async () => {
+    for (const [path, key] of [
+      ["/api/admin/institutions", "institutions"],
+      ["/api/admin/programmes", "programmes"],
+      ["/api/admin/class-groups", "classGroups"],
+      ["/api/admin/academic-periods", "academicPeriods"],
+      ["/api/admin/timetables", "timetables"],
+    ]) {
+      const response = await request(path, {
+        headers: { authorization: "Bearer fixture-access" },
+      });
+      expect(response.status, path).toBe(200);
+      expect((await response.json())[key], path).toHaveLength(1);
+    }
+    state.role = "class_rep";
+    for (const path of [
+      "/api/admin/programmes",
+      "/api/admin/class-groups",
+      "/api/admin/academic-periods",
+      "/api/admin/timetables",
+    ]) {
+      expect(
+        (
+          await request(path, {
+            headers: { authorization: "Bearer fixture-access" },
+          })
+        ).status,
+      ).toBe(403);
+    }
   });
 
   it("creates a durable feed subscription with the existing RPC/token contract", async () => {
