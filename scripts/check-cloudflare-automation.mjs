@@ -37,7 +37,12 @@ assert(
   "candidate review and CI must be checked before and after deployment approval.",
 );
 assert(
-  staging.includes("environment: cloudflare-staging") &&
+  /\n\s{4}environment: cloudflare-staging\n/.test(
+    staging.split("  deploy:")[1]?.split("  acceptance:")[0] ?? "",
+  ) &&
+    /\n\s{4}environment: cloudflare-staging\n/.test(
+      staging.split("  acceptance:")[1] ?? "",
+    ) &&
     staging.includes("  acceptance:") &&
     staging.includes("verify-active-worker-deployment.mjs"),
   "deployment and acceptance must use separate protected jobs and verify the active deployment via Cloudflare.",

@@ -379,9 +379,16 @@ export async function listPublishedTimetableIdsForPauseScope(
   pause: AcademicPauseInput,
   env?: NodeJS.ProcessEnv,
 ) {
+  return (await getPublishedTimetableScopeForPause(pause, env)).timetableIds;
+}
+
+export async function getPublishedTimetableScopeForPause(
+  pause: AcademicPauseInput,
+  env?: NodeJS.ProcessEnv,
+) {
   let query = client(env)
     .from("timetables")
-    .select("id")
+    .select("id", { count: "exact" })
     .not("current_published_version_id", "is", null);
   if (pause.scopeType === "institution") {
     query = query.eq("institution_id", pause.institutionId as string);
@@ -392,7 +399,7 @@ export async function listPublishedTimetableIdsForPauseScope(
   } else {
     query = query.eq("id", pause.timetableId as string);
   }
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) {
     throw new AcademicPauseRepositoryError(
       "DATABASE_UNAVAILABLE",
@@ -401,7 +408,18 @@ export async function listPublishedTimetableIdsForPauseScope(
       error,
     );
   }
-  return (data ?? []).map((row) => String((row as JsonRecord).id));
+  const timetableIds = (data ?? []).map((row) =>
+    String((row as JsonRecord).id),
+  );
+  return {
+    timetableIds,
+    totalCount:
+      typeof count === "number" &&
+      Number.isSafeInteger(count) &&
+      count >= timetableIds.length
+        ? count
+        : null,
+  };
 }
 
 export async function deactivateAcademicPause(

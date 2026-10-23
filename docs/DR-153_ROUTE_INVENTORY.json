@@ -748,8 +748,8 @@
   },
   "sourceSnapshot": {
     "server/academicPauseAdminApi.ts": "f57822131ffe2fb9ae8bd7a6cf1a410509933579489c58844c059b4c6dc6bff0",
-    "server/academicPauseCore.ts": "2cdffac0e2782ca43febecc5ccfeb71679a2dbe07efa6c7d254d333f7f5b2dd6",
-    "server/academicPauseRepository.ts": "406cf018cf81d53950279ead76022e123c067c175c0e21c0a536574a557a45c5",
+    "server/academicPauseCore.ts": "73054447408506c526bec5033421a38908c82b97935794b8682693281ed86e47",
+    "server/academicPauseRepository.ts": "a976a24e60e05ab488d61be58cf7cd618af7a30cecfb26e120573cf810ee7e60",
     "server/adminAnalyticsApi.ts": "75e0f10c9831a42db31cce50ab1d3e6f8d2d25f283ebab89727aef609d936f13",
     "server/adminAnalyticsRepository.ts": "3b121e604beb17d6c3c9838893aa4519b8c997e1ce71220d0992ac017fac58f2",
     "server/adminApi.ts": "c288428c41fb0f3fc5c6185f27f0551d68d05a0edb26e3c707456302408c7294",
@@ -779,7 +779,7 @@
     "server/pilotAdminApi.ts": "b2ce79ae6947dde16f0b1f6d9afa1f05836308eb6c89597047ff1255627cb68a",
     "server/pilotCalendarApi.ts": "bcee8f1eb15f4ae1c73cc16b4ab41dbb6e1d3579dd320fb183fa5a3709034c41",
     "server/pilotCalendarCore.ts": "2a0219094ce5f20bee1312f9fc351d9758a4a6976e495081632d414d2ece8bd5",
-    "server/pilotRepository.ts": "3ce5c30b3f3988b9c71959e33f07639efe59b46a88a8a24dfe036b7abe99fba9",
+    "server/pilotRepository.ts": "c2688e191b91b19d485f5093c9c1bb0b91a2d9270b748925c3b200196c45e5de",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
     "server/publicTimetableApi.ts": "84901a5a825c5b0b0549221f7f2cfdbe3191db33eaf221f418135e284f91bf73",
     "server/publicTimetableCore.ts": "2e4c1d1a7596e5178cccd1a9124c2d1df47aa1822aa4a202d9b406beea6b7c69",
@@ -829,11 +829,11 @@
     "server/timetablePublicSettingsRepository.ts": "4cf3c1a6e00288ab78825a928acd0e43bdb68c25ca8bbf775de71ac4da9cc54e",
     "server/viteAnalyticsPlugin.ts": "d584008a01066c095993ef8a3309e17b95177153a28a6831a0858a3c71a6d081",
     "server/viteCalendarPlugin.ts": "c2c901efe7624c99e4905eb40190ada256130843d0723cf81122b3f8d6f68123",
-    "src/AdminAcademicPauseControl.tsx": "330a96e42045e0cf582ba71f3bc87b85e7b9566a4964ff47c6826c629a61a5eb",
+    "src/AdminAcademicPauseControl.tsx": "225cde789802c5ff394cc499d30e33d80210ba10e68d567a4c6d0551edc05a48",
     "src/App.tsx": "b83744299b8201694f8bdeec54a4513a6f0a6a64b472f0792d3635fc77799fe8",
     "src/AppV2.tsx": "d3fb3c3e7653ce97e74e1d10b12d2d5967e9af8d92a5867f9f4329dda5b94eb1",
     "src/AuthSetupPage.tsx": "e002b567320643105e581ce0b1b0f03a3450075240b4b49db18708e4a31a4d11",
-    "src/ClassRepAcademicPauseControl.tsx": "3d15196a0586808409f222e68affdf48c9bb0895f45e09fd0aca8d9fd3f9984d",
+    "src/ClassRepAcademicPauseControl.tsx": "0762a03d131fc860c25b59cfca73a3cb22b3a4d0cf76f6aa699df4f7e16e5317",
     "src/ClassRepCorrectionSafetyEnhancement.tsx": "94f253ce5c5744994fadb63c866175f4bf1053e989290def62d9f29f3d4d6be8",
     "src/FinderDemandPrompt.tsx": "3a2f62d36791dfc12157c2d710c96d1ec3bd966ae9c900df75453bb33d644a25",
     "src/FinderDiscovery.tsx": "9d5fa617a29918901ca583acd11c838b69b45f4ef8a32dfa4b7572031dabd617",
@@ -859,7 +859,7 @@
     "src/api/correctionMutations.ts": "bf2680f9f27942669e62bce06f109426a8e1ae89ac3993dc8aca46c9f4791c9d",
     "src/api/payments.ts": "ffb4336b3fcd1c12e5eff63ab94b3e31f61bba84746a90d5a85fbe9cca0c0a81",
     "src/api/pilotAdmin.ts": "ffbef1b076bd77f9d5c82a5059a31e83b1bb376cf18d962992f676afd93aeb93",
-    "src/api/pilotTypes.ts": "d53cd2d269f9e05a5532a96406e5aeb71f056fcbdf7856b16b74588926210e3b",
+    "src/api/pilotTypes.ts": "484ff611a4a4d443009931ef94c5897c470efd60f4a67783fbf3b850edc9e301",
     "src/api/publicDiscovery.ts": "b34e641f5c0ad96f602c6881530a020f0098aa76f4d2de85704e02b28da768d4",
     "src/api/publicTimetable.ts": "328199b24b15c424a50f72acacaa106538f4df5ed9f25b07c100f11348d5902d",
     "src/api/sourceGatewayAdmin.ts": "567578ebcf2b0d55dc674686ac758bc0cdd7ba13a1c7af2442b0739adcb56a3c",
@@ -1186,12 +1186,12 @@
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 182,
+          "line": 258,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseRepository.ts",
-          "line": 378,
+          "line": 385,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1211,7 +1211,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1329,12 +1329,12 @@
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 192,
+          "line": 268,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseRepository.ts",
-          "line": 407,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1354,7 +1354,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1457,17 +1457,17 @@
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 157,
+          "line": 233,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseRepository.ts",
-          "line": 378,
+          "line": 385,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2109,
+          "line": 2110,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4371,7 +4371,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1481,
+          "line": 1482,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4443,7 +4443,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1481,
+          "line": 1482,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4652,7 +4652,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4803,7 +4803,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4961,7 +4961,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5112,7 +5112,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5264,7 +5264,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5416,7 +5416,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5567,7 +5567,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5720,7 +5720,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5871,7 +5871,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6023,7 +6023,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6162,7 +6162,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6365,12 +6365,12 @@
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 182,
+          "line": 258,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseRepository.ts",
-          "line": 378,
+          "line": 385,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6390,7 +6390,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6516,12 +6516,12 @@
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 192,
+          "line": 268,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseRepository.ts",
-          "line": 407,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6541,7 +6541,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6653,17 +6653,17 @@
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 141,
+          "line": 217,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseRepository.ts",
-          "line": 378,
+          "line": 385,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2109,
+          "line": 2110,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6946,7 +6946,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7048,7 +7048,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1627,
+          "line": 1628,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7120,7 +7120,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1868,
+          "line": 1869,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7192,7 +7192,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1793,
+          "line": 1794,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7392,7 +7392,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7610,7 +7610,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7751,7 +7751,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7964,7 +7964,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2116,
+          "line": 2117,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9460,7 +9460,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2102,
+          "line": 2103,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9603,7 +9603,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9761,7 +9761,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2167,
+          "line": 2168,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9938,7 +9938,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2183,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10126,7 +10126,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2183,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

@@ -58,6 +58,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
       let write: Record<string, unknown> | undefined;
       let inserting = false;
       let scopeFilters: string[] = [];
+      let requestedExactCount = false;
       const result = (single = false) => {
         if (table === "academic_schedule_pauses" && state.pauseErrorCode) {
           return { data: null, error: { code: state.pauseErrorCode } };
@@ -160,7 +161,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
               ]
             : [],
         };
-        const filtered = (rows[table] ?? [])
+        const allFiltered = (rows[table] ?? [])
           .filter((row) =>
             filters.every(([column, value]) =>
               Array.isArray(value)
@@ -175,15 +176,19 @@ vi.mock("../server/supabase/adminClient.js", () => ({
                 const [column, , value] = filter.split(".");
                 return (row as Record<string, unknown>)[column] === value;
               }),
-          )
-          .slice(range[0], range[1] + 1);
+          );
+        const filtered = allFiltered.slice(range[0], range[1] + 1);
         return {
           data: single ? (filtered[0] ?? null) : filtered,
+          count: requestedExactCount ? allFiltered.length : null,
           error: state.databaseFailure ? { message: "unavailable" } : null,
         };
       };
       const chain = {
-        select: () => chain,
+        select: (_columns: string, options?: { count?: string }) => {
+          requestedExactCount = options?.count === "exact";
+          return chain;
+        },
         eq: (column: string, value: unknown) => {
           filters.push([column, value]);
           return chain;
@@ -454,6 +459,31 @@ describe("native recovery with Railway unreachable and no process credentials", 
     expect(state.queries).not.toContain("timetable_sessions");
   });
 
+  it("excludes superseded history from bounded current-version summaries", async () => {
+    state.versionRows = Array.from({ length: 4100 }, (_, i) => ({
+      id: `superseded-${i}`,
+      timetable_id: timetableId,
+      status: "superseded",
+      version_number: 4101 - i,
+    }));
+    state.versionRows.push({
+      id: "current-draft",
+      timetable_id: timetableId,
+      status: "draft",
+      version_number: 1,
+    });
+    const response = await request("/api/admin/timetables", {
+      headers: { authorization: "Bearer fixture-access" },
+    });
+    expect(response.status).toBe(200);
+    expect((await response.json()).timetables[0].currentDraftVersionId).toBe(
+      "current-draft",
+    );
+    expect(
+      state.queries.filter((table) => table === "timetable_versions"),
+    ).toHaveLength(1);
+  });
+
   it("creates a durable feed subscription with the existing RPC/token contract", async () => {
     const response = await request("/api/calendar/subscriptions", {
       method: "POST",
@@ -642,7 +672,14 @@ describe("native recovery with Railway unreachable and no process credentials", 
       const preview = await pauseRequest("POST", input, "/preview");
       expect(preview.status).toBe(200);
       expect(await preview.json()).toEqual({
-        impact: { affectedTimetableCount: 1, newlySuppressedLectureCount: 2 },
+        impact: {
+          affectedTimetableCount: 1,
+          affectedTimetableCountKnown: true,
+          newlySuppressedLectureCount: 2,
+          previewStatus: "exact",
+          evaluatedTimetableCount: 1,
+          evaluatedDayCount: 1,
+        },
       });
       expect(state.writes).toEqual([]);
       const created = await pauseRequest("POST", {

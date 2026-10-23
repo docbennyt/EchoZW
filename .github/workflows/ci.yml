@@ -7,6 +7,8 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     services:
       delivery-postgres:
         image: postgres:17
@@ -25,6 +27,8 @@ jobs:
       DR178_REQUIRE_POSTGRES: "true"
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24.15.0

@@ -1,5 +1,85 @@
 # DR-178 Recovery Evidence Ledger
 
+## 2026-10-24 Trusted Bootstrap Integration
+
+PR114 is merged as protected `Calender@e4940c3fde8a29fb61b41b4396eddfd62f770878`.
+Post-merge CI passed: https://github.com/docbennyt/EchoZW/actions/runs/40023545727.
+GitHub confirms `blessingmedia` independently approved114 and has Write access.
+That approval is not approval of113. A fresh candidate review is requested.
+
+Merge commit `ffc4ef2` resolves four conflicts individually:
+
+- Both workflows preserve the merged secretless/trusted control boundary and
+  retain PostgreSQL only in secretless test/package jobs.
+- `prepare-staging-deployment.mjs` retains protected legacy-origin stripping.
+- The deployment regression combines native-runtime assertions with the merged
+  no-secrets/no-environment/no-credential-persistence PR assertions.
+
+Independent preflight found protected packaging lacks the mandatory PostgreSQL
+fixture, and protected deployment lacks the candidate's Node compatibility,
+private logging, bounded Queue and recovery Cron configuration. Control-only
+PR115 fixes those prerequisites, comparing pinned candidate configuration as inert
+data against trusted runtime settings and recording a configuration digest.
+It does not execute candidate scripts with deployment credentials or enable Google
+delivery. Independent source review found no must-fix boundary defect. Actual
+candidate configuration matches trusted projection SHA256
+`c0638c7a551df2b9b68865840e7444dfa353e8560340387aa68d9eb547eeb626`.
+PR115 exact-head CI and secretless Worker verification passed at
+`bfa81036eb2be5bc8972071eaab7d68d8df78f2e` (772 tests/154 files):
+https://github.com/docbennyt/EchoZW/actions/runs/40030492588 and
+https://github.com/docbennyt/EchoZW/actions/runs/40030492461.
+It still requires human review/merge; PR114 is not reopened.
+
+The existing manual workflow is re-enabled. Its environment still prevents
+self-review/admin bypass and permits only protected Calender deployment. It has
+not been dispatched for an unapproved candidate. Admin email/password acceptance
+inputs are absent; the original feed secret remains present. Missing credentials
+remain a failing gate, not a skip. Browser acceptance is currently blocked by a
+Chrome profile-lock error. Supabase integration is not connected in this session;
+the Cloudflare interactive connection also requests reauthentication. GitHub's
+protected deployment credentials are separate and have not been extracted.
+
+Existing pause impact reads are now bounded (three timetable hydrations and31
+aggregate timetable-days), report exact/partial/unknown honestly using exact scope
+counts, and allow canonical save after preview failure. Invalid dates are rejected.
+Historical superseded versions no longer consume the current-version listing cap.
+No pause policy, source resolver or parser was redesigned.
+
+Inventory remains103 routes:52 implemented/unproven,2 incomplete,49 unavailable,
+zero bridges. Of45 inventory P0 routes:43 implemented/unproven,1 incomplete
+(optional Google calendar deletion),1 unavailable (legacy Google config diagnostic).
+Source counts do not establish staging or production acceptance. Imports/source
+processing and real provider delivery remain independent missing business gates.
+
+### Migration Preflight And Order
+
+No live migration was executed in this checkpoint. Live migration history/schema
+alignment remains unverified pending secure Supabase access. The two candidate
+migrations are unapplied; do not infer all older migrations are present merely from
+their presence in this repository.
+
+1. Verify existing history through0037 and prerequisite tables/functions, especially
+   Google state/credential/event mappings0012, academic pauses0023 and push outbox0026.
+2. Apply0038 once, transactionally: additive revision/job tables, service-role-only
+   RPCs and source-revision triggers. Existing push delivery is observed, not claimed.
+3. Apply0039 once, transactionally after0038: connection generations, atomic OAuth
+   completion plus durable enqueue, disconnect invalidation and fenced mapping RPCs.
+
+Before/after application compare safe aggregate counts/fingerprints for original
+subscriptions/token hashes/external calendar identities, Google mappings, source
+sessions and audit directives. Verify new RLS/grants/RPC signatures and revision
+triggers, but do not update student records merely to exercise them. Both migrations
+are non-idempotent DDL and must use migration tracking, never blind repeated SQL.
+Retired legacy Google writers must remain stopped. Keep delivery disabled until
+isolated authenticated and authorized provider acceptance, including Free-plan
+runtime/subrequest budgets, passes. Local PostgreSQL fixtures are not live schema proof.
+
+Next deployed check remains single-subscription credential-only decryption, with
+no Google request/write and no plaintext output. Provider authorization, isolated
+correction/pause writes and Google reconciliation are separate subsequent gates.
+The prior original Apple feed evidence below remains preserved; no token or
+subscription was regenerated. Production DNS remains unchanged.
+
 ## 2026-10-23 Original Google Key Recovery Candidate
 
 This section supersedes the implementation counts below; historical deployed

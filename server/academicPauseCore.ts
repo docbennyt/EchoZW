@@ -12,13 +12,25 @@ import {
 import {
   createAcademicPause,
   deactivateAcademicPause,
+  getPublishedTimetableScopeForPause,
   listPublishedTimetableIdsForPauseScope,
   type AcademicPauseInput,
 } from "./academicPauseRepository.js";
 import { getPublishedTimetableById } from "./pilotRepository.js";
 import type { StaffAuthContext } from "./supabase/auth.js";
 
-const dateKey = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const dateKey = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day
+    );
+  }, "Choose a valid calendar date.");
 const pauseSchema = z.object({
   scopeType: z.enum([
     "institution",
@@ -87,6 +99,7 @@ function candidateRule(pause: AcademicPauseInput): AcademicSchedulePause {
 function countNewlySuppressed(
   timetable: PublicTimetable,
   pause: AcademicPauseInput,
+  dayBudget: number,
 ) {
   const withPause = withCandidatePause(timetable, candidateRule(pause));
   const startsOn =
@@ -97,14 +110,10 @@ function countNewlySuppressed(
     timetable.endsOn && timetable.endsOn < pause.endsOn
       ? timetable.endsOn
       : pause.endsOn;
-  if (endsOn < startsOn) return 0;
-
   let total = 0;
-  for (
-    let current = startsOn;
-    current <= endsOn;
-    current = addDaysToDateKey(current, 1)
-  ) {
+  let days = 0;
+  let current = startsOn;
+  for (; current <= endsOn && days < dayBudget; days += 1) {
     const before = resolveScheduleForDate(timetable, current);
     const afterKeys = new Set(
       resolveScheduleForDate(withPause, current).map(occurrenceKey),
@@ -112,9 +121,15 @@ function countNewlySuppressed(
     total += before.filter(
       (occurrence) => !afterKeys.has(occurrenceKey(occurrence)),
     ).length;
+    current = addDaysToDateKey(current, 1);
   }
-  return total;
+  return { total, days, complete: current > endsOn };
 }
+
+// At six reads per hydration, preview uses at most 19 DB reads including scope
+// lookup, leaving room for auth and the canonical write in a Free request.
+const MAX_IMPACT_TIMETABLES = 3;
+const MAX_IMPACT_TIMETABLE_DAYS = 31;
 
 export async function previewImpact(
   pause: AcademicPauseInput,
@@ -123,16 +138,77 @@ export async function previewImpact(
   impact: AcademicPauseImpact;
   timetableIds: string[];
 }> {
-  const timetableIds = await listPublishedTimetableIdsForPauseScope(pause, env);
-  let newlySuppressedLectureCount = 0;
-  for (const timetableId of timetableIds) {
-    const timetable = await getPublishedTimetableById(timetableId, env);
-    newlySuppressedLectureCount += countNewlySuppressed(timetable, pause);
+  let timetableIds: string[];
+  let totalCount: number | null;
+  try {
+    ({ timetableIds, totalCount } = await getPublishedTimetableScopeForPause(
+      pause,
+      env,
+    ));
+  } catch {
+    return {
+      impact: {
+        affectedTimetableCount: 0,
+        affectedTimetableCountKnown: false,
+        newlySuppressedLectureCount: 0,
+        previewStatus: "unknown",
+        previewReason: "read_failed",
+        evaluatedTimetableCount: 0,
+        evaluatedDayCount: 0,
+      },
+      timetableIds: [],
+    };
   }
+  let newlySuppressedLectureCount = 0;
+  let evaluatedTimetableCount = 0;
+  let evaluatedDayCount = 0;
+  let complete = true;
+  let readFailed = false;
+  for (const timetableId of timetableIds.slice(0, MAX_IMPACT_TIMETABLES)) {
+    if (evaluatedDayCount >= MAX_IMPACT_TIMETABLE_DAYS) break;
+    try {
+      const timetable = await getPublishedTimetableById(timetableId, env);
+      const counted = countNewlySuppressed(
+        timetable,
+        pause,
+        MAX_IMPACT_TIMETABLE_DAYS - evaluatedDayCount,
+      );
+      newlySuppressedLectureCount += counted.total;
+      evaluatedTimetableCount += 1;
+      evaluatedDayCount += counted.days;
+      complete = complete && counted.complete;
+    } catch {
+      readFailed = true;
+      break;
+    }
+  }
+  const scopeComplete =
+    totalCount !== null && totalCount === timetableIds.length;
+  complete =
+    complete &&
+    scopeComplete &&
+    evaluatedTimetableCount === timetableIds.length;
   return {
     impact: {
-      affectedTimetableCount: timetableIds.length,
+      affectedTimetableCount: totalCount ?? timetableIds.length,
+      affectedTimetableCountKnown: totalCount !== null,
       newlySuppressedLectureCount,
+      previewStatus: complete
+        ? "exact"
+        : evaluatedTimetableCount > 0
+          ? "partial"
+          : "unknown",
+      ...(complete
+        ? {}
+        : {
+            previewReason: readFailed
+              ? ("read_failed" as const)
+              : !scopeComplete
+                ? ("scope_incomplete" as const)
+                : ("bounds" as const),
+          }),
+      evaluatedTimetableCount,
+      evaluatedDayCount,
     },
     timetableIds,
   };

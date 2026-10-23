@@ -1298,6 +1298,7 @@ export async function listTimetables(env?: NodeJS.ProcessEnv) {
           "timetable_id",
           timetables.map((row) => String(row.id)),
         )
+        .in("status", ["draft", "published"])
         .order("version_number", { ascending: false })
         .order("id")
         .range(page * pageSize, (page + 1) * pageSize - 1),

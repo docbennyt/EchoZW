@@ -31,6 +31,18 @@ const reasons: Array<{ value: AcademicPauseReason; label: string }> = [
 
 type BroadScope = Exclude<AcademicPauseScope, "session">;
 
+function impactText(impact: AcademicPauseImpact) {
+  const scope =
+    impact.affectedTimetableCountKnown === false
+      ? "Timetable count unavailable."
+      : `${impact.affectedTimetableCount} timetable${impact.affectedTimetableCount === 1 ? "" : "s"} in scope.`;
+  const lectures =
+    impact.previewStatus === "unknown"
+      ? "Lecture impact unavailable."
+      : `${impact.previewStatus === "partial" ? "Partial preview: at least " : ""}${impact.newlySuppressedLectureCount} lectures suppressed.`;
+  return `${lectures} ${scope}`;
+}
+
 type Props = {
   accessToken: string;
   institutions: AdminInstitution[];
@@ -156,7 +168,7 @@ export function AdminAcademicPauseControl({
         </button>
       </div>
 
-      {message ? (
+      {message && !open ? (
         <div className="dr58-impact" role="status">
           {message}
         </div>
@@ -328,15 +340,17 @@ export function AdminAcademicPauseControl({
                   />
                 </label>
 
+                {message ? (
+                  <div className="dr58-error" role="alert">
+                    {message}
+                  </div>
+                ) : null}
+
                 {preview ? (
                   <div className="dr58-impact" role="status">
                     <CheckCircle2 size={18} />
                     <div>
-                      <strong>
-                        {preview.newlySuppressedLectureCount} lectures across{" "}
-                        {preview.affectedTimetableCount} timetable
-                        {preview.affectedTimetableCount === 1 ? "" : "s"}
-                      </strong>
+                      <strong>{impactText(preview)}</strong>
                       <span>
                         Recurring timetable records stay intact and restore
                         automatically after {endsOn}.
@@ -355,13 +369,20 @@ export function AdminAcademicPauseControl({
                       setMessage("");
                       void previewBroadPause(accessToken, input())
                         .then((result) => setPreview(result.impact))
-                        .catch((error) =>
+                        .catch((error) => {
+                          setPreview({
+                            affectedTimetableCount: 0,
+                            affectedTimetableCountKnown: false,
+                            newlySuppressedLectureCount: 0,
+                            previewStatus: "unknown",
+                            previewReason: "read_failed",
+                          });
                           setMessage(
                             error instanceof Error
                               ? error.message
                               : "Could not preview pause.",
-                          ),
-                        )
+                          );
+                        })
                         .finally(() => setBusy(""));
                     }}
                   >
@@ -369,14 +390,20 @@ export function AdminAcademicPauseControl({
                   </button>
                   <button
                     type="button"
-                    disabled={!preview || Boolean(busy)}
+                    disabled={
+                      !preview ||
+                      Boolean(busy) ||
+                      !targetId ||
+                      !label.trim() ||
+                      !startsOn ||
+                      !endsOn ||
+                      endsOn < startsOn
+                    }
                     onClick={() => {
                       setBusy("save");
                       void createBroadPause(accessToken, input())
                         .then(async (result) => {
-                          setMessage(
-                            `Paused — ${result.impact.newlySuppressedLectureCount} lectures suppressed across ${result.impact.affectedTimetableCount} timetable${result.impact.affectedTimetableCount === 1 ? "" : "s"}.`,
-                          );
+                          setMessage(`Paused — ${impactText(result.impact)}`);
                           setOpen(false);
                           setPreview(null);
                           setLabel("");
