@@ -169,7 +169,7 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(productionServer).toContain('server.listen(port, "0.0.0.0"');
   });
 
-  it("requires native backend proof and reports actual deployment check outcomes", () => {
+  it("requires native proof separately from secretless Cloudflare PR checks", () => {
     expect(cloudflareSmoke).toContain("/api/health/release");
     expect(cloudflareSmoke).toContain("EXPECTED_RELEASE_SHA");
     expect(cloudflareSmoke).toContain("legacyBackendBridge === false");
@@ -186,5 +186,14 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(cloudflareStagingWorkflow).toContain(
       "npm run browser:smoke:release",
     );
+    expect(cloudflarePreviewWorkflow).toContain(
+      "name: Cloudflare PR Verification",
+    );
+    expect(cloudflarePreviewWorkflow).toContain("persist-credentials: false");
+    expect(cloudflarePreviewWorkflow).not.toContain("secrets.");
+    expect(cloudflarePreviewWorkflow).not.toContain(
+      "environment: cloudflare-staging",
+    );
+    expect(cloudflarePreviewWorkflow).not.toContain("railway.app");
   });
 });

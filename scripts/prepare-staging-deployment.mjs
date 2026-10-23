@@ -18,6 +18,10 @@ for (const path of [
 const config = parsed.config;
 delete config.$schema;
 delete config.build;
+// The protected branch may still document the retired Railway origin.
+for (const vars of [config.vars, config.env?.staging?.vars]) {
+  if (vars) delete vars.LEGACY_BACKEND_ORIGIN;
+}
 config.main = "./candidate/bundle/index.js";
 config.assets.directory = "./candidate/dist";
 config.no_bundle = true;
