@@ -148,4 +148,18 @@ describe("recovery acceptance boundaries", () => {
       ),
     ).toBe(false);
   });
+
+  it("reports only fixed failure codes and counts, never private calendar data", () => {
+    const diagnostic = vi.fn();
+    expect(validateRecoveryCalendar(calendar([]), diagnostic)).toBe(false);
+    expect(diagnostic).toHaveBeenCalledWith("EVENT_COUNT", 0);
+    diagnostic.mockClear();
+    expect(
+      validateRecoveryCalendar("private-calendar-payload", diagnostic),
+    ).toBe(false);
+    expect(diagnostic).toHaveBeenCalledWith("CALENDAR_ENVELOPE");
+    expect(JSON.stringify(diagnostic.mock.calls)).not.toContain(
+      "private-calendar-payload",
+    );
+  });
 });

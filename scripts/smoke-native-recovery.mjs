@@ -153,6 +153,7 @@ else {
   )
     failures.push("Invalid diagnostic feed path");
   else {
+    let calendarDiagnostic;
     const feed = await check(
       "original subscription feed",
       original.pathname,
@@ -160,8 +161,18 @@ else {
         r.status === 200 &&
         /^text\/calendar/.test(r.headers.get("content-type") ?? "") &&
         r.headers.get("cache-control")?.includes("private") &&
-        validateRecoveryCalendar(text),
+        validateRecoveryCalendar(text, (code, count) => {
+          calendarDiagnostic = {
+            code,
+            ...(count === undefined ? {} : { count }),
+          };
+        }),
     );
+    if (calendarDiagnostic)
+      report.push({
+        name: "original calendar diagnostic",
+        ...calendarDiagnostic,
+      });
     if (feed?.response.status === 200) {
       await check(
         "stale ETag refresh",

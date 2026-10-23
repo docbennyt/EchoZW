@@ -44,36 +44,45 @@ export async function obtainAcceptanceToken(env, request = fetch) {
   }
 }
 
-export function validateRecoveryCalendar(text) {
+export function validateRecoveryCalendar(text, onFailure = () => {}) {
+  const fail = (code, count) => {
+    if (count === undefined) onFailure(code);
+    else onFailure(code, count);
+    return false;
+  };
   const unfolded = text.replace(/\r?\n[ \t]/g, "");
   if (
     !/^BEGIN:VCALENDAR\r?\n/.test(unfolded) ||
     !/\r?\nEND:VCALENDAR\s*$/.test(unfolded) ||
     !/^VERSION:2\.0\r?$/m.test(unfolded)
   )
-    return false;
+    return fail("CALENDAR_ENVELOPE");
   const stack = [];
   let eventCount = 0;
   for (const line of unfolded.trimEnd().split(/\r?\n/)) {
     if (line.startsWith("BEGIN:")) {
       const component = line.slice(6);
       if (component === "VEVENT") {
-        if (stack.length !== 1 || stack[0] !== "VCALENDAR") return false;
+        if (stack.length !== 1 || stack[0] !== "VCALENDAR")
+          return fail("COMPONENT_NESTING");
         eventCount += 1;
       }
-      if (component === "VCALENDAR" && stack.length) return false;
+      if (component === "VCALENDAR" && stack.length)
+        return fail("COMPONENT_NESTING");
       stack.push(component);
     } else if (line.startsWith("END:")) {
-      if (stack.pop() !== line.slice(4)) return false;
-    } else if (!stack.length) return false;
+      if (stack.pop() !== line.slice(4)) return fail("COMPONENT_BALANCE");
+    } else if (!stack.length) return fail("COMPONENT_BALANCE");
   }
-  if (stack.length || eventCount !== 15) return false;
+  if (stack.length) return fail("COMPONENT_BALANCE");
+  if (eventCount !== 15) return fail("EVENT_COUNT", eventCount);
   const events = [
     ...unfolded.matchAll(/BEGIN:VEVENT\r?\n([\s\S]*?)\r?\nEND:VEVENT/g),
   ].map((match) => match[1]);
-  if (events.length !== 15) return false;
+  if (events.length !== 15) return fail("EVENT_COUNT", events.length);
   const uids = events.map((event) => /^UID:(.+)\r?$/m.exec(event)?.[1]?.trim());
-  if (uids.some((uid) => !uid) || new Set(uids).size !== 15) return false;
+  if (uids.some((uid) => !uid) || new Set(uids).size !== 15)
+    return fail("EVENT_UIDS");
   const validLocalDate = (value) => {
     if (!/^\d{8}T\d{6}$/.test(value ?? "")) return false;
     const year = Number(value.slice(0, 4));
@@ -105,7 +114,7 @@ export function validateRecoveryCalendar(text) {
       parts.some((part) => part.length !== 2) ||
       new Set(parts.map(([key]) => key)).size !== parts.length
     )
-      return false;
+      return fail("RECURRENCE_PROPERTIES");
     const recurrence = Object.fromEntries(parts);
     if (
       !validLocalDate(start) ||
@@ -118,7 +127,7 @@ export function validateRecoveryCalendar(text) {
       !/^SUMMARY:.+\r?$/m.test(event) ||
       /^STATUS:CANCELLED\r?$/m.test(event)
     )
-      return false;
+      return fail("EVENT_DATE_OR_RECURRENCE");
     const startDay = new Date(
       Date.UTC(
         Number(start.slice(0, 4)),
@@ -129,7 +138,7 @@ export function validateRecoveryCalendar(text) {
     if (
       recurrence.BYDAY !== ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][startDay]
     )
-      return false;
+      return fail("DTSTART_WEEKDAY");
   }
   const ise = events.filter((event) => /^SUMMARY:ISE4105\b/m.test(event));
   const matches = (event, day, time, venue) =>
@@ -139,9 +148,9 @@ export function validateRecoveryCalendar(text) {
     ) &&
     new RegExp(`^LOCATION:${venue}\\r?$`, "m").test(event) &&
     !/^STATUS:CANCELLED\r?$/m.test(event);
-  return (
+  const correct =
     ise.length === 2 &&
     ise.filter((event) => matches(event, "TU", "1215", "N109")).length === 1 &&
-    ise.filter((event) => matches(event, "TH", "0800", "S107")).length === 1
-  );
+    ise.filter((event) => matches(event, "TH", "0800", "S107")).length === 1;
+  return correct || fail("ISE4105_EFFECTIVE_TRUTH", ise.length);
 }
