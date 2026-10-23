@@ -1,5 +1,9 @@
 // Read-only acceptance against the deployed runtime. Missing credentials are
 // blocking evidence, never a skipped green check. Private URLs/tokens stay local.
+import {
+  obtainAcceptanceToken,
+  validateRecoveryCalendar,
+} from "./recovery-acceptance.mjs";
 const origin =
   process.env.CALENDERZW_STAGING_ORIGIN ?? "https://next.calender.aido.co.zw";
 const failures = [];
@@ -88,7 +92,16 @@ await check(
   "/api/admin/session",
   (r) => r.status === 401,
 );
-const adminToken = process.env.CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN;
+let adminToken;
+try {
+  adminToken = await obtainAcceptanceToken(process.env);
+} catch (error) {
+  failures.push(
+    error.message === "TEST_ACCOUNT_AUTH_CONFIG_INVALID"
+      ? "BLOCKED: TEST_ACCOUNT_AUTH_CONFIG_INVALID"
+      : "BLOCKED: TEST_ACCOUNT_SIGN_IN_FAILED",
+  );
+}
 if (!adminToken)
   failures.push("BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN");
 else {
@@ -102,20 +115,42 @@ else {
       r.headers.get("cache-control") === "no-store",
     init,
   );
-  await check(
-    "authenticated institutions",
-    "/api/admin/institutions",
-    (r, text) => r.status === 200 && Array.isArray(asJson(text)?.institutions),
-    init,
-  );
+  for (const [path, property] of [
+    ["institutions", "institutions"],
+    ["programmes", "programmes"],
+    ["class-groups", "classGroups"],
+    ["academic-periods", "academicPeriods"],
+    ["timetables", "timetables"],
+  ])
+    await check(
+      `authenticated ${path}`,
+      `/api/admin/${path}`,
+      (r, text) =>
+        r.status === 200 &&
+        Array.isArray(asJson(text)?.[property]) &&
+        r.headers.get("cache-control") === "no-store",
+      init,
+    );
 }
 const feedUrl = process.env.CALENDERZW_STAGING_FEED_URL;
 if (!feedUrl)
   failures.push("BLOCKED: CALENDERZW_STAGING_FEED_URL (original subscription)");
 else {
-  const original = new URL(feedUrl);
+  let original;
+  try {
+    original = new URL(feedUrl);
+  } catch {
+    failures.push("Invalid diagnostic feed URL");
+  }
   // Never send a private path/token to a redirect or third-party origin.
-  if (!/^\/calendar\/feed\/[^/]+\.ics$/.test(original.pathname))
+  if (
+    !original ||
+    original.username ||
+    original.password ||
+    original.search ||
+    original.hash ||
+    !/^\/calendar\/feed\/[^/]+\.ics$/.test(original.pathname)
+  )
     failures.push("Invalid diagnostic feed path");
   else {
     const feed = await check(
@@ -125,7 +160,7 @@ else {
         r.status === 200 &&
         /^text\/calendar/.test(r.headers.get("content-type") ?? "") &&
         r.headers.get("cache-control")?.includes("private") &&
-        (text.match(/BEGIN:VEVENT/g) ?? []).length === 15,
+        validateRecoveryCalendar(text),
     );
     if (feed?.response.status === 200) {
       await check(

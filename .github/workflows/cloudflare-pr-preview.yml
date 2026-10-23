@@ -103,6 +103,8 @@ jobs:
         run: npm run worker:smoke:staging
         env:
           EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}
+          CALENDERZW_STAGING_ADMIN_EMAIL: ${{ secrets.CALENDERZW_STAGING_ADMIN_EMAIL }}
+          CALENDERZW_STAGING_ADMIN_PASSWORD: ${{ secrets.CALENDERZW_STAGING_ADMIN_PASSWORD }}
 
       - name: Install browser runtime
         if: ${{ !cancelled() && steps.deploy.outcome == 'success' }}
