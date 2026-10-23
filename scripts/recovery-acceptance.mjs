@@ -44,13 +44,23 @@ export async function obtainAcceptanceToken(env, request = fetch) {
   }
 }
 
-export function validateRecoveryCalendar(text, onFailure = () => {}) {
+export function validateRecoveryCalendar(
+  text,
+  onFailure = () => {},
+  expectedCalendar,
+) {
   const fail = (code, count) => {
     if (count === undefined) onFailure(code);
     else onFailure(code, count);
     return false;
   };
   const unfolded = text.replace(/\r?\n[ \t]/g, "");
+  const expectedEvents = expectedCalendar
+    ?.replace(/\r?\n[ \t]/g, "")
+    .match(/BEGIN:VEVENT\r?\n[\s\S]*?\r?\nEND:VEVENT/g);
+  const expectedCount =
+    expectedCalendar === undefined ? 15 : expectedEvents?.length;
+  if (!expectedCount) return fail("EXPECTED_CALENDAR_EMPTY");
   if (
     !/^BEGIN:VCALENDAR\r?\n/.test(unfolded) ||
     !/\r?\nEND:VCALENDAR\s*$/.test(unfolded) ||
@@ -75,13 +85,14 @@ export function validateRecoveryCalendar(text, onFailure = () => {}) {
     } else if (!stack.length) return fail("COMPONENT_BALANCE");
   }
   if (stack.length) return fail("COMPONENT_BALANCE");
-  if (eventCount !== 15) return fail("EVENT_COUNT", eventCount);
+  if (eventCount !== expectedCount) return fail("EVENT_COUNT", eventCount);
   const events = [
     ...unfolded.matchAll(/BEGIN:VEVENT\r?\n([\s\S]*?)\r?\nEND:VEVENT/g),
   ].map((match) => match[1]);
-  if (events.length !== 15) return fail("EVENT_COUNT", events.length);
+  if (events.length !== expectedCount)
+    return fail("EVENT_COUNT", events.length);
   const uids = events.map((event) => /^UID:(.+)\r?$/m.exec(event)?.[1]?.trim());
-  if (uids.some((uid) => !uid) || new Set(uids).size !== 15)
+  if (uids.some((uid) => !uid) || new Set(uids).size !== expectedCount)
     return fail("EVENT_UIDS");
   const validLocalDate = (value) => {
     if (!/^\d{8}T\d{6}$/.test(value ?? "")) return false;
@@ -139,6 +150,26 @@ export function validateRecoveryCalendar(text, onFailure = () => {}) {
       recurrence.BYDAY !== ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][startDay]
     )
       return fail("DTSTART_WEEKDAY");
+  }
+  if (expectedCalendar !== undefined) {
+    // Compare canonical event truth, not subscriber alarms or revision metadata.
+    const signature = (event) =>
+      event
+        .replace(/BEGIN:VALARM\r?\n[\s\S]*?END:VALARM\r?\n/g, "")
+        .split(/\r?\n/)
+        .filter((line) =>
+          /^(UID|DTSTART|DTEND|SUMMARY|LOCATION|RRULE|EXDATE|RECURRENCE-ID|STATUS)[:;]/.test(
+            line,
+          ),
+        )
+        .sort()
+        .join("\n");
+    const actual = events.map(signature).sort();
+    const expected = expectedEvents.map(signature).sort();
+    return (
+      JSON.stringify(actual) === JSON.stringify(expected) ||
+      fail("CANONICAL_CLASS_MISMATCH")
+    );
   }
   const ise = events.filter((event) => /^SUMMARY:ISE4105\b/m.test(event));
   const matches = (event, day, time, venue) =>

@@ -162,4 +162,36 @@ describe("recovery acceptance boundaries", () => {
       "private-calendar-payload",
     );
   });
+
+  it("compares an original ICS-class feed to that class's canonical calendar, not SE", () => {
+    const icsClass = calendar(expected).replaceAll("ISE4105", "ICS1101");
+    expect(validateRecoveryCalendar(icsClass, undefined, icsClass)).toBe(true);
+    expect(
+      validateRecoveryCalendar(icsClass, undefined, calendar(expected)),
+    ).toBe(false);
+    expect(
+      validateRecoveryCalendar(
+        icsClass.replace("LOCATION:N109", "LOCATION:Wrong venue"),
+        undefined,
+        icsClass,
+      ),
+    ).toBe(false);
+    expect(
+      validateRecoveryCalendar(
+        icsClass.replace("UID:tuesday", "UID:replacement"),
+        undefined,
+        icsClass,
+      ),
+    ).toBe(false);
+    expect(
+      validateRecoveryCalendar(
+        icsClass.replace(
+          "END:VEVENT",
+          "BEGIN:VALARM\r\nDESCRIPTION:Private reminder\r\nTRIGGER:-PT30M\r\nEND:VALARM\r\nEND:VEVENT",
+        ),
+        undefined,
+        icsClass,
+      ),
+    ).toBe(true);
+  });
 });

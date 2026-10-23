@@ -5,4 +5,5 @@ export function obtainAcceptanceToken(
 export function validateRecoveryCalendar(
   text: string,
   onFailure?: (code: string, count?: number) => void,
+  expectedCalendar?: string,
 ): boolean;

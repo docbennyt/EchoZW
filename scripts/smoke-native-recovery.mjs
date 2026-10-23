@@ -153,6 +153,29 @@ else {
   )
     failures.push("Invalid diagnostic feed path");
   else {
+    let expectedCalendar;
+    const slug = process.env.CALENDERZW_STAGING_FEED_TIMETABLE_SLUG;
+    if (!slug || !/^[a-z0-9-]+$/.test(slug))
+      failures.push("BLOCKED: CALENDERZW_STAGING_FEED_TIMETABLE_SLUG");
+    else {
+      const baseline = await check(
+        "original feed published class baseline",
+        `/api/public/timetables/${slug}`,
+        (r, text) =>
+          r.status === 200 &&
+          asJson(text)?.timetable?.publicSlug === slug &&
+          asJson(text)?.timetable?.effectiveSessions?.length > 0,
+      );
+      if (baseline?.response.status === 200) {
+        const { generatePublishedTimetableIcs } =
+          await import("../dist-server/server/publishedCalendar.js");
+        expectedCalendar = generatePublishedTimetableIcs({
+          timetable: asJson(baseline.body).timetable,
+          reminderOffsetsMinutes: [],
+          publicOrigin: "https://calender.aido.co.zw",
+        });
+      }
+    }
     let calendarDiagnostic;
     const feed = await check(
       "original subscription feed",
@@ -161,12 +184,17 @@ else {
         r.status === 200 &&
         /^text\/calendar/.test(r.headers.get("content-type") ?? "") &&
         r.headers.get("cache-control")?.includes("private") &&
-        validateRecoveryCalendar(text, (code, count) => {
-          calendarDiagnostic = {
-            code,
-            ...(count === undefined ? {} : { count }),
-          };
-        }),
+        Boolean(expectedCalendar) &&
+        validateRecoveryCalendar(
+          text,
+          (code, count) => {
+            calendarDiagnostic = {
+              code,
+              ...(count === undefined ? {} : { count }),
+            };
+          },
+          expectedCalendar,
+        ),
     );
     if (calendarDiagnostic)
       report.push({
