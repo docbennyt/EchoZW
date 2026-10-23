@@ -194,4 +194,19 @@ describe("recovery acceptance boundaries", () => {
       ),
     ).toBe(true);
   });
+
+  it("accepts canonical one-off exceptions but rejects missing or changed recurrence", () => {
+    const recurring = calendar(expected);
+    const oneOff = recurring.replace(/RRULE:[^\r\n]+\r\n/, "");
+    expect(validateRecoveryCalendar(oneOff, undefined, oneOff)).toBe(true);
+    expect(validateRecoveryCalendar(oneOff, undefined, recurring)).toBe(false);
+    expect(validateRecoveryCalendar(recurring, undefined, oneOff)).toBe(false);
+    expect(
+      validateRecoveryCalendar(
+        recurring.replace("BYDAY=TU", "BYDAY=WE"),
+        undefined,
+        recurring,
+      ),
+    ).toBe(false);
+  });
 });

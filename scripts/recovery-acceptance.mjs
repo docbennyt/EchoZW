@@ -119,6 +119,17 @@ export function validateRecoveryCalendar(
       ?.trim();
     const end = /^DTEND;TZID=Africa\/Harare:(.+)\r?$/m.exec(event)?.[1]?.trim();
     const rule = /^RRULE:(.+)\r?$/m.exec(event)?.[1]?.trim();
+    if (
+      !validLocalDate(start) ||
+      !validLocalDate(end) ||
+      end <= start ||
+      !/^SUMMARY:.+\r?$/m.test(event) ||
+      /^STATUS:CANCELLED\r?$/m.test(event)
+    )
+      return fail("EVENT_DATE_OR_RECURRENCE");
+    // Existing date-specific exceptions have no RRULE; only the matching
+    // canonical baseline can authorize that distinction in acceptance.
+    if (!rule && expectedCalendar !== undefined) continue;
     const parts = rule?.split(";").map((part) => part.split("="));
     if (
       !parts ||
@@ -128,15 +139,10 @@ export function validateRecoveryCalendar(
       return fail("RECURRENCE_PROPERTIES");
     const recurrence = Object.fromEntries(parts);
     if (
-      !validLocalDate(start) ||
-      !validLocalDate(end) ||
-      end <= start ||
       recurrence.FREQ !== "WEEKLY" ||
       recurrence.COUNT !== undefined ||
       (recurrence.INTERVAL ?? "1") !== "1" ||
-      !/^(MO|TU|WE|TH|FR|SA|SU)$/.test(recurrence.BYDAY ?? "") ||
-      !/^SUMMARY:.+\r?$/m.test(event) ||
-      /^STATUS:CANCELLED\r?$/m.test(event)
+      !/^(MO|TU|WE|TH|FR|SA|SU)$/.test(recurrence.BYDAY ?? "")
     )
       return fail("EVENT_DATE_OR_RECURRENCE");
     const startDay = new Date(
