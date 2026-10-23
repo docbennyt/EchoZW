@@ -155,6 +155,8 @@ describe("Cloudflare runtime foundation", () => {
           queue: "calenderzw-push-staging",
           dead_letter_queue: "calenderzw-push-dlq-staging",
           max_retries: 5,
+          max_batch_size: 1,
+          max_concurrency: 1,
         },
       ]),
     );
@@ -174,6 +176,7 @@ describe("Cloudflare runtime foundation", () => {
     expect(worker).not.toContain("message.ack()");
     expect(worker).toContain("message.retry(");
     expect(worker).toContain("source_document_uploaded");
-    expect(worker).toContain("async queue(batch)");
+    expect(worker).toContain("async queue(batch, env = {})");
+    expect(worker).toContain("consumeGoogleDeliveryMessage(message, env)");
   });
 });

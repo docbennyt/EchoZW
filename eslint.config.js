@@ -10,7 +10,7 @@ export default [
       "dist",
       "dist-server",
       ".wrangler-dry-run",
-      ".wrangler",
+      "**/.wrangler/**",
       "CalenderZW-VPS",
       "CalenderZW_Antigravity_Landing_Pack",
     ],

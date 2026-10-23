@@ -60,6 +60,7 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "jsdom": "latest",
+    "pg": "8.23.1",
     "playwright": "^1.62.1",
     "prettier": "latest",
     "typescript-eslint": "latest",

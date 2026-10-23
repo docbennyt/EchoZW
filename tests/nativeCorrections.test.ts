@@ -340,7 +340,7 @@ describe("native recurring correction collection", () => {
     expect(await response.text()).not.toContain("fixture-only");
     expect(state.writes).toEqual([]);
   });
-  it("keeps unsupported methods and adjacent routes closed", async () => {
+  it("rejects unsupported methods, invalid item IDs and malformed exceptions", async () => {
     const response = await request("DELETE");
     expect(response.status).toBe(405);
     expect(response.headers.get("allow")).toBe("GET, POST");
@@ -356,7 +356,7 @@ describe("native recurring correction collection", () => {
           path.replace("corrections", "exceptions"),
         )
       ).status,
-    ).toBe(503);
+    ).toBe(422);
     expect(state.writes).toEqual([]);
   });
 });

@@ -9,9 +9,9 @@ import {
   createCalendarSubscriptionRecord,
   PilotApiError,
 } from "./pilotRepository.js";
+import { getPublicGoogleCalendarStatus } from "./googleCalendarSync.js";
+import { updateGoogleSubscription } from "./googleCalendarRepository.js";
 
-// Provider authorization is a separate workflow. Do not persist a Google connection
-// until that workflow has native transport and its original encryption context.
 export async function createNativeFeedSubscription(
   input: CreateSubscriptionInput,
   context: {
@@ -33,7 +33,11 @@ export async function createNativeFeedSubscription(
       503,
     );
   }
-  if (input.provider === "google_api") {
+  if (
+    input.provider === "google_api" &&
+    (context.env.ENABLE_GOOGLE_DELIVERY !== "true" ||
+      !getPublicGoogleCalendarStatus(context.env).enabled)
+  ) {
     throw new PilotApiError(
       "GOOGLE_NOT_CONFIGURED",
       "Direct Google Calendar connection is temporarily unavailable.",
@@ -41,7 +45,9 @@ export async function createNativeFeedSubscription(
     );
   }
   const rawToken =
-    input.provider === "ics_download" ? undefined : generateFeedToken();
+    input.provider === "ics_download" || input.provider === "google_api"
+      ? undefined
+      : generateFeedToken();
   const tokenHash = rawToken ? await sha256Base64Url(rawToken) : undefined;
   let reminderOffsetsMinutes: number[];
   try {
@@ -72,6 +78,14 @@ export async function createNativeFeedSubscription(
     context.env,
   );
   const subscriptionId = String(record.id);
+  if (input.provider === "google_api") {
+    await updateGoogleSubscription({
+      subscriptionId,
+      status: "pending",
+      lastErrorCode: null,
+      env: context.env,
+    });
+  }
   return {
     subscriptionId,
     provider: input.provider,
@@ -79,7 +93,14 @@ export async function createNativeFeedSubscription(
     feedUrl,
     appleDeepLinkUrl,
     appleSubscribeUrl: appleDeepLinkUrl,
-    downloadUrl: `${publicOrigin}/calendar/download/${encodeURIComponent(subscriptionId)}.ics`,
+    downloadUrl:
+      input.provider === "google_api"
+        ? undefined
+        : `${publicOrigin}/calendar/download/${encodeURIComponent(subscriptionId)}.ics`,
+    googleConnectUrl:
+      input.provider === "google_api"
+        ? `${publicOrigin}/api/calendar/google/connect?subscriptionId=${encodeURIComponent(subscriptionId)}`
+        : undefined,
     expiresAt: null,
     contact: {
       saved: Boolean(record.subscriber_profile_id),

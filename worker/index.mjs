@@ -29,16 +29,25 @@ import {
   requireStaffUser,
   requireOperationalAdmin,
   requireTimetableEditor,
+  requireFounderSuperadmin,
 } from "../server/supabase/auth.ts";
 import { z } from "zod";
-import { saveRecurringCorrection } from "../server/correctionsCore.ts";
-import { listTimetableCorrections } from "../server/correctionsRepository.ts";
+import { handleEditorMutations } from "./editorMutations.mjs";
+import { handleNativeAdminTimetable } from "./adminTimetable.mjs";
+import { handleGoogleCalendarRequest } from "./googleCalendarApi.mjs";
+import {
+  enqueueNativeGoogleSync,
+  scheduleGoogleDelivery,
+  consumeGoogleDeliveryMessage,
+} from "./googleDelivery.mjs";
 import {
   AcademicPauseRepositoryError,
   listAcademicPausesForTimetable,
+  listAcademicPauses,
 } from "../server/academicPauseRepository.ts";
 import {
   scopedInput,
+  broadInput,
   previewImpact,
   createPauseWithImpact,
   deactivatePauseWithTimetables,
@@ -52,6 +61,11 @@ import {
 import { sha256Base64Url } from "../src/domain/token.ts";
 import { subscriptionRequestSchema } from "../src/domain/subscriptions.ts";
 import { createNativeFeedSubscription } from "../server/calendarSubscriptionCore.ts";
+import { revokeOwnedFeedSubscription } from "../server/calendarSubscriptionLifecycle.ts";
+import {
+  getTimetablePublicDisplaySettings,
+  updateTimetablePublicDisplaySettings,
+} from "../server/timetablePublicSettingsRepository.ts";
 
 const DYNAMIC_PREFIXES = ["/api/", "/calendar/"];
 const DYNAMIC_EXACT_PATHS = new Set([
@@ -566,86 +580,10 @@ async function readNativeJsonBody(request) {
   }
 }
 
-async function handleNativeCorrections(request, env, timetableId) {
-  if (!["GET", "POST"].includes(request.method)) {
-    return json(
-      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
-      { status: 405, headers: { allow: "GET, POST" } },
-    );
-  }
-  const origin = request.headers.get("origin");
-  if (
-    (origin !== null && origin !== new URL(request.url).origin) ||
-    request.headers.get("sec-fetch-site") === "cross-site"
-  ) {
-    return json(
-      {
-        error: {
-          code: "ORIGIN_NOT_ALLOWED",
-          message: "Use the application origin.",
-        },
-      },
-      { status: 403 },
-    );
-  }
-  try {
-    const actor = await requireTimetableEditor(
-      {
-        headers: {
-          authorization: request.headers.get("authorization") ?? undefined,
-        },
-      },
-      timetableId,
-      {
-        createUserClient: (token) => createSupabaseUserClient(token, env),
-        createAdminClient: () => createSupabaseAdminClient(env),
-      },
-    );
-    if (request.method === "GET") {
-      return json({
-        corrections: await listTimetableCorrections(timetableId, env),
-      });
-    }
-    const mutationKey = request.headers.get("idempotency-key");
-    const result = await saveRecurringCorrection(
-      timetableId,
-      actor,
-      await readNativeJsonBody(request),
-      mutationKey === null ? crypto.randomUUID() : mutationKey.trim(),
-      env,
-    );
-    return json(
-      {
-        correction: result.item,
-        mutationOutcome: result.mutationOutcome,
-        googleCalendarSync: {
-          attempted: 0,
-          succeeded: 0,
-          failed: 0,
-          skipped: true,
-        },
-      },
-      { status: result.mutationOutcome === "created" ? 201 : 200 },
-    );
-  } catch (error) {
-    if (error instanceof AdminAuthError) return adminAuthError(error);
-    if (error instanceof z.ZodError) {
-      return json(
-        {
-          error: {
-            code: "VALIDATION_FAILED",
-            message: "Check the highlighted fields.",
-            details: error.flatten().fieldErrors,
-          },
-        },
-        { status: 422 },
-      );
-    }
-    return publicApiError(error);
-  }
-}
-
 async function handleNativeAcademicPauses(request, env, timetableId, action) {
+  const authorize = timetableId
+    ? requireTimetableEditor
+    : requireOperationalAdmin;
   const allowed =
     action === undefined
       ? ["GET", "POST"]
@@ -674,24 +612,25 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
     );
   }
   try {
-    const actor = await requireTimetableEditor(
-      {
-        headers: {
-          authorization: request.headers.get("authorization") ?? undefined,
-        },
+    const authRequest = {
+      headers: {
+        authorization: request.headers.get("authorization") ?? undefined,
       },
-      timetableId,
-      {
-        createUserClient: (token) => createSupabaseUserClient(token, env),
-        createAdminClient: () => createSupabaseAdminClient(env),
-      },
-    );
+    };
+    const authDependencies = {
+      createUserClient: (token) => createSupabaseUserClient(token, env),
+      createAdminClient: () => createSupabaseAdminClient(env),
+    };
+    const actor = timetableId
+      ? await authorize(authRequest, timetableId, authDependencies)
+      : await authorize(authRequest, authDependencies);
     if (request.method === "GET") {
       return json({
-        pauses: await listAcademicPausesForTimetable(timetableId, env),
+        pauses: timetableId
+          ? await listAcademicPausesForTimetable(timetableId, env)
+          : await listAcademicPauses(env),
       });
     }
-    // Remote provider propagation remains closed in the native recovery runtime.
     const googleCalendarSync = {
       attempted: 0,
       succeeded: 0,
@@ -705,10 +644,10 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
       );
       return json({ pause, googleCalendarSync });
     }
-    const pauseInput = scopedInput(
-      timetableId,
-      await readNativeJsonBody(request),
-    );
+    const body = await readNativeJsonBody(request);
+    const pauseInput = timetableId
+      ? scopedInput(timetableId, body)
+      : broadInput(body);
     if (action === "preview") {
       const { impact } = await previewImpact(pauseInput, env);
       return json({ impact });
@@ -739,6 +678,57 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
         { status: 422 },
       );
     }
+    return publicApiError(error);
+  }
+}
+
+async function handleNativePublicSettings(request, env, timetableId) {
+  if (!["GET", "PUT"].includes(request.method))
+    return json({ error: { code: "METHOD_NOT_ALLOWED" } }, { status: 405 });
+  const origin = request.headers.get("origin");
+  if (
+    (origin !== null && origin !== new URL(request.url).origin) ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  )
+    return json({ error: { code: "ORIGIN_NOT_ALLOWED" } }, { status: 403 });
+  try {
+    const actor = await requireFounderSuperadmin(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+      },
+      {
+        createUserClient: (token) => createSupabaseUserClient(token, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+    if (request.method === "GET")
+      return json({
+        settings: await getTimetablePublicDisplaySettings(timetableId, env),
+      });
+    const parsed = z
+      .object({ showVisualPreview: z.boolean(), showChangeAlerts: z.boolean() })
+      .strict()
+      .parse(await readNativeJsonBody(request));
+    return json({
+      settings: await updateTimetablePublicDisplaySettings(
+        { timetableId, staffUserId: actor.staff.id, ...parsed },
+        env,
+      ),
+    });
+  } catch (error) {
+    if (error instanceof AdminAuthError) return adminAuthError(error);
+    if (error instanceof z.ZodError)
+      return json(
+        {
+          error: {
+            code: "VALIDATION_FAILED",
+            message: "Provide both public settings as booleans.",
+          },
+        },
+        { status: 422 },
+      );
     return publicApiError(error);
   }
 }
@@ -901,7 +891,7 @@ const application = {
       return serveRuntimeConfig(env);
     }
 
-    if (url.pathname === "/api/health/live") {
+    if (url.pathname === "/api/health/live" || url.pathname === "/healthz") {
       return json({ status: "ok" });
     }
 
@@ -930,6 +920,26 @@ const application = {
       return handleSourceDocumentUpload(request, env, ctx);
     }
 
+    const googleResponse = await handleGoogleCalendarRequest(request, env, {
+      enqueueInitialSync: enqueueNativeGoogleSync,
+      enqueueReconciliation: enqueueNativeGoogleSync,
+      deliveryEnabled: env.ENABLE_GOOGLE_DELIVERY === "true",
+    });
+    if (googleResponse) return googleResponse;
+
+    const editorResponse = await handleEditorMutations(request, env);
+    if (editorResponse) return editorResponse;
+    const adminTimetableResponse = await handleNativeAdminTimetable(
+      request,
+      env,
+    );
+    if (adminTimetableResponse) return adminTimetableResponse;
+    const settingsMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([0-9a-f-]{36})\/public-settings$/i,
+    );
+    if (settingsMatch)
+      return handleNativePublicSettings(request, env, settingsMatch[1]);
+
     if (
       url.pathname === "/api/admin/session" ||
       url.pathname === "/api/admin/institutions" ||
@@ -944,13 +954,6 @@ const application = {
       return handleNativeAdminSession(request, env);
     }
 
-    const correctionsMatch = url.pathname.match(
-      /^\/api\/admin\/timetables\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/corrections$/i,
-    );
-    if (correctionsMatch) {
-      return handleNativeCorrections(request, env, correctionsMatch[1]);
-    }
-
     const pausesMatch = url.pathname.match(
       /^\/api\/admin\/timetables\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/pauses(?:\/(preview|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}))?$/i,
     );
@@ -963,15 +966,46 @@ const application = {
       );
     }
 
-    if (url.pathname === "/api/calendar/subscriptions") {
-      return handleNativeSubscription(request, env);
+    const broadPauseMatch = url.pathname.match(
+      /^\/api\/admin\/academic-pauses(?:\/(preview|[0-9a-f-]{36}))?$/i,
+    );
+    if (broadPauseMatch)
+      return handleNativeAcademicPauses(
+        request,
+        env,
+        undefined,
+        broadPauseMatch[1],
+      );
+
+    const revokeMatch = url.pathname.match(
+      /^\/api\/calendar\/subscriptions\/([0-9a-f-]{36})\/revoke$/i,
+    );
+    if (revokeMatch) {
+      if (request.method !== "POST")
+        return json({ error: { code: "METHOD_NOT_ALLOWED" } }, { status: 405 });
+      if (
+        request.headers.get("origin") !== url.origin ||
+        request.headers.get("sec-fetch-site") === "cross-site"
+      )
+        return json({ error: { code: "ORIGIN_NOT_ALLOWED" } }, { status: 403 });
+      const cookie =
+        request.headers
+          .get("cookie")
+          ?.split(";")
+          .map((value) => value.trim())
+          .find((value) => value.startsWith("calenderzw_anon_session="))
+          ?.slice("calenderzw_anon_session=".length) ?? null;
+      try {
+        return json(
+          await revokeOwnedFeedSubscription(revokeMatch[1], cookie, env),
+        );
+      } catch (error) {
+        return publicApiError(error);
+      }
     }
 
-    if (
-      url.pathname === "/api/calendar/google/status" &&
-      request.method === "GET"
-    ) {
-      return json({ enabled: false });
+    if (url.pathname === "/api/calendar/subscriptions") {
+      return handleNativeSubscription(request, env);
     }
 
     if (
@@ -1020,12 +1054,16 @@ const application = {
     return notFound();
   },
 
-  async queue(batch) {
+  async queue(batch, env = {}) {
     for (const message of batch.messages) {
+      if (await consumeGoogleDeliveryMessage(message, env)) continue;
       // No durable processor exists yet. Retry to the configured DLQ; never
       // acknowledge source_document_uploaded or push messages without work.
       message.retry({ delaySeconds: 300 });
     }
+  },
+  async scheduled(_controller, env) {
+    await scheduleGoogleDelivery(env);
   },
 };
 
@@ -1069,4 +1107,5 @@ export default {
     });
   },
   queue: application.queue,
+  scheduled: application.scheduled,
 };

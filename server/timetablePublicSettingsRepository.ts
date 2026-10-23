@@ -66,13 +66,16 @@ export async function getTimetablePublicDisplaySettings(
   return mapSettings(data as SettingsRow | null);
 }
 
-export async function updateTimetablePublicDisplaySettings(input: {
-  timetableId: string;
-  staffUserId: string;
-  showVisualPreview: boolean;
-  showChangeAlerts: boolean;
-}): Promise<TimetablePublicDisplaySettings> {
-  const client = createSupabaseAdminClient();
+export async function updateTimetablePublicDisplaySettings(
+  input: {
+    timetableId: string;
+    staffUserId: string;
+    showVisualPreview: boolean;
+    showChangeAlerts: boolean;
+  },
+  env?: NodeJS.ProcessEnv,
+): Promise<TimetablePublicDisplaySettings> {
+  const client = createSupabaseAdminClient(env);
   const { data, error } = await client
     .from("timetable_public_settings")
     .upsert(

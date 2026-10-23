@@ -794,7 +794,7 @@ describe("native recovery with Railway unreachable and no process credentials", 
             headers: { authorization: "Bearer fixture-access" },
           })
         ).status,
-      ).toBe(503);
+      ).toBe(403);
       expect(state.writes).toEqual([]);
     });
   });

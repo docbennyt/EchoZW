@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
+  role: "class_rep",
   assigned: true,
   writes: [] as string[],
   envs: [] as unknown[],
@@ -22,7 +23,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
     from: (table: string) => {
       const rows =
         table === "staff_users"
-          ? [{ id: "staff", user_id: "user", role: "class_rep", active: true }]
+          ? [{ id: "staff", user_id: "user", role: state.role, active: true }]
           : state.assigned
             ? [
                 {
@@ -51,6 +52,10 @@ vi.mock("../server/academicPauseRepository.ts", async (importOriginal) => {
     >();
   return {
     ...original,
+    listAcademicPauses: vi.fn(async (env) => {
+      state.envs.push(env);
+      return [];
+    }),
     listAcademicPausesForTimetable: vi.fn(async (id, env) => {
       state.envs.push(env);
       return [{ id: "pause", timetableId: id, active: true }];
@@ -102,9 +107,10 @@ function request(
   suffix = "",
   payload: unknown = undefined,
   headers = {},
+  route = path,
 ) {
   return worker.fetch(
-    new Request(`https://preview.example${path}${suffix}`, {
+    new Request(`https://preview.example${route}${suffix}`, {
       method,
       headers: {
         authorization: "Bearer valid",
@@ -120,6 +126,7 @@ function request(
 
 describe("native existing timetable pause transport", () => {
   beforeEach(() => {
+    state.role = "class_rep";
     state.assigned = true;
     state.writes = [];
     state.envs = [];
@@ -181,5 +188,26 @@ describe("native existing timetable pause transport", () => {
     ).toBe(415);
     expect((await request("PUT", "", body)).status).toBe(405);
     expect(state.writes).toEqual([]);
+  });
+  it("keeps institution-wide pauses behind operational admin authorization", async () => {
+    const route = "/api/admin/academic-pauses";
+    const broad = {
+      ...body,
+      scopeType: "institution",
+      institutionId: "783b2fd0-340d-4ac7-b42a-362029a1cd48",
+    };
+    expect((await request("POST", "", broad, {}, route)).status).toBe(403);
+    expect(state.writes).toEqual([]);
+    state.role = "admin";
+    expect((await request("GET", "", undefined, {}, route)).status).toBe(200);
+    expect((await request("POST", "/preview", broad, {}, route)).status).toBe(
+      200,
+    );
+    expect(state.writes).toEqual([]);
+    const response = await request("POST", "", broad, {}, route);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({
+      pause: { scopeType: "institution", institutionId: broad.institutionId },
+    });
   });
 });

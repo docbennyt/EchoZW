@@ -1,5 +1,75 @@
 # DR-178 Recovery Evidence Ledger
 
+## 2026-10-23 Original Google Key Recovery Candidate
+
+This section supersedes the implementation counts below; historical deployed
+evidence remains unchanged. Protected Calender remains `57a7ecf2ab986cb8917168c003c2a2cb293ca82f`.
+
+- Cloudflare settings were read through the authenticated API, returning presence
+  booleans only. All four bindings are now present: `TOKEN_ENCRYPTION_KEY`,
+  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`. The owner
+  attests that the encryption key is the recovered original; actual stored-token
+  decryption remains an independent runtime acceptance gate, not an assumption.
+- `checkGoogleCredentialCompatibility` and the existing targeted admin endpoint's
+  `{dryRun:true, credentialCheckOnly:true, subscriptionId}` mode decrypt in memory,
+  return safe booleans/version only and perform no provider calls or writes.
+  Operational-admin authorization, provider, timetable ownership and revoked-state
+  checks precede decryption. A write combined with this diagnostic is rejected.
+  Missing key configuration is distinguished from failed credential decryption.
+- Independent synthetic Railway-format ciphertext tests and a local workerd
+  compatibility probe pass with explicit `nodejs_compat`. This does NOT establish
+  real credential compatibility or valid Google authorization. No real refresh
+  credential or encryption key was downloaded to the local machine.
+- Native transport now includes Google connect/callback/status/disconnect,
+  targeted reconciliation, correction/exception edit/remove/undo/deduplication,
+  existing scoped/broad pauses, draft sessions/publication, subscription revoke
+  and founder-only public settings. The source inventory records 103 routes:
+  52 implemented but not live-proven, 2 incomplete, 49 unavailable, 0 bridges.
+  No blanket backend-parity claim is made. Imports/source processing remain gaps.
+  Google local disconnect is implemented, but optional remote calendar deletion
+  fails closed before mutation until durable provider cleanup is available.
+- OAuth state consumption is atomic. Existing `v1` AES-GCM storage is preserved.
+  Provider operations verify matching private ownership properties before
+  updates/deletes. Untagged historical events require ownership review, never
+  heuristic deletion. Deterministic IDs recover creates after a crash before
+  local mapping persistence; existing mapped calendar/event identities remain.
+- Additive migration `0038_google_calendar_delivery.sql` captures revision intent
+  transactionally for source publication, corrections, exceptions and pauses.
+  Per-subscription leased jobs, generation fencing, transient backoff, credential
+  replacement recovery and last-successful revisions are service-role-only.
+  Queue messages are wakeups; durable database completion precedes acknowledgment.
+  Missing credentials cannot activate pending subscriptions. Migration is NOT
+  applied to the live database and `ENABLE_GOOGLE_DELIVERY` remains false.
+  Migration `0039_google_calendar_connection_lifecycle.sql` fences OAuth callback
+  persistence against concurrent disconnect/reconnect using row locks and
+  connection generations. Both migrations require reviewed deployment planning.
+- Independent reviewers found no remaining must-fix issue in the delivery SQL
+  and native editor/admin transports. A separate reviewer tested the credential
+  diagnostic and settings boundary: 41 focused tests passed. The combined real
+  PostgreSQL 17 delivery/lifecycle coverage now passes 33 cases, including independent-session concurrency.
+  These outcomes are code/test evidence, not deployed authenticated acceptance.
+- Final frozen focused run: 152 tests across 10 files pass, including the actual
+  PostgreSQL migrations together. Independent Google review passed 109 focused
+  tests and 9 lifecycle database cases; no remaining must-fix in that scope.
+  Sync calendar/status/mapping writes are fenced against stale connection
+  generations. Reconnect delivery intent commits atomically with credentials.
+- Trusted deployment bootstrap PR #114 remains review-required. PR #113 remains
+  draft. No environment bypass, self-approval, production DNS change, key rotation,
+  subscription regeneration or remote Google write was performed. Preserve the
+  original Apple ICS Part 1.1 feed proof recorded below.
+
+Dependency audit: npm ci reports 7 inherited advisories (4 moderate, 3 high).
+The production dependency subset reports Vite build/dev-server advisories and
+ExcelJS's transitive UUID advisory; neither was introduced by the PG test driver.
+No forced downgrade or unrelated dependency rewrite was performed. These findings
+are not represented as a clean security audit and require scoped remediation.
+
+Next runtime gate: install the independently reviewed trusted bootstrap through
+normal governance, approve the exact backend candidate, then use an authorized
+dedicated staff session for the single-subscription credential-only diagnostic.
+Provider previews, isolated mutation acceptance and explicitly authorized writes
+remain separate later gates. Do not report decryption as remote synchronization.
+
 ## 2026-10-23 Deployment Trust Boundary
 
 The previous PR workflow checked out candidate code on a runner holding staging deployment and acceptance secrets. Independent security review rejected that boundary. GitHub API inspection confirmed no environment reviewers or branch restrictions. The replacement PR workflow has read-only permissions, no environment, no secrets and no deployment.

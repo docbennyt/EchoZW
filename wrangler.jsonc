@@ -3,6 +3,7 @@
   "name": "calenderzw-edge",
   "main": "./worker/index.mjs",
   "compatibility_date": "2026-10-03",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": true,
   "observability": {
@@ -50,7 +51,9 @@
         "APP_ENV": "cloudflare-staging",
         "PUBLIC_APP_URL": "https://calender.aido.co.zw",
         "STAGING_ORIGIN": "https://next.calender.aido.co.zw",
+        "ENABLE_GOOGLE_DELIVERY": "false",
       },
+      "triggers": { "crons": ["* * * * *"] },
       "r2_buckets": [
         {
           "binding": "SOURCE_BUCKET",
@@ -82,6 +85,8 @@
             "queue": "calenderzw-push-staging",
             "dead_letter_queue": "calenderzw-push-dlq-staging",
             "max_retries": 5,
+            "max_batch_size": 1,
+            "max_concurrency": 1,
           },
         ],
       },

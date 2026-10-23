@@ -15,6 +15,19 @@ const configuredEnv = {
 } as NodeJS.ProcessEnv;
 
 describe("Google Calendar direct sync security", () => {
+  it("decrypts the original v1 bundle format using a fixed legacy fixture", () => {
+    const legacy =
+      "v1.AAECAwQFBgcICQoL.rlPv57NEmrkg2dDr-UEDRg.PIfG1RFPpcBbfY7JA3oMvocBFpk";
+    expect(decryptGoogleRefreshToken(legacy, configuredEnv)).toBe(
+      "legacy-refresh-token",
+    );
+    expect(encryptGoogleRefreshToken("test", configuredEnv)).toMatch(
+      /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]+$/,
+    );
+    expect(() =>
+      decryptGoogleRefreshToken(legacy.replace("rlPv", "alPv"), configuredEnv),
+    ).toThrow("Stored Google Calendar access is invalid");
+  });
   it("encrypts refresh tokens with randomized authenticated ciphertext", () => {
     const first = encryptGoogleRefreshToken(
       "refresh-token-value",

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import ts from "typescript";
 import {
   buildInventory,
   renderMarkdown,
@@ -90,23 +91,39 @@ const subscription = inventory.routes.find(
 );
 assert.equal(
   subscription.cloudflareStatus,
-  "native-incomplete",
-  "Provider parity remains partial",
-);
-assert.equal(
-  subscription.providerVariants[0].cloudflareStatus,
   "native-not-live-proven",
+  "Native subscription transport still requires deployed provider acceptance",
 );
-assert.equal(subscription.providerVariants[1].httpStatus, 503);
+const googleTransport = await readFile(
+  new URL("worker/googleCalendarApi.mjs", root),
+  "utf8",
+);
+assert(googleTransport.includes("handleGoogleCalendarRequest"));
+assert(googleTransport.includes("previewGoogleSubscriptionSync"));
+assert(googleTransport.includes("GOOGLE_RECONCILIATION_UNAVAILABLE"));
+const disconnect = inventory.routes.find(
+  (r) => r.method === "POST" && r.path === "/api/calendar/google/disconnect",
+);
 assert.equal(
-  subscription.providerVariants[1].errorCode,
-  "GOOGLE_NOT_CONFIGURED",
+  disconnect.cloudflareStatus,
+  "native-incomplete",
+  "Optional provider calendar deletion must not be counted as restored",
+);
+const parsedConfig = ts.parseConfigFileTextToJson(
+  "wrangler.jsonc",
+  await readFile(new URL("wrangler.jsonc", root), "utf8"),
+);
+assert(!parsedConfig.error, "Wrangler JSONC must parse");
+const config = parsedConfig.config;
+assert.equal(
+  config.env.staging.vars.ENABLE_GOOGLE_DELIVERY,
+  "false",
+  "Provider delivery stays disabled before independent live acceptance",
 );
 const googleStatus = inventory.routes.find(
   (r) => r.method === "GET" && r.path === "/api/calendar/google/status",
 );
 assert.equal(googleStatus.cloudflareStatus, "native-not-live-proven");
-assert.equal(googleStatus.responseContract.enabled, false);
 assert.equal(
   inventory.routingState.workerRuntimeBridgePresent,
   false,

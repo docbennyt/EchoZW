@@ -7,6 +7,22 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      delivery-postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: dr178
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 15478:5432
+        options: >-
+          --health-cmd "pg_isready -U dr178 -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DR178_PG_MODULE: ${{ github.workspace }}/node_modules/pg/lib/index.js
+      DR178_REQUIRE_POSTGRES: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

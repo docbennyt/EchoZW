@@ -122,7 +122,7 @@ assert(
   "unprocessed source jobs must never be acknowledged.",
 );
 assert(
-  worker.includes("async queue(batch)") &&
+  /async queue\(batch(?:,\s*env\s*=\s*\{\})?\)/.test(worker) &&
     worker.includes("source_document_uploaded"),
   "source processing queue consumer must be wired in the Worker.",
 );

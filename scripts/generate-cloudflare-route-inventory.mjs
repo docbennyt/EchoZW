@@ -303,9 +303,57 @@ export async function buildInventory(
   const bridge = /return\s+proxyLegacyBackend\(/.test(worker.text);
   const unavailable = worker.text.includes("EDGE_ROUTE_UNAVAILABLE");
   const workerRoutes = [
+    ["POST", "/api/admin/timetables", "handleNativeAdminTimetable"],
+    ["GET", "/api/admin/timetables/:timetableId", "handleNativeAdminTimetable"],
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/sessions",
+      "handleNativeAdminTimetable",
+    ],
+    [
+      "PATCH",
+      "/api/admin/timetables/:timetableId/sessions/:sessionId",
+      "handleNativeAdminTimetable",
+    ],
+    [
+      "DELETE",
+      "/api/admin/timetables/:timetableId/sessions/:sessionId",
+      "handleNativeAdminTimetable",
+    ],
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/publish",
+      "handleNativeAdminTimetable",
+    ],
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/google-calendar-sync",
+      "handleGoogleCalendarRequest",
+    ],
+    ["GET", "/api/calendar/google/connect", "handleGoogleCalendarRequest"],
+    ["GET", "/api/calendar/google/callback", "handleGoogleCalendarRequest"],
+    ["POST", "/api/calendar/google/disconnect", "handleGoogleCalendarRequest"],
+    ...["corrections", "exceptions"].flatMap((kind) => [
+      ...["PATCH", "DELETE", "POST"].map((method) => [
+        method,
+        `/api/admin/timetables/:timetableId/${kind}/:itemId`,
+        "handleEditorMutations",
+      ]),
+      [
+        "POST",
+        `/api/admin/timetables/:timetableId/${kind}/dedupe`,
+        "handleEditorMutations",
+      ],
+    ]),
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/exceptions",
+      "handleEditorMutations",
+    ],
     ["GET", "/__release", "releasePayload"],
     ["GET", "/runtime-config.js", "serveRuntimeConfig"],
     ["GET", "/api/health/live", null],
+    ["GET", "/healthz", null],
     ["GET", "/api/health/release", "backendReleasePayload"],
     ["GET", "/api/health/ready", null],
     ["GET", "/api/public/timetables", "handleNativePublicTimetableApi"],
@@ -317,7 +365,34 @@ export async function buildInventory(
     ["GET", "/api/admin/class-groups", "handleNativeAdminSession"],
     ["GET", "/api/admin/academic-periods", "handleNativeAdminSession"],
     ["GET", "/api/admin/timetables", "handleNativeAdminSession"],
+    [
+      "GET",
+      "/api/admin/timetables/:timetableId/public-settings",
+      "handleNativePublicSettings",
+    ],
+    [
+      "PUT",
+      "/api/admin/timetables/:timetableId/public-settings",
+      "handleNativePublicSettings",
+    ],
     ["POST", "/api/calendar/subscriptions", "handleNativeSubscription"],
+    [
+      "POST",
+      "/api/calendar/subscriptions/:subscriptionId/revoke",
+      "revokeOwnedFeedSubscription",
+    ],
+    ["GET", "/api/admin/academic-pauses", "handleNativeAcademicPauses"],
+    ["POST", "/api/admin/academic-pauses", "handleNativeAcademicPauses"],
+    [
+      "POST",
+      "/api/admin/academic-pauses/preview",
+      "handleNativeAcademicPauses",
+    ],
+    [
+      "DELETE",
+      "/api/admin/academic-pauses/:pauseId",
+      "handleNativeAcademicPauses",
+    ],
     [
       "GET",
       "/api/admin/timetables/:timetableId/pauses",
@@ -341,14 +416,14 @@ export async function buildInventory(
     [
       "GET",
       "/api/admin/timetables/:timetableId/corrections",
-      "handleNativeCorrections",
+      "handleEditorMutations",
     ],
     [
       "POST",
       "/api/admin/timetables/:timetableId/corrections",
-      "handleNativeCorrections",
+      "handleEditorMutations",
     ],
-    ["GET", "/api/calendar/google/status", null],
+    ["GET", "/api/calendar/google/status", "handleGoogleCalendarRequest"],
     ["GET", "/calendar/feed/:token.ics", "handleNativeCalendarIcs"],
     ["HEAD", "/calendar/feed/:token.ics", "handleNativeCalendarIcs"],
     [
@@ -523,24 +598,35 @@ export async function buildInventory(
     );
     let implementation;
     if (nativeSpec)
-      walk(worker.ast, (node) => {
-        if (ts.isFunctionDeclaration(node) && node.name?.text === nativeSpec[2])
-          implementation = evidence(
-            "worker/index.mjs",
-            node,
-            "worker implementation",
-          );
+      for (const [implementationFile, source] of sources) {
         if (
-          !nativeSpec[2] &&
-          ts.isStringLiteral(node) &&
-          node.text === item.path
+          !implementationFile.startsWith("worker/") &&
+          nativeSpec[2] !== "revokeOwnedFeedSubscription"
         )
-          implementation = evidence(
-            "worker/index.mjs",
-            node,
-            "worker dispatch",
-          );
-      });
+          continue;
+        walk(source.ast, (node) => {
+          if (
+            ts.isFunctionDeclaration(node) &&
+            node.name?.text === nativeSpec[2]
+          )
+            implementation = evidence(
+              implementationFile,
+              node,
+              "worker implementation",
+            );
+          if (
+            implementationFile === "worker/index.mjs" &&
+            !nativeSpec[2] &&
+            ts.isStringLiteral(node) &&
+            node.text === item.path
+          )
+            implementation = evidence(
+              "worker/index.mjs",
+              node,
+              "worker dispatch",
+            );
+        });
+      }
     if (nativeSpec?.[2] && !workerFetchCalls.has(nativeSpec[2]))
       implementation = undefined;
     if (
@@ -552,14 +638,23 @@ export async function buildInventory(
       implementation = undefined;
     const upload = item.path === "/api/edge/source-documents";
     const partialSubscription =
-      item.path === "/api/calendar/subscriptions" && Boolean(implementation);
+      item.path === "/api/calendar/subscriptions" &&
+      Boolean(implementation) &&
+      !workerFetchCalls.has("handleGoogleCalendarRequest");
+    const partialGoogleDisconnect =
+      item.path === "/api/calendar/google/disconnect" &&
+      Boolean(implementation);
     const disabled =
       item.path === "/api/calendar/google/status" &&
       Boolean(implementation) &&
       worker.text.includes("enabled: false");
-    const native = Boolean(implementation) && !upload && !partialSubscription;
+    const native =
+      Boolean(implementation) &&
+      !upload &&
+      !partialSubscription &&
+      !partialGoogleDisconnect;
     const cloudflareStatus =
-      upload || partialSubscription
+      upload || partialSubscription || partialGoogleDisconnect
         ? "native-incomplete"
         : native
           ? "native-not-live-proven"
@@ -620,7 +715,7 @@ export async function buildInventory(
     const backgroundDependencies = [];
     if (deps.modules.some((m) => /googleCalendarSync/.test(m)))
       backgroundDependencies.push(
-        "Google reconciliation from Node service; Worker queue/provider parity unproven",
+        "Google reconciliation service; native Worker Queue/outbox implemented, migration and live provider acceptance pending",
       );
     if (deps.modules.some((m) => /sourceProcessing/.test(m)))
       backgroundDependencies.push(
@@ -638,7 +733,7 @@ export async function buildInventory(
         "SOURCE_PROCESSING_QUEUE; complete parser/review workflow absent",
       );
     let remainingBlocker = native
-      ? "No candidate live proof. Provision SUPABASE_SECRET_KEY (or existing SUPABASE_SERVICE_ROLE_KEY), verify URL/publishable key bindings, then run deployed acceptance with real records and authorized credentials."
+      ? "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required."
       : upload
         ? "Disabled503 until real parse-to-review persistence, retries and dead-letter handling exist; intake acceptance is not native completion."
         : bridge
@@ -647,17 +742,20 @@ export async function buildInventory(
     if (partialSubscription)
       remainingBlocker =
         "Native feed/download subscription subset exists; google_api is disabled503. Full Node provider parity and candidate live proof pending Supabase secret/configuration and provider restoration.";
+    if (partialGoogleDisconnect)
+      remainingBlocker =
+        "Local disconnect and revocation result reporting implemented; deleteCreatedCalendar:true fails closed503 before mutation until durable provider cleanup is available. Deployed acceptance pending.";
     const editorTransport =
-      nativeSpec?.[2] === "handleNativeCorrections" ||
+      nativeSpec?.[2] === "handleEditorMutations" ||
       nativeSpec?.[2] === "handleNativeAcademicPauses";
     if (editorTransport) {
       contractTests.push(
-        nativeSpec[2] === "handleNativeCorrections"
-          ? "tests/nativeCorrections.test.ts"
+        nativeSpec[2] === "handleEditorMutations"
+          ? "tests/nativeEditorMutations.test.ts"
           : "tests/nativeAcademicPauses.test.ts",
       );
       remainingBlocker =
-        "Native scoped transport implemented with request bindings and existing application/repository semantics. Authenticated deployed acceptance pending reviewed deployment boundary. Google propagation explicitly skipped; provider/durable retry parity remains unavailable.";
+        "Native editor/pause transport reuses existing services with request bindings. Authenticated deployed acceptance pending. Google delivery requires additive durable-revision migration, original credential bindings and enabled Queue recovery; remote provider acceptance is not established.";
     }
     if (disabled)
       remainingBlocker =
@@ -709,24 +807,26 @@ export async function buildInventory(
       cloudflareStatus,
       currentFunctionality: upload
         ? "Processing incomplete; valid configured upload fails closed503."
-        : partialSubscription
-          ? "Native feed/download creation subset; google_api disabled503; no candidate live proof."
-          : disabled
-            ? "Google integration disabled; status endpoint returns enabled:false."
-            : native
-              ? "Native source implementation; not live proven for DR-178 candidate."
-              : bridge
-                ? "Legacy bridge; not recovered Cloudflare functionality."
-                : "Unsupported in Worker; explicit service unavailable.",
+        : partialGoogleDisconnect
+          ? "Native local disconnect; optional remote calendar deletion explicitly unavailable."
+          : partialSubscription
+            ? "Native feed/download creation subset; google_api disabled503; no candidate live proof."
+            : disabled
+              ? "Google integration disabled; status endpoint returns enabled:false."
+              : native
+                ? "Native source implementation; not live proven for DR-178 candidate."
+                : bridge
+                  ? "Legacy bridge; not recovered Cloudflare functionality."
+                  : "Unsupported in Worker; explicit service unavailable.",
       migrationImplementation: implementation ?? fallbackEvidence ?? null,
       ...(editorTransport
         ? {
             workerApplicationService:
-              nativeSpec[2] === "handleNativeCorrections"
-                ? "correctionsCore.saveRecurringCorrection -> correctionsRepository; listTimetableCorrections"
+              nativeSpec[2] === "handleEditorMutations"
+                ? "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved"
                 : "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
             workerProviderPropagation:
-              "Google sync explicitly skipped; calendar feed resolves current persisted corrections/pauses through existing canonical projection",
+              "Durable Google revision/jobs require migration and enabled Queue consumer; remote synchronization is never inferred from mutation save. Canonical feeds resolve persisted corrections/pauses.",
           }
         : {}),
       ...(disabled
@@ -924,6 +1024,20 @@ export async function buildInventory(
     nonHttpSurfaces: [
       {
         method: "QUEUE",
+        path: "PUSH_QUEUE/google_calendar_reconcile",
+        cloudflareStatus: "native-not-live-proven",
+        remainingBlocker:
+          "Tagged per-subscription wakeups, fenced DB leases and bounded provider reconciliation implemented. Requires reviewed delivery migration, original Google secret bindings, ENABLE_GOOGLE_DELIVERY and actual provider acceptance. Other PUSH_QUEUE messages remain unprocessed and retry/DLQ.",
+      },
+      {
+        method: "SCHEDULED",
+        path: "Google delivery recovery",
+        cloudflareStatus: "native-not-live-proven",
+        remainingBlocker:
+          "Minute recovery is configured but disabled by default. Recovers durable intent and queues only due bounded jobs; no live Queue/cron proof or Free CPU headroom established.",
+      },
+      {
+        method: "QUEUE",
         path: "SOURCE_PROCESSING_QUEUE",
         cloudflareStatus: "native-incomplete",
         remainingBlocker:
@@ -950,7 +1064,7 @@ export async function renderMarkdown(inventory) {
       `${inventory.counts.bridged} bridged,`,
       `${inventory.counts.intentionallyDisabled} intentionally disabled, ${inventory.counts.bridged} bridged,`,
     ) +
-    "\n## Provider And Routing State\n\nPOST /api/calendar/subscriptions implements non-Google creation natively through calendarSubscriptionCore and the existing create_calendar_subscription_with_profile RPC. Its providerVariants distinguish that unproven native subset from google_api, which returns 503 GOOGLE_NOT_CONFIGURED before persistence. The combined route remains native-incomplete for full provider parity and is excluded from fully native route counts. GET /api/calendar/google/status is a native status response returning enabled:false; this does not restore Google integration.\n\nWorker runtime/config bridge references are recorded separately from the existing Vercel legacy rewrites in routingState. Production cutover remains blocked; no deployed routing or live acceptance is claimed.\n";
+    "\n## Provider And Routing State\n\nSubscription creation reuses the existing RPC. Google creation and OAuth/single-subscription reconciliation have native source implementations, gated by original OAuth/encryption bindings and durable delivery enablement. Default staging configuration keeps Google delivery disabled pending migration, trusted deployment and provider acceptance; status reflects this. An implemented route does not prove an authorized subscriber received events. Original Apple feed evidence is retained separately in the live evidence ledger.\n\nWorker runtime/config bridge references are recorded separately from existing Vercel legacy rewrites. Production cutover remains blocked. Queue/scheduled implementations and their unproven enablement are listed separately from HTTP coverage. Source processing remains incomplete.\n";
   return prettier.format(source, { parser: "markdown" });
 }
 

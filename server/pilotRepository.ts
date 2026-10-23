@@ -327,8 +327,8 @@ async function expectData<T = unknown>(
   return data as T | null;
 }
 
-async function requireInstitution(id: string) {
-  const client = createPilotAdminClient();
+async function requireInstitution(id: string, env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("institutions")
@@ -346,8 +346,8 @@ async function requireInstitution(id: string) {
   return mapInstitution(data as unknown as JsonRecord);
 }
 
-async function requireProgramme(id: string) {
-  const client = createPilotAdminClient();
+async function requireProgramme(id: string, env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("programmes")
@@ -363,8 +363,8 @@ async function requireProgramme(id: string) {
   return mapProgramme(data as unknown as JsonRecord);
 }
 
-async function requireClassGroup(id: string) {
-  const client = createPilotAdminClient();
+async function requireClassGroup(id: string, env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("cohorts")
@@ -381,8 +381,8 @@ async function requireClassGroup(id: string) {
   return mapClassGroup(data as unknown as JsonRecord);
 }
 
-async function requireAcademicPeriod(id: string) {
-  const client = createPilotAdminClient();
+async function requireAcademicPeriod(id: string, env?: NodeJS.ProcessEnv) {
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("academic_periods")
@@ -400,8 +400,11 @@ async function requireAcademicPeriod(id: string) {
   return mapAcademicPeriod(data as unknown as JsonRecord);
 }
 
-async function ensureUniquePublicSlug(baseSlug: string) {
-  const client = createPilotAdminClient();
+async function ensureUniquePublicSlug(
+  baseSlug: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   let candidate = baseSlug;
   let suffix = 2;
 
@@ -544,9 +547,10 @@ async function getVersionsForTimetable(
 async function createDraftFromPublished(
   timetableId: string,
   createdBy: string,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const client = createPilotAdminClient();
-  const versions = await getVersionsForTimetable(timetableId);
+  const client = createPilotAdminClient(env);
+  const versions = await getVersionsForTimetable(timetableId, env);
   const draft = versions.find(
     (version: unknown) => (version as AdminTimetableVersion).status === "draft",
   );
@@ -646,8 +650,9 @@ async function createInitialDraftVersion(
   timetableId: string,
   createdBy: string,
   versionNumber = 1,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const insertedVersion = await expectData(
     client
       .from("timetable_versions")
@@ -693,8 +698,12 @@ async function createInitialDraftVersion(
   return String(insertedVersionRecord.id);
 }
 
-async function getEditableVersion(timetableId: string, userId: string) {
-  const versions = await getVersionsForTimetable(timetableId);
+async function getEditableVersion(
+  timetableId: string,
+  userId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const versions = await getVersionsForTimetable(timetableId, env);
   const existingDraft = versions.find(
     (version: unknown) => (version as AdminTimetableVersion).status === "draft",
   );
@@ -704,7 +713,7 @@ async function getEditableVersion(timetableId: string, userId: string) {
       (version as AdminTimetableVersion).status === "published",
   );
   if (published) {
-    return createDraftFromPublished(timetableId, userId);
+    return createDraftFromPublished(timetableId, userId, env);
   }
   const nextVersionNumber =
     Math.max(
@@ -713,7 +722,7 @@ async function getEditableVersion(timetableId: string, userId: string) {
       ),
       0,
     ) + 1;
-  return createInitialDraftVersion(timetableId, userId, nextVersionNumber);
+  return createInitialDraftVersion(timetableId, userId, nextVersionNumber, env);
 }
 
 export async function listInstitutions(env?: NodeJS.ProcessEnv) {
@@ -1348,17 +1357,23 @@ export async function listTimetables(env?: NodeJS.ProcessEnv) {
   });
 }
 
-export async function createTimetable(input: {
-  institutionId: string;
-  programmeId: string;
-  classGroupId: string;
-  academicPeriodId: string;
-  createdBy: string;
-}) {
-  const institution = await requireInstitution(input.institutionId);
-  const programme = await requireProgramme(input.programmeId);
-  const classGroup = await requireClassGroup(input.classGroupId);
-  const academicPeriod = await requireAcademicPeriod(input.academicPeriodId);
+export async function createTimetable(
+  input: {
+    institutionId: string;
+    programmeId: string;
+    classGroupId: string;
+    academicPeriodId: string;
+    createdBy: string;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
+  const institution = await requireInstitution(input.institutionId, env);
+  const programme = await requireProgramme(input.programmeId, env);
+  const classGroup = await requireClassGroup(input.classGroupId, env);
+  const academicPeriod = await requireAcademicPeriod(
+    input.academicPeriodId,
+    env,
+  );
 
   if (programme.institutionId !== institution.id) {
     throw new PilotApiError(
@@ -1382,11 +1397,12 @@ export async function createTimetable(input: {
     );
   }
 
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const publicSlug = await ensureUniquePublicSlug(
     slugify(
       `${institution.shortName || institution.name}-${programme.code || programme.name}-${classGroup.label}-${academicPeriod.name}`,
     ),
+    env,
   );
 
   const timetable = await expectData<JsonRecord | null>(
@@ -1459,11 +1475,15 @@ export async function createTimetable(input: {
     "Could not finalize timetable creation.",
   );
 
-  return getTimetableEditor(String(timetable.id), input.createdBy);
+  return getTimetableEditor(String(timetable.id), input.createdBy, env);
 }
 
-export async function getTimetableEditor(timetableId: string, userId: string) {
-  const client = createPilotAdminClient();
+export async function getTimetableEditor(
+  timetableId: string,
+  userId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const client = createPilotAdminClient(env);
   const timetable = await expectData<JsonRecord | null>(
     client
       .from("timetables")
@@ -1479,8 +1499,8 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
     throw new PilotApiError("NOT_FOUND", "Timetable not found.", 404);
   }
 
-  const editableVersionId = await getEditableVersion(timetableId, userId);
-  const versions = await getVersionsForTimetable(timetableId);
+  const editableVersionId = await getEditableVersion(timetableId, userId, env);
+  const versions = await getVersionsForTimetable(timetableId, env);
   const activeVersion = versions.find(
     (version: unknown) =>
       (version as AdminTimetableVersion).id === editableVersionId,
@@ -1578,9 +1598,10 @@ export async function getTimetableEditor(timetableId: string, userId: string) {
 async function listDraftSessionsForTimetable(
   timetableId: string,
   userId: string,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const versionId = await getEditableVersion(timetableId, userId);
-  const client = createPilotAdminClient();
+  const versionId = await getEditableVersion(timetableId, userId, env);
+  const client = createPilotAdminClient(env);
   const sessions = await expectData(
     client
       .from("timetable_sessions")
@@ -1603,19 +1624,22 @@ async function listDraftSessionsForTimetable(
   };
 }
 
-export async function createTimetableSession(input: {
-  timetableId: string;
-  userId: string;
-  courseCode: string;
-  courseName: string;
-  weekday: number;
-  startTime: string;
-  endTime: string;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-}) {
+export async function createTimetableSession(
+  input: {
+    timetableId: string;
+    userId: string;
+    courseCode: string;
+    courseName: string;
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    venue?: string | null;
+    lecturer?: string | null;
+    sessionType?: string | null;
+    notes?: string | null;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   requireString(
     input.courseCode,
     "VALIDATION_ERROR",
@@ -1638,10 +1662,11 @@ export async function createTimetableSession(input: {
   const { versionId, sessions } = await listDraftSessionsForTimetable(
     input.timetableId,
     input.userId,
+    env,
   );
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
 
-  const editor = await getTimetableEditor(input.timetableId, input.userId);
+  const editor = await getTimetableEditor(input.timetableId, input.userId, env);
   if (
     !editor.timetable.academicPeriodStartsOn ||
     !editor.timetable.academicPeriodEndsOn
@@ -1765,20 +1790,23 @@ export async function createTimetableSession(input: {
   return mapSession(data as unknown as JsonRecord);
 }
 
-export async function updateTimetableSession(input: {
-  timetableId: string;
-  sessionId: string;
-  userId: string;
-  courseCode: string;
-  courseName: string;
-  weekday: number;
-  startTime: string;
-  endTime: string;
-  venue?: string | null;
-  lecturer?: string | null;
-  sessionType?: string | null;
-  notes?: string | null;
-}) {
+export async function updateTimetableSession(
+  input: {
+    timetableId: string;
+    sessionId: string;
+    userId: string;
+    courseCode: string;
+    courseName: string;
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    venue?: string | null;
+    lecturer?: string | null;
+    sessionType?: string | null;
+    notes?: string | null;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   requireString(
     input.courseCode,
     "VALIDATION_ERROR",
@@ -1801,10 +1829,11 @@ export async function updateTimetableSession(input: {
   const { versionId, sessions } = await listDraftSessionsForTimetable(
     input.timetableId,
     input.userId,
+    env,
   );
   detectOverlap(sessions, { ...input, id: input.sessionId });
 
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("timetable_sessions")
@@ -1836,16 +1865,20 @@ export async function updateTimetableSession(input: {
   return mapSession(data as unknown as JsonRecord);
 }
 
-export async function deleteTimetableSession(input: {
-  timetableId: string;
-  sessionId: string;
-  userId: string;
-}) {
+export async function deleteTimetableSession(
+  input: {
+    timetableId: string;
+    sessionId: string;
+    userId: string;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   const { versionId } = await listDraftSessionsForTimetable(
     input.timetableId,
     input.userId,
+    env,
   );
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const { error } = await client
     .from("timetable_sessions")
     .delete()
@@ -1861,9 +1894,13 @@ export async function deleteTimetableSession(input: {
   }
 }
 
-export async function publishTimetable(timetableId: string, userId: string) {
-  const versionId = await getEditableVersion(timetableId, userId);
-  const editor = await getTimetableEditor(timetableId, userId);
+export async function publishTimetable(
+  timetableId: string,
+  userId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const versionId = await getEditableVersion(timetableId, userId, env);
+  const editor = await getTimetableEditor(timetableId, userId, env);
   if (
     !editor.timetable.academicPeriodStartsOn ||
     !editor.timetable.academicPeriodEndsOn
@@ -1875,7 +1912,7 @@ export async function publishTimetable(timetableId: string, userId: string) {
     );
   }
 
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const { data, error } = await client.rpc("publish_timetable_version", {
     p_timetable_id: timetableId,
     p_version_id: versionId,
