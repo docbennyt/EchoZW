@@ -28,7 +28,21 @@ import {
   AdminAuthError,
   requireStaffUser,
   requireOperationalAdmin,
+  requireTimetableEditor,
 } from "../server/supabase/auth.ts";
+import { z } from "zod";
+import { saveRecurringCorrection } from "../server/correctionsCore.ts";
+import { listTimetableCorrections } from "../server/correctionsRepository.ts";
+import {
+  AcademicPauseRepositoryError,
+  listAcademicPausesForTimetable,
+} from "../server/academicPauseRepository.ts";
+import {
+  scopedInput,
+  previewImpact,
+  createPauseWithImpact,
+  deactivatePauseWithTimetables,
+} from "../server/academicPauseCore.ts";
 import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
 import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
 import {
@@ -504,6 +518,231 @@ async function handleNativeAdminSession(request, env) {
   }
 }
 
+async function readNativeJsonBody(request) {
+  if (
+    !/^application\/json(?:\s*;|\s*$)/i.test(
+      request.headers.get("content-type") ?? "",
+    )
+  ) {
+    throw new PilotApiError(
+      "UNSUPPORTED_MEDIA_TYPE",
+      "Use application/json.",
+      415,
+    );
+  }
+  const reader = request.body?.getReader();
+  const chunks = [];
+  let size = 0;
+  if (reader) {
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 16384) {
+          await reader.cancel();
+          throw new PilotApiError(
+            "BODY_TOO_LARGE",
+            "Request body is too large.",
+            413,
+          );
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new PilotApiError("VALIDATION_FAILED", "Invalid JSON request.", 422);
+  }
+}
+
+async function handleNativeCorrections(request, env, timetableId) {
+  if (!["GET", "POST"].includes(request.method)) {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405, headers: { allow: "GET, POST" } },
+    );
+  }
+  const origin = request.headers.get("origin");
+  if (
+    (origin !== null && origin !== new URL(request.url).origin) ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  ) {
+    return json(
+      {
+        error: {
+          code: "ORIGIN_NOT_ALLOWED",
+          message: "Use the application origin.",
+        },
+      },
+      { status: 403 },
+    );
+  }
+  try {
+    const actor = await requireTimetableEditor(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+      },
+      timetableId,
+      {
+        createUserClient: (token) => createSupabaseUserClient(token, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+    if (request.method === "GET") {
+      return json({
+        corrections: await listTimetableCorrections(timetableId, env),
+      });
+    }
+    const mutationKey = request.headers.get("idempotency-key");
+    const result = await saveRecurringCorrection(
+      timetableId,
+      actor,
+      await readNativeJsonBody(request),
+      mutationKey === null ? crypto.randomUUID() : mutationKey.trim(),
+      env,
+    );
+    return json(
+      {
+        correction: result.item,
+        mutationOutcome: result.mutationOutcome,
+        googleCalendarSync: {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          skipped: true,
+        },
+      },
+      { status: result.mutationOutcome === "created" ? 201 : 200 },
+    );
+  } catch (error) {
+    if (error instanceof AdminAuthError) return adminAuthError(error);
+    if (error instanceof z.ZodError) {
+      return json(
+        {
+          error: {
+            code: "VALIDATION_FAILED",
+            message: "Check the highlighted fields.",
+            details: error.flatten().fieldErrors,
+          },
+        },
+        { status: 422 },
+      );
+    }
+    return publicApiError(error);
+  }
+}
+
+async function handleNativeAcademicPauses(request, env, timetableId, action) {
+  const allowed =
+    action === undefined
+      ? ["GET", "POST"]
+      : action === "preview"
+        ? ["POST"]
+        : ["DELETE"];
+  if (!allowed.includes(request.method)) {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405, headers: { allow: allowed.join(", ") } },
+    );
+  }
+  const origin = request.headers.get("origin");
+  if (
+    (origin !== null && origin !== new URL(request.url).origin) ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  ) {
+    return json(
+      {
+        error: {
+          code: "ORIGIN_NOT_ALLOWED",
+          message: "Use the application origin.",
+        },
+      },
+      { status: 403 },
+    );
+  }
+  try {
+    const actor = await requireTimetableEditor(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+      },
+      timetableId,
+      {
+        createUserClient: (token) => createSupabaseUserClient(token, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+    if (request.method === "GET") {
+      return json({
+        pauses: await listAcademicPausesForTimetable(timetableId, env),
+      });
+    }
+    // Remote provider propagation remains closed in the native recovery runtime.
+    const googleCalendarSync = {
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      skipped: true,
+    };
+    if (request.method === "DELETE") {
+      const { pause } = await deactivatePauseWithTimetables(
+        { actor, pauseId: action, timetableId },
+        env,
+      );
+      return json({ pause, googleCalendarSync });
+    }
+    const pauseInput = scopedInput(
+      timetableId,
+      await readNativeJsonBody(request),
+    );
+    if (action === "preview") {
+      const { impact } = await previewImpact(pauseInput, env);
+      return json({ impact });
+    }
+    const { pause, impact } = await createPauseWithImpact(
+      actor,
+      pauseInput,
+      env,
+    );
+    return json({ pause, impact, googleCalendarSync }, { status: 201 });
+  } catch (error) {
+    if (error instanceof AdminAuthError) return adminAuthError(error);
+    if (error instanceof AcademicPauseRepositoryError) {
+      return json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.status },
+      );
+    }
+    if (error instanceof z.ZodError) {
+      return json(
+        {
+          error: {
+            code: "VALIDATION_FAILED",
+            message: "Check the no-lecture period details.",
+            details: error.flatten().fieldErrors,
+          },
+        },
+        { status: 422 },
+      );
+    }
+    return publicApiError(error);
+  }
+}
+
 async function handleNativeSubscription(request, env) {
   if (request.method !== "POST") {
     return json(
@@ -703,6 +942,25 @@ const application = {
       ].includes(url.pathname)
     ) {
       return handleNativeAdminSession(request, env);
+    }
+
+    const correctionsMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/corrections$/i,
+    );
+    if (correctionsMatch) {
+      return handleNativeCorrections(request, env, correctionsMatch[1]);
+    }
+
+    const pausesMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/pauses(?:\/(preview|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}))?$/i,
+    );
+    if (pausesMatch) {
+      return handleNativeAcademicPauses(
+        request,
+        env,
+        pausesMatch[1],
+        pausesMatch[2],
+      );
     }
 
     if (url.pathname === "/api/calendar/subscriptions") {

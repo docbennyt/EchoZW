@@ -11,6 +11,11 @@ const state = vi.hoisted(() => ({
   queries: [] as string[],
   versionRows: null as Record<string, unknown>[] | null,
   timetableRows: null as Record<string, unknown>[] | null,
+  pauses: [] as Record<string, unknown>[],
+  exceptions: [] as Record<string, unknown>[],
+  assigned: false,
+  staffActive: true,
+  pauseErrorCode: null as string | null,
 }));
 const timetableId = "08a30b9b-ed8f-4aea-91de-09d4e1124f9a";
 const raw = {
@@ -50,8 +55,37 @@ vi.mock("../server/supabase/adminClient.js", () => ({
       state.queries.push(table);
       const filters: Array<[string, unknown]> = [];
       let range: [number, number] = [0, 999];
+      let write: Record<string, unknown> | undefined;
+      let inserting = false;
+      let scopeFilters: string[] = [];
       const result = (single = false) => {
+        if (table === "academic_schedule_pauses" && state.pauseErrorCode) {
+          return { data: null, error: { code: state.pauseErrorCode } };
+        }
+        if (write) {
+          const row = inserting
+            ? {
+                id: "1b92a99a-9814-4bbf-a120-274feaa37d84",
+                created_at: "2026-10-19T00:00:00Z",
+                ...write,
+              }
+            : {
+                ...state.pauses.find((row) =>
+                  filters.every(([key, value]) => row[key] === value),
+                ),
+                ...write,
+              };
+          state.writes.push({ table, write });
+          if (inserting) state.pauses.push(row);
+          else
+            state.pauses = state.pauses.map((existing) =>
+              existing.id === row.id ? row : existing,
+            );
+          return { data: row, error: null };
+        }
         const rows: Record<string, unknown[]> = {
+          academic_schedule_pauses: state.pauses,
+          timetable_session_exceptions: state.exceptions,
           timetables: state.timetableRows ?? [base],
           timetable_versions: state.versionRows ?? [
             {
@@ -109,12 +143,22 @@ vi.mock("../server/supabase/adminClient.js", () => ({
             {
               id: "staff-1",
               role: state.role,
-              active: true,
+              active: state.staffActive,
               user_id: "operator-1",
               is_founder: false,
             },
           ],
-          class_rep_assignments: [],
+          class_rep_assignments: state.assigned
+            ? [
+                {
+                  id: "assignment-1",
+                  staff_user_id: "staff-1",
+                  active: true,
+                  timetable_id: timetableId,
+                  timetables: base,
+                },
+              ]
+            : [],
         };
         const filtered = (rows[table] ?? [])
           .filter((row) =>
@@ -123,6 +167,14 @@ vi.mock("../server/supabase/adminClient.js", () => ({
                 ? value.includes((row as Record<string, unknown>)[column])
                 : (row as Record<string, unknown>)[column] === value,
             ),
+          )
+          .filter(
+            (row) =>
+              !scopeFilters.length ||
+              scopeFilters.some((filter) => {
+                const [column, , value] = filter.split(".");
+                return (row as Record<string, unknown>)[column] === value;
+              }),
           )
           .slice(range[0], range[1] + 1);
         return {
@@ -146,10 +198,23 @@ vi.mock("../server/supabase/adminClient.js", () => ({
         },
         not: () => chain,
         order: () => chain,
-        or: () => chain,
+        or: (expression: string) => {
+          scopeFilters = expression.split(",");
+          return chain;
+        },
         lte: () => chain,
         gte: () => chain,
         maybeSingle: async () => result(true),
+        single: async () => result(true),
+        insert: (input: Record<string, unknown>) => {
+          inserting = true;
+          write = input;
+          return chain;
+        },
+        update: (input: Record<string, unknown>) => {
+          write = input;
+          return chain;
+        },
         then: (resolve: (value: unknown) => unknown) =>
           Promise.resolve(result()).then(resolve),
       };
@@ -230,6 +295,11 @@ describe("native recovery with Railway unreachable and no process credentials", 
     state.queries = [];
     state.versionRows = null;
     state.timetableRows = null;
+    state.pauses = [];
+    state.exceptions = [];
+    state.assigned = false;
+    state.staffActive = true;
+    state.pauseErrorCode = null;
     state.subscriptions = [
       {
         id: "subscription-1",
@@ -517,6 +587,216 @@ describe("native recovery with Railway unreachable and no process credentials", 
       (await request("/api/admin/unported", { method: "POST" })).status,
     ).toBe(503);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  describe("native timetable-scoped academic pauses", () => {
+    const root = `/api/admin/timetables/${timetableId}/pauses`;
+    const pauseId = "1b92a99a-9814-4bbf-a120-274feaa37d84";
+    const input = {
+      startsOn: "2026-10-20",
+      endsOn: "2026-10-20",
+      reason: "closure",
+      label: "Class closure",
+    };
+    const pauseRequest = (
+      method = "GET",
+      body?: unknown,
+      suffix = "",
+      headers: Record<string, string> = {},
+    ) =>
+      request(`${root}${suffix}`, {
+        method,
+        headers: {
+          authorization: "Bearer fixture-access",
+          "content-type": "application/json",
+          ...headers,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    beforeEach(() => {
+      state.role = "class_rep";
+      state.assigned = true;
+    });
+
+    it("previews, creates and resumes through canonical exceptions and existing subscriber feeds", async () => {
+      state.exceptions = [
+        {
+          id: "extra-1",
+          timetable_id: timetableId,
+          stable_session_key: null,
+          exception_date: "2026-10-20",
+          exception_type: "extra",
+          active: true,
+          course_code: "EXTRA101",
+          course_name: "Catch-up",
+          start_time: "15:00:00",
+          end_time: "16:00:00",
+          reason: "Catch-up",
+          created_at: "2026-10-09T12:00:00Z",
+        },
+      ];
+      const before = await (
+        await request("/calendar/feed/existing-fixture-token.ics")
+      ).text();
+      expect(before).toContain("EXTRA101");
+      const preview = await pauseRequest("POST", input, "/preview");
+      expect(preview.status).toBe(200);
+      expect(await preview.json()).toEqual({
+        impact: { affectedTimetableCount: 1, newlySuppressedLectureCount: 2 },
+      });
+      expect(state.writes).toEqual([]);
+      const created = await pauseRequest("POST", {
+        ...input,
+        timetableId: "attacker",
+        institutionId: "attacker",
+        creatorRole: "admin",
+      });
+      expect(created.status).toBe(201);
+      expect(await created.json()).toMatchObject({
+        pause: {
+          id: pauseId,
+          scopeType: "timetable",
+          timetableId,
+          allDay: true,
+          creatorRole: "class_rep",
+        },
+        impact: { affectedTimetableCount: 1, newlySuppressedLectureCount: 2 },
+        googleCalendarSync: { attempted: 0, skipped: true },
+      });
+      const feed = await request("/calendar/feed/existing-fixture-token.ics");
+      expect(feed.status).toBe(200);
+      const during = await feed.text();
+      expect(during).toContain("EXDATE;TZID=Africa/Harare:20261020T121500");
+      expect(during).not.toContain("EXTRA101");
+      expect(await (await pauseRequest()).json()).toMatchObject({
+        pauses: [{ id: pauseId, active: true }],
+      });
+      const resumed = await pauseRequest("DELETE", undefined, `/${pauseId}`);
+      expect(resumed.status).toBe(200);
+      expect(await resumed.json()).toMatchObject({
+        pause: { active: false },
+        googleCalendarSync: { skipped: true },
+      });
+      expect(
+        await (
+          await request("/calendar/feed/existing-fixture-token.ics")
+        ).text(),
+      ).toContain("EXTRA101");
+      const writes = state.writes.length;
+      expect(
+        (await pauseRequest("DELETE", undefined, `/${pauseId}`)).status,
+      ).toBe(200);
+      expect(state.writes).toHaveLength(writes);
+      expect(await (await pauseRequest()).json()).toMatchObject({
+        pauses: [{ active: false }],
+      });
+      expect(state.envs.every((value) => value === env)).toBe(true);
+      expect(fetch).not.toHaveBeenCalled();
+    });
+    it("retains session-only and bounded-time impact semantics", async () => {
+      const session = {
+        ...input,
+        scopeType: "session",
+        stableSessionKey: "correction-tuesday",
+        allDay: false,
+        startsAt: "2026-10-20T10:30:00Z",
+        endsAt: "2026-10-20T11:00:00Z",
+      };
+      const preview = await pauseRequest("POST", session, "/preview");
+      expect(preview.status).toBe(200);
+      expect(await preview.json()).toMatchObject({
+        impact: { newlySuppressedLectureCount: 1 },
+      });
+      expect((await pauseRequest("POST", session)).status).toBe(201);
+      expect(state.pauses[0]).toMatchObject({
+        scope_type: "session",
+        stable_session_key: "correction-tuesday",
+        all_day: false,
+      });
+    });
+    it.each(["unassigned", "inactive", "non-founder"])(
+      "denies %s actors before writes",
+      async (mode) => {
+        if (mode === "unassigned") state.assigned = false;
+        if (mode === "inactive") state.staffActive = false;
+        if (mode === "non-founder") state.role = "superadmin";
+        expect((await pauseRequest("POST", input)).status).toBe(403);
+        expect(state.writes).toEqual([]);
+      },
+    );
+    it.each([
+      [{ authorization: "" }, 401],
+      [{ authorization: "Bearer invalid" }, 401],
+      [{ origin: "https://evil.example" }, 403],
+      [{ origin: "null" }, 403],
+      [{ "sec-fetch-site": "cross-site" }, 403],
+      [{ "content-type": "text/plain" }, 415],
+    ])("rejects unsafe request headers %#", async (headers, status) => {
+      expect((await pauseRequest("POST", input, "", headers)).status).toBe(
+        status,
+      );
+      expect(state.writes).toEqual([]);
+    });
+    it.each([
+      { ...input, scopeType: "institution" },
+      { ...input, label: "" },
+      { ...input, endsOn: "2026-10-19" },
+      { ...input, scopeType: "session" },
+      {
+        ...input,
+        allDay: false,
+        startsAt: "2026-10-20T11:00:00Z",
+        endsAt: "2026-10-20T10:00:00Z",
+      },
+    ])("rejects invalid pause input %#", async (body) => {
+      expect((await pauseRequest("POST", body)).status).toBe(422);
+      expect(state.writes).toEqual([]);
+    });
+    it("keeps schema-missing reads compatible and mutations closed", async () => {
+      state.pauseErrorCode = "42P01";
+      expect(await (await pauseRequest()).json()).toEqual({ pauses: [] });
+      const response = await pauseRequest("POST", input);
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: { code: "PAUSE_SCHEMA_REQUIRED" },
+      });
+      expect(
+        (await pauseRequest("DELETE", undefined, `/${pauseId}`)).status,
+      ).toBe(503);
+      expect(state.writes).toEqual([]);
+    });
+    it("rejects an admin's attempt to delete another timetable's pause via a scoped URL", async () => {
+      state.role = "admin";
+      state.pauses = [
+        {
+          id: pauseId,
+          scope_type: "timetable",
+          timetable_id: "foreign",
+          active: true,
+        },
+      ];
+      expect(
+        (await pauseRequest("DELETE", undefined, `/${pauseId}`)).status,
+      ).toBe(403);
+      expect(state.writes).toEqual([]);
+    });
+    it("returns 404 for missing pauses and 405 for unsupported actions", async () => {
+      expect(
+        (await pauseRequest("DELETE", undefined, `/${pauseId}`)).status,
+      ).toBe(404);
+      expect((await pauseRequest("PATCH", input)).status).toBe(405);
+      expect((await pauseRequest("GET", undefined, "/preview")).status).toBe(
+        405,
+      );
+      expect(
+        (
+          await request("/api/admin/academic-pauses", {
+            headers: { authorization: "Bearer fixture-access" },
+          })
+        ).status,
+      ).toBe(503);
+      expect(state.writes).toEqual([]);
+    });
   });
 
   it("keeps intake closed and retries existing unprocessed messages without acknowledgement", async () => {

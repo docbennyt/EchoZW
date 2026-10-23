@@ -62,8 +62,8 @@ export function setCorrectionsRepositoryEnv(env: NodeJS.ProcessEnv) {
   repositoryEnv = env;
 }
 
-function client() {
-  return createSupabaseAdminClient(repositoryEnv ?? process.env);
+function client(env?: NodeJS.ProcessEnv) {
+  return createSupabaseAdminClient(env ?? repositoryEnv ?? process.env);
 }
 
 function requireText(value: string | null | undefined, message: string) {
@@ -211,13 +211,14 @@ function isStaleEdit(error: QueryError) {
 }
 
 async function audit(input: {
+  env?: NodeJS.ProcessEnv;
   actor: StaffAuthContext;
   action: string;
   entityType: string;
   entityId?: string | null;
   metadata?: JsonRecord;
 }) {
-  const { error } = await client()
+  const { error } = await client(input.env)
     .from("audit_logs")
     .insert({
       actor_id: input.actor.user.id,
@@ -240,9 +241,12 @@ async function audit(input: {
   }
 }
 
-async function fingerprintCorrection(payload: JsonRecord) {
+async function fingerprintCorrection(
+  payload: JsonRecord,
+  env?: NodeJS.ProcessEnv,
+) {
   const fingerprint = await expectData<string>(
-    client().rpc("timetable_correction_semantic_fingerprint", {
+    client(env).rpc("timetable_correction_semantic_fingerprint", {
       p_payload: payload,
     }),
     "DATABASE_UNAVAILABLE",
@@ -277,12 +281,13 @@ async function fingerprintException(payload: JsonRecord) {
 }
 
 async function findCorrectionByMutationKey(input: {
+  env?: NodeJS.ProcessEnv;
   timetableId: string;
   staffUserId: string;
   mutationKey: string;
 }) {
   return expectData<JsonRecord>(
-    client()
+    client(input.env)
       .from("timetable_correction_directives")
       .select("*")
       .eq("timetable_id", input.timetableId)
@@ -315,9 +320,10 @@ async function findExceptionByMutationKey(input: {
 async function findActiveCorrectionByFingerprint(
   timetableId: string,
   semanticFingerprint: string,
+  env?: NodeJS.ProcessEnv,
 ) {
   const rows = await expectData<JsonRecord[]>(
-    client()
+    client(env)
       .from("timetable_correction_directives")
       .select("*")
       .eq("timetable_id", timetableId)
@@ -489,8 +495,11 @@ function exceptionPayload(input: ExceptionWrite) {
   return payload;
 }
 
-export async function listTimetableCorrections(timetableId: string) {
-  const admin = client();
+export async function listTimetableCorrections(
+  timetableId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const admin = client(env);
   const [corrections, exceptions] = await Promise.all([
     expectData<JsonRecord[]>(
       admin
@@ -521,6 +530,7 @@ export async function listTimetableCorrections(timetableId: string) {
 }
 
 async function recordReplay(input: {
+  env?: NodeJS.ProcessEnv;
   actor: StaffAuthContext;
   timetableId: string;
   entityType: string;
@@ -530,6 +540,7 @@ async function recordReplay(input: {
   concurrent?: boolean;
 }) {
   await audit({
+    env: input.env,
     actor: input.actor,
     action: input.action,
     entityType: input.entityType,
@@ -544,12 +555,14 @@ async function recordReplay(input: {
 
 export async function createRecurringCorrection(
   input: CorrectionWrite,
+  env?: NodeJS.ProcessEnv,
 ): Promise<MutationResult<TimetableCorrectionDirective>> {
   const payload = correctionPayload(input);
-  const semanticFingerprint = await fingerprintCorrection(payload);
+  const semanticFingerprint = await fingerprintCorrection(payload, env);
   payload.semantic_fingerprint = semanticFingerprint;
 
   const replay = await findCorrectionByMutationKey({
+    env,
     timetableId: input.timetableId,
     staffUserId: input.actor.staff.id,
     mutationKey: input.mutationKey,
@@ -563,6 +576,7 @@ export async function createRecurringCorrection(
       );
     }
     await recordReplay({
+      env,
       actor: input.actor,
       timetableId: input.timetableId,
       entityType: "timetable_correction_directive",
@@ -575,9 +589,11 @@ export async function createRecurringCorrection(
   const duplicate = await findActiveCorrectionByFingerprint(
     input.timetableId,
     semanticFingerprint,
+    env,
   );
   if (duplicate) {
     await recordReplay({
+      env,
       actor: input.actor,
       timetableId: input.timetableId,
       entityType: "timetable_correction_directive",
@@ -590,7 +606,7 @@ export async function createRecurringCorrection(
     };
   }
 
-  const { data, error } = await client()
+  const { data, error } = await client(env)
     .from("timetable_correction_directives")
     .insert(payload)
     .select("*")
@@ -598,6 +614,7 @@ export async function createRecurringCorrection(
   if (error) {
     if (isUniqueConflict(error)) {
       const racedReplay = await findCorrectionByMutationKey({
+        env,
         timetableId: input.timetableId,
         staffUserId: input.actor.staff.id,
         mutationKey: input.mutationKey,
@@ -611,6 +628,7 @@ export async function createRecurringCorrection(
           );
         }
         await recordReplay({
+          env,
           actor: input.actor,
           timetableId: input.timetableId,
           entityType: "timetable_correction_directive",
@@ -626,9 +644,11 @@ export async function createRecurringCorrection(
       const racedDuplicate = await findActiveCorrectionByFingerprint(
         input.timetableId,
         semanticFingerprint,
+        env,
       );
       if (racedDuplicate) {
         await recordReplay({
+          env,
           actor: input.actor,
           timetableId: input.timetableId,
           entityType: "timetable_correction_directive",
@@ -651,6 +671,7 @@ export async function createRecurringCorrection(
   }
 
   await audit({
+    env,
     actor: input.actor,
     action: "timetable_correction.created",
     entityType: "timetable_correction_directive",

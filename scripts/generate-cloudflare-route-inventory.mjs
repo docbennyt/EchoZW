@@ -318,6 +318,36 @@ export async function buildInventory(
     ["GET", "/api/admin/academic-periods", "handleNativeAdminSession"],
     ["GET", "/api/admin/timetables", "handleNativeAdminSession"],
     ["POST", "/api/calendar/subscriptions", "handleNativeSubscription"],
+    [
+      "GET",
+      "/api/admin/timetables/:timetableId/pauses",
+      "handleNativeAcademicPauses",
+    ],
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/pauses",
+      "handleNativeAcademicPauses",
+    ],
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/pauses/preview",
+      "handleNativeAcademicPauses",
+    ],
+    [
+      "DELETE",
+      "/api/admin/timetables/:timetableId/pauses/:pauseId",
+      "handleNativeAcademicPauses",
+    ],
+    [
+      "GET",
+      "/api/admin/timetables/:timetableId/corrections",
+      "handleNativeCorrections",
+    ],
+    [
+      "POST",
+      "/api/admin/timetables/:timetableId/corrections",
+      "handleNativeCorrections",
+    ],
     ["GET", "/api/calendar/google/status", null],
     ["GET", "/calendar/feed/:token.ics", "handleNativeCalendarIcs"],
     ["HEAD", "/calendar/feed/:token.ics", "handleNativeCalendarIcs"],
@@ -617,6 +647,18 @@ export async function buildInventory(
     if (partialSubscription)
       remainingBlocker =
         "Native feed/download subscription subset exists; google_api is disabled503. Full Node provider parity and candidate live proof pending Supabase secret/configuration and provider restoration.";
+    const editorTransport =
+      nativeSpec?.[2] === "handleNativeCorrections" ||
+      nativeSpec?.[2] === "handleNativeAcademicPauses";
+    if (editorTransport) {
+      contractTests.push(
+        nativeSpec[2] === "handleNativeCorrections"
+          ? "tests/nativeCorrections.test.ts"
+          : "tests/nativeAcademicPauses.test.ts",
+      );
+      remainingBlocker =
+        "Native scoped transport implemented with request bindings and existing application/repository semantics. Authenticated deployed acceptance pending reviewed deployment boundary. Google propagation explicitly skipped; provider/durable retry parity remains unavailable.";
+    }
     if (disabled)
       remainingBlocker =
         "Native capability-status response returns enabled:false; no live acceptance. Google authorization/synchronization remains disabled and is not restored.";
@@ -677,6 +719,16 @@ export async function buildInventory(
                 ? "Legacy bridge; not recovered Cloudflare functionality."
                 : "Unsupported in Worker; explicit service unavailable.",
       migrationImplementation: implementation ?? fallbackEvidence ?? null,
+      ...(editorTransport
+        ? {
+            workerApplicationService:
+              nativeSpec[2] === "handleNativeCorrections"
+                ? "correctionsCore.saveRecurringCorrection -> correctionsRepository; listTimetableCorrections"
+                : "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
+            workerProviderPropagation:
+              "Google sync explicitly skipped; calendar feed resolves current persisted corrections/pauses through existing canonical projection",
+          }
+        : {}),
       ...(disabled
         ? {
             providerIntegrationEnabled: false,

@@ -1,6 +1,20 @@
 # DR-178 Recovery Evidence Ledger
 
+## 2026-10-23 Deployment Trust Boundary
+
+The previous PR workflow checked out candidate code on a runner holding staging deployment and acceptance secrets. Independent security review rejected that boundary. GitHub API inspection confirmed no environment reviewers or branch restrictions. The replacement PR workflow has read-only permissions, no environment, no secrets and no deployment.
+
+Live `cloudflare-staging` protection now requires a reviewer, prevents self-review, disables administrator bypass and allows only `Calender`. The legacy manual deployment workflow is disabled until trusted reviewed workflow code is installed through normal governance. Required branch checks were preserved. The same protections were added to the reserved `cloudflare-staging-acceptance` environment; acceptance currently uses a fresh job in the existing staging environment to preserve the original private-feed secret without copying it.
+
+The proposed trusted dispatch accepts a full immutable candidate SHA, checks current PR head, exact-commit approval by an eligible non-author and successful CI. A secretless runner verifies and bundles the candidate. A fresh runner uses protected-branch tooling/configuration, downloads the exact artifact ID, verifies SHA-256 and a bounded path/symlink allowlist, then deploys the prebundled Worker. The deployment-derived version is independently checked against Cloudflare's active deployment. A fresh acceptance runner rechecks approval and exact source/version before renewable test-account sign-in. Missing admin credentials remain a failing gate.
+
+Independent review approved the narrow static boundary implementation after fixing circular deployment identity, approval revocation during waits, untrusted CI assumptions and artifact verification. This is not operational approval: an exclusive required-workflow or independently controlled check source, reviewed workflow bootstrap onto protected Calender and an eligible independent operator/reviewer remain outstanding. The existing required acceptance check has not been removed, spoofed or replaced with a green PR-only check. The sole current repository collaborator cannot self-approve this path. Do not add staff test credentials before those blockers are resolved.
+
+The original pre-outage Apple ICS Part1.1 feed proof remains valid at `039b0adcd98e44ac7bd26dee0b383b4a570f75d3`: unchanged saved token/path, matching15-event canonical content, stale ETag200/current304. No replacement subscription or token was generated. No source/audit, Google event, production DNS or billing mutation was performed for this boundary change. New native route implementations require separate authenticated deployed acceptance; source inventory counts do not imply that acceptance passed.
+
 ## Incident State
+
+Native P0 transport checkpoint: correction collection GET/POST and timetable pause GET/POST/preview/DELETE now use existing shared application services and repositories with request-scoped bindings. No new pause policy was introduced. Scope checks reject foreign timetable pause deactivation even for a broad administrator using a scoped URL. Google propagation is explicitly skipped, never reported as successful. Independent static runtime review found no must-fix finding. Source inventory changes from19 to25 native implementations,82 to76 unavailable,30 to24 unavailable P0 routes;2 incomplete and0 bridges remain. These counts are source implementation evidence, not authenticated runtime acceptance. Google crypto compatibility, OAuth state replay safety, subscription revoke and remaining corrections/item workflows remain separate P0 blockers.
 
 OPEN. Observed 2026-10-19. This is an incomplete recovery candidate, not a production release approval.
 
