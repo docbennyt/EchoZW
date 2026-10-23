@@ -1,107 +1,166 @@
-name: Cloudflare Staging
+name: Cloudflare Reviewed Staging
 
 on:
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Git ref/SHA to deploy."
+      candidate_sha:
+        description: Full immutable candidate SHA approved by a reviewer
         required: true
-        default: Calender
         type: string
-      run_smoke:
-        description: "Run live staging smoke after deploy."
+      pull_request:
+        description: Pull request containing the approved candidate
         required: true
-        default: true
-        type: boolean
+        type: string
 
 permissions:
   contents: read
+  pull-requests: read
+  actions: read
 
 concurrency:
   group: cloudflare-staging
   cancel-in-progress: false
 
 jobs:
-  deploy-staging:
-    name: Verify and deploy staging Worker
+  authorize:
+    if: github.ref == 'refs/heads/Calender'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    environment: cloudflare-staging
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CALENDERZW_STAGING_ORIGIN: https://next.calender.aido.co.zw
-      CALENDERZW_STAGING_FEED_URL: ${{ secrets.CALENDERZW_STAGING_FEED_URL }}
+    outputs:
+      sha: ${{ steps.authorize.outputs.sha }}
     steps:
-      - name: Checkout exact ref
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - name: Verify current candidate approval and CI
+        id: authorize
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+  package:
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      artifact_id: ${{ steps.bundle.outputs.artifact-id }}
+      artifact_digest: ${{ steps.bundle.outputs.artifact-digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.authorize.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
         with:
           node-version: 24.15.0
-          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+      - run: npm run worker:check
+      - run: npm run worker:automation:check
+      - run: npm run worker:validate
+      - name: Bundle without deployment credentials
+        run: npx wrangler@4.147.0 deploy --env staging --dry-run --outdir bundle
+      - uses: actions/upload-artifact@v4
+        id: bundle
+        with:
+          name: reviewed-worker-${{ needs.authorize.outputs.sha }}
+          path: |
+            bundle/index.js
+            dist/
+          if-no-files-found: error
+          retention-days: 7
 
-      - name: Confirm exact head
-        id: exact-head
+  deploy:
+    needs: [authorize, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: cloudflare-staging
+    outputs:
+      version: ${{ steps.deploy.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - run: npm ci --ignore-scripts
+      - name: Recheck approval after environment review
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+      - name: Verify artifact identity and bytes
         run: |
-          echo "event_sha=${GITHUB_SHA}"
-          checked_out_sha="$(git rev-parse HEAD)"
-          echo "checked_out_sha=${checked_out_sha}"
-          echo "sha=${checked_out_sha}" >> "$GITHUB_OUTPUT"
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/reviewed-worker.zip
+          python3 scripts/extract-staging-artifact.py /tmp/reviewed-worker.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.package.outputs.artifact_id }}
+          ARTIFACT_DIGEST: ${{ needs.package.outputs.artifact_digest }}
+      - name: Prepare trusted deployment configuration
+        run: node scripts/prepare-staging-deployment.mjs
+      - name: Deploy reviewed bundle
+        id: deploy
+        run: |
+          set -o pipefail
+          npx wrangler@4.147.0 deploy --config staging-deploy.json --env staging --no-bundle --var SOURCE_SHA:$CANDIDATE_SHA --var SUPABASE_URL:$SUPABASE_URL --var VITE_SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY | tee /tmp/reviewed-deploy.log
+          node scripts/verify-active-worker-deployment.mjs
+        env:
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Verify deployed identity before acceptance
+        id: identity
+        run: node scripts/verify-staging-identity.mjs
+        env:
+          EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
+          EXPECTED_WORKER_VERSION: ${{ steps.deploy.outputs.version }}
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Format
-        run: npm run format:check
-
-      - name: Test
-        run: npm test
-
-      - name: Build
-        run: npm run build
-
-      - name: Cloudflare foundation check
-        run: npm run worker:check
-
-      - name: Wrangler dry-run validation
-        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --dry-run --outdir .wrangler-dry-run --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }}
-
-      - name: Deploy Cloudflare staging
-        run: npx wrangler@4.147.0 deploy --env staging --config wrangler.jsonc --var SOURCE_SHA:${{ steps.exact-head.outputs.sha }} --tag sha-${{ steps.exact-head.outputs.sha }} --message "GitHub Actions ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-
-      - name: Live staging smoke
-        if: ${{ inputs.run_smoke }}
+  acceptance:
+    needs: [authorize, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Recheck review after acceptance approval
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+      - name: Verify approved deployment before releasing test credentials
+        run: node scripts/verify-staging-identity.mjs
+        env:
+          EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
+          EXPECTED_WORKER_VERSION: ${{ needs.deploy.outputs.version }}
+      - name: Authenticated and original-feed acceptance
         run: npm run worker:smoke:staging
         env:
-          EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}
-
-      - name: Install browser runtime
-        if: ${{ inputs.run_smoke }}
-        run: npx playwright install --with-deps chromium
-
-      - name: Browser zero-blank-page release smoke
-        if: ${{ inputs.run_smoke }}
-        run: npm run browser:smoke:release
+          EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
+          EXPECTED_WORKER_VERSION: ${{ needs.deploy.outputs.version }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          CALENDERZW_STAGING_ADMIN_EMAIL: ${{ secrets.CALENDERZW_STAGING_ADMIN_EMAIL }}
+          CALENDERZW_STAGING_ADMIN_PASSWORD: ${{ secrets.CALENDERZW_STAGING_ADMIN_PASSWORD }}
+          CALENDERZW_STAGING_FEED_URL: ${{ secrets.CALENDERZW_STAGING_FEED_URL }}
+          CALENDERZW_STAGING_FEED_TIMETABLE_SLUG: ${{ vars.CALENDERZW_STAGING_FEED_TIMETABLE_SLUG }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run browser:smoke:release
         env:
-          CALENDERZW_BROWSER_SMOKE_BASE_URL: ${{ env.CALENDERZW_STAGING_ORIGIN }}
-
-      - name: Deployment evidence summary
-        if: ${{ always() }}
-        run: |
-          {
-            echo "## Cloudflare staging"
-            echo
-            echo "- Ref input: \`${{ inputs.ref }}\`"
-            echo "- Exact SHA: \`${{ steps.exact-head.outputs.sha }}\`"
-            echo "- Run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-            echo "- Smoke requested: \`${{ inputs.run_smoke }}\`"
-            echo "- Browser zero-blank-page smoke requested with staging smoke: \`${{ inputs.run_smoke }}\`"
-            echo "- Production DNS unchanged by this workflow."
-          } >> "$GITHUB_STEP_SUMMARY"
+          CALENDERZW_BROWSER_SMOKE_BASE_URL: https://next.calender.aido.co.zw

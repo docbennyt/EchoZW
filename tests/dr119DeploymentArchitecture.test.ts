@@ -165,15 +165,20 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(productionServer).toContain('server.listen(port, "0.0.0.0"');
   });
 
-  it("does not let Cloudflare exact-head smoke imply same-SHA Railway compatibility", () => {
+  it("keeps historical Railway smoke separate from secretless Cloudflare PR checks", () => {
     expect(cloudflareSmoke).toContain("/api/health/release");
     expect(cloudflareSmoke).toContain("EXPECTED_BACKEND_SHA");
     expect(cloudflareSmoke).toContain(
       "Backend integration compatibility not asserted",
     );
-    expect(cloudflarePreviewWorkflow).toContain("EXPECTED_BACKEND_SHA");
     expect(cloudflarePreviewWorkflow).toContain(
-      "same-SHA Railway compatibility is not implied",
+      "name: Cloudflare PR Verification",
     );
+    expect(cloudflarePreviewWorkflow).toContain("persist-credentials: false");
+    expect(cloudflarePreviewWorkflow).not.toContain("secrets.");
+    expect(cloudflarePreviewWorkflow).not.toContain(
+      "environment: cloudflare-staging",
+    );
+    expect(cloudflarePreviewWorkflow).not.toContain("railway.app");
   });
 });
