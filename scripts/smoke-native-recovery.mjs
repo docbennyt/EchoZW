@@ -4,6 +4,7 @@ import {
   obtainAcceptanceToken,
   validateRecoveryCalendar,
 } from "./recovery-acceptance.mjs";
+import { verifyStagingIdentity } from "./verify-staging-identity.mjs";
 const origin =
   process.env.CALENDERZW_STAGING_ORIGIN ?? "https://next.calender.aido.co.zw";
 const failures = [];
@@ -93,6 +94,7 @@ await check(
   (r) => r.status === 401,
 );
 let adminToken;
+await verifyStagingIdentity(process.env);
 try {
   adminToken = await obtainAcceptanceToken(process.env);
 } catch (error) {

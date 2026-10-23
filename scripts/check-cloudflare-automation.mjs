@@ -1,98 +1,82 @@
 import { readFile } from "node:fs/promises";
 
-const stagingWorkflow = await readFile(
-  ".github/workflows/cloudflare-staging.yml",
-  "utf8",
-);
-const previewWorkflow = await readFile(
-  ".github/workflows/cloudflare-pr-preview.yml",
-  "utf8",
-);
-const productionGateWorkflow = await readFile(
-  ".github/workflows/cloudflare-production-gate.yml",
-  "utf8",
-);
-const worker = await readFile("worker/index.mjs", "utf8");
-const smoke = await readFile("scripts/smoke-native-recovery.mjs", "utf8");
-
+const read = (path) => readFile(path, "utf8");
+const [preview, staging, production, smoke] = await Promise.all([
+  read(".github/workflows/cloudflare-pr-preview.yml"),
+  read(".github/workflows/cloudflare-staging.yml"),
+  read(".github/workflows/cloudflare-production-gate.yml"),
+  read("scripts/smoke-native-recovery.mjs"),
+]);
 function assert(condition, message) {
-  if (!condition) {
+  if (!condition)
     throw new Error(`Cloudflare automation check failed: ${message}`);
-  }
 }
-
 assert(
-  worker.includes("sourceSha: env.SOURCE_SHA ?? null"),
-  "__release must expose the exact source SHA supplied by CI.",
+  preview.includes("pull_request:") &&
+    preview.includes("persist-credentials: false"),
+  "PR tests must use unprivileged checkout.",
 );
 assert(
-  smoke.includes("value.sourceSha === process.env.EXPECTED_RELEASE_SHA"),
-  "staging smoke must verify the exact deployed source SHA.",
+  !preview.includes("secrets.") &&
+    !preview.includes("environment:") &&
+    !preview.includes("write"),
+  "PR verification must never receive protected secrets or write permissions.",
 );
 assert(
-  smoke.includes("legacyBackendBridge === false") &&
-    smoke.includes("BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN") &&
+  !preview.includes("workflow_run") && !preview.includes("pull_request_target"),
+  "untrusted PR verification must not use privileged events.",
+);
+assert(
+  staging.includes("workflow_dispatch:") &&
+    staging.includes("github.ref == 'refs/heads/Calender'"),
+  "privileged control workflow must run from protected Calender.",
+);
+assert(
+  staging.includes("authorize-staging-candidate.mjs") &&
+    staging.includes("Recheck approval after environment review"),
+  "candidate review and CI must be checked before and after deployment approval.",
+);
+assert(
+  staging.includes("environment: cloudflare-staging") &&
+    staging.includes("  acceptance:") &&
+    staging.includes("verify-active-worker-deployment.mjs"),
+  "deployment and acceptance must use separate protected jobs and verify the active deployment via Cloudflare.",
+);
+const packageJob = staging.split("  package:")[1]?.split("  deploy:")[0];
+assert(
+  packageJob &&
+    !packageJob.includes("secrets.") &&
+    !packageJob.includes("environment:"),
+  "candidate build must run on a runner without privileged inputs.",
+);
+const deployJob = staging.split("  deploy:")[1]?.split("  acceptance:")[0];
+assert(
+  deployJob?.includes("--no-bundle") &&
+    deployJob.includes("prepare-staging-deployment.mjs") &&
+    !deployJob.includes("ref: ${{ needs.authorize.outputs.sha }}"),
+  "privileged deployment must execute trusted tooling and configuration, not candidate scripts.",
+);
+assert(
+  staging.includes("group: cloudflare-staging") &&
+    staging.includes("cancel-in-progress: false"),
+  "serialize deployment through acceptance.",
+);
+assert(
+  staging.includes("EXPECTED_WORKER_VERSION:") &&
+    smoke.includes("await verifyStagingIdentity(process.env);"),
+  "verify exact SHA and Worker identity before authentication.",
+);
+assert(
+  smoke.includes("BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN") &&
     smoke.includes("BLOCKED: CALENDERZW_STAGING_FEED_URL"),
-  "native smoke must fail for a legacy bridge or missing staff/original-feed acceptance credentials.",
+  "missing admin and original-feed acceptance remain blocking.",
 );
 assert(
-  stagingWorkflow.includes('checked_out_sha="$(git rev-parse HEAD)"') &&
-    stagingWorkflow.includes(
-      "--var SOURCE_SHA:${{ steps.exact-head.outputs.sha }}",
-    ) &&
-    stagingWorkflow.includes(
-      "EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}",
-    ),
-  "manual staging deploy must carry exact SHA through deploy and smoke.",
+  production.includes("environment: cloudflare-production") &&
+    production.includes("git merge-base --is-ancestor") &&
+    production.includes("Production deploy: disabled until DR-166"),
+  "production cutover remains gated.",
 );
-assert(
-  previewWorkflow.includes("ref: ${{ env.PR_HEAD_SHA }}") &&
-    previewWorkflow.includes('test "${checked_out_sha}" = "${PR_HEAD_SHA}"'),
-  "PR preview workflow must checkout and prove the exact PR head SHA.",
-);
-assert(
-  previewWorkflow.includes("environment: cloudflare-staging") &&
-    previewWorkflow.includes(
-      "CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}",
-    ),
-  "PR preview workflow must use the Cloudflare staging environment secret boundary.",
-);
-assert(
-  previewWorkflow.includes(
-    "--var SOURCE_SHA:${{ steps.exact-head.outputs.sha }}",
-  ) &&
-    previewWorkflow.includes(
-      "EXPECTED_RELEASE_SHA: ${{ steps.exact-head.outputs.sha }}",
-    ),
-  "PR preview deploy and smoke must use the exact SHA.",
-);
-assert(
-  !previewWorkflow.includes('--message "PR #'),
-  "PR preview deploy message must not use a YAML-comment-prone # in an inline command.",
-);
-assert(
-  previewWorkflow.includes(
-    "github.event.pull_request.head.repo.full_name == github.repository",
-  ),
-  "PR preview deploy must be guarded to same-repository PRs.",
-);
-assert(
-  previewWorkflow.includes("group: cloudflare-staging"),
-  "Cloudflare staging deployments must be serialized to avoid misleading evidence.",
-);
-assert(
-  !previewWorkflow.includes("calender.aido.co.zw") ||
-    previewWorkflow.includes("Production DNS: unchanged"),
-  "preview workflow must not deploy production Cloudflare.",
-);
-assert(
-  productionGateWorkflow.includes("environment: cloudflare-production") &&
-    productionGateWorkflow.includes("git merge-base --is-ancestor") &&
-    productionGateWorkflow.includes("origin/Calender") &&
-    productionGateWorkflow.includes("Production deploy: disabled until DR-166"),
-  "production gate must require Calender reachability and keep deploy disabled.",
-);
-
 console.log(
-  "Cloudflare automation contract OK: exact-head checkout, deploy identity, smoke verification and PR evidence are wired.",
+  "Cloudflare automation: unprivileged PR verification; reviewed immutable staging; isolated deployment and acceptance.",
 );
