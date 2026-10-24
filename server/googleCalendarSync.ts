@@ -572,8 +572,8 @@ export async function syncGoogleSubscription(
       event,
     ]);
   }
-  const remoteManagedEventIds = new Set(
-    remoteManagedEvents.map((event) => event.id),
+  const remoteManagedEventKeysById = new Map(
+    remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
@@ -597,7 +597,8 @@ export async function syncGoogleSubscription(
       ? String(previous.external_event_id)
       : null;
     const previousRemoteStillManaged = previousExternalEventId
-      ? remoteManagedEventIds.has(previousExternalEventId)
+      ? remoteManagedEventKeysById.get(previousExternalEventId) ===
+        event.stableSessionKey
       : false;
     const externalEventId = previousRemoteStillManaged
       ? previousExternalEventId
@@ -798,8 +799,8 @@ export async function previewGoogleSubscriptionSync(
       event,
     ]);
   }
-  const remoteManagedEventIds = new Set(
-    remoteManagedEvents.map((event) => event.id),
+  const remoteManagedEventKeysById = new Map(
+    remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
@@ -823,7 +824,8 @@ export async function previewGoogleSubscriptionSync(
       : null;
     const remoteMatches = remoteManagedByStableKey.get(event.stableSessionKey);
     const previousRemoteStillManaged = previousExternalEventId
-      ? remoteManagedEventIds.has(previousExternalEventId)
+      ? remoteManagedEventKeysById.get(previousExternalEventId) ===
+        event.stableSessionKey
       : false;
     const externalEventId = previousRemoteStillManaged
       ? previousExternalEventId
@@ -864,10 +866,26 @@ export async function previewGoogleSubscriptionSync(
     wouldDelete += 1;
   }
 
+  // These deletion candidates were actually found in Google with matching
+  // timetable ownership tags. A local mapping alone does not prove that a
+  // remote calendar event is safe to delete.
+  const remoteManagedDeletionCandidates = remoteManagedEvents
+    .filter((event) => !retainedRemoteEventIds.has(event.id))
+    .map((event) => ({
+      stableSessionKey: event.stableSessionKey,
+      externalEventId: event.id,
+    }))
+    .sort(
+      (a, b) =>
+        a.stableSessionKey.localeCompare(b.stableSessionKey) ||
+        a.externalEventId.localeCompare(b.externalEventId),
+    );
+
   return {
     subscriptionId,
     timetableId,
     readOnly: true,
+    remoteManagedDeletionCandidates,
     expectedEvents: projection.events.length,
     remoteManagedEvents: remoteManagedEvents.length,
     localMappings: previousRecords.length,
