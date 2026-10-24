@@ -16,6 +16,12 @@ const state = vi.hoisted(() => ({
   enrollmentGate: null as null | (() => Promise<void>),
   failInvite: false,
   failAudit: false,
+  staffRows: [] as Record<string, unknown>[],
+  assignmentRows: [] as Record<string, unknown>[],
+  listReads: [] as string[],
+  enrollmentReads: 0,
+  failList: false,
+  throwList: false,
 }));
 vi.mock("../server/supabase/userClient.js", () => ({
   createSupabaseUserClient: () => ({
@@ -32,6 +38,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
     auth: {
       admin: {
         listUsers: async () => {
+          state.enrollmentReads += 1;
           if (state.enrollmentGate) await state.enrollmentGate();
           return { data: { users: state.users }, error: null };
         },
@@ -52,22 +59,38 @@ vi.mock("../server/supabase/adminClient.js", () => ({
     from: (table: string) => {
       const filters: Record<string, unknown> = {};
       let mutation: Record<string, unknown> | undefined;
-      const result = () => ({
-        data: mutation
-          ? { id: "invitee-staff", ...mutation }
-          : table === "staff_users"
-            ? filters.user_id === "founder-user"
-              ? {
-                  id: "founder-staff",
-                  user_id: "founder-user",
-                  role: state.role,
-                  is_founder: state.founder,
-                  active: state.active,
-                }
-              : state.existing
-            : [],
-        error: table === "audit_logs" && state.failAudit ? {} : null,
-      });
+      const result = () => {
+        const listing = !mutation && Object.keys(filters).length === 0;
+        if (listing) {
+          state.listReads.push(table);
+          if (state.throwList) {
+            throw new Error("private@example.test Bearer private-token");
+          }
+          return {
+            data:
+              table === "staff_users" ? state.staffRows : state.assignmentRows,
+            error: state.failList
+              ? { message: "private@example.test Bearer private-token" }
+              : null,
+          };
+        }
+        return {
+          data: mutation
+            ? { id: "invitee-staff", ...mutation }
+            : table === "staff_users"
+              ? filters.user_id === "founder-user"
+                ? {
+                    id: "founder-staff",
+                    user_id: "founder-user",
+                    role: state.role,
+                    is_founder: state.founder,
+                    active: state.active,
+                  }
+                : state.existing
+              : [],
+          error: table === "audit_logs" && state.failAudit ? {} : null,
+        };
+      };
       const chain = {
         select: () => chain,
         order: () => chain,
@@ -96,6 +119,7 @@ vi.mock("../server/supabase/adminClient.js", () => ({
   }),
 }));
 import worker from "../worker/index.mjs";
+import { handleNativeStaffInvitation } from "../worker/staffInvitations.mjs";
 const env = { PUBLIC_APP_URL: "https://app.example", SOURCE_SHA: "fixture" };
 function request(
   payload: unknown = {
@@ -136,7 +160,212 @@ beforeEach(() => {
   state.failInvite = false;
   state.failAudit = false;
   state.enrollmentGate = null;
+  state.staffRows = [];
+  state.assignmentRows = [];
+  state.listReads = [];
+  state.enrollmentReads = 0;
+  state.failList = false;
+  state.throwList = false;
   vi.stubEnv("PUBLIC_APP_URL", "https://app.example");
+});
+describe("native staff read", () => {
+  function read(headers = {}, method = "GET") {
+    return worker.fetch(
+      new Request("https://app.example/api/admin/staff", {
+        method,
+        headers: { authorization: "Bearer valid", ...headers },
+      }),
+      env,
+      { waitUntil: () => {} },
+    );
+  }
+
+  function expectReadOnly() {
+    expect(state.writes).toEqual([]);
+    expect(state.invitations).toEqual([]);
+    expect(state.enrollmentReads).toBe(0);
+  }
+
+  it.each(["founder", "admin"])(
+    "returns staff and assignment summaries for %s without provisioning or audit writes",
+    async (role) => {
+      if (role === "admin") {
+        state.role = "admin";
+        state.founder = false;
+      }
+      state.staffRows = [
+        {
+          id: "rep-staff",
+          user_id: "rep-user",
+          email: "rep@example.test",
+          display_name: "Class Rep",
+          role: "class_rep",
+          active: true,
+          is_founder: false,
+          invited_at: "2026-10-01",
+          internal_only: "hidden",
+        },
+      ];
+      state.assignmentRows = [
+        {
+          id: "assignment",
+          staff_user_id: "rep-staff",
+          timetable_id: "timetable",
+          active: true,
+          revoked_at: null,
+          timetables: {
+            public_slug: "class-a",
+            institutions: { name: "Institution" },
+            programmes: { name: "Programme" },
+            cohorts: { label: "A" },
+            academic_periods: { name: "2026" },
+          },
+        },
+      ];
+      const response = await read({ origin: "https://app.example" });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        staff: [
+          {
+            id: "rep-staff",
+            userId: "rep-user",
+            email: "rep@example.test",
+            displayName: "Class Rep",
+            role: "class_rep",
+            isFounder: false,
+            active: true,
+            invitedAt: "2026-10-01",
+            lastInvitedAt: null,
+            acceptedAt: null,
+            disabledAt: null,
+            assignments: [
+              {
+                id: "assignment",
+                timetableId: "timetable",
+                active: true,
+                revokedAt: null,
+                publicSlug: "class-a",
+                institutionName: "Institution",
+                programmeName: "Programme",
+                classGroupLabel: "A",
+                academicPeriodName: "2026",
+              },
+            ],
+          },
+        ],
+      });
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+      expect(state.listReads).toEqual(["staff_users", "class_rep_assignments"]);
+      expectReadOnly();
+    },
+  );
+
+  it("returns an empty staff collection without a JSON request body", async () => {
+    const response = await read();
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ staff: [] });
+    expect(state.listReads).toEqual(["staff_users"]);
+    expectReadOnly();
+  });
+
+  it.each([
+    "class_rep",
+    "nonfounder",
+    "inactive",
+    "anonymous",
+    "invalid-token",
+  ])("denies %s before reading the staff collection", async (role) => {
+    if (role === "class_rep") state.role = role;
+    if (role === "nonfounder") state.founder = false;
+    if (role === "inactive") state.active = false;
+    const response = await read(
+      role === "anonymous"
+        ? { authorization: "" }
+        : role === "invalid-token"
+          ? { authorization: "Bearer invalid" }
+          : {},
+    );
+    expect(response.status).toBe(
+      ["anonymous", "invalid-token"].includes(role) ? 401 : 403,
+    );
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(state.listReads).toEqual([]);
+    expectReadOnly();
+  });
+
+  it.each(["POST", "PATCH", "DELETE", "HEAD", "OPTIONS"])(
+    "rejects %s on the collection without opening more staff CRUD",
+    async (method) => {
+      const response = await read({}, method);
+      expect(response.status).toBe(405);
+      expect(response.headers.get("allow")).toBe("GET");
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(state.listReads).toEqual([]);
+      expectReadOnly();
+    },
+  );
+
+  it.each([
+    { origin: "https://other.example" },
+    { "sec-fetch-site": "cross-site" },
+  ])("rejects cross-origin staff reads: %j", async (headers) => {
+    const response = await read(headers);
+    expect(response.status).toBe(403);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    expect(state.listReads).toEqual([]);
+    expectReadOnly();
+  });
+
+  it.each([false, true])(
+    "sanitizes read failures without PII logs (unexpected=%s)",
+    async (unexpected) => {
+      const logs = ["log", "info", "warn", "error", "debug"].map((method) =>
+        vi.spyOn(console, method as "log").mockImplementation(() => {}),
+      );
+      try {
+        state.failList = !unexpected;
+        state.throwList = unexpected;
+        const response = await read();
+        expect(response.status).toBe(unexpected ? 500 : 503);
+        expect(await response.json()).toEqual({
+          error: {
+            code: unexpected ? "INTERNAL_ERROR" : "DATABASE_UNAVAILABLE",
+            message: unexpected
+              ? "We could not complete that staff request."
+              : "Could not load staff members.",
+          },
+        });
+        expect(response.headers.get("cache-control")).toBe("no-store");
+        const logged = JSON.stringify(logs.flatMap((log) => log.mock.calls));
+        expect(logged).not.toContain("private@example.test");
+        expect(logged).not.toContain("private-token");
+        expect(logged).not.toContain("Bearer valid");
+        expectReadOnly();
+      } finally {
+        for (const log of logs) log.mockRestore();
+      }
+    },
+  );
+
+  it.each([
+    "/api/admin/staff/invite",
+    "/api/admin/staff/member",
+    "/api/admin/staff/member/role",
+  ])("leaves other staff mutations outside the adapter: %s", async (path) => {
+    expect(
+      await handleNativeStaffInvitation(
+        new Request(`https://app.example${path}`, {
+          method: "POST",
+          headers: { authorization: "Bearer valid" },
+        }),
+        env,
+      ),
+    ).toBeNull();
+    expectReadOnly();
+  });
 });
 describe("native founder Invite Admin", () => {
   function requestAt(

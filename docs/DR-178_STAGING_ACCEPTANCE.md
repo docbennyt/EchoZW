@@ -11,9 +11,12 @@ session, refresh token, private feed URL or encryption key to run these checks.
 2. The authorized founder uses the existing **Invite Admin** UI on staging. Invite
    a dedicated test mailbox with the existing non-founder Admin role. Do not grant
    Founder, manually insert staff rows, or use password recovery as invitation.
-3. The mailbox owner follows the normal invitation link, sets the account password
-   privately, and signs in at `https://next.calender.aido.co.zw/admin`. Confirm real
-   institution/timetable reads work. No student correction/publication is needed.
+3. For a new invited identity, the mailbox owner follows the normal invitation
+   link and sets the account password privately. A confirmed existing identity
+   instead receives access through its current account: no invitation email is
+   sent and no replacement identity is created. Sign in at
+   `https://next.calender.aido.co.zw/admin`. Confirm real institution/timetable
+   reads work. No student correction/publication is needed.
 4. In GitHub repository Settings, Environments, `cloudflare-staging`, add encrypted
    secrets `CALENDERZW_STAGING_ADMIN_EMAIL` and
    `CALENDERZW_STAGING_ADMIN_PASSWORD`. Use this dedicated account, never the
@@ -41,10 +44,12 @@ credentials. If the candidate, approval or active deployment changed, fail close
 and use a fresh reviewed deployment; do not relax the identity check to reuse an
 old run. Environment approval remains required where GitHub requests it.
 
-Run40069825121 attempt2 deployed `7e42b4b4466674c1b1d6ea63b1edd837b3ecefb2`,
-version `f060da11-f583-4ec5-b713-e2be2da78a85`. Original-feed acceptance passed;
-Admin acceptance failed because both renewable account inputs were absent. That
-run can only be reused while this remains the current approved candidate.
+Run40103326246 deployed `c807c76222eea8abcaec7ea76b550b0df237b8c8`, version
+`9b8fcdd0-97e8-4f54-9171-38b73de78bfe`. Original-feed acceptance passed; Admin
+acceptance failed because both renewable account inputs were absent. That run
+can only be reused while this remains the current approved candidate and version.
+The authorized existing dedicated account has since received active non-founder
+Admin access through the founder UI; separate login and CI sign-in remain required.
 
 ## Credential Compatibility And Provider Gate
 

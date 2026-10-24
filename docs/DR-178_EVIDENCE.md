@@ -1,5 +1,57 @@
 # DR-178 Recovery Evidence Ledger
 
+## 2026-10-24 Verified Live Recovery Checkpoint
+
+This checkpoint supersedes older deployment and migration statements below.
+Trusted run40103326246 deployed reviewed candidate
+`c807c76222eea8abcaec7ea76b550b0df237b8c8`, Worker version
+`9b8fcdd0-97e8-4f54-9171-38b73de78bfe`. Authorization, packaging and deployment
+passed; live browser independently confirmed exact identity and no legacy bridge.
+The original pre-outage Apple feed passed content and stale200/current304 checks.
+Authenticated CI remains blocked by missing dedicated-account environment secrets;
+this is incomplete acceptance, not failed deployment. Do not redeploy unchanged code.
+
+Actual founder browser session returned authenticated superadmin, founder and staff
+management permissions. Through the normal Invite Admin form, the operator-owned
+authorized existing account received active non-founder Admin access. Read-only
+database verification confirms role=admin, is_founder=false, active=true. No SQL
+privilege insertion or new subscriber/token was used. Dedicated-account login and
+protected reads remain pending. GET /api/admin/staff is still unavailable on c807;
+the follow-up adapter restores that read using requireStaffManager and existing
+listStaff logic. Its source tests are not deployed acceptance.
+The actual audit action is admin.access_granted_existing_user, with
+existingAuthUser=true, invitationSent=false and previousRole=class_rep. No new
+invitation email or new Auth identity is claimed for this existing account.
+The follow-up passed fresh-context source review with no actionable findings and
+clean-install full1134tests/175files including local PostgreSQL17 contracts. Source
+inventory is54 native-not-live-proven,2 incomplete,47 unavailable,0bridged out of103.
+Deployed staff-list acceptance still requires fresh exact-head review/deployment.
+Local lint/format/build, Worker foundation/inventory/runtime checks, automation
+security checks and pinned Wrangler dry-run also passed. Four existing lint
+warnings and eight unchanged dependency advisories remain recorded, not suppressed.
+
+One original SE4.1 Google connection passed the actual admin-only read-only v1
+credential diagnostic: HTTP200, credentialPresent=true,
+decryptionCompatible=true, formatVersion=v1. No plaintext, key rotation or provider
+request was used in that diagnostic. A separate targeted remote read-only preview
+returned HTTP200: expected15, remoteManaged15, mappings15, create0/update0/delete0,
+unchanged15 and ownership-review0. No obsolete Wednesday event was proposed for
+deletion on this connection. This proves provider read authorization for one
+connection, not remote update/delete canary acceptance or full remote content proof.
+No Google event writes were performed; delivery remains disabled.
+
+Migrations0038/0039/0040 are actually applied, tracked respectively as
+20261024061855,20261024061919,20261024143914. The continuation RPC is service-role
+only. Jobs0 is an empty queue, not evidence of real Queue/provider execution.
+After decryption and preview, preservation fingerprints remain unchanged:
+subscriptions163=`1e986d7f90baeccc8ef46b6013469b2e`;
+credentials73=`5928fa6f96249ef673d960775a6f1d14`;
+mappings1091=`97d62644f6ecf46f17b80b2e58f62014`;
+sourceSessions3436=`d2926bb8f934764e31f51363c49d5c7f`;
+directives23=`1514d35ddac2946cb6bbc76c53263d46`.
+The authorized Admin membership change is intentional and separate from those
+preservation checks. Production DNS unchanged; PR113 remains draft; cutover blocked.
+
 ## 2026-10-24 Current Deployed Checkpoint And Follow-Up
 
 Reviewed PR113 candidate `7e42b4b4466674c1b1d6ea63b1edd837b3ecefb2` deployed

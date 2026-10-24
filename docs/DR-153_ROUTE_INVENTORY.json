@@ -936,19 +936,19 @@
     "worker/googleCalendarApi.mjs": "def9a4c0d2e8ef7041d67d4eba34de469679d58312b983592650ea8d393126f4",
     "worker/googleDelivery.mjs": "7ed1bc86961e5a05e9cd2e87296759ff932e9c58b6046674e93272abf90c362d",
     "worker/index.mjs": "4fb931c348f1a2ea79f588c58f207d3128e5beaa40be176ea6b27c99462c5c74",
-    "worker/staffInvitations.mjs": "01dcbd9a054c895fea928db4ff2211624086d61611ef2b8b07fe799158d48669",
+    "worker/staffInvitations.mjs": "c75232f8dba53b1289c965b0a08d1f5cf149e7d19442ec86a2d7d933d9e0a473",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
   },
   "counts": {
     "httpRoutes": 103,
     "nodeDispatchRoutes": 101,
-    "nativeImplementedNotLiveProven": 53,
+    "nativeImplementedNotLiveProven": 54,
     "nativeLiveProven": 0,
     "nativeIncomplete": 2,
     "intentionallyDisabled": 0,
     "bridged": 0,
-    "unavailable": 48
+    "unavailable": 47
   },
   "routes": [
     {
@@ -3254,7 +3254,7 @@
     {
       "method": "GET",
       "path": "/api/admin/staff",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "authPolicy": "Supabase bearer; requireStaffManager; active Admin or founder staff reads",
       "businessOwner": "staffAdminApi",
       "applicationService": "listStaffMembers",
       "databaseDependencies": [
@@ -3268,15 +3268,16 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/nativeStaffInvitations.test.ts"
       ],
@@ -3284,14 +3285,14 @@
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native staff-manager read reuses existing staff listing and assignment projection. Source tests cover RBAC, no-store, redaction and no provisioning writes; exact-candidate deployed acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 91, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3769,7 +3770,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/staffInvitations.mjs",
-        "line": 93,
+        "line": 94,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -3781,13 +3782,13 @@
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Dedicated non-founder account invitation, acceptance, sign-in and deployed Admin reads remain unverified.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 104, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
-          "line": 93,
+          "line": 94,
           "role": "worker implementation"
         }
       ],

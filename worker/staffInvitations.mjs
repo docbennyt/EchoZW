@@ -6,6 +6,7 @@ import { withStaffRepositoryContext } from "../server/staffRepository.ts";
 import {
   AdminAuthError,
   requireFounderSuperadmin,
+  requireStaffManager,
 } from "../server/supabase/auth.ts";
 import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
 import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
@@ -89,15 +90,18 @@ function trustedInvitationOrigin(url, env) {
   return undefined;
 }
 
-// Schema, enrollment, membership and audit stay in the existing server handler.
+// Staff reads, schema, enrollment, membership and audit stay in the server handler.
 export async function handleNativeStaffInvitation(request, env) {
   const url = new URL(request.url);
-  if (url.pathname !== "/api/admin/staff/invite-admin") return null;
-  if (request.method !== "POST") {
+  const isStaffRead = url.pathname === "/api/admin/staff";
+  if (!isStaffRead && url.pathname !== "/api/admin/staff/invite-admin")
+    return null;
+  const allowedMethod = isStaffRead ? "GET" : "POST";
+  if (request.method !== allowedMethod) {
     return json(
       { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
       405,
-      { allow: "POST" },
+      { allow: allowedMethod },
     );
   }
   const origin = request.headers.get("origin");
@@ -109,7 +113,9 @@ export async function handleNativeStaffInvitation(request, env) {
       {
         error: {
           code: "ORIGIN_NOT_ALLOWED",
-          message: "Cross-origin writes are not allowed.",
+          message: isStaffRead
+            ? "Cross-origin staff reads are not allowed."
+            : "Cross-origin writes are not allowed.",
         },
       },
       403,
@@ -123,28 +129,35 @@ export async function handleNativeStaffInvitation(request, env) {
       method: request.method,
       url: url.pathname,
     };
-    const actor = await requireFounderSuperadmin(authRequest, {
+    const authorize = isStaffRead
+      ? requireStaffManager
+      : requireFounderSuperadmin;
+    const actor = await authorize(authRequest, {
       createUserClient: (token) => createSupabaseUserClient(token, env),
       createAdminClient: () => createSupabaseAdminClient(env),
     });
-    if (
-      !/^application\/json(?:\s*;|\s*$)/i.test(
-        request.headers.get("content-type") ?? "",
-      )
-    ) {
-      return json(
-        {
-          error: {
-            code: "UNSUPPORTED_MEDIA_TYPE",
-            message: "Use application/json.",
+    let chunks = [];
+    if (!isStaffRead) {
+      if (
+        !/^application\/json(?:\s*;|\s*$)/i.test(
+          request.headers.get("content-type") ?? "",
+        )
+      ) {
+        return json(
+          {
+            error: {
+              code: "UNSUPPORTED_MEDIA_TYPE",
+              message: "Use application/json.",
+            },
           },
-        },
-        415,
-      );
+          415,
+        );
+      }
+      const body = await boundedBody(request);
+      if (body.error) return body.error;
+      chunks = [body.bytes];
     }
-    const body = await boundedBody(request);
-    if (body.error) return body.error;
-    const req = Object.assign(Readable.from([body.bytes]), authRequest);
+    const req = Object.assign(Readable.from(chunks), authRequest);
     let response;
     let status = 500;
     const res = {

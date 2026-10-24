@@ -303,6 +303,7 @@ export async function buildInventory(
   const bridge = /return\s+proxyLegacyBackend\(/.test(worker.text);
   const unavailable = worker.text.includes("EDGE_ROUTE_UNAVAILABLE");
   const workerRoutes = [
+    ["GET", "/api/admin/staff", "handleNativeStaffInvitation"],
     ["POST", "/api/admin/staff/invite-admin", "handleNativeStaffInvitation"],
     ["POST", "/api/admin/timetables", "handleNativeAdminTimetable"],
     ["GET", "/api/admin/timetables/:timetableId", "handleNativeAdminTimetable"],
@@ -699,7 +700,9 @@ export async function buildInventory(
       authPolicy = "provider callback validation/reconciliation";
     if (nativeSpec?.[2] === "handleNativeStaffInvitation")
       authPolicy =
-        "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only";
+        item.method === "GET"
+          ? "Supabase bearer; requireStaffManager; active Admin or founder staff reads"
+          : "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only";
     const calls = [...new Set(item.handlers.flatMap((h) => h.calls))].filter(
       (name) =>
         !/^(send|read|parse|decode|encode|String|Number|Boolean)/.test(name),
@@ -764,7 +767,9 @@ export async function buildInventory(
     if (nativeSpec?.[2] === "handleNativeStaffInvitation") {
       contractTests.push("tests/nativeStaffInvitations.test.ts");
       remainingBlocker =
-        "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Dedicated non-founder account invitation, acceptance, sign-in and deployed Admin reads remain unverified.";
+        item.method === "GET"
+          ? "Native staff-manager read reuses existing staff listing and assignment projection. Source tests cover RBAC, no-store, redaction and no provisioning writes; exact-candidate deployed acceptance pending."
+          : "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.";
     }
     if (disabled)
       remainingBlocker =
