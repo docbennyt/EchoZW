@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 import type {
   StaffAuthContext,
@@ -67,13 +68,26 @@ export type StaffAssignmentSummary = {
 };
 
 let repositoryEnv: NodeJS.ProcessEnv | undefined;
+const requestContext = new AsyncLocalStorage<{
+  env: NodeJS.ProcessEnv;
+  invitationOrigin?: string;
+}>();
+
+export function withStaffRepositoryContext<T>(
+  context: { env: NodeJS.ProcessEnv; invitationOrigin?: string },
+  operation: () => T,
+): T {
+  return requestContext.run(context, operation);
+}
 
 export function setStaffRepositoryEnv(env: NodeJS.ProcessEnv) {
   repositoryEnv = env;
 }
 
 function client() {
-  return createSupabaseAdminClient(repositoryEnv ?? process.env);
+  return createSupabaseAdminClient(
+    requestContext.getStore()?.env ?? repositoryEnv ?? process.env,
+  );
 }
 
 export function staffMutationActor(
@@ -98,21 +112,22 @@ function safeEmail(value: string) {
 }
 
 function publicOrigin() {
+  const env = requestContext.getStore()?.env ?? repositoryEnv;
   return (
-    repositoryEnv?.PUBLIC_APP_URL ??
+    env?.PUBLIC_APP_URL ??
     process.env.PUBLIC_APP_URL ??
-    repositoryEnv?.VITE_PUBLIC_APP_URL ??
+    env?.VITE_PUBLIC_APP_URL ??
     process.env.VITE_PUBLIC_APP_URL ??
-    repositoryEnv?.PUBLIC_SITE_URL ??
+    env?.PUBLIC_SITE_URL ??
     process.env.PUBLIC_SITE_URL ??
-    repositoryEnv?.VITE_PUBLIC_SITE_URL ??
+    env?.VITE_PUBLIC_SITE_URL ??
     process.env.VITE_PUBLIC_SITE_URL ??
     "https://calender.aido.co.zw"
   ).replace(/\/$/, "");
 }
 
 function staffSetupRedirect() {
-  return `${publicOrigin()}/account/update-password`;
+  return `${requestContext.getStore()?.invitationOrigin ?? publicOrigin()}/account/update-password`;
 }
 
 function mapAssignment(row: JsonRecord): StaffAssignmentSummary {

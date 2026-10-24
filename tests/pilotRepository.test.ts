@@ -177,7 +177,12 @@ describe("pilot timetable repository draft recovery", () => {
     const { client, state } = createDraftRecoveryClient();
     adminClientMocks.createSupabaseAdminClient.mockReturnValue(client);
 
-    const editor = await getTimetableEditor("tt-1", "admin-1");
+    const env = { SUPABASE_URL: "https://request.invalid" };
+    const editor = await getTimetableEditor("tt-1", "admin-1", env);
+
+    for (const call of adminClientMocks.createSupabaseAdminClient.mock.calls) {
+      expect(call[0]).toBe(env);
+    }
 
     expect(editor.timetable.id).toBe("tt-1");
     expect(editor.activeVersion.id).toBe("version-1");

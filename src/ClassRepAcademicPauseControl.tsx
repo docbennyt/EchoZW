@@ -31,6 +31,11 @@ function todayKey() {
   return local.toISOString().slice(0, 10);
 }
 
+function impactText(impact: AcademicPauseImpact) {
+  if (impact.previewStatus === "unknown") return "Lecture impact unavailable.";
+  return `${impact.previewStatus === "partial" ? "Partial preview: at least " : ""}${impact.newlySuppressedLectureCount} lecture${impact.newlySuppressedLectureCount === 1 ? "" : "s"} will be suppressed.`;
+}
+
 type PauseForm = {
   scopeType: "timetable" | "session";
   stableSessionKey: string;
@@ -197,6 +202,13 @@ export function ClassRepAcademicPauseAction({
       );
       setPreview(result.impact);
     } catch (caught) {
+      setPreview({
+        affectedTimetableCount: 0,
+        affectedTimetableCountKnown: false,
+        newlySuppressedLectureCount: 0,
+        previewStatus: "unknown",
+        previewReason: "read_failed",
+      });
       setError(
         caught instanceof Error
           ? caught.message
@@ -216,9 +228,7 @@ export function ClassRepAcademicPauseAction({
         assignment.timetableId,
         toInput(form),
       );
-      onMessage(
-        `Paused — ${result.pause.label}. ${result.impact.newlySuppressedLectureCount} lecture${result.impact.newlySuppressedLectureCount === 1 ? "" : "s"} suppressed without deleting the weekly timetable.`,
-      );
+      onMessage(`Paused — ${result.pause.label}. ${impactText(result.impact)}`);
       setOpen(false);
       setForm(initialForm());
       setPreview(null);
@@ -422,13 +432,7 @@ export function ClassRepAcademicPauseAction({
                   <div className="dr58-impact" role="status">
                     <CheckCircle2 size={18} aria-hidden="true" />
                     <div>
-                      <strong>
-                        {preview.newlySuppressedLectureCount} lecture
-                        {preview.newlySuppressedLectureCount === 1
-                          ? ""
-                          : "s"}{" "}
-                        will be suppressed
-                      </strong>
+                      <strong>{impactText(preview)}</strong>
                       <span>
                         No recurring class is deleted. The schedule restores
                         automatically after {form.endsOn} or when you resume
@@ -457,7 +461,15 @@ export function ClassRepAcademicPauseAction({
                   </button>
                   <button
                     type="button"
-                    disabled={!preview || Boolean(busy)}
+                    disabled={
+                      !preview ||
+                      Boolean(busy) ||
+                      !form.label.trim() ||
+                      !form.startsOn ||
+                      !form.endsOn ||
+                      form.endsOn < form.startsOn ||
+                      (scopeSession && !form.stableSessionKey)
+                    }
                     onClick={() => void savePause()}
                   >
                     <CalendarOff size={16} aria-hidden="true" />

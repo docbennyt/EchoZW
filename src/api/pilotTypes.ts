@@ -197,8 +197,16 @@ export type AdminAcademicSchedulePause = AcademicSchedulePause & {
 };
 
 export type AcademicPauseImpact = {
+  /** Meaningful only when affectedTimetableCountKnown is not false. */
   affectedTimetableCount: number;
+  /** A lower bound for partial previews; unavailable for unknown previews. */
   newlySuppressedLectureCount: number;
+  previewStatus?: "exact" | "partial" | "unknown";
+  previewReason?: "bounds" | "read_failed" | "scope_incomplete";
+  affectedTimetableCountKnown?: boolean;
+  evaluatedTimetableCount?: number;
+  /** Aggregate timetable-days, not distinct calendar dates. */
+  evaluatedDayCount?: number;
 };
 
 export type TimetableMutationOutcome =

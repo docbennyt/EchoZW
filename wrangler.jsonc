@@ -3,8 +3,14 @@
   "name": "calenderzw-edge",
   "main": "./worker/index.mjs",
   "compatibility_date": "2026-10-03",
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": false },
+    "traces": { "enabled": false },
+  },
   "assets": {
     "directory": "./dist/",
     "binding": "ASSETS",
@@ -27,7 +33,6 @@
   "vars": {
     "APP_ENV": "cloudflare-local",
     "PUBLIC_APP_URL": "https://calender.aido.co.zw",
-    "LEGACY_BACKEND_ORIGIN": "https://calender.up.railway.app",
   },
   "env": {
     "staging": {
@@ -46,8 +51,9 @@
         "APP_ENV": "cloudflare-staging",
         "PUBLIC_APP_URL": "https://calender.aido.co.zw",
         "STAGING_ORIGIN": "https://next.calender.aido.co.zw",
-        "LEGACY_BACKEND_ORIGIN": "https://calender.up.railway.app",
+        "ENABLE_GOOGLE_DELIVERY": "false",
       },
+      "triggers": { "crons": ["* * * * *"] },
       "r2_buckets": [
         {
           "binding": "SOURCE_BUCKET",
@@ -73,10 +79,14 @@
           {
             "queue": "calenderzw-source-processing-staging",
             "dead_letter_queue": "calenderzw-source-processing-dlq-staging",
+            "max_retries": 5,
           },
           {
             "queue": "calenderzw-push-staging",
             "dead_letter_queue": "calenderzw-push-dlq-staging",
+            "max_retries": 5,
+            "max_batch_size": 1,
+            "max_concurrency": 1,
           },
         ],
       },

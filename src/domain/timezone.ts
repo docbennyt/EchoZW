@@ -2,6 +2,27 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
 
 const vtimezoneCache = new Map<string, string[]>();
+const validatedTimeZones = new Set<string>();
+const offsetFormatters = new Map<string, Intl.DateTimeFormat>();
+const shortNameFormatters = new Map<string, Intl.DateTimeFormat>();
+const MAX_CACHED_TIME_ZONES = 64;
+
+function rememberFormatter(
+  cache: Map<string, Intl.DateTimeFormat>,
+  zone: string,
+  options: Intl.DateTimeFormatOptions,
+) {
+  const existing = cache.get(zone);
+  if (existing) return existing;
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    ...options,
+    timeZone: zone,
+  });
+  if (cache.size >= MAX_CACHED_TIME_ZONES)
+    cache.delete(cache.keys().next().value!);
+  cache.set(zone, formatter);
+  return formatter;
+}
 
 function pad(value: number, length = 2) {
   return String(value).padStart(length, "0");
@@ -12,6 +33,7 @@ export function assertIanaTimeZone(timeZone: string) {
   if (!normalized) {
     throw new Error("Institution timezone is required.");
   }
+  if (validatedTimeZones.has(normalized)) return normalized;
 
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: normalized }).format(
@@ -20,6 +42,10 @@ export function assertIanaTimeZone(timeZone: string) {
   } catch {
     throw new Error(`Unsupported institution timezone: ${normalized}`);
   }
+
+  if (validatedTimeZones.size >= MAX_CACHED_TIME_ZONES)
+    validatedTimeZones.delete(validatedTimeZones.values().next().value!);
+  validatedTimeZones.add(normalized);
 
   return normalized;
 }
@@ -36,8 +62,7 @@ function parseOffsetName(value: string) {
 
 export function getTimeZoneOffsetMinutes(instant: Date, timeZone: string) {
   const zone = assertIanaTimeZone(timeZone);
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: zone,
+  const formatter = rememberFormatter(offsetFormatters, zone, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -55,8 +80,7 @@ export function getTimeZoneOffsetMinutes(instant: Date, timeZone: string) {
 export function getTimeZoneShortName(instant: Date, timeZone: string) {
   const zone = assertIanaTimeZone(timeZone);
   return (
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: zone,
+    rememberFormatter(shortNameFormatters, zone, {
       timeZoneName: "short",
     })
       .formatToParts(instant)
@@ -279,7 +303,8 @@ export function foldIcsLineUtf8(line: string, maxOctets = 75) {
   let contentLimit = maxOctets;
 
   for (const character of line) {
-    const characterOctets = encoder.encode(character).length;
+    const characterOctets =
+      character.charCodeAt(0) < 128 ? 1 : encoder.encode(character).length;
     if (current && currentOctets + characterOctets > contentLimit) {
       segments.push(current);
       current = character;

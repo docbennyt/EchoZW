@@ -42,8 +42,8 @@ export type AcademicPauseInput = {
   provenance?: string | null;
 };
 
-function client() {
-  return createSupabaseAdminClient();
+function client(env?: NodeJS.ProcessEnv) {
+  return createSupabaseAdminClient(env);
 }
 
 export function isMissingAcademicPauseSchemaError(error: unknown) {
@@ -234,15 +234,18 @@ function enforceActorScope(actor: StaffAuthContext, input: AcademicPauseInput) {
   }
 }
 
-export async function createAcademicPause(input: {
-  actor: StaffAuthContext;
-  pause: AcademicPauseInput;
-}) {
+export async function createAcademicPause(
+  input: {
+    actor: StaffAuthContext;
+    pause: AcademicPauseInput;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   validateInput(input.pause);
   enforceScopeShape(input.pause);
   enforceActorScope(input.actor, input.pause);
 
-  const { data, error } = await client()
+  const { data, error } = await client(env)
     .from("academic_schedule_pauses")
     .insert({
       scope_type: input.pause.scopeType,
@@ -290,15 +293,18 @@ export async function createAcademicPause(input: {
   return mapPause(data as JsonRecord);
 }
 
-export async function listActiveAcademicPausesForTimetable(input: {
-  timetableId: string;
-  institutionId: string;
-  programmeId: string;
-  cohortId: string;
-  startsOn: string | null;
-  endsOn: string | null;
-}): Promise<AcademicSchedulePause[]> {
-  let query = client()
+export async function listActiveAcademicPausesForTimetable(
+  input: {
+    timetableId: string;
+    institutionId: string;
+    programmeId: string;
+    cohortId: string;
+    startsOn: string | null;
+    endsOn: string | null;
+  },
+  env?: NodeJS.ProcessEnv,
+): Promise<AcademicSchedulePause[]> {
+  let query = createSupabaseAdminClient(env)
     .from("academic_schedule_pauses")
     .select("*")
     .eq("active", true)
@@ -331,8 +337,8 @@ export async function listActiveAcademicPausesForTimetable(input: {
   );
 }
 
-export async function listAcademicPauses() {
-  const { data, error } = await client()
+export async function listAcademicPauses(env?: NodeJS.ProcessEnv) {
+  const { data, error } = await client(env)
     .from("academic_schedule_pauses")
     .select("*")
     .order("created_at", { ascending: false });
@@ -348,8 +354,11 @@ export async function listAcademicPauses() {
   return (data ?? []).map((row) => mapPause(row as JsonRecord));
 }
 
-export async function listAcademicPausesForTimetable(timetableId: string) {
-  const { data, error } = await client()
+export async function listAcademicPausesForTimetable(
+  timetableId: string,
+  env?: NodeJS.ProcessEnv,
+) {
+  const { data, error } = await client(env)
     .from("academic_schedule_pauses")
     .select("*")
     .eq("timetable_id", timetableId)
@@ -368,10 +377,18 @@ export async function listAcademicPausesForTimetable(timetableId: string) {
 
 export async function listPublishedTimetableIdsForPauseScope(
   pause: AcademicPauseInput,
+  env?: NodeJS.ProcessEnv,
 ) {
-  let query = client()
+  return (await getPublishedTimetableScopeForPause(pause, env)).timetableIds;
+}
+
+export async function getPublishedTimetableScopeForPause(
+  pause: AcademicPauseInput,
+  env?: NodeJS.ProcessEnv,
+) {
+  let query = client(env)
     .from("timetables")
-    .select("id")
+    .select("id", { count: "exact" })
     .not("current_published_version_id", "is", null);
   if (pause.scopeType === "institution") {
     query = query.eq("institution_id", pause.institutionId as string);
@@ -382,7 +399,7 @@ export async function listPublishedTimetableIdsForPauseScope(
   } else {
     query = query.eq("id", pause.timetableId as string);
   }
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) {
     throw new AcademicPauseRepositoryError(
       "DATABASE_UNAVAILABLE",
@@ -391,15 +408,29 @@ export async function listPublishedTimetableIdsForPauseScope(
       error,
     );
   }
-  return (data ?? []).map((row) => String((row as JsonRecord).id));
+  const timetableIds = (data ?? []).map((row) =>
+    String((row as JsonRecord).id),
+  );
+  return {
+    timetableIds,
+    totalCount:
+      typeof count === "number" &&
+      Number.isSafeInteger(count) &&
+      count >= timetableIds.length
+        ? count
+        : null,
+  };
 }
 
-export async function deactivateAcademicPause(input: {
-  actor: StaffAuthContext;
-  pauseId: string;
-  timetableId?: string | null;
-}) {
-  const pauseResult = await client()
+export async function deactivateAcademicPause(
+  input: {
+    actor: StaffAuthContext;
+    pauseId: string;
+    timetableId?: string | null;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
+  const pauseResult = await client(env)
     .from("academic_schedule_pauses")
     .select("*")
     .eq("id", input.pauseId)
@@ -428,6 +459,18 @@ export async function deactivateAcademicPause(input: {
   }
   const pause = mapPause(pauseResult.data as JsonRecord);
 
+  if (
+    input.timetableId &&
+    ((pause.scopeType !== "timetable" && pause.scopeType !== "session") ||
+      pause.timetableId !== input.timetableId)
+  ) {
+    throw new AcademicPauseRepositoryError(
+      "FORBIDDEN",
+      "This pause does not belong to the requested timetable.",
+      403,
+    );
+  }
+
   if (!input.actor.permissions.canManageAllTimetables) {
     const scoped =
       (pause.scopeType === "timetable" || pause.scopeType === "session") &&
@@ -447,7 +490,7 @@ export async function deactivateAcademicPause(input: {
 
   if (!pause.active) return pause;
   const now = new Date().toISOString();
-  const { data, error } = await client()
+  const { data, error } = await client(env)
     .from("academic_schedule_pauses")
     .update({
       active: false,

@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import {
-  createRecurringCorrection,
   createSessionException,
   dedupeCorrections,
   dedupeExceptions,
@@ -17,23 +16,10 @@ import {
 import { syncGoogleSubscriptionsForTimetable } from "./googleCalendarSync.js";
 import { PilotApiError } from "./pilotRepository.js";
 import type { StaffAuthContext } from "./supabase/auth.js";
-
-const correctionSchema = z.object({
-  stableSessionKey: z.string().trim().nullable().optional(),
-  action: z.enum(["add", "modify", "remove"]),
-  sourceMayReplace: z.boolean(),
-  courseCode: z.string().trim().nullable().optional(),
-  courseName: z.string().trim().nullable().optional(),
-  weekday: z.number().int().min(1).max(7).nullable().optional(),
-  startTime: z.string().trim().nullable().optional(),
-  endTime: z.string().trim().nullable().optional(),
-  venue: z.string().trim().nullable().optional(),
-  lecturer: z.string().trim().nullable().optional(),
-  sessionType: z.string().trim().nullable().optional(),
-  notes: z.string().trim().nullable().optional(),
-  reason: z.string().trim().min(1),
-  provenance: z.string().trim().nullable().optional(),
-});
+import {
+  correctionSchema,
+  saveRecurringCorrection,
+} from "./correctionsCore.js";
 
 const exceptionSchema = z.object({
   stableSessionKey: z.string().trim().nullable().optional(),
@@ -169,13 +155,12 @@ export async function handleCorrectionsAdminApi(
     }
     if (req.method === "POST" && correctionsMatch) {
       const timetableId = decodeURIComponent(correctionsMatch[1]);
-      const parsed = correctionSchema.parse(await readJson(req));
-      const result = await createRecurringCorrection({
+      const result = await saveRecurringCorrection(
         timetableId,
         actor,
-        mutationKey: mutationKey(req),
-        ...parsed,
-      });
+        await readJson(req),
+        mutationKey(req),
+      );
       const changed = result.mutationOutcome === "created";
       const googleCalendarSync = changed
         ? await syncGoogleCalendars(timetableId)

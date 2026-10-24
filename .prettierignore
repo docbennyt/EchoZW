@@ -4,6 +4,8 @@ dist-server/
 coverage/
 playwright-report/
 test-results/
+.wrangler/
+.wrangler-dry-run/
 .agents/
 CalenderZW-VPS/
 CalenderZW_Antigravity_Landing_Pack/

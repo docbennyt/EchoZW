@@ -50,8 +50,9 @@ function isSchemaCompatibilityError(error: SupabaseErrorLike | null) {
  */
 export async function getTimetablePublicDisplaySettings(
   timetableId: string,
+  env?: NodeJS.ProcessEnv,
 ): Promise<TimetablePublicDisplaySettings> {
-  const client = createSupabaseAdminClient();
+  const client = createSupabaseAdminClient(env);
   const { data, error } = await client
     .from("timetable_public_settings")
     .select("show_visual_preview, show_change_alerts")
@@ -65,13 +66,16 @@ export async function getTimetablePublicDisplaySettings(
   return mapSettings(data as SettingsRow | null);
 }
 
-export async function updateTimetablePublicDisplaySettings(input: {
-  timetableId: string;
-  staffUserId: string;
-  showVisualPreview: boolean;
-  showChangeAlerts: boolean;
-}): Promise<TimetablePublicDisplaySettings> {
-  const client = createSupabaseAdminClient();
+export async function updateTimetablePublicDisplaySettings(
+  input: {
+    timetableId: string;
+    staffUserId: string;
+    showVisualPreview: boolean;
+    showChangeAlerts: boolean;
+  },
+  env?: NodeJS.ProcessEnv,
+): Promise<TimetablePublicDisplaySettings> {
+  const client = createSupabaseAdminClient(env);
   const { data, error } = await client
     .from("timetable_public_settings")
     .upsert(
