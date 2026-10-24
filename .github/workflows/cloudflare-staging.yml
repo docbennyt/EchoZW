@@ -120,7 +120,13 @@ jobs:
           ARTIFACT_ID: ${{ needs.package.outputs.artifact_id }}
           ARTIFACT_DIGEST: ${{ needs.package.outputs.artifact_digest }}
       - name: Prepare trusted deployment configuration
-        run: node scripts/prepare-staging-deployment.mjs
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/contents/wrangler.jsonc?ref=$CANDIDATE_SHA" -H "Accept: application/vnd.github.raw+json" > /tmp/candidate-wrangler.jsonc
+          node scripts/prepare-staging-deployment.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_CONFIG_PATH: /tmp/candidate-wrangler.jsonc
       - name: Deploy reviewed bundle
         id: deploy
         run: |
