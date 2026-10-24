@@ -1,5 +1,56 @@
 # DR-178 Recovery Evidence Ledger
 
+## 2026-10-25 Protected Acceptance And Canonical Admin Recovery
+
+This checkpoint supersedes historical blockers below. PR116 is merged at protected
+Calender `697dc811f0e7c1aa771852fa552a00ad983b9ec1`; post-merge CI40135459819 passed.
+Trusted acceptance-only run40135495579 succeeded against unchanged deployed PR113
+candidate `443c6ab622f583fdd396ed71d850ee19e1ebef27`, Worker version
+`12341525-6d46-4fdb-93aa-95f1cf78ca06`. No redeployment occurred. The repaired
+verifier validates direct/enveloped deployment API responses without relaxing
+exact active-version, artifact digest or eligible exact-commit review checks.
+
+Protected renewable dedicated non-founder Admin sign-in and protected reads passed.
+The original pre-outage Apple ICS Part1.1 URL passed content, private caching and
+stale ETag200/current ETag304 checks without subscription regeneration. Deployed
+desktop/mobile browser acceptance and final immutable release identity passed.
+Actual browser staff listing returned14 records; non-founder Admin cannot invite
+Admins. No secret values or identifying records are recorded here.
+
+One existing encrypted Google credential again passed read-only v1 compatibility
+on443. This diagnostic makes no provider request. The earlier targeted provider
+read preview remains separate from remote mutation proof. The operator has now
+authorized an isolated owned-test-account Google canary using normal OAuth and a
+new CZW-managed test calendar only; it has not yet been executed. Existing student
+connections and unrelated events are outside that authorization. Delivery remains
+disabled; live Queue processing and Google create/update/delete remain unproven.
+
+The next source slice restores eight existing canonical Admin POST/PATCH contracts
+for institutions, programmes, class-groups and academic-periods. A narrowly scoped
+Worker adapter reuses existing handler validation and repository services with
+explicit per-request bindings. Operational Admin RBAC, origin checks, bounded JSON,
+no-store and sanitized server failures are covered. No schema change or privileged
+SQL setup is required. Initial focused suite:81 tests passed across5 files,
+including24 independent repository binding tests. Separate source review found no
+actionable authorization, origin/body, redaction, binding or allowlist findings.
+Clean installation and full local1239tests/180files passed with PostgreSQL17
+contracts required; lint and format passed with4 existing warnings. Eight unchanged
+dependency advisories remain (4moderate/4high). Exact-head hosted gates and reviewed
+staging acceptance remain required. These new writes are not yet deployed or
+live-accepted. PR113 stays draft and production DNS remains unchanged.
+Production build, Worker/inventory/no-retired-runtime checks, automation security
+and pinned Wrangler4.147.0 dry-run passed. The build first caught an overly broad
+HTTP-status literal in a new test; narrowing the test literals fixed compilation,
+then all60 new focused tests passed again. Bundle1620.77KiB (gzip288.61KiB).
+
+The isolated Google canary cannot safely use the current global delivery switch:
+it also enables broad scheduled recovery. Independent inspection confirms that
+normal-UI Google status/enrollment has no restricted test-subscription scope.
+Before provider writes, restrict enrollment/OAuth, enqueue, Queue claim and retry
+wakeups to an operator-authorized exact test subscription while global recovery
+stays disabled. This is a remaining engineering/acceptance gap, not an absent key,
+missing test-account authorization or reason to mutate existing student calendars.
+
 ## 2026-10-24 Verified Live Recovery Checkpoint
 
 This checkpoint supersedes older deployment and migration statements below.

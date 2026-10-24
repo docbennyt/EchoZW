@@ -303,6 +303,15 @@ export async function buildInventory(
   const bridge = /return\s+proxyLegacyBackend\(/.test(worker.text);
   const unavailable = worker.text.includes("EDGE_ROUTE_UNAVAILABLE");
   const workerRoutes = [
+    ...[
+      "institutions",
+      "programmes",
+      "class-groups",
+      "academic-periods",
+    ].flatMap((entity) => [
+      ["POST", `/api/admin/${entity}`, "handleNativeAdminEntities"],
+      ["PATCH", `/api/admin/${entity}/:id`, "handleNativeAdminEntities"],
+    ]),
     ["GET", "/api/admin/staff", "handleNativeStaffInvitation"],
     ["POST", "/api/admin/staff/invite-admin", "handleNativeStaffInvitation"],
     ["POST", "/api/admin/timetables", "handleNativeAdminTimetable"],
@@ -770,6 +779,15 @@ export async function buildInventory(
         item.method === "GET"
           ? "Native staff-manager read reuses existing staff listing and assignment projection. Source tests cover RBAC, no-store, redaction and no provisioning writes; exact-candidate deployed acceptance pending."
           : "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.";
+    }
+    if (nativeSpec?.[2] === "handleNativeAdminEntities") {
+      contractTests.push(
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts",
+        "tests/adminEntityBindings.test.ts",
+      );
+      remainingBlocker =
+        "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.";
     }
     if (disabled)
       remainingBlocker =

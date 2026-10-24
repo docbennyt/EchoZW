@@ -777,10 +777,10 @@
     "server/paymentRepository.ts": "17916d84d1f26952bde1d15915d4160b815ed9ba56ec328e5e3f14931b9f5367",
     "server/pdfTextReader.ts": "47337bdfb4ebd678a340d09f17c0651dd5375d9565292b5da9c00fb399f29464",
     "server/pesepayGateway.ts": "96c8a8693fcd8a425fbce8ed51609bf44e7e5cd92c25480d4ed84d4438205cb0",
-    "server/pilotAdminApi.ts": "b2ce79ae6947dde16f0b1f6d9afa1f05836308eb6c89597047ff1255627cb68a",
+    "server/pilotAdminApi.ts": "0f50c6bde4e1b2491163729f0c58f2c159035957bde5ade541385e2978c2c5e6",
     "server/pilotCalendarApi.ts": "bcee8f1eb15f4ae1c73cc16b4ab41dbb6e1d3579dd320fb183fa5a3709034c41",
     "server/pilotCalendarCore.ts": "2a0219094ce5f20bee1312f9fc351d9758a4a6976e495081632d414d2ece8bd5",
-    "server/pilotRepository.ts": "c2688e191b91b19d485f5093c9c1bb0b91a2d9270b748925c3b200196c45e5de",
+    "server/pilotRepository.ts": "95bb0058a402617bee84517f06aa62acbbcbdcb5f5bdb286928ba4fd86e12867",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
     "server/publicTimetableApi.ts": "84901a5a825c5b0b0549221f7f2cfdbe3191db33eaf221f418135e284f91bf73",
     "server/publicTimetableCore.ts": "2e4c1d1a7596e5178cccd1a9124c2d1df47aa1822aa4a202d9b406beea6b7c69",
@@ -931,11 +931,12 @@
     "src/utils/supabase/runtimeConfig.ts": "1c5883d82f77b87aa55838c83dc2ebb7ea1d6a48faf91b64d0c7c95814f32cc4",
     "src/utils/supabase/server.ts": "d51672809f7030b84e135be92188c943973027af203b2fbd55aed32895b6113a",
     "src/vite-env.d.ts": "67ba1f5b1f143fc83aaae9454c491d181061a1e1feff96966887dc45c117d694",
+    "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "cc43df8f7cf74e3bac9945341fa0cd38eed7ae346eb9a72a40a023008326780f",
     "worker/googleCalendarApi.mjs": "def9a4c0d2e8ef7041d67d4eba34de469679d58312b983592650ea8d393126f4",
     "worker/googleDelivery.mjs": "7ed1bc86961e5a05e9cd2e87296759ff932e9c58b6046674e93272abf90c362d",
-    "worker/index.mjs": "4fb931c348f1a2ea79f588c58f207d3128e5beaa40be176ea6b27c99462c5c74",
+    "worker/index.mjs": "191614ff5fd17ff34c820bfa635759887293305344d4723f3594226d77abf24a",
     "worker/staffInvitations.mjs": "c75232f8dba53b1289c965b0a08d1f5cf149e7d19442ec86a2d7d933d9e0a473",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
@@ -943,12 +944,12 @@
   "counts": {
     "httpRoutes": 103,
     "nodeDispatchRoutes": 101,
-    "nativeImplementedNotLiveProven": 54,
+    "nativeImplementedNotLiveProven": 62,
     "nativeLiveProven": 0,
     "nativeIncomplete": 2,
     "intentionallyDisabled": 0,
     "bridged": 0,
-    "unavailable": 47
+    "unavailable": 39
   },
   "routes": [
     {
@@ -966,7 +967,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 185,
+        "line": 186,
         "role": "worker implementation"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -979,7 +980,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 185,
+          "line": 186,
           "role": "worker implementation"
         }
       ],
@@ -1016,7 +1017,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -1034,7 +1035,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -1066,7 +1067,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1091,7 +1092,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -1160,7 +1161,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1185,7 +1186,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -1227,7 +1228,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1309,7 +1310,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1334,7 +1335,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -1376,7 +1377,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1446,7 +1447,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1470,7 +1471,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -1497,7 +1498,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2110,
+          "line": 2126,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1545,7 +1546,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1559,10 +1560,10 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 313, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 317, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -1574,12 +1575,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 316,
+          "line": 320,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1100,
+          "line": 1112,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1611,26 +1612,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRecovery.test.ts"],
+      "contractTests": [
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 325, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 329, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -1641,12 +1648,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 328,
+          "line": 332,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1123,
+          "line": 1135,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1663,7 +1670,7 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/admin/academic-periods/:param1",
+      "path": "/api/admin/academic-periods/:id",
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "updateAcademicPeriod",
@@ -1678,26 +1685,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRecovery.test.ts"],
+      "contractTests": [
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 339, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 343, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -1708,12 +1721,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 339,
+          "line": 343,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1174,
+          "line": 1189,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1756,7 +1769,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/adminAnalyticsApi.test.ts"],
@@ -1774,7 +1787,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -1844,7 +1857,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -1865,7 +1878,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -1925,7 +1938,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1939,10 +1952,10 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 280, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 283, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -1954,12 +1967,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 283,
+          "line": 286,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 928,
+          "line": 936,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1991,26 +2004,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRecovery.test.ts"],
+      "contractTests": [
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 290, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 293, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -2021,12 +2040,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 293,
+          "line": 296,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 948,
+          "line": 956,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2043,7 +2062,7 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/admin/class-groups/:param1",
+      "path": "/api/admin/class-groups/:id",
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "updateClassGroup",
@@ -2058,26 +2077,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRecovery.test.ts"],
+      "contractTests": [
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 302, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 305, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -2088,12 +2113,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 302,
+          "line": 305,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1020,
+          "line": 1031,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2126,7 +2151,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2144,7 +2169,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -2198,7 +2223,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2216,7 +2241,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -2266,7 +2291,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2284,7 +2309,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -2334,13 +2359,15 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminAuth.test.ts",
         "tests/cloudflareRecovery.test.ts",
-        "tests/cloudflareRuntimeFoundation.test.ts"
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -2349,10 +2376,10 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 216, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 217, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -2364,7 +2391,7 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 219,
+          "line": 220,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2398,29 +2425,33 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminAuth.test.ts",
-        "tests/cloudflareRecovery.test.ts"
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 224, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 225, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -2431,7 +2462,7 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 227,
+          "line": 228,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2453,7 +2484,7 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/admin/institutions/:param1",
+      "path": "/api/admin/institutions/:id",
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "updateInstitution",
@@ -2465,29 +2496,33 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminAuth.test.ts",
-        "tests/cloudflareRecovery.test.ts"
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 236, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 237, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -2498,12 +2533,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 236,
+          "line": 237,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 794,
+          "line": 797,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2540,7 +2575,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2559,7 +2594,7 @@
         { "file": "server/adminApi.ts", "line": 82, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -2637,7 +2672,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2651,10 +2686,10 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 247, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 249, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -2666,12 +2701,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 250,
+          "line": 252,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 835,
+          "line": 839,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2703,26 +2738,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRecovery.test.ts"],
+      "contractTests": [
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 257, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 259, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -2733,12 +2774,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 260,
+          "line": 262,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 855,
+          "line": 859,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2755,7 +2796,7 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/admin/programmes/:param1",
+      "path": "/api/admin/programmes/:id",
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "updateProgramme",
@@ -2770,26 +2811,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 172,
-        "role": "503 unavailable response"
+        "file": "worker/adminEntities.mjs",
+        "line": 72,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRecovery.test.ts"],
+      "contractTests": [
+        "tests/adminEntityBindings.test.ts",
+        "tests/cloudflareRecovery.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminEntities.test.ts",
+        "tests/nativeAdminEntityAuthorization.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 269, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 271, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 172,
-          "role": "503 unavailable response"
+          "file": "worker/adminEntities.mjs",
+          "line": 72,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -2800,12 +2847,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 269,
+          "line": 271,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 887,
+          "line": 894,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2842,7 +2889,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2867,7 +2914,7 @@
         { "file": "server/adminApi.ts", "line": 64, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -2954,7 +3001,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2972,7 +3019,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3033,7 +3080,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3051,7 +3098,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3113,7 +3160,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3131,7 +3178,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3191,7 +3238,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3209,7 +3256,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3279,6 +3326,7 @@
         "tests/adminScopedRoutes.test.ts",
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
@@ -3344,12 +3392,13 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
@@ -3362,7 +3411,7 @@
         { "file": "server/staffAdminApi.ts", "line": 130, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3416,12 +3465,13 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
@@ -3434,7 +3484,7 @@
         { "file": "server/staffAdminApi.ts", "line": 157, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3487,12 +3537,13 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
@@ -3505,7 +3556,7 @@
         { "file": "server/staffAdminApi.ts", "line": 144, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3559,12 +3610,13 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
@@ -3577,7 +3629,7 @@
         { "file": "server/staffAdminApi.ts", "line": 118, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3630,7 +3682,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/dr56StaffOnboardingSecurity.test.ts"],
@@ -3644,7 +3696,7 @@
         { "file": "server/staffAdminApi.ts", "line": 172, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3698,7 +3750,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3716,7 +3768,7 @@
         { "file": "server/staffAdminApi.ts", "line": 96, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3858,7 +3910,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3879,7 +3931,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -3979,7 +4031,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4000,7 +4052,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -4100,7 +4152,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4121,7 +4173,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -4221,7 +4273,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4242,7 +4294,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -4327,7 +4379,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4348,7 +4400,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -4418,7 +4470,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4439,7 +4491,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -4519,7 +4571,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4540,7 +4592,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -4588,7 +4640,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 460,
+        "line": 461,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -4597,6 +4649,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -4611,10 +4664,10 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 350, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 355, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 460,
+          "line": 461,
           "role": "worker implementation"
         }
       ],
@@ -4626,12 +4679,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 353,
+          "line": 358,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1274,
+          "line": 1290,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4681,6 +4734,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -4695,7 +4749,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 358, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 363, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -4710,12 +4764,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 361,
+          "line": 366,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1482,
+          "line": 1498,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4761,6 +4815,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -4775,7 +4830,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 377, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 382, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -4790,12 +4845,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 377,
+          "line": 382,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1482,
+          "line": 1498,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4842,6 +4897,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -4950,6 +5006,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5018,7 +5075,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5112,6 +5169,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5175,7 +5233,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5271,6 +5329,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5339,7 +5398,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5433,6 +5492,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5496,7 +5556,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5591,6 +5651,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5654,7 +5715,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5749,6 +5810,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5812,7 +5874,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5906,6 +5968,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -5969,7 +6032,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6065,6 +6128,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6128,7 +6192,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6222,6 +6286,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6285,7 +6350,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6380,6 +6445,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6443,7 +6509,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6534,6 +6600,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6548,7 +6615,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 453, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 458, "role": "dispatch" },
         {
           "file": "worker/googleCalendarApi.mjs",
           "line": 221,
@@ -6583,12 +6650,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 453,
+          "line": 458,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6653,7 +6720,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6665,6 +6732,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6686,7 +6754,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -6755,7 +6823,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6767,6 +6835,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6788,7 +6857,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -6830,7 +6899,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6912,7 +6981,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6924,6 +6993,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -6945,7 +7015,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -6987,7 +7057,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7057,7 +7127,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 584,
+        "line": 585,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7069,6 +7139,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7090,7 +7161,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 584,
+          "line": 585,
           "role": "worker implementation"
         }
       ],
@@ -7117,7 +7188,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2110,
+          "line": 2126,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7167,7 +7238,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 686,
+        "line": 687,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7176,6 +7247,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7197,7 +7269,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 686,
+          "line": 687,
           "role": "worker implementation"
         }
       ],
@@ -7254,7 +7326,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 686,
+        "line": 687,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7263,6 +7335,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7284,7 +7357,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 686,
+          "line": 687,
           "role": "worker implementation"
         }
       ],
@@ -7368,6 +7441,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7382,7 +7456,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 436, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 441, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -7417,12 +7491,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 436,
+          "line": 441,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7498,6 +7572,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7512,7 +7587,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 391, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 396, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -7527,12 +7602,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 391,
+          "line": 396,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1628,
+          "line": 1644,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7578,6 +7653,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7592,7 +7668,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 419, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 424, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -7607,12 +7683,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 419,
+          "line": 424,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1869,
+          "line": 1885,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7658,6 +7734,7 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/nativeAcademicPauses.test.ts",
+        "tests/nativeAdminEntities.test.ts",
         "tests/nativeAdminTimetable.test.ts",
         "tests/nativeCorrections.test.ts",
         "tests/nativeEditorMutations.test.ts",
@@ -7672,7 +7749,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        { "file": "server/pilotAdminApi.ts", "line": 406, "role": "dispatch" },
+        { "file": "server/pilotAdminApi.ts", "line": 411, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -7687,12 +7764,12 @@
         },
         {
           "file": "server/pilotAdminApi.ts",
-          "line": 406,
+          "line": 411,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1794,
+          "line": 1810,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7728,7 +7805,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/analyticsApi.test.ts"],
@@ -7742,7 +7819,7 @@
         { "file": "server/analyticsApi.ts", "line": 184, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -7906,7 +7983,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8008,7 +8085,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8026,7 +8103,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -8130,7 +8207,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8277,7 +8354,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8433,7 +8510,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 737,
+        "line": 738,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8464,7 +8541,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 737,
+          "line": 738,
           "role": "worker implementation"
         }
       ],
@@ -8496,7 +8573,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2117,
+          "line": 2133,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8673,7 +8750,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 840,
+        "line": 841,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8689,7 +8766,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 840,
+          "line": 841,
           "role": "worker implementation"
         }
       ],
@@ -8726,7 +8803,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 895,
+        "line": 896,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -8742,7 +8819,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 895, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 896, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -8785,7 +8862,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 903,
+        "line": 904,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -8802,7 +8879,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 903, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 904, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -8860,7 +8937,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 199,
+        "line": 200,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8878,7 +8955,7 @@
         { "file": "server/healthApi.ts", "line": 112, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 199,
+          "line": 200,
           "role": "worker implementation"
         }
       ],
@@ -8936,7 +9013,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/sourceSnapshotApi.test.ts"],
@@ -8954,7 +9031,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9029,7 +9106,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9043,7 +9120,7 @@
         { "file": "server/paymentApi.ts", "line": 191, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9091,7 +9168,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9105,7 +9182,7 @@
         { "file": "server/paymentApi.ts", "line": 199, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9188,7 +9265,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9202,7 +9279,7 @@
         { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9285,7 +9362,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9299,7 +9376,7 @@
         { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9382,7 +9459,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9396,7 +9473,7 @@
         { "file": "server/paymentApi.ts", "line": 313, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9469,7 +9546,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9487,7 +9564,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9543,7 +9620,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9561,7 +9638,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9622,7 +9699,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9640,7 +9717,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9701,7 +9778,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9719,7 +9796,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9780,7 +9857,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9798,7 +9875,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9856,7 +9933,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9874,7 +9951,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -9924,7 +10001,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 421,
+        "line": 422,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9950,7 +10027,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 421,
+          "line": 422,
           "role": "worker implementation"
         }
       ],
@@ -9962,7 +10039,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1230,
+          "line": 1246,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10035,7 +10112,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 421,
+        "line": 422,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10061,7 +10138,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 421,
+          "line": 422,
           "role": "worker implementation"
         }
       ],
@@ -10078,7 +10155,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2103,
+          "line": 2119,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10164,7 +10241,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 337,
+        "line": 338,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10195,7 +10272,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 337,
+          "line": 338,
           "role": "worker implementation"
         }
       ],
@@ -10227,7 +10304,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10328,7 +10405,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 337,
+        "line": 338,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10359,7 +10436,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 337,
+          "line": 338,
           "role": "worker implementation"
         }
       ],
@@ -10391,7 +10468,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2168,
+          "line": 2184,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10495,7 +10572,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 337,
+        "line": 338,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10537,7 +10614,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 337,
+          "line": 338,
           "role": "worker implementation"
         }
       ],
@@ -10574,7 +10651,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2200,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10689,7 +10766,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 337,
+        "line": 338,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10731,7 +10808,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 337,
+          "line": 338,
           "role": "worker implementation"
         }
       ],
@@ -10768,7 +10845,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2200,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10868,7 +10945,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 895,
+        "line": 896,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -10884,7 +10961,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 895, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 896, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -10909,7 +10986,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 209,
+        "line": 210,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10933,7 +11010,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 209,
+          "line": 210,
           "role": "worker implementation"
         }
       ],
@@ -10992,7 +11069,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -11012,7 +11089,7 @@
         { "file": "server/seoPublic.ts", "line": 77, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -11024,7 +11101,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1274,
+          "line": 1290,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11070,7 +11147,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 172,
+        "line": 173,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -11091,7 +11168,7 @@
         { "file": "server/seoPublic.ts", "line": 87, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 172,
+          "line": 173,
           "role": "503 unavailable response"
         }
       ],
@@ -11103,7 +11180,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1274,
+          "line": 1290,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

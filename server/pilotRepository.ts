@@ -740,19 +740,22 @@ export async function listInstitutions(env?: NodeJS.ProcessEnv) {
   return (data ?? []).map((row: unknown) => mapInstitution(row as JsonRecord));
 }
 
-export async function createInstitution(input: {
-  name: string;
-  shortName?: string | null;
-  slug?: string | null;
-  timezone?: string | null;
-  active?: boolean;
-}) {
+export async function createInstitution(
+  input: {
+    name: string;
+    shortName?: string | null;
+    slug?: string | null;
+    timezone?: string | null;
+    active?: boolean;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   requireString(
     input.name,
     "VALIDATION_ERROR",
     "Institution name is required.",
   );
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const payload = {
     name: input.name.trim(),
     short_name: input.shortName?.trim() || null,
@@ -800,9 +803,10 @@ export async function updateInstitution(
     timezone: string | null;
     active: boolean;
   }>,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const client = createPilotAdminClient();
-  const current = await requireInstitution(id);
+  const client = createPilotAdminClient(env);
+  const current = await requireInstitution(id, env);
   const payload = {
     name: input.name?.trim() || current.name,
     short_name:
@@ -852,16 +856,19 @@ export async function listProgrammes(
   return (data ?? []).map((row: unknown) => mapProgramme(row as JsonRecord));
 }
 
-export async function createProgramme(input: {
-  institutionId: string;
-  name: string;
-  code?: string | null;
-  slug?: string | null;
-  active?: boolean;
-}) {
+export async function createProgramme(
+  input: {
+    institutionId: string;
+    name: string;
+    code?: string | null;
+    slug?: string | null;
+    active?: boolean;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   requireString(input.name, "VALIDATION_ERROR", "Programme name is required.");
-  const institution = await requireInstitution(input.institutionId);
-  const client = createPilotAdminClient();
+  const institution = await requireInstitution(input.institutionId, env);
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("programmes")
@@ -893,11 +900,12 @@ export async function updateProgramme(
     slug: string | null;
     active: boolean;
   }>,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const current = await requireProgramme(id);
+  const current = await requireProgramme(id, env);
   const institutionId = input.institutionId ?? current.institutionId;
-  await requireInstitution(institutionId);
-  const client = createPilotAdminClient();
+  await requireInstitution(institutionId, env);
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("programmes")
@@ -945,15 +953,18 @@ export async function listClassGroups(
   return (data ?? []).map((row: unknown) => mapClassGroup(row as JsonRecord));
 }
 
-export async function createClassGroup(input: {
-  programmeId: string;
-  label: string;
-  slug?: string | null;
-  yearLevel?: number | null;
-  semesterNumber?: number | null;
-  groupName?: string | null;
-  active?: boolean;
-}) {
+export async function createClassGroup(
+  input: {
+    programmeId: string;
+    label: string;
+    slug?: string | null;
+    yearLevel?: number | null;
+    semesterNumber?: number | null;
+    groupName?: string | null;
+    active?: boolean;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   requireString(
     input.label,
     "VALIDATION_ERROR",
@@ -981,8 +992,8 @@ export async function createClassGroup(input: {
       422,
     );
   }
-  const programme = await requireProgramme(input.programmeId);
-  const client = createPilotAdminClient();
+  const programme = await requireProgramme(input.programmeId, env);
+  const client = createPilotAdminClient(env);
   const label = input.label.trim();
   const data = await expectData(
     client
@@ -1028,8 +1039,9 @@ export async function updateClassGroup(
     groupName: string | null;
     active: boolean;
   }>,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const current = await requireClassGroup(id);
+  const current = await requireClassGroup(id, env);
   if (
     input.yearLevel !== undefined &&
     input.yearLevel !== null &&
@@ -1053,9 +1065,9 @@ export async function updateClassGroup(
     );
   }
   const programmeId = input.programmeId ?? current.programmeId;
-  await requireProgramme(programmeId);
+  await requireProgramme(programmeId, env);
   const label = input.label?.trim() || current.label;
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("cohorts")
@@ -1120,14 +1132,17 @@ export async function listAcademicPeriods(
   );
 }
 
-export async function createAcademicPeriod(input: {
-  institutionId: string;
-  name: string;
-  academicYear?: string | null;
-  startsOn: string;
-  endsOn: string;
-  active?: boolean;
-}) {
+export async function createAcademicPeriod(
+  input: {
+    institutionId: string;
+    name: string;
+    academicYear?: string | null;
+    startsOn: string;
+    endsOn: string;
+    active?: boolean;
+  },
+  env?: NodeJS.ProcessEnv,
+) {
   requireString(
     input.name,
     "VALIDATION_ERROR",
@@ -1142,11 +1157,11 @@ export async function createAcademicPeriod(input: {
       422,
     );
   }
-  const institution = await requireInstitution(input.institutionId);
+  const institution = await requireInstitution(input.institutionId, env);
   const academicYear =
     normalizeAcademicYearInput(input.academicYear) ??
     deriveAcademicYear(input.name, input.startsOn, input.endsOn);
-  const client = createPilotAdminClient();
+  const client = createPilotAdminClient(env);
   const data = await expectData(
     client
       .from("academic_periods")
@@ -1181,8 +1196,9 @@ export async function updateAcademicPeriod(
     endsOn: string;
     active: boolean;
   }>,
+  env?: NodeJS.ProcessEnv,
 ) {
-  const current = await requireAcademicPeriod(id);
+  const current = await requireAcademicPeriod(id, env);
   const startsOn = input.startsOn ?? current.startsOn;
   const endsOn = input.endsOn ?? current.endsOn;
   if (!startsOn || !endsOn || endsOn < startsOn) {
@@ -1193,8 +1209,8 @@ export async function updateAcademicPeriod(
     );
   }
   const institutionId = input.institutionId ?? current.institutionId;
-  await requireInstitution(institutionId);
-  const client = createPilotAdminClient();
+  await requireInstitution(institutionId, env);
+  const client = createPilotAdminClient(env);
   const name = input.name?.trim() || current.name;
   const academicYear =
     input.academicYear !== undefined

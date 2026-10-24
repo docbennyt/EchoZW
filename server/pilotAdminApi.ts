@@ -209,6 +209,7 @@ export async function handlePilotAdminApi(
   req: IncomingMessage,
   res: ServerResponse,
   user: { id: string },
+  env?: NodeJS.ProcessEnv,
 ) {
   const requestUrl = parseUrl(req);
 
@@ -226,7 +227,7 @@ export async function handlePilotAdminApi(
       requestUrl.pathname === "/api/admin/institutions"
     ) {
       const parsed = institutionSchema.parse(await readJson(req));
-      sendJson(res, 201, { institution: await createInstitution(parsed) });
+      sendJson(res, 201, { institution: await createInstitution(parsed, env) });
       return true;
     }
 
@@ -239,6 +240,7 @@ export async function handlePilotAdminApi(
         institution: await updateInstitution(
           decodeURIComponent(institutionMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -259,7 +261,7 @@ export async function handlePilotAdminApi(
       requestUrl.pathname === "/api/admin/programmes"
     ) {
       const parsed = programmeSchema.parse(await readJson(req));
-      sendJson(res, 201, { programme: await createProgramme(parsed) });
+      sendJson(res, 201, { programme: await createProgramme(parsed, env) });
       return true;
     }
 
@@ -272,6 +274,7 @@ export async function handlePilotAdminApi(
         programme: await updateProgramme(
           decodeURIComponent(programmeMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -292,7 +295,7 @@ export async function handlePilotAdminApi(
       requestUrl.pathname === "/api/admin/class-groups"
     ) {
       const parsed = classGroupSchema.parse(await readJson(req));
-      sendJson(res, 201, { classGroup: await createClassGroup(parsed) });
+      sendJson(res, 201, { classGroup: await createClassGroup(parsed, env) });
       return true;
     }
 
@@ -305,6 +308,7 @@ export async function handlePilotAdminApi(
         classGroup: await updateClassGroup(
           decodeURIComponent(classGroupMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -328,7 +332,7 @@ export async function handlePilotAdminApi(
     ) {
       const parsed = academicPeriodSchema.parse(await readJson(req));
       sendJson(res, 201, {
-        academicPeriod: await createAcademicPeriod(parsed),
+        academicPeriod: await createAcademicPeriod(parsed, env),
       });
       return true;
     }
@@ -342,6 +346,7 @@ export async function handlePilotAdminApi(
         academicPeriod: await updateAcademicPeriod(
           decodeURIComponent(academicPeriodMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;

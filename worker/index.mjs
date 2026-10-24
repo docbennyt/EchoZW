@@ -34,6 +34,7 @@ import {
 import { z } from "zod";
 import { handleEditorMutations } from "./editorMutations.mjs";
 import { handleNativeAdminTimetable } from "./adminTimetable.mjs";
+import { handleNativeAdminEntities } from "./adminEntities.mjs";
 import { handleNativeStaffInvitation } from "./staffInvitations.mjs";
 import { handleGoogleCalendarRequest } from "./googleCalendarApi.mjs";
 import {
@@ -936,6 +937,8 @@ const application = {
 
     const editorResponse = await handleEditorMutations(request, env);
     if (editorResponse) return editorResponse;
+    const entityResponse = await handleNativeAdminEntities(request, env);
+    if (entityResponse) return entityResponse;
     const adminTimetableResponse = await handleNativeAdminTimetable(
       request,
       env,
