@@ -1,8 +1,12 @@
 import { readFileSync, appendFileSync } from "node:fs";
 
-const output = readFileSync("/tmp/reviewed-deploy.log", "utf8");
-const version = output.match(/Current Version ID:\s*([a-f0-9-]{36})/)?.[1];
-if (!version) throw new Error("DEPLOYMENT_VERSION_MISSING");
+const version =
+  process.env.EXPECTED_WORKER_VERSION ||
+  readFileSync("/tmp/reviewed-deploy.log", "utf8").match(
+    /Current Version ID:\s*([a-f0-9-]{36})/,
+  )?.[1];
+if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(version ?? ""))
+  throw new Error("DEPLOYMENT_VERSION_MISSING");
 const response = await fetch(
   `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/calenderzw-edge-staging/deployments`,
   {
@@ -11,10 +15,14 @@ const response = await fetch(
     signal: AbortSignal.timeout(15000),
   },
 );
-const body = response.ok ? await response.json() : null;
-const active = body?.result?.deployments?.[0];
+if (!response.ok)
+  throw new Error(`ACTIVE_DEPLOYMENT_LOOKUP_FAILED_HTTP_${response.status}`);
+const body = await response.json();
+// The current endpoint returns deployments directly; retain the older envelope.
+const active = (body?.deployments ?? body?.result?.deployments)?.[0];
 if (
-  !body?.success ||
+  body?.success === false ||
+  (body?.errors?.length ?? 0) > 0 ||
   active?.versions?.length !== 1 ||
   active.versions[0].version_id !== version ||
   active.versions[0].percentage !== 100
