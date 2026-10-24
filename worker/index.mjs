@@ -34,6 +34,7 @@ import {
 import { z } from "zod";
 import { handleEditorMutations } from "./editorMutations.mjs";
 import { handleNativeAdminTimetable } from "./adminTimetable.mjs";
+import { handleNativeStaffInvitation } from "./staffInvitations.mjs";
 import { handleGoogleCalendarRequest } from "./googleCalendarApi.mjs";
 import {
   enqueueNativeGoogleSync,
@@ -926,6 +927,12 @@ const application = {
       deliveryEnabled: env.ENABLE_GOOGLE_DELIVERY === "true",
     });
     if (googleResponse) return googleResponse;
+
+    const staffInvitationResponse = await handleNativeStaffInvitation(
+      request,
+      env,
+    );
+    if (staffInvitationResponse) return staffInvitationResponse;
 
     const editorResponse = await handleEditorMutations(request, env);
     if (editorResponse) return editorResponse;

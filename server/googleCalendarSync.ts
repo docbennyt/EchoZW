@@ -14,6 +14,11 @@ import { googleCalendarScope } from "../src/domain/googleScopes.js";
 import { projectPublishedTimetable } from "../src/domain/publishedCalendarProjection.js";
 import { getCalendarRevision } from "./calendarRevisionRepository.js";
 import {
+  budgetedFetch,
+  markExternalWorkProgress,
+  withExternalRequestBudget,
+} from "./externalRequestBudget.js";
+import {
   consumeGoogleOAuthState,
   createGoogleOAuthState,
   disconnectGoogleCalendarConnection,
@@ -215,7 +220,11 @@ async function googleFetch(url: string, init: RequestInit) {
     : timeout;
   signal.throwIfAborted();
   try {
-    const response = await fetch(url, { ...init, redirect: "error", signal });
+    const response = await budgetedFetch(url, {
+      ...init,
+      redirect: "error",
+      signal,
+    });
     signal.throwIfAborted();
     return response;
   } catch {
@@ -348,6 +357,7 @@ async function verifyRemoteManagedEvents(input: {
   previousRecords: JsonRecord[];
   listedEvents: GoogleManagedRemoteEvent[];
   signal?: AbortSignal;
+  deferMissingMappings?: boolean;
 }) {
   const expectedKeys = new Map<string, Set<string>>();
   for (const event of input.listedEvents) {
@@ -362,7 +372,22 @@ async function verifyRemoteManagedEvents(input: {
   }
   const events: GoogleManagedRemoteEvent[] = [];
   const ownershipReviewIds = new Set<string>();
+  const listedById = new Map(
+    input.listedEvents.map((event) => [event.id, event]),
+  );
   for (const [eventId, keys] of expectedKeys) {
+    if (keys.size !== 1) {
+      ownershipReviewIds.add(eventId);
+      continue;
+    }
+    if (input.deferMissingMappings) {
+      const listed = listedById.get(eventId);
+      if (!listed) continue;
+      if (keys.size !== 1 || !keys.has(listed.stableSessionKey))
+        ownershipReviewIds.add(eventId);
+      else events.push(listed);
+      continue;
+    }
     const result = await readRemoteManagedEvent({ ...input, eventId });
     if (result.missing) continue;
     if (
@@ -637,7 +662,18 @@ export async function beginGoogleCalendarConnection(input: {
 export async function syncGoogleSubscription(
   subscriptionId: string,
   env: NodeJS.ProcessEnv = process.env,
-  options: { signal?: AbortSignal } = {},
+  options: { signal?: AbortSignal; maxExternalRequests?: number } = {},
+) {
+  const work = () => reconcileGoogleSubscription(subscriptionId, env, options);
+  return options.maxExternalRequests === undefined
+    ? work()
+    : withExternalRequestBudget(options.maxExternalRequests, work);
+}
+
+async function reconcileGoogleSubscription(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv = process.env,
+  options: { signal?: AbortSignal; maxExternalRequests?: number } = {},
 ) {
   const { signal } = options;
   signal?.throwIfAborted();
@@ -759,6 +795,7 @@ export async function syncGoogleSubscription(
       timetableId,
       previousRecords,
       listedEvents,
+      deferMissingMappings: options.maxExternalRequests !== undefined,
     });
   const remoteManagedByStableKey = new Map<
     string,
@@ -773,6 +810,42 @@ export async function syncGoogleSubscription(
   const remoteManagedEventKeysById = new Map(
     remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
+  // Fresh list results already prove ownership. Resolve absent/stale mapped IDs
+  // lazily so bounded retries can advance instead of repeating an unbounded read phase.
+  const verifyMissingMapping = async (previous: JsonRecord | undefined) => {
+    const id = previous?.external_event_id
+      ? String(previous.external_event_id)
+      : null;
+    if (
+      options.maxExternalRequests === undefined ||
+      !id ||
+      remoteManagedEventKeysById.has(id) ||
+      ownershipReviewIds.has(id)
+    )
+      return;
+    const result = await readRemoteManagedEvent({
+      signal,
+      accessToken,
+      calendarId,
+      timetableId,
+      eventId: id,
+    });
+    if (result.missing) return;
+    if (
+      !result.event ||
+      result.event.stableSessionKey !== String(previous?.internal_event_id)
+    ) {
+      ownershipReviewIds.add(id);
+      return;
+    }
+    const event = result.event;
+    remoteManagedEvents.push(event);
+    remoteManagedEventKeysById.set(event.id, event.stableSessionKey);
+    remoteManagedByStableKey.set(event.stableSessionKey, [
+      ...(remoteManagedByStableKey.get(event.stableSessionKey) ?? []),
+      event,
+    ]);
+  };
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
   const deletedRemoteEventIds = new Set<string>();
@@ -791,6 +864,7 @@ export async function syncGoogleSubscription(
     });
     const hash = contentHash(payload);
     const previous = previousById.get(event.stableSessionKey);
+    await verifyMissingMapping(previous);
     const remoteMatches = remoteManagedByStableKey.get(event.stableSessionKey);
     const previousExternalEventId = previous?.external_event_id
       ? String(previous.external_event_id)
@@ -907,12 +981,14 @@ export async function syncGoogleSubscription(
       syncStatus: "active",
       env,
     });
+    markExternalWorkProgress();
   }
 
   for (const previous of previousRecords) {
     signal?.throwIfAborted();
     const internalEventId = String(previous.internal_event_id);
     if (nextIds.has(internalEventId)) continue;
+    await verifyMissingMapping(previous);
     const externalEventId = previous.external_event_id
       ? String(previous.external_event_id)
       : null;
@@ -937,6 +1013,7 @@ export async function syncGoogleSubscription(
       internalEventId,
       env,
     });
+    markExternalWorkProgress();
   }
 
   for (const event of remoteManagedEvents) {
@@ -952,6 +1029,7 @@ export async function syncGoogleSubscription(
     });
     deletedRemoteEventIds.add(event.id);
     deleted += 1;
+    markExternalWorkProgress();
   }
 
   signal?.throwIfAborted();

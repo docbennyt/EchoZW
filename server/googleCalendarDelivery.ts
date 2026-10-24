@@ -8,7 +8,8 @@ export type GoogleCalendarDeliveryJob = {
   leaseExpiresAt: string;
 };
 
-export type GoogleCalendarDeliveryOutcome = "success" | "retry" | "reconnect";
+export type GoogleCalendarDeliveryOutcome =
+  "success" | "retry" | "reconnect" | "continue";
 
 async function rpc(
   name: string,
@@ -179,7 +180,10 @@ export async function deliverGoogleCalendarJob(
       code = "GOOGLE_SYNC_INCOMPLETE";
     }
   } catch (error) {
-    outcome = classifyGoogleCalendarDeliveryError(error);
+    outcome =
+      record(error).code === "GOOGLE_SYNC_CONTINUE"
+        ? "continue"
+        : classifyGoogleCalendarDeliveryError(error);
     const candidate = String(record(error).code ?? "");
     code = /^GOOGLE_[A-Z_]{1,100}$/.test(candidate)
       ? candidate

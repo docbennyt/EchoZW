@@ -70,23 +70,31 @@ export async function consumeGoogleDeliveryMessage(message, env) {
       message.ack();
       return true;
     }
+    let incomplete = false;
+    let continuation = false;
     const finished = await deliverGoogleCalendarJob(
       job,
       async (claimed, signal) => {
-        const result = await syncGoogleSubscription(
-          claimed.subscriptionId,
-          env,
-          { signal },
-        );
-        return {
-          completed:
-            Boolean(result.lastSyncedAt) && !(result.ownershipReviewCount > 0),
-        };
+        try {
+          const result = await syncGoogleSubscription(
+            claimed.subscriptionId,
+            env,
+            { signal, maxExternalRequests: 32 },
+          );
+          const completed =
+            Boolean(result.lastSyncedAt) && !(result.ownershipReviewCount > 0);
+          incomplete = !completed;
+          return { completed };
+        } catch (error) {
+          incomplete = true;
+          continuation = error?.code === "GOOGLE_SYNC_CONTINUE";
+          throw error;
+        }
       },
       { env },
     );
-    if (finished) message.ack();
-    else message.retry({ delaySeconds: 300 });
+    if (finished && !incomplete) message.ack();
+    else message.retry({ delaySeconds: continuation && finished ? 15 : 300 });
   } catch {
     message.retry({ delaySeconds: 300 });
   }

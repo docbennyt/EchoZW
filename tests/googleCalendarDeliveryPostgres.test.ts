@@ -118,6 +118,15 @@ describe.skipIf(!modulePath && !pgModulePath)(
           await rows("select revision from google_calendar_delivery_revisions")
         )[0].revision,
       ).toBe(1);
+      await db.exec(
+        await readFile(
+          new URL(
+            "../supabase/migrations/0040_google_calendar_delivery_continuation.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
     }, 30_000);
 
     beforeEach(async () => {
@@ -132,6 +141,33 @@ describe.skipIf(!modulePath && !pgModulePath)(
     });
     afterAll(async () => {
       await db?.close();
+    });
+
+    it("continues durably without advancing success, hot-looping or retaining an old lease", async () => {
+      await recover();
+      const [job] = await claim(1);
+      expect(await finish(job, "continue")).toBe(true);
+      const [continued] = await rows(
+        "select *, available_at > clock_timestamp() as deferred from google_calendar_delivery_jobs",
+      );
+      expect(continued.successful_revision).toBe(0);
+      expect(continued.lease_token).toBeNull();
+      expect(continued.attempt_count).toBe(0);
+      expect(continued.deferred).toBe(true);
+      expect(await claim(1)).toHaveLength(0);
+      expect(await finish(job)).toBe(false);
+      await rows(
+        "update google_calendar_delivery_jobs set available_at = clock_timestamp() - interval '1 second'",
+      );
+      const [next] = await claim(1);
+      expect(await finish(next)).toBe(true);
+      expect(
+        (
+          await rows(
+            "select successful_revision from google_calendar_delivery_jobs",
+          )
+        )[0].successful_revision,
+      ).toBe(1);
     });
 
     it.each(["enqueue", "recover"])(

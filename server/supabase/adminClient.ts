@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getServerSupabaseConfig } from "./config.js";
+import { budgetedFetch } from "../externalRequestBudget.js";
 
 export function createSupabaseAdminClient(
   env: NodeJS.ProcessEnv = process.env,
@@ -12,6 +13,10 @@ export function createSupabaseAdminClient(
   }
 
   return createClient(config.url, config.privilegedKey, {
+    global: {
+      fetch: (input, init) =>
+        budgetedFetch(input, { ...init, redirect: "error" }),
+    },
     auth: {
       autoRefreshToken: false,
       persistSession: false,

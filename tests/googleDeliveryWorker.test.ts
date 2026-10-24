@@ -88,9 +88,26 @@ describe("Google durable delivery Worker handoff", () => {
     expect(await consumeGoogleDeliveryMessage(item, env())).toBe(true);
     expect(mocks.sync).toHaveBeenCalledWith(id, expect.anything(), {
       signal: expect.any(AbortSignal),
+      maxExternalRequests: 32,
     });
     expect(item.ack).toHaveBeenCalledOnce();
     expect(item.retry).not.toHaveBeenCalled();
+  });
+
+  it("retries a durable continuation without acknowledging incomplete provider work", async () => {
+    const item = message();
+    mocks.sync.mockRejectedValue({ code: "GOOGLE_SYNC_CONTINUE" });
+    mocks.deliver.mockImplementation(async (_job, sync) => {
+      try {
+        await sync({ subscriptionId: id }, new AbortController().signal);
+      } catch {
+        /* The service persists the continuation before returning accepted. */
+      }
+      return true;
+    });
+    await consumeGoogleDeliveryMessage(item, env());
+    expect(item.ack).not.toHaveBeenCalled();
+    expect(item.retry).toHaveBeenCalledWith({ delaySeconds: 15 });
   });
   it("processes mixed Google outcomes without acknowledging source jobs", async () => {
     const { default: worker } = await import("../worker/index.mjs");

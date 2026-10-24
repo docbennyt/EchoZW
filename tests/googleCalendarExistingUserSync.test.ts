@@ -59,6 +59,7 @@ import {
   syncGoogleSubscriptionsForTimetable,
 } from "../server/googleCalendarSync";
 import { deliverGoogleCalendarJob } from "../server/googleCalendarDelivery";
+import { budgetedFetch } from "../server/externalRequestBudget";
 
 const env = {
   GOOGLE_CLIENT_ID: "client.apps.googleusercontent.com",
@@ -319,7 +320,7 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
   it("bounds every provider request and prevents redirects carrying Authorization", async () => {
     await syncGoogleSubscription("sub-existing", env);
     for (const [url, init] of vi.mocked(fetch).mock.calls) {
-      expect(init?.redirect).toBe("error");
+      expect(init?.redirect).toBe("manual");
       expect(init?.signal).toBeDefined();
       expect(String(url)).not.toMatch(
         /access-token|refresh-token|server-client-secret/,
@@ -623,7 +624,7 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
       "https://oauth2.googleapis.com/revoke",
       expect.objectContaining({
         method: "POST",
-        redirect: "error",
+        redirect: "manual",
         signal: expect.anything(),
         body: expect.any(URLSearchParams),
       }),
@@ -778,6 +779,267 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
       expect.objectContaining({ method: "DELETE" }),
     );
   });
+
+  it("rejects a provider redirect without forwarding credentials or attempting mutations", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        okJson({ access_token: "test-access", expires_in: 3600 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 302,
+          headers: { location: "https://unrelated.test" },
+        }),
+      );
+    await expect(
+      syncGoogleSubscription("sub-existing", env),
+    ).rejects.toMatchObject({ code: "GOOGLE_REQUEST_FAILED" });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.every(
+          ([url]) => !String(url).startsWith("https://unrelated.test"),
+        ),
+    ).toBe(true);
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+  });
+
+  it("preserves conflicting mappings even when their shared remote ID is absent from LIST", async () => {
+    googleRepositoryMocks.listGoogleEventSyncRecords.mockResolvedValue([
+      {
+        internal_event_id: "ise4105-tue-corrected",
+        external_event_id: "event-ise4105",
+        content_hash: "stale",
+      },
+      {
+        internal_event_id: "conflicting-key",
+        external_event_id: "event-ise4105",
+        content_hash: "stale",
+      },
+    ]);
+    const base = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (
+        init?.method === "GET" &&
+        new URL(String(url)).pathname.endsWith("/events")
+      )
+        return okJson({ items: [] });
+      return base(url, init);
+    });
+    const result = await syncGoogleSubscription("sub-existing", env, {
+      maxExternalRequests: 40,
+    });
+    expect(result).toMatchObject({
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      ownershipReviewCount: 1,
+    });
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.deleteGoogleEventSyncRecord,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        status: "failed",
+        lastErrorCode: "GOOGLE_EVENT_OWNERSHIP_REVIEW",
+      }),
+    );
+  });
+
+  it.each(["create", "update", "crash", "delete", "delete-retry", "revoked"])(
+    "bounds all provider and repository requests across durable %s continuations",
+    async (scenario) => {
+      type Row = Record<string, unknown>;
+      const source = timetable({
+        sessions: Array.from({ length: 15 }, (_, i) => ({
+          ...timetable().sessions[0],
+          stableSessionKey: `session-${i}`,
+          courseCode: `ABC${i}`,
+        })),
+      });
+      const rawBefore = JSON.stringify(source);
+      repositoryMocks.getPublishedTimetableById.mockResolvedValue(source);
+      const remote = new Map<string, Row>();
+      const mappings = new Map<string, Row>();
+      const owned = (id: string, key: string): Row => ({
+        id,
+        extendedProperties: {
+          private: {
+            calenderzwTimetableId: "tt-se41",
+            calenderzwStableSessionKey: key,
+          },
+        },
+      });
+      const unrelated = { id: "personal", summary: "Unrelated private event" };
+      remote.set("personal", unrelated);
+      if (scenario === "update" || scenario.startsWith("delete")) {
+        source.sessions.forEach((s, i) => {
+          remote.set(`old-${i}`, owned(`old-${i}`, s.stableSessionKey));
+          mappings.set(s.stableSessionKey, {
+            internal_event_id: s.stableSessionKey,
+            external_event_id: `old-${i}`,
+            content_hash: "stale",
+          });
+        });
+      }
+      if (scenario.startsWith("delete")) {
+        remote.set("obsolete", owned("obsolete", "removed-wednesday"));
+        mappings.set("removed-wednesday", {
+          internal_event_id: "removed-wednesday",
+          external_event_id: "obsolete",
+          content_hash: "old",
+        });
+      }
+      let invocationRequests = 0;
+      let duplicateCreates = 0;
+      let crashed = false;
+      let deleteFailed = false;
+      const counts: number[] = [];
+      const database = async (count = 1) => {
+        for (let i = 0; i < count; i++)
+          await budgetedFetch("https://database.test/rest");
+      };
+      for (const [mock, count] of [
+        [repositoryMocks.getCalendarSubscriptionById, 1],
+        [repositoryMocks.getPublishedTimetableById, 6],
+        [revisionMocks.getCalendarRevision, 4],
+        [googleRepositoryMocks.getCurrentPublishedVersionId, 1],
+        [googleRepositoryMocks.getGoogleCredential, 1],
+        [googleRepositoryMocks.updateGoogleSubscription, 1],
+      ] as const) {
+        const original = mock.getMockImplementation()!;
+        mock.mockImplementation(async (...args) => {
+          await database(count);
+          return original(...args);
+        });
+      }
+      googleRepositoryMocks.listGoogleEventSyncRecords.mockImplementation(
+        async () => {
+          await database();
+          return [...mappings.values()];
+        },
+      );
+      googleRepositoryMocks.upsertGoogleEventSyncRecord.mockImplementation(
+        async (input) => {
+          await database();
+          if (scenario === "crash" && !crashed) {
+            crashed = true;
+            throw new Error("process failed after provider write");
+          }
+          mappings.set(input.internalEventId, {
+            internal_event_id: input.internalEventId,
+            external_event_id: input.externalEventId,
+            content_hash: input.contentHash,
+          });
+        },
+      );
+      googleRepositoryMocks.deleteGoogleEventSyncRecord.mockImplementation(
+        async (input) => {
+          await database();
+          mappings.delete(input.internalEventId);
+        },
+      );
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        invocationRequests++;
+        expect(invocationRequests).toBeLessThanOrEqual(32);
+        const value = String(url);
+        if (value.startsWith("https://database.test")) return okJson({});
+        if (value.includes("oauth2.googleapis.com"))
+          return scenario === "revoked"
+            ? okJson({ error: "invalid_grant" }, 400)
+            : okJson({ access_token: "test-access", expires_in: 3600 });
+        const parsed = new URL(value);
+        if (init?.method === "GET" && parsed.pathname.endsWith("/events")) {
+          return okJson({
+            items: [...remote.values()].filter(
+              (event) => event.extendedProperties,
+            ),
+          });
+        }
+        const id = parsed.pathname.split("/").at(-1)!;
+        if (init?.method === "GET")
+          return remote.has(id) ? okJson(remote.get(id)) : okJson({}, 404);
+        if (init?.method === "POST") {
+          const body = JSON.parse(String(init.body));
+          if (remote.has(body.id)) {
+            duplicateCreates++;
+            return okJson({}, 409);
+          }
+          remote.set(body.id, body);
+          return okJson({ id: body.id });
+        }
+        if (init?.method === "PUT") {
+          remote.set(id, { ...JSON.parse(String(init.body)), id });
+          return okJson({ id });
+        }
+        if (init?.method === "DELETE") {
+          if (scenario === "delete-retry" && !deleteFailed) {
+            deleteFailed = true;
+            return okJson({ error: "temporary provider failure" }, 503);
+          }
+          remote.delete(id);
+          return new Response(null, { status: 204 });
+        }
+        throw new Error("Unexpected provider request");
+      });
+      if (scenario === "revoked") {
+        await expect(
+          syncGoogleSubscription("sub-existing", env, {
+            maxExternalRequests: 32,
+          }),
+        ).rejects.toMatchObject({ code: "GOOGLE_CREDENTIAL_INVALID" });
+        expect(remote.size).toBe(1);
+        return;
+      }
+      let completed = false;
+      for (let attempt = 0; attempt < 8 && !completed; attempt++) {
+        invocationRequests = 0;
+        try {
+          const result = await syncGoogleSubscription("sub-existing", env, {
+            maxExternalRequests: 32,
+          });
+          completed = Boolean(result.lastSyncedAt);
+        } catch (error) {
+          if (
+            scenario === "delete-retry" &&
+            (error as { code?: string }).code === "GOOGLE_API_FAILED"
+          ) {
+            expect(mappings.has("removed-wednesday")).toBe(true);
+            expect(remote.has("obsolete")).toBe(true);
+          } else if (!(scenario === "crash" && crashed && attempt === 0))
+            expect(error).toMatchObject({ code: "GOOGLE_SYNC_CONTINUE" });
+        }
+        counts.push(invocationRequests);
+      }
+      expect(completed).toBe(true);
+      expect(counts.length).toBeGreaterThan(1);
+      expect(counts.every((count) => count + 2 <= 34)).toBe(true); // claim + durable finish
+      expect(remote.size).toBe(16);
+      expect(remote.get("personal")).toEqual(unrelated);
+      expect(remote.has("obsolete")).toBe(false);
+      expect(mappings.size).toBe(15);
+      expect(duplicateCreates).toBe(0);
+      expect(JSON.stringify(source)).toBe(rawBefore);
+      invocationRequests = 0;
+      const again = await syncGoogleSubscription("sub-existing", env, {
+        maxExternalRequests: 32,
+      });
+      expect(again).toMatchObject({
+        created: 0,
+        updated: 0,
+        deleted: 0,
+        unchanged: 15,
+      });
+    },
+  );
 
   it("updates and deletes existing remote events by stable session key without creating a new calendar", async () => {
     const result = await syncGoogleSubscription("sub-existing", env);

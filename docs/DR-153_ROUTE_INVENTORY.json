@@ -762,9 +762,10 @@
     "server/correctionsCore.ts": "4b4feedbd677616f4861e365cf1af1a10a9a78c25625e0ac272f6c373880f660",
     "server/correctionsRepository.ts": "8440e438a897d943ce858bd4da8bba0c9e4aad94303eeb4841d513290af55c1e",
     "server/docxStructuredReader.ts": "34a63f0540c008768cc716e37ff7c604e9b4d2bff24140e81b64e5ecabb0ae02",
-    "server/googleCalendarDelivery.ts": "b40401a70d7c1b0c4a6a3251946c168ae747025c4c9843f3d534a79ccc7f19e0",
+    "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
+    "server/googleCalendarDelivery.ts": "0239ecacf5e4be8606e28a1f5944983730d8d8471a5ac491df3c458a6261b0ad",
     "server/googleCalendarRepository.ts": "c912c8db8abf6f9199443f8a573e70f510f536a2bff7c646a786e5530fdf944e",
-    "server/googleCalendarSync.ts": "dba43ec848dcdbe7e6becf91fc855033fca3ec3cae7041b35955eac204fbd2bf",
+    "server/googleCalendarSync.ts": "e9af3e272ed7cf54d617f9965e0c14de7d12da82db13c8625feeeddf0107ac6e",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
     "server/growthCaptureRepository.ts": "49b4f42e3f1dbf74032a13cd932d44275a99d691ac4fe0f00116803cb0b87b46",
     "server/growthInboxAdminApi.ts": "a48838602baab4c8eee7bb810364297758021aeee7766d025812d1ccb3a45f73",
@@ -813,14 +814,14 @@
     "server/spaMetadata.ts": "8f4c41c1ce18287fd8b6e9dde8b4a30949e5c5e6054e3f61308b3c8f25881f2a",
     "server/spaSeo.ts": "f62615d77680d5a750347a7362995fcbc7ac4a8b14e2b1c730b936a96c9a891e",
     "server/staffAdminApi.ts": "ad6eca651cdcc9a38275b5562124fbce5985c9837bd10da8b8aabb8440d180dc",
-    "server/staffRepository.ts": "55529d29373329ae9c640b4e15f0ca6ab2b9688c8624b29a64a0475ba6a58e58",
+    "server/staffRepository.ts": "3b1d706e18c53926638922985551c135072b37ea12bb7bff08ecf5f5c5238e80",
     "server/staticTimetableImportApi.ts": "02d073541ef1e04544ad6b548cc1153a19d7f81fc51b085509d47febea65e171",
     "server/staticTimetableImportRepository.ts": "9e74cf88421f31757d17e1c4c5925f7dba439bdffb7b7f5b2123c45e32a7c01c",
     "server/staticTimetableInputAdapters.ts": "9b35ddd1e292c981f4ce4177ca1728aa18c67cb90f15b91fb8d9b238d41cf5b1",
     "server/staticTimetableRawCleanup.ts": "8f26c5156574bcd39b68a843b950bbdf72ad37196aa8203c374cfe8beaccd0eb",
     "server/staticTimetableRawCleanupCli.ts": "79c4a558dfef91de64f33d6828c117b0922e628028661770b7203e4c195238d5",
     "server/staticTimetableRawCleanupWorker.ts": "cf77891cc94bcfd0dd7de8fb5463449e4a33c3828d31be560841eec7c2945d32",
-    "server/supabase/adminClient.ts": "b3d0850f7052eb80ddc451014cd3a7dd8c1f8054d8c62d037f451841b6a4bc1e",
+    "server/supabase/adminClient.ts": "c4f707e87c2a56cb3f070b1960ef9d2a0fec7c027a86efae96fedcb14c4a113c",
     "server/supabase/auth.ts": "8fc3c63595cc1684d95efc7d283f0bab63caeae432cbde383fe6152b7a783dd1",
     "server/supabase/config.ts": "86764be4acd6172700eb56ba54ec78b5c649f43bfb41a080adef625bf5e3aa94",
     "server/supabase/connectivity.ts": "5382f39e4c8bdfaeea579cbf30f8301fb826c82e2637daea23ea107eff1719a0",
@@ -933,20 +934,21 @@
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "cc43df8f7cf74e3bac9945341fa0cd38eed7ae346eb9a72a40a023008326780f",
     "worker/googleCalendarApi.mjs": "def9a4c0d2e8ef7041d67d4eba34de469679d58312b983592650ea8d393126f4",
-    "worker/googleDelivery.mjs": "be3a23813f9c6f9bc59263e83d1e961065ea4702a0a7d335bf97c23d485990a0",
-    "worker/index.mjs": "938590070d57b0c87e72c9b9529e91e4ec1e984518eee352e799ee2b734307dd",
+    "worker/googleDelivery.mjs": "7ed1bc86961e5a05e9cd2e87296759ff932e9c58b6046674e93272abf90c362d",
+    "worker/index.mjs": "4fb931c348f1a2ea79f588c58f207d3128e5beaa40be176ea6b27c99462c5c74",
+    "worker/staffInvitations.mjs": "01dcbd9a054c895fea928db4ff2211624086d61611ef2b8b07fe799158d48669",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
   },
   "counts": {
     "httpRoutes": 103,
     "nodeDispatchRoutes": 101,
-    "nativeImplementedNotLiveProven": 52,
+    "nativeImplementedNotLiveProven": 53,
     "nativeLiveProven": 0,
     "nativeIncomplete": 2,
     "intentionallyDisabled": 0,
     "bridged": 0,
-    "unavailable": 49
+    "unavailable": 48
   },
   "routes": [
     {
@@ -964,7 +966,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 184,
+        "line": 185,
         "role": "worker implementation"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -977,7 +979,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 184,
+          "line": 185,
           "role": "worker implementation"
         }
       ],
@@ -1014,7 +1016,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -1032,7 +1034,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -1055,13 +1057,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1086,7 +1091,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -1102,8 +1107,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1140,6 +1150,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -1149,7 +1160,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1174,7 +1185,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -1200,13 +1211,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1216,7 +1232,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1283,6 +1299,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -1292,7 +1309,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1317,7 +1334,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -1343,13 +1360,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1359,7 +1381,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1415,13 +1437,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1445,7 +1470,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -1466,13 +1491,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotRepository.ts",
           "line": 2110,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1506,13 +1536,16 @@
       "databaseDependencies": ["table/storage reference: academic_periods"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1529,11 +1562,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 313, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 316,
@@ -1546,7 +1584,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1568,13 +1606,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/cloudflareRecovery.test.ts"],
@@ -1588,11 +1629,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 325, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 328,
@@ -1605,7 +1651,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1627,13 +1673,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/cloudflareRecovery.test.ts"],
@@ -1647,11 +1696,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 339, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 339,
@@ -1664,7 +1718,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1693,13 +1747,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/adminAnalyticsApi.test.ts"],
@@ -1717,7 +1774,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -1733,8 +1790,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1773,13 +1835,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -1800,7 +1865,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -1816,8 +1881,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1846,13 +1916,16 @@
       "databaseDependencies": ["table/storage reference: cohorts"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1869,11 +1942,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 280, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 283,
@@ -1886,7 +1964,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1908,13 +1986,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/cloudflareRecovery.test.ts"],
@@ -1928,11 +2009,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 290, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 293,
@@ -1945,7 +2031,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1967,13 +2053,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/cloudflareRecovery.test.ts"],
@@ -1987,11 +2076,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 302, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 302,
@@ -2004,7 +2098,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2023,13 +2117,16 @@
       "databaseDependencies": ["table/storage reference: product_feedback"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2047,11 +2144,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/growthCaptureRepository.ts",
           "line": 203,
@@ -2064,7 +2166,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2087,13 +2189,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2111,11 +2216,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/growthCaptureRepository.ts",
           "line": 140,
@@ -2128,7 +2238,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2147,13 +2257,16 @@
       "databaseDependencies": ["table/storage reference: timetable_requests"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2171,11 +2284,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/growthCaptureRepository.ts",
           "line": 176,
@@ -2188,7 +2306,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2207,13 +2325,16 @@
       "databaseDependencies": ["table/storage reference: institutions"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2231,11 +2352,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 216, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 219,
@@ -2248,7 +2374,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2267,13 +2393,16 @@
       "databaseDependencies": ["table/storage reference: institutions"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -2290,11 +2419,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 224, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 227,
@@ -2307,7 +2441,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2326,13 +2460,16 @@
       "databaseDependencies": ["table/storage reference: institutions"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -2349,11 +2486,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 236, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 236,
@@ -2366,7 +2508,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2389,13 +2531,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2414,7 +2559,7 @@
         { "file": "server/adminApi.ts", "line": 82, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
@@ -2425,13 +2570,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/observability.ts",
           "line": 35,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2478,13 +2628,16 @@
       "databaseDependencies": ["table/storage reference: programmes"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2501,11 +2654,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 247, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 250,
@@ -2518,7 +2676,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2540,13 +2698,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/cloudflareRecovery.test.ts"],
@@ -2560,11 +2721,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 257, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 260,
@@ -2577,7 +2743,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2599,13 +2765,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/cloudflareRecovery.test.ts"],
@@ -2619,11 +2788,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 269, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 269,
@@ -2636,7 +2810,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2659,13 +2833,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2676,6 +2853,7 @@
         "tests/deploymentSmoke.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/healthAndObservability.test.ts",
+        "tests/nativeStaffInvitations.test.ts",
         "tests/staffAuth.test.ts",
         "tests/staticTimetableDocumentImport.test.ts"
       ],
@@ -2689,7 +2867,7 @@
         { "file": "server/adminApi.ts", "line": 64, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
@@ -2700,13 +2878,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/observability.ts",
           "line": 35,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2762,13 +2945,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2786,11 +2972,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/sourceGatewayAdminApi.ts",
           "line": 85,
@@ -2808,7 +2999,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2831,7 +3022,10 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [
         "Node source processing worker; durable parse/review parity required"
       ],
@@ -2839,7 +3033,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2857,11 +3051,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/sourceGatewayAdminApi.ts",
           "line": 108,
@@ -2884,7 +3083,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2905,13 +3104,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2929,11 +3131,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/sourceGatewayAdminApi.ts",
           "line": 93,
@@ -2951,7 +3158,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2973,7 +3180,10 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [
         "Node source processing worker; durable parse/review parity required"
       ],
@@ -2981,7 +3191,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2999,11 +3209,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/sourceGatewayAdminApi.ts",
           "line": 125,
@@ -3026,7 +3241,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3048,18 +3263,22 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
-        "tests/dr56StaffOnboardingSecurity.test.ts"
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3071,11 +3290,16 @@
         { "file": "server/staffAdminApi.ts", "line": 91, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 91,
@@ -3083,12 +3307,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 410,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3110,18 +3334,22 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
-        "tests/dr56StaffOnboardingSecurity.test.ts"
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3133,11 +3361,16 @@
         { "file": "server/staffAdminApi.ts", "line": 130, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 130,
@@ -3145,12 +3378,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 820,
+          "line": 835,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3173,18 +3406,22 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
-        "tests/dr56StaffOnboardingSecurity.test.ts"
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3196,11 +3433,16 @@
         { "file": "server/staffAdminApi.ts", "line": 157, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 157,
@@ -3208,12 +3450,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 744,
+          "line": 759,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3235,18 +3477,22 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
-        "tests/dr56StaffOnboardingSecurity.test.ts"
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3258,11 +3504,16 @@
         { "file": "server/staffAdminApi.ts", "line": 144, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 144,
@@ -3270,12 +3521,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 652,
+          "line": 667,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3298,18 +3549,22 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
-        "tests/dr56StaffOnboardingSecurity.test.ts"
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3321,11 +3576,16 @@
         { "file": "server/staffAdminApi.ts", "line": 118, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 118,
@@ -3333,12 +3593,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 881,
+          "line": 896,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3360,13 +3620,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/dr56StaffOnboardingSecurity.test.ts"],
@@ -3380,11 +3643,16 @@
         { "file": "server/staffAdminApi.ts", "line": 172, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 172,
@@ -3392,12 +3660,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 794,
+          "line": 809,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3420,18 +3688,22 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
-        "tests/dr56StaffOnboardingSecurity.test.ts"
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3443,11 +3715,16 @@
         { "file": "server/staffAdminApi.ts", "line": 96, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 96,
@@ -3455,12 +3732,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 744,
+          "line": 759,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3473,7 +3750,7 @@
     {
       "method": "POST",
       "path": "/api/admin/staff/invite-admin",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "inviteAdmin",
       "databaseDependencies": [
@@ -3483,31 +3760,43 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 171,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 93,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/dr56StaffOnboardingSecurity.test.ts"],
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Dedicated non-founder account invitation, acceptance, sign-in and deployed Admin reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 104, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 171,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 93,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staffAdminApi.ts",
           "line": 107,
@@ -3515,12 +3804,12 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 557,
+          "line": 572,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3558,6 +3847,7 @@
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
+        "node:async_hooks",
         "node:crypto",
         "node:module",
         "node:zlib"
@@ -3567,7 +3857,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3588,7 +3878,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -3596,6 +3886,11 @@
         {
           "file": "server/docxStructuredReader.ts",
           "line": 163,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3620,7 +3915,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3673,6 +3968,7 @@
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
+        "node:async_hooks",
         "node:crypto",
         "node:module",
         "node:zlib"
@@ -3682,7 +3978,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3703,7 +3999,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -3711,6 +4007,11 @@
         {
           "file": "server/docxStructuredReader.ts",
           "line": 163,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3735,7 +4036,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3788,6 +4089,7 @@
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
+        "node:async_hooks",
         "node:crypto",
         "node:module",
         "node:zlib"
@@ -3797,7 +4099,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3818,7 +4120,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -3826,6 +4128,11 @@
         {
           "file": "server/docxStructuredReader.ts",
           "line": 163,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3850,7 +4157,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3903,6 +4210,7 @@
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
+        "node:async_hooks",
         "node:crypto",
         "node:module",
         "node:zlib"
@@ -3912,7 +4220,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3933,7 +4241,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -3941,6 +4249,11 @@
         {
           "file": "server/docxStructuredReader.ts",
           "line": 163,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3965,7 +4278,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4004,13 +4317,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4031,11 +4347,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/staticTimetableImportApi.ts",
           "line": 194,
@@ -4048,7 +4369,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4086,6 +4407,7 @@
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
+        "node:async_hooks",
         "node:crypto",
         "node:module",
         "node:zlib"
@@ -4095,7 +4417,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4116,7 +4438,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -4124,6 +4446,11 @@
         {
           "file": "server/docxStructuredReader.ts",
           "line": 163,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4148,7 +4475,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4191,7 +4518,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4212,7 +4539,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -4251,13 +4578,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 459,
+        "line": 460,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -4283,11 +4613,16 @@
         { "file": "server/pilotAdminApi.ts", "line": 350, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 459,
+          "line": 460,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotAdminApi.ts",
           "line": 353,
@@ -4300,7 +4635,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4327,7 +4662,10 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -4365,6 +4703,11 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotAdminApi.ts",
           "line": 361,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
@@ -4376,7 +4719,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4399,7 +4742,10 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -4437,6 +4783,11 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotAdminApi.ts",
           "line": 377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
@@ -4448,7 +4799,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4470,7 +4821,10 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -4524,13 +4878,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotRepository.ts",
           "line": 35,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4569,6 +4928,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -4641,13 +5001,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4657,7 +5022,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4725,6 +5090,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -4792,13 +5158,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4808,7 +5179,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4878,6 +5249,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -4950,13 +5322,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4966,7 +5343,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5034,6 +5411,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -5101,13 +5479,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5117,7 +5500,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5186,6 +5569,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -5253,13 +5637,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5269,7 +5658,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5338,6 +5727,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -5405,13 +5795,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5421,7 +5816,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5489,6 +5884,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -5556,13 +5952,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5572,7 +5973,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5642,6 +6043,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -5709,13 +6111,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5725,7 +6132,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5793,6 +6200,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -5860,13 +6268,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5876,7 +6289,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5945,6 +6358,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -6012,13 +6426,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6028,7 +6447,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6095,6 +6514,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -6146,13 +6566,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1358,
+          "line": 1436,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6167,7 +6592,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6218,13 +6643,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6257,7 +6685,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -6273,8 +6701,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6311,6 +6744,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -6320,7 +6754,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6353,7 +6787,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -6379,13 +6813,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6395,7 +6834,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6462,6 +6901,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -6471,7 +6911,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6504,7 +6944,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -6530,13 +6970,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6546,7 +6991,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6602,13 +7047,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 583,
+        "line": 584,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6641,7 +7089,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 583,
+          "line": 584,
           "role": "worker implementation"
         }
       ],
@@ -6662,13 +7110,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotRepository.ts",
           "line": 2110,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6704,13 +7157,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 685,
+        "line": 686,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -6740,11 +7196,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 685,
+          "line": 686,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotRepository.ts",
           "line": 35,
@@ -6752,7 +7213,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6783,13 +7244,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 685,
+        "line": 686,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -6819,11 +7283,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 685,
+          "line": 686,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotRepository.ts",
           "line": 35,
@@ -6831,7 +7300,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6879,6 +7348,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -6930,13 +7400,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1320,
+          "line": 1398,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6951,7 +7426,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7004,7 +7479,10 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -7042,6 +7520,11 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotAdminApi.ts",
           "line": 391,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
@@ -7053,7 +7536,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7076,7 +7559,10 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -7114,6 +7600,11 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotAdminApi.ts",
           "line": 419,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
@@ -7125,7 +7616,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7148,7 +7639,10 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -7186,6 +7680,11 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/pilotAdminApi.ts",
           "line": 406,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
@@ -7197,7 +7696,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7219,13 +7718,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/analyticsApi.test.ts"],
@@ -7239,7 +7741,7 @@
         { "file": "server/analyticsApi.ts", "line": 184, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -7255,8 +7757,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7318,6 +7825,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto",
         "node:fs/promises",
         "node:path"
@@ -7376,13 +7884,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 310,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1197,
+          "line": 1275,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7397,7 +7910,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7494,7 +8007,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -7512,7 +8025,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -7552,6 +8065,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -7594,13 +8108,18 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 14,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 594,
+          "line": 619,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7615,7 +8134,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7692,6 +8211,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto",
         "node:fs/promises",
         "node:path"
@@ -7735,13 +8255,18 @@
       ],
       "dependencyEvidence": [
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 110,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1394,
+          "line": 1472,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7756,7 +8281,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7853,7 +8378,7 @@
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 584,
+          "line": 609,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7896,6 +8421,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:fs/promises",
         "node:path"
       ],
@@ -7906,7 +8432,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 736,
+        "line": 737,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7937,7 +8463,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 736,
+          "line": 737,
           "role": "worker implementation"
         }
       ],
@@ -7948,13 +8474,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
           "line": 177,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 584,
+          "line": 609,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7969,7 +8500,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8141,7 +8672,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 839,
+        "line": 840,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8157,7 +8688,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 839,
+          "line": 840,
           "role": "worker implementation"
         }
       ],
@@ -8194,7 +8725,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 894,
+        "line": 895,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -8210,7 +8741,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 894, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 895, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -8253,7 +8784,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 902,
+        "line": 903,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -8270,7 +8801,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 902, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 903, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -8328,7 +8859,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 198,
+        "line": 199,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8346,7 +8877,7 @@
         { "file": "server/healthApi.ts", "line": 112, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 198,
+          "line": 199,
           "role": "worker implementation"
         }
       ],
@@ -8394,6 +8925,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -8403,7 +8935,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/sourceSnapshotApi.test.ts"],
@@ -8421,11 +8953,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/sourceProcessingRepository.ts",
           "line": 79,
@@ -8448,7 +8985,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8491,7 +9028,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8505,7 +9042,7 @@
         { "file": "server/paymentApi.ts", "line": 191, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
@@ -8545,6 +9082,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [],
@@ -8552,7 +9090,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8566,11 +9104,16 @@
         { "file": "server/paymentApi.ts", "line": 199, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/paymentApi.ts",
           "line": 202,
@@ -8593,7 +9136,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8636,6 +9179,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [],
@@ -8643,7 +9187,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8657,11 +9201,16 @@
         { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/paymentApi.ts",
           "line": 351,
@@ -8684,7 +9233,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8727,6 +9276,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [],
@@ -8734,7 +9284,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8748,11 +9298,16 @@
         { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/paymentApi.ts",
           "line": 351,
@@ -8775,7 +9330,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8818,6 +9373,7 @@
       ],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [],
@@ -8825,7 +9381,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8839,11 +9395,16 @@
         { "file": "server/paymentApi.ts", "line": 313, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/paymentApi.ts",
           "line": 313,
@@ -8866,7 +9427,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8898,13 +9459,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8922,11 +9486,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/growthCaptureApi.ts",
           "line": 222,
@@ -8939,7 +9508,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8963,6 +9532,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -8972,7 +9542,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8990,11 +9560,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pushConfig.ts",
           "line": 66,
@@ -9012,7 +9587,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9036,6 +9611,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -9045,7 +9621,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9063,11 +9639,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pushConfig.ts",
           "line": 66,
@@ -9085,7 +9666,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9109,6 +9690,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -9118,7 +9700,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9136,11 +9718,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pushConfig.ts",
           "line": 66,
@@ -9158,7 +9745,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9182,6 +9769,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [
@@ -9191,7 +9779,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9209,11 +9797,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pushConfig.ts",
           "line": 66,
@@ -9231,7 +9824,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9253,13 +9846,16 @@
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9277,11 +9873,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/growthCaptureApi.ts",
           "line": 222,
@@ -9294,7 +9895,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9313,13 +9914,16 @@
       "databaseDependencies": ["table/storage reference: timetables"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 420,
+        "line": 421,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9345,11 +9949,16 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 420,
+          "line": 421,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotRepository.ts",
           "line": 1230,
@@ -9367,7 +9976,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9416,13 +10025,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 420,
+        "line": 421,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9448,7 +10060,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 420,
+          "line": 421,
           "role": "worker implementation"
         }
       ],
@@ -9456,6 +10068,11 @@
         {
           "file": "server/academicPauseRepository.ts",
           "line": 296,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9475,7 +10092,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9538,6 +10155,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [],
@@ -9545,7 +10163,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 336,
+        "line": 337,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9576,7 +10194,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 336,
+          "line": 337,
           "role": "worker implementation"
         }
       ],
@@ -9589,6 +10207,11 @@
         {
           "file": "server/calendarRevisionRepository.ts",
           "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9613,7 +10236,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9696,6 +10319,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto"
       ],
       "backgroundDependencies": [],
@@ -9703,7 +10327,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 336,
+        "line": 337,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9734,7 +10358,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 336,
+          "line": 337,
           "role": "worker implementation"
         }
       ],
@@ -9747,6 +10371,11 @@
         {
           "file": "server/calendarRevisionRepository.ts",
           "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9771,7 +10400,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9855,6 +10484,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto",
         "node:fs/promises",
         "node:path"
@@ -9864,7 +10494,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 336,
+        "line": 337,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9906,7 +10536,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 336,
+          "line": 337,
           "role": "worker implementation"
         }
       ],
@@ -9924,6 +10554,11 @@
         {
           "file": "server/calendarRevisionRepository.ts",
           "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9948,7 +10583,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10043,6 +10678,7 @@
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks",
         "node:crypto",
         "node:fs/promises",
         "node:path"
@@ -10052,7 +10688,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 336,
+        "line": 337,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10094,7 +10730,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 336,
+          "line": 337,
           "role": "worker implementation"
         }
       ],
@@ -10112,6 +10748,11 @@
         {
           "file": "server/calendarRevisionRepository.ts",
           "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10136,7 +10777,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10226,7 +10867,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 894,
+        "line": 895,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -10242,7 +10883,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 894, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 895, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -10267,7 +10908,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 208,
+        "line": 209,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10291,7 +10932,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 208,
+          "line": 209,
           "role": "worker implementation"
         }
       ],
@@ -10341,13 +10982,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -10367,11 +11011,16 @@
         { "file": "server/seoPublic.ts", "line": 77, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotRepository.ts",
           "line": 1274,
@@ -10384,7 +11033,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10411,13 +11060,16 @@
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
-      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 171,
+        "line": 172,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -10438,11 +11090,16 @@
         { "file": "server/seoPublic.ts", "line": 87, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 171,
+          "line": 172,
           "role": "503 unavailable response"
         }
       ],
       "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
         {
           "file": "server/pilotRepository.ts",
           "line": 1274,
@@ -10455,7 +11112,7 @@
         },
         {
           "file": "server/supabase/adminClient.ts",
-          "line": 4,
+          "line": 5,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

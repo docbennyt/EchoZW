@@ -14,6 +14,21 @@ const job: GoogleCalendarDeliveryJob = {
 };
 
 describe("Google durable delivery", () => {
+  it("persists a bounded continuation without acknowledging provider completion", async () => {
+    const finish = vi.fn().mockResolvedValue(true);
+    await deliverGoogleCalendarJob(
+      job,
+      async () => {
+        throw { code: "GOOGLE_SYNC_CONTINUE" };
+      },
+      { finish },
+    );
+    expect(finish).toHaveBeenCalledWith(
+      job,
+      "continue",
+      "GOOGLE_SYNC_CONTINUE",
+    );
+  });
   it.each([
     [{ code: "GOOGLE_REFRESH_FAILED", status: 409 }, "retry"],
     [{ code: "GOOGLE_API_FAILED", details: { status: 503 } }, "retry"],

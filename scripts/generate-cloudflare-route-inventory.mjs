@@ -303,6 +303,7 @@ export async function buildInventory(
   const bridge = /return\s+proxyLegacyBackend\(/.test(worker.text);
   const unavailable = worker.text.includes("EDGE_ROUTE_UNAVAILABLE");
   const workerRoutes = [
+    ["POST", "/api/admin/staff/invite-admin", "handleNativeStaffInvitation"],
     ["POST", "/api/admin/timetables", "handleNativeAdminTimetable"],
     ["GET", "/api/admin/timetables/:timetableId", "handleNativeAdminTimetable"],
     [
@@ -696,6 +697,9 @@ export async function buildInventory(
         "existing subscription/session ownership or OAuth state; consult dispatch evidence";
     else if (item.path.includes("pesepay/result"))
       authPolicy = "provider callback validation/reconciliation";
+    if (nativeSpec?.[2] === "handleNativeStaffInvitation")
+      authPolicy =
+        "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only";
     const calls = [...new Set(item.handlers.flatMap((h) => h.calls))].filter(
       (name) =>
         !/^(send|read|parse|decode|encode|String|Number|Boolean)/.test(name),
@@ -756,6 +760,11 @@ export async function buildInventory(
       );
       remainingBlocker =
         "Native editor/pause transport reuses existing services with request bindings. Authenticated deployed acceptance pending. Google delivery requires additive durable-revision migration, original credential bindings and enabled Queue recovery; remote provider acceptance is not established.";
+    }
+    if (nativeSpec?.[2] === "handleNativeStaffInvitation") {
+      contractTests.push("tests/nativeStaffInvitations.test.ts");
+      remainingBlocker =
+        "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Dedicated non-founder account invitation, acceptance, sign-in and deployed Admin reads remain unverified.";
     }
     if (disabled)
       remainingBlocker =

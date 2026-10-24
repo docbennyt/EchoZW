@@ -1,5 +1,65 @@
 # DR-178 Recovery Evidence Ledger
 
+## 2026-10-24 Current Deployed Checkpoint And Follow-Up
+
+Reviewed PR113 candidate `7e42b4b4466674c1b1d6ea63b1edd837b3ecefb2` deployed
+through run40069825121 attempt2. Authorize/package/deploy succeeded. Live browser
+independently reports that SHA and Worker version
+`f060da11-f583-4ec5-b713-e2be2da78a85`, `legacyBackendBridge:false`.
+The original Apple ICS Part1.1 feed passed canonical content and stale200/current304
+checks without changing its token/path. Overall acceptance failed only for absent
+dedicated Admin account inputs, not a deployment failure. The unchanged candidate
+already has exact-commit Blessing Media approval and1071 passing tests/173 files.
+
+Migrations0038/0039 are actually applied and tracked as20261024061855 and 20261024061919. Before/after aggregate fingerprints preserve163 subscriptions,
+73 encrypted credentials,1091 mappings,3436 source sessions and23 directives.
+New delivery/lifecycle tables/functions remain service-role only. Revision baseline
+10 and jobs0. Actual stored-credential decryption and Google remote delivery remain
+unverified; no key rotation or provider calendar write has occurred.
+
+Follow-up in progress restores the existing founder-authorized invitation transport
+and bounds Google delivery below Free50 external subrequests. The prior full-update
+path needs79 requests including claim/finish. Continuations must retain durable
+progress without advancing successful revision. New migration0040 is pending
+independent review/application, not applied. The Google delivery flag remains false.
+
+The follow-up now implements native `POST /api/admin/staff/invite-admin` through
+the existing founder authorization, Auth provisioning, protected membership and
+audit services. Request-local bindings and trusted staging invitation redirects
+are isolated with AsyncLocalStorage; canonical calendar origins are unchanged.
+The dedicated account has not yet been invited or signed in on this candidate.
+
+Google Queue reconciliation now budgets32 external sync requests, reserving claim
+and finish capacity (nominal34 total,32% headroom under Free50). Persisted mapping
+progress survives slices/crashes. Migration0040 adds a service-only continuation
+outcome without advancing successful revision. Incomplete provider work is retried,
+not acknowledged. Existing stable keys, strict ownership, revoked-credential states
+and unrelated-event preservation remain. A conflicting-mapping finding was
+reproduced and fixed before final verification.
+
+Local full suite1113 tests/175files passed, including34 actual PostgreSQL delivery
+and lifecycle cases. A final failed-DELETE retry case was then added; focused final
+verification99tests passed. Clean install, lint (four existing warnings), format,
+production build, Worker checks/automation/dry run passed. Final immutable GitHub
+CI is required separately. Dependency audit reports8 advisories (4moderate/4high)
+on unchanged package manifests/lockfile; no clean-audit claim or unrelated autofix.
+Source inventory now103 routes:53 implemented/not-live-proven,2 incomplete,
+48 unavailable,0bridges. No authenticated invitation or Google provider PASS yet.
+
+A real local workerd probe using the actual Supabase client found that
+redirect:"error" is unsupported. The adapter now uses manual redirects and rejects
+3xx without following them. The probe then passed two real synthetic PostgREST reads
+and blocked the third at its budget; concurrent invocations each retained their own
+budget (six total backend calls including two direct reachability checks). This is
+local runtime compatibility evidence, not Google provider acceptance.
+
+Secure dedicated-account setup and acceptance-only rerun procedure:
+[DR-178_STAGING_ACCEPTANCE.md](DR-178_STAGING_ACCEPTANCE.md).
+Keep113 draft. Production DNS unchanged. New source changes require fresh exact-head
+checks/review; earlier deployment/bootstrap blockers below are historical.
+
+## Historical Checkpoints
+
 ## 2026-10-24 Trusted Bootstrap Integration
 
 PR114 is merged as protected `Calender@e4940c3fde8a29fb61b41b4396eddfd62f770878`.
