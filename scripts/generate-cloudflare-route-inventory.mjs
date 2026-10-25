@@ -314,6 +314,28 @@ export async function buildInventory(
     ]),
     ["GET", "/api/admin/staff", "handleNativeStaffInvitation"],
     ["POST", "/api/admin/staff/invite-admin", "handleNativeStaffInvitation"],
+    ["POST", "/api/admin/staff/invite", "handleNativeStaffInvitation"],
+    [
+      "POST",
+      "/api/admin/staff/:staffUserId/resend-invite",
+      "handleNativeStaffInvitation",
+    ],
+    [
+      "POST",
+      "/api/admin/staff/:staffUserId/assignments",
+      "handleNativeStaffInvitation",
+    ],
+    [
+      "DELETE",
+      "/api/admin/staff/assignments/:assignmentId",
+      "handleNativeStaffInvitation",
+    ],
+    ["PATCH", "/api/admin/staff/:staffUserId", "handleNativeStaffInvitation"],
+    [
+      "PATCH",
+      "/api/admin/staff/:staffUserId/role",
+      "handleNativeStaffInvitation",
+    ],
     ["POST", "/api/admin/timetables", "handleNativeAdminTimetable"],
     ["GET", "/api/admin/timetables/:timetableId", "handleNativeAdminTimetable"],
     [

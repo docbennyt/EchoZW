@@ -1,4 +1,4 @@
-/** Adapts manager GET /staff and founder-only POST /staff/invite-admin. */
+/** Adapts existing staff lifecycle handlers with manager and founder guards. */
 export function handleNativeStaffInvitation(
   request: Request,
   env: NodeJS.ProcessEnv,

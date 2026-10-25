@@ -85,6 +85,15 @@ vi.mock("../server/supabase/adminClient.js", () => ({
           return { data: row, error: null };
         }
         const rows: Record<string, unknown[]> = {
+          google_calendar_delivery_revisions: [
+            {
+              timetable_id: timetableId,
+              revision: 3 + state.writes.length,
+              updated_at: new Date(
+                Date.parse("2026-10-09T12:00:01Z") + state.writes.length * 1000,
+              ).toISOString(),
+            },
+          ],
           academic_schedule_pauses: state.pauses,
           timetable_session_exceptions: state.exceptions,
           timetables: state.timetableRows ?? [base],

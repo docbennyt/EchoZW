@@ -755,7 +755,7 @@
     "server/adminApi.ts": "c288428c41fb0f3fc5c6185f27f0551d68d05a0edb26e3c707456302408c7294",
     "server/analyticsApi.ts": "d05111ee74360a6157ad03f89eaeaa0b6d45e16a1dc0e16c09262f2583e97e07",
     "server/analyticsRepository.ts": "6607366efa0ef75ee576925c82e51bc9f11d76b9d06e2b3714a2a36f8b12db1b",
-    "server/calendarRevisionRepository.ts": "8b546ba0dde8758c2d0ebc363479529305192f6cae91915edeabe85a491cd975",
+    "server/calendarRevisionRepository.ts": "a6388a6727d114e4e79a055e18daf562c9ee8dff796bbdd4e9b0f9be5f77ddff",
     "server/calendarSubscriptionCore.ts": "7a1ff2558dc3674e2310ae04fc115469b0dfde72c03a647e0f59b9981b089dc9",
     "server/calendarSubscriptionLifecycle.ts": "bc5e5e8f2258349d422f9ba82884f7e1e1bf47abceab883eb7d8b9a9ddf558e6",
     "server/correctionsAdminApi.ts": "351b8a8a584e9156506a4481f778cc5486889a0e07be420dc1ebf3f5356058b0",
@@ -765,7 +765,7 @@
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
     "server/googleCalendarDelivery.ts": "0239ecacf5e4be8606e28a1f5944983730d8d8471a5ac491df3c458a6261b0ad",
     "server/googleCalendarRepository.ts": "c912c8db8abf6f9199443f8a573e70f510f536a2bff7c646a786e5530fdf944e",
-    "server/googleCalendarSync.ts": "e9af3e272ed7cf54d617f9965e0c14de7d12da82db13c8625feeeddf0107ac6e",
+    "server/googleCalendarSync.ts": "b7b1e1bef0628cfcbef18899a9b43d7323a0a82a2b104bbed07ca398be36533a",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
     "server/growthCaptureRepository.ts": "49b4f42e3f1dbf74032a13cd932d44275a99d691ac4fe0f00116803cb0b87b46",
     "server/growthInboxAdminApi.ts": "a48838602baab4c8eee7bb810364297758021aeee7766d025812d1ccb3a45f73",
@@ -779,12 +779,13 @@
     "server/pesepayGateway.ts": "96c8a8693fcd8a425fbce8ed51609bf44e7e5cd92c25480d4ed84d4438205cb0",
     "server/pilotAdminApi.ts": "0f50c6bde4e1b2491163729f0c58f2c159035957bde5ade541385e2978c2c5e6",
     "server/pilotCalendarApi.ts": "bcee8f1eb15f4ae1c73cc16b4ab41dbb6e1d3579dd320fb183fa5a3709034c41",
-    "server/pilotCalendarCore.ts": "2a0219094ce5f20bee1312f9fc351d9758a4a6976e495081632d414d2ece8bd5",
+    "server/pilotCalendarCore.ts": "580bfd3475b5a2c10cbf40117b12195cbefdb9d1e2504a967ee0e36f1db78e48",
     "server/pilotRepository.ts": "95bb0058a402617bee84517f06aa62acbbcbdcb5f5bdb286928ba4fd86e12867",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
     "server/publicTimetableApi.ts": "84901a5a825c5b0b0549221f7f2cfdbe3191db33eaf221f418135e284f91bf73",
     "server/publicTimetableCore.ts": "2e4c1d1a7596e5178cccd1a9124c2d1df47aa1822aa4a202d9b406beea6b7c69",
     "server/publishedCalendar.ts": "9b17c504ec2aa8897ec16d6ec6c15f032b445e0d304b85e2cb31884cbdb93049",
+    "server/publishedTimetableSnapshot.ts": "27ccbcccd76a77538d524a2b9121e0d88984ccf3218b9c1dd6b0d9ac9a11eb52",
     "server/pushConfig.ts": "72287b6b88dc81ef835fa9d6c15943d60a3ee15f3c7c93a097f5158bcd1bb544",
     "server/pushNotificationApi.ts": "e3236f2c4728c3fce47a25cb6e526f644522fc159c1a3313441e2b00cd481632",
     "server/pushNotificationRepository.ts": "0c4dcd0ffadaa51611256cbb7aa8fa7ce6b73c8d1b38a96047d3fd22843bcc0e",
@@ -814,7 +815,7 @@
     "server/spaMetadata.ts": "8f4c41c1ce18287fd8b6e9dde8b4a30949e5c5e6054e3f61308b3c8f25881f2a",
     "server/spaSeo.ts": "f62615d77680d5a750347a7362995fcbc7ac4a8b14e2b1c730b936a96c9a891e",
     "server/staffAdminApi.ts": "ad6eca651cdcc9a38275b5562124fbce5985c9837bd10da8b8aabb8440d180dc",
-    "server/staffRepository.ts": "3b1d706e18c53926638922985551c135072b37ea12bb7bff08ecf5f5c5238e80",
+    "server/staffRepository.ts": "f9f501d82ed036d5ffb77174f9181984be0a05621cbd29ea64cc56ec52b0f512",
     "server/staticTimetableImportApi.ts": "02d073541ef1e04544ad6b548cc1153a19d7f81fc51b085509d47febea65e171",
     "server/staticTimetableImportRepository.ts": "9e74cf88421f31757d17e1c4c5925f7dba439bdffb7b7f5b2123c45e32a7c01c",
     "server/staticTimetableInputAdapters.ts": "9b35ddd1e292c981f4ce4177ca1728aa18c67cb90f15b91fb8d9b238d41cf5b1",
@@ -937,19 +938,19 @@
     "worker/googleCalendarApi.mjs": "def9a4c0d2e8ef7041d67d4eba34de469679d58312b983592650ea8d393126f4",
     "worker/googleDelivery.mjs": "7ed1bc86961e5a05e9cd2e87296759ff932e9c58b6046674e93272abf90c362d",
     "worker/index.mjs": "191614ff5fd17ff34c820bfa635759887293305344d4723f3594226d77abf24a",
-    "worker/staffInvitations.mjs": "c75232f8dba53b1289c965b0a08d1f5cf149e7d19442ec86a2d7d933d9e0a473",
+    "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
   },
   "counts": {
     "httpRoutes": 103,
     "nodeDispatchRoutes": 101,
-    "nativeImplementedNotLiveProven": 62,
+    "nativeImplementedNotLiveProven": 68,
     "nativeLiveProven": 0,
     "nativeIncomplete": 2,
     "intentionallyDisabled": 0,
     "bridged": 0,
-    "unavailable": 39
+    "unavailable": 33
   },
   "routes": [
     {
@@ -1135,6 +1136,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -1208,7 +1210,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1223,12 +1225,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1284,6 +1291,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -1357,7 +1365,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1372,12 +1380,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3327,7 +3340,8 @@
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/nativeAdminEntities.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3356,7 +3370,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 425,
+          "line": 531,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3373,13 +3387,14 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/admin/staff/:param1",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "path": "/api/admin/staff/:staffUserId",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "setStaffActive",
       "databaseDependencies": [
         "table/storage reference: audit_logs",
-        "table/storage reference: staff_users"
+        "table/storage reference: staff_users",
+        "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
@@ -3388,31 +3403,33 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/nativeAdminEntities.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 130, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3428,7 +3445,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 835,
+          "line": 728,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3445,15 +3462,11 @@
     },
     {
       "method": "POST",
-      "path": "/api/admin/staff/:param1/assignments",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "path": "/api/admin/staff/:staffUserId/assignments",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "assignClassRep",
-      "databaseDependencies": [
-        "table/storage reference: audit_logs",
-        "table/storage reference: class_rep_assignments",
-        "table/storage reference: staff_users"
-      ],
+      "databaseDependencies": ["RPC: czw_staff_lifecycle"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
@@ -3461,31 +3474,33 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/nativeAdminEntities.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 157, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3501,7 +3516,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 759,
+          "line": 705,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3518,13 +3533,14 @@
     },
     {
       "method": "POST",
-      "path": "/api/admin/staff/:param1/resend-invite",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "path": "/api/admin/staff/:staffUserId/resend-invite",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "resendStaffInvite",
       "databaseDependencies": [
         "table/storage reference: audit_logs",
-        "table/storage reference: staff_users"
+        "table/storage reference: staff_users",
+        "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
@@ -3533,31 +3549,33 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/nativeAdminEntities.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 144, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3573,7 +3591,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 667,
+          "line": 630,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3590,14 +3608,13 @@
     },
     {
       "method": "PATCH",
-      "path": "/api/admin/staff/:param1/role",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "path": "/api/admin/staff/:staffUserId/role",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "setStaffRole",
       "databaseDependencies": [
         "table/storage reference: audit_logs",
-        "table/storage reference: class_rep_assignments",
-        "table/storage reference: staff_users"
+        "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
@@ -3606,31 +3623,33 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
         "tests/nativeAdminEntities.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 118, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3646,7 +3665,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 896,
+          "line": 765,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3663,14 +3682,11 @@
     },
     {
       "method": "DELETE",
-      "path": "/api/admin/staff/assignments/:param1",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "path": "/api/admin/staff/assignments/:assignmentId",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "revokeClassRepAssignment",
-      "databaseDependencies": [
-        "table/storage reference: audit_logs",
-        "table/storage reference: class_rep_assignments"
-      ],
+      "databaseDependencies": ["RPC: czw_staff_lifecycle"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
@@ -3678,26 +3694,31 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/dr56StaffOnboardingSecurity.test.ts"],
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/dr56StaffOnboardingSecurity.test.ts",
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 172, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3713,7 +3734,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 809,
+          "line": 718,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3731,13 +3752,14 @@
     {
       "method": "POST",
       "path": "/api/admin/staff/invite",
-      "authPolicy": "Supabase bearer; requireStaffManager; founder boundaries enforced by staff service",
+      "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "inviteClassRep",
       "databaseDependencies": [
         "table/storage reference: audit_logs",
-        "table/storage reference: class_rep_assignments",
-        "table/storage reference: staff_users"
+        "table/storage reference: staff_users",
+        "table/storage reference: timetables",
+        "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
@@ -3746,30 +3768,32 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/staffInvitations.mjs",
+        "line": 94,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         { "file": "server/staffAdminApi.ts", "line": 96, "role": "dispatch" },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/staffInvitations.mjs",
+          "line": 94,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -3785,7 +3809,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 759,
+          "line": 569,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -3808,8 +3832,8 @@
       "applicationService": "inviteAdmin",
       "databaseDependencies": [
         "table/storage reference: audit_logs",
-        "table/storage reference: class_rep_assignments",
-        "table/storage reference: staff_users"
+        "table/storage reference: staff_users",
+        "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
@@ -3828,7 +3852,8 @@
       "contractTests": [
         "tests/cloudflareRuntimeFoundation.test.ts",
         "tests/dr56StaffOnboardingSecurity.test.ts",
-        "tests/nativeStaffInvitations.test.ts"
+        "tests/nativeStaffInvitations.test.ts",
+        "tests/workerClassRepStaffLifecycle.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -3857,7 +3882,7 @@
         },
         {
           "file": "server/staffRepository.ts",
-          "line": 572,
+          "line": 604,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4968,6 +4993,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -5040,7 +5066,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5070,12 +5096,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5132,6 +5163,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -5203,7 +5235,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5228,12 +5260,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5290,6 +5327,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -5363,7 +5401,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5393,12 +5431,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5455,6 +5498,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -5526,7 +5570,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5551,12 +5595,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5613,6 +5662,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -5685,7 +5735,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5710,12 +5760,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5772,6 +5827,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -5844,7 +5900,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5869,12 +5925,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5931,6 +5992,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -6002,7 +6064,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6027,12 +6089,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6089,6 +6156,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -6162,7 +6230,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6187,12 +6255,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6249,6 +6322,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -6320,7 +6394,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6345,12 +6419,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6407,6 +6486,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -6479,7 +6559,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6504,12 +6584,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6565,6 +6650,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -6630,7 +6716,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6645,7 +6731,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1436,
+          "line": 1415,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6656,6 +6742,11 @@
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6797,6 +6888,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -6879,7 +6971,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6894,12 +6986,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6955,6 +7052,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -7037,7 +7135,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7052,12 +7150,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7405,6 +7508,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -7471,7 +7575,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7486,7 +7590,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1398,
+          "line": 1377,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7497,6 +7601,11 @@
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7883,6 +7992,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: google_calendar_oauth_states",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -7958,7 +8068,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7973,7 +8083,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1275,
+          "line": 1254,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7984,6 +8094,11 @@
         {
           "file": "server/pilotRepository.ts",
           "line": 2184,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8197,7 +8312,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 619,
+          "line": 618,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8344,7 +8459,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1472,
+          "line": 1451,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8456,7 +8571,7 @@
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 609,
+          "line": 608,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8563,7 +8678,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 609,
+          "line": 608,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10223,6 +10338,7 @@
       "databaseDependencies": [
         "table/storage reference: academic_schedule_pauses",
         "table/storage reference: calendar_subscriptions",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -10284,7 +10400,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10299,7 +10415,7 @@
         },
         {
           "file": "server/pilotCalendarCore.ts",
-          "line": 5,
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10310,6 +10426,11 @@
         {
           "file": "server/publishedCalendar.ts",
           "line": 10,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10387,6 +10508,7 @@
       "databaseDependencies": [
         "table/storage reference: academic_schedule_pauses",
         "table/storage reference: calendar_subscriptions",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -10448,7 +10570,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10463,7 +10585,7 @@
         },
         {
           "file": "server/pilotCalendarCore.ts",
-          "line": 5,
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10474,6 +10596,11 @@
         {
           "file": "server/publishedCalendar.ts",
           "line": 10,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10551,6 +10678,7 @@
       "databaseDependencies": [
         "table/storage reference: academic_schedule_pauses",
         "table/storage reference: calendar_subscriptions",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -10631,7 +10759,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10646,7 +10774,7 @@
         },
         {
           "file": "server/pilotCalendarCore.ts",
-          "line": 5,
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10657,6 +10785,11 @@
         {
           "file": "server/publishedCalendar.ts",
           "line": 10,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10745,6 +10878,7 @@
       "databaseDependencies": [
         "table/storage reference: academic_schedule_pauses",
         "table/storage reference: calendar_subscriptions",
+        "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
@@ -10825,7 +10959,7 @@
         },
         {
           "file": "server/calendarRevisionRepository.ts",
-          "line": 22,
+          "line": 10,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10840,7 +10974,7 @@
         },
         {
           "file": "server/pilotCalendarCore.ts",
-          "line": 5,
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10851,6 +10985,11 @@
         {
           "file": "server/publishedCalendar.ts",
           "line": 10,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/publishedTimetableSnapshot.ts",
+          "line": 4,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

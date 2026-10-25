@@ -94,9 +94,41 @@ function trustedInvitationOrigin(url, env) {
 export async function handleNativeStaffInvitation(request, env) {
   const url = new URL(request.url);
   const isStaffRead = url.pathname === "/api/admin/staff";
-  if (!isStaffRead && url.pathname !== "/api/admin/staff/invite-admin")
+  const isAdminInvite = url.pathname === "/api/admin/staff/invite-admin";
+  const isClassRepInvite = url.pathname === "/api/admin/staff/invite";
+  const isRoleChange = /^\/api\/admin\/staff\/[^/]+\/role$/.test(url.pathname);
+  const isActiveChange =
+    !isStaffRead &&
+    !isAdminInvite &&
+    !isClassRepInvite &&
+    /^\/api\/admin\/staff\/[^/]+$/.test(url.pathname);
+  const isAssignment = /^\/api\/admin\/staff\/[^/]+\/assignments$/.test(
+    url.pathname,
+  );
+  const isRevoke = /^\/api\/admin\/staff\/assignments\/[^/]+$/.test(
+    url.pathname,
+  );
+  const isResend = /^\/api\/admin\/staff\/[^/]+\/resend-invite$/.test(
+    url.pathname,
+  );
+  if (
+    !isStaffRead &&
+    !isAdminInvite &&
+    !isClassRepInvite &&
+    !isRoleChange &&
+    !isActiveChange &&
+    !isAssignment &&
+    !isRevoke &&
+    !isResend
+  )
     return null;
-  const allowedMethod = isStaffRead ? "GET" : "POST";
+  const allowedMethod = isStaffRead
+    ? "GET"
+    : isRevoke
+      ? "DELETE"
+      : isRoleChange || isActiveChange
+        ? "PATCH"
+        : "POST";
   if (request.method !== allowedMethod) {
     return json(
       { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
@@ -129,15 +161,23 @@ export async function handleNativeStaffInvitation(request, env) {
       method: request.method,
       url: url.pathname,
     };
-    const authorize = isStaffRead
-      ? requireStaffManager
-      : requireFounderSuperadmin;
+    // Target-specific Admin/founder protections remain in the shared repository.
+    const authorize =
+      isAdminInvite || isRoleChange
+        ? requireFounderSuperadmin
+        : requireStaffManager;
     const actor = await authorize(authRequest, {
       createUserClient: (token) => createSupabaseUserClient(token, env),
       createAdminClient: () => createSupabaseAdminClient(env),
     });
     let chunks = [];
-    if (!isStaffRead) {
+    if (
+      isAdminInvite ||
+      isClassRepInvite ||
+      isRoleChange ||
+      isActiveChange ||
+      isAssignment
+    ) {
       if (
         !/^application\/json(?:\s*;|\s*$)/i.test(
           request.headers.get("content-type") ?? "",

@@ -22,6 +22,9 @@ const state = vi.hoisted(() => ({
   enrollmentReads: 0,
   failList: false,
   throwList: false,
+  rpcCalls: [] as { operation: string; input: Record<string, unknown> }[],
+  reservedRecipients: [] as string[],
+  actorAttempts: 0,
 }));
 vi.mock("../server/supabase/userClient.js", () => ({
   createSupabaseUserClient: () => ({
@@ -35,6 +38,75 @@ vi.mock("../server/supabase/userClient.js", () => ({
 }));
 vi.mock("../server/supabase/adminClient.js", () => ({
   createSupabaseAdminClient: (bindings: NodeJS.ProcessEnv) => ({
+    rpc: async (name: string, args: Record<string, unknown>) => {
+      expect(name).toBe("czw_staff_lifecycle");
+      expect(args.p_actor_user_id).toBe("founder-user");
+      const operation = String(args.p_operation);
+      const input = args.p_input as Record<string, unknown>;
+      state.rpcCalls.push({ operation, input });
+      if (!state.active || state.role !== "superadmin" || !state.founder) {
+        return { data: { error: { code: "FOUNDER_REQUIRED" } }, error: null };
+      }
+      if (operation === "reserve_invite") {
+        expect(input.role).toBe("admin");
+        const email = String(input.email).toLowerCase().trim();
+        if (state.reservedRecipients.includes(email))
+          return {
+            data: { error: { code: "INVITE_RATE_LIMITED" } },
+            error: null,
+          };
+        if (state.actorAttempts >= 10)
+          return {
+            data: { error: { code: "INVITE_ACTOR_RATE_LIMITED" } },
+            error: null,
+          };
+        state.reservedRecipients.push(email);
+        state.actorAttempts++;
+        return { data: { reserved: true }, error: null };
+      }
+      if (operation !== "enroll_admin")
+        throw new Error(
+          `Unexpected native fixture RPC operation: ${operation}`,
+        );
+      expect(input.userId).toBe("invitee-user");
+      const action =
+        input.enrollment === "invited_new_user"
+          ? "admin.invited"
+          : input.enrollment === "invite_resent_pending_user"
+            ? "admin.invite_resent"
+            : "admin.access_granted_existing_user";
+      const auditWrite = {
+        table: "audit_logs",
+        row: { actor_id: args.p_actor_user_id, action },
+      };
+      if (state.failAudit) {
+        // Record the attempted audit without committing a membership mutation.
+        state.writes.push(auditWrite);
+        return {
+          data: null,
+          error: { message: "synthetic atomic audit failure" },
+        };
+      }
+      state.writes.push(
+        {
+          table: "staff_users",
+          row: {
+            user_id: input.userId,
+            role: "admin",
+            is_founder: false,
+            active: true,
+            email: input.email,
+            display_name: input.displayName,
+            created_by: args.p_actor_user_id,
+          },
+        },
+        auditWrite,
+      );
+      return {
+        data: { staffUserId: "invitee-staff", enrollment: input.enrollment },
+        error: null,
+      };
+    },
     auth: {
       admin: {
         listUsers: async () => {
@@ -166,6 +238,9 @@ beforeEach(() => {
   state.enrollmentReads = 0;
   state.failList = false;
   state.throwList = false;
+  state.rpcCalls = [];
+  state.reservedRecipients = [];
+  state.actorAttempts = 0;
   vi.stubEnv("PUBLIC_APP_URL", "https://app.example");
 });
 describe("native staff read", () => {
@@ -351,9 +426,8 @@ describe("native staff read", () => {
   );
 
   it.each([
-    "/api/admin/staff/invite",
-    "/api/admin/staff/member",
-    "/api/admin/staff/member/role",
+    "/api/admin/staff/member/unrecognized-action",
+    "/api/admin/unrelated",
   ])("leaves other staff mutations outside the adapter: %s", async (path) => {
     expect(
       await handleNativeStaffInvitation(
@@ -646,11 +720,14 @@ describe("native founder Invite Admin", () => {
     expect(await response.json()).toMatchObject({
       error: {
         code: "DATABASE_UNAVAILABLE",
-        message: "Could not record the staff audit log.",
+        message: "Could not complete the staff lifecycle transaction.",
       },
     });
     expect(state.writes.some((entry) => entry.table === "audit_logs")).toBe(
       true,
     );
+    expect(
+      state.writes.filter((entry) => entry.table === "staff_users"),
+    ).toEqual([]);
   });
 });
