@@ -1,6 +1,5 @@
-import { getCalendarRevision } from "./calendarRevisionRepository.js";
 import { generatePublishedTimetableIcs } from "./publishedCalendar.js";
-import { getPublishedTimetableById, PilotApiError } from "./pilotRepository.js";
+import { loadPublishedTimetableSnapshot } from "./publishedTimetableSnapshot.js";
 
 export async function buildRevisionAwareCalendar(input: {
   timetableId: string;
@@ -8,18 +7,10 @@ export async function buildRevisionAwareCalendar(input: {
   publicOrigin: string;
   env: NodeJS.ProcessEnv;
 }) {
-  const timetable = await getPublishedTimetableById(
+  const { timetable, revision } = await loadPublishedTimetableSnapshot(
     input.timetableId,
     input.env,
   );
-  if (!timetable.publishedAt) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable does not have a published calendar yet.",
-      404,
-    );
-  }
-  const revision = await getCalendarRevision(input.timetableId, input.env);
   const resolvedTimetable = {
     ...timetable,
     publishedAt: revision.updatedAt,

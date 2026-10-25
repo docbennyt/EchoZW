@@ -603,17 +603,18 @@ describe("DR-168 SE 4.1 effective schedule contract", () => {
     pilotRepositoryMocks.getPublishedTimetableById.mockResolvedValueOnce(
       beforeTimetable,
     );
-    revisionMocks.getCalendarRevision.mockResolvedValueOnce({
+    revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-09-01T08:00:00.000Z",
       sequence: 1,
     });
 
     const first = await requestCalendarFeed();
+    expect(first.statusCode).toBe(200);
 
     pilotRepositoryMocks.getPublishedTimetableById.mockResolvedValueOnce(
       afterTimetable,
     );
-    revisionMocks.getCalendarRevision.mockResolvedValueOnce({
+    revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-10-01T08:01:00.000Z",
       sequence: 4,
     });
@@ -641,7 +642,7 @@ describe("DR-168 SE 4.1 effective schedule contract", () => {
     pilotRepositoryMocks.getPublishedTimetableById.mockResolvedValueOnce(
       afterTimetable,
     );
-    revisionMocks.getCalendarRevision.mockResolvedValueOnce({
+    revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-10-01T08:01:00.000Z",
       sequence: 4,
     });

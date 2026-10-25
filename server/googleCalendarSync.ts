@@ -12,7 +12,7 @@ import {
 } from "../src/domain/googleOAuthConfig.js";
 import { googleCalendarScope } from "../src/domain/googleScopes.js";
 import { projectPublishedTimetable } from "../src/domain/publishedCalendarProjection.js";
-import { getCalendarRevision } from "./calendarRevisionRepository.js";
+import { loadPublishedTimetableSnapshot } from "./publishedTimetableSnapshot.js";
 import {
   budgetedFetch,
   markExternalWorkProgress,
@@ -23,7 +23,6 @@ import {
   createGoogleOAuthState,
   disconnectGoogleCalendarConnection,
   deleteGoogleEventSyncRecord,
-  getCurrentPublishedVersionId,
   getGoogleCredential,
   listGoogleEventSyncRecords,
   listSyncableGoogleSubscriptions,
@@ -716,15 +715,10 @@ async function reconcileGoogleSubscription(
   };
 
   const timetableId = String(subscription.timetable_id);
-  const timetable = await getPublishedTimetableById(timetableId, env);
-  if (!timetable.publishedAt) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable is not currently published.",
-      404,
-    );
-  }
-  const revision = await getCalendarRevision(timetableId, env);
+  const { timetable, revision } = await loadPublishedTimetableSnapshot(
+    timetableId,
+    env,
+  );
   const resolvedTimetable: PublicTimetable = {
     ...timetable,
     publishedAt: revision.updatedAt,
@@ -738,17 +732,7 @@ async function reconcileGoogleSubscription(
     reminderOffsetsMinutes: reminders,
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
-  const publishedVersionId = await getCurrentPublishedVersionId(
-    timetableId,
-    env,
-  );
-  if (!publishedVersionId) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable is not currently published.",
-      404,
-    );
-  }
+  const publishedVersionId = revision.publishedVersionId;
 
   const { accessToken } = await loadAccessToken(subscriptionId, env, signal);
   let calendarId = subscription.external_calendar_id
@@ -1094,14 +1078,10 @@ export async function previewGoogleSubscriptionSync(
   }
 
   const timetableId = String(subscription.timetable_id);
-  const timetable = await getPublishedTimetableById(timetableId, env);
-  if (!timetable.publishedAt) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable is not currently published.",
-      404,
-    );
-  }
+  const { timetable, revision } = await loadPublishedTimetableSnapshot(
+    timetableId,
+    env,
+  );
   const calendarId = subscription.external_calendar_id
     ? String(subscription.external_calendar_id)
     : null;
@@ -1121,7 +1101,6 @@ export async function previewGoogleSubscriptionSync(
     };
   }
 
-  const revision = await getCalendarRevision(timetableId, env);
   const resolvedTimetable: PublicTimetable = {
     ...timetable,
     publishedAt: revision.updatedAt,

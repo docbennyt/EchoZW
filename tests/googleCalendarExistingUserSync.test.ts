@@ -727,9 +727,10 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-08-11T10:30:00.000Z",
       sequence: 4,
+      publishedVersionId: "version-current",
     });
-    googleRepositoryMocks.getCurrentPublishedVersionId.mockResolvedValue(
-      "version-current",
+    googleRepositoryMocks.getCurrentPublishedVersionId.mockRejectedValue(
+      new Error("Published version must come from the accepted snapshot"),
     );
     googleRepositoryMocks.getGoogleCredential.mockResolvedValue({
       encrypted_refresh_token: encryptGoogleRefreshToken("refresh-token", env),
@@ -753,6 +754,181 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     googleRepositoryMocks.deleteGoogleEventSyncRecord.mockResolvedValue(
       undefined,
     );
+  });
+
+  it("retries a correction change during the published read before any provider request and uses the accepted snapshot version", async () => {
+    const before = {
+      sequence: 4,
+      updatedAt: "2026-08-11T10:30:00.000Z",
+      publishedVersionId: "version-current",
+    };
+    const after = {
+      sequence: 5,
+      updatedAt: "2026-08-11T10:30:01.000Z",
+      publishedVersionId: "version-snapshot",
+    };
+    let clock = before;
+    const original = timetable();
+    const rawBefore = JSON.stringify(original.sessions);
+    const corrected = timetable({
+      corrections: [
+        {
+          ...original.sessions[0],
+          id: "correction-during-read",
+          action: "modify",
+          sourceMayReplace: false,
+          pinned: true,
+          active: true,
+          reason: "Snapshot race fixture",
+          provenance: null,
+          createdAt: after.updatedAt,
+          startTime: "13:15:00",
+          endTime: "14:15:00",
+          venue: "N205",
+        },
+      ],
+    });
+    revisionMocks.getCalendarRevision.mockImplementation(async () => clock);
+    repositoryMocks.getPublishedTimetableById
+      .mockImplementationOnce(async () => {
+        expect(fetch).not.toHaveBeenCalled();
+        clock = after;
+        return original;
+      })
+      .mockImplementationOnce(async () => {
+        expect(fetch).not.toHaveBeenCalled();
+        expect(
+          googleRepositoryMocks.getGoogleCredential,
+        ).not.toHaveBeenCalled();
+        expect(
+          googleRepositoryMocks.upsertGoogleEventSyncRecord,
+        ).not.toHaveBeenCalled();
+        clock = after;
+        return corrected;
+      });
+    googleRepositoryMocks.getCurrentPublishedVersionId.mockResolvedValue(
+      "version-after-snapshot",
+    );
+
+    expect(await syncGoogleSubscription("sub-existing", env)).toMatchObject({
+      created: 0,
+      updated: 1,
+      deleted: 1,
+      unchanged: 0,
+    });
+    expect(repositoryMocks.getPublishedTimetableById).toHaveBeenCalledTimes(2);
+    expect(repositoryMocks.getPublishedTimetableById.mock.calls).toEqual([
+      ["tt-se41", env],
+      ["tt-se41", env],
+    ]);
+    expect(revisionMocks.getCalendarRevision).toHaveBeenCalledTimes(4);
+    expect(revisionMocks.getCalendarRevision.mock.calls).toEqual(
+      Array.from({ length: 4 }, () => ["tt-se41", env]),
+    );
+    const readOrder = [
+      revisionMocks.getCalendarRevision.mock.invocationCallOrder[0],
+      repositoryMocks.getPublishedTimetableById.mock.invocationCallOrder[0],
+      revisionMocks.getCalendarRevision.mock.invocationCallOrder[1],
+      revisionMocks.getCalendarRevision.mock.invocationCallOrder[2],
+      repositoryMocks.getPublishedTimetableById.mock.invocationCallOrder[1],
+      revisionMocks.getCalendarRevision.mock.invocationCallOrder[3],
+    ];
+    expect([...readOrder].sort((left, right) => left - right)).toEqual(
+      readOrder,
+    );
+    expect(
+      revisionMocks.getCalendarRevision.mock.invocationCallOrder[3],
+    ).toBeLessThan(vi.mocked(fetch).mock.invocationCallOrder[0]);
+    const writes = vi
+      .mocked(fetch)
+      .mock.calls.filter(([, init]) => init?.method === "PUT");
+    expect(writes).toHaveLength(1);
+    expect(String(writes[0][0])).toContain(
+      "/events/event-ise4105?sendUpdates=none",
+    );
+    expect(JSON.parse(String(writes[0][1]?.body))).toMatchObject({
+      location: "N205",
+      start: { dateTime: "2026-08-11T11:15:00.000Z" },
+      end: { dateTime: "2026-08-11T12:15:00.000Z" },
+      extendedProperties: {
+        private: {
+          calenderzwStableSessionKey: "ise4105-tue-corrected",
+          calenderzwTimetableId: "tt-se41",
+        },
+      },
+    });
+    expect(
+      googleRepositoryMocks.getCurrentPublishedVersionId,
+    ).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.upsertGoogleEventSyncRecord,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        internalEventId: "ise4105-tue-corrected",
+        externalEventId: "event-ise4105",
+        timetableVersionId: after.publishedVersionId,
+      }),
+    );
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        syncedTimetableVersionId: after.publishedVersionId,
+      }),
+    );
+    expect(
+      googleRepositoryMocks.deleteGoogleEventSyncRecord,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ internalEventId: "ise4105-wed-removed" }),
+    );
+    expect(JSON.stringify(original.sessions)).toBe(rawBefore);
+    expect(JSON.stringify(corrected.sessions)).toBe(rawBefore);
+  });
+
+  it("rejects continuous snapshot churn after two attempts before token, provider or mapping work in sync and preview", async () => {
+    let sequence = 4;
+    revisionMocks.getCalendarRevision.mockImplementation(async () => ({
+      sequence: sequence++,
+      updatedAt: "2026-08-11T10:30:00.000Z",
+      publishedVersionId: "version-current",
+    }));
+
+    for (const [index, operation] of [
+      syncGoogleSubscription,
+      previewGoogleSubscriptionSync,
+    ].entries()) {
+      await expect(operation("sub-existing", env)).rejects.toMatchObject({
+        code: "CALENDAR_REVISION_UNSTABLE",
+        status: 503,
+      });
+      expect(repositoryMocks.getPublishedTimetableById).toHaveBeenCalledTimes(
+        2 * (index + 1),
+      );
+      expect(revisionMocks.getCalendarRevision).toHaveBeenCalledTimes(
+        4 * (index + 1),
+      );
+      expect(fetch).not.toHaveBeenCalled();
+      expect(googleRepositoryMocks.getGoogleCredential).not.toHaveBeenCalled();
+      expect(
+        googleRepositoryMocks.getCurrentPublishedVersionId,
+      ).not.toHaveBeenCalled();
+      expect(
+        googleRepositoryMocks.listGoogleEventSyncRecords,
+      ).not.toHaveBeenCalled();
+      expect(
+        googleRepositoryMocks.upsertGoogleEventSyncRecord,
+      ).not.toHaveBeenCalled();
+      expect(
+        googleRepositoryMocks.deleteGoogleEventSyncRecord,
+      ).not.toHaveBeenCalled();
+      expect(
+        googleRepositoryMocks.updateGoogleSubscription,
+      ).not.toHaveBeenCalled();
+      expect(googleRepositoryMocks.saveGoogleCredential).not.toHaveBeenCalled();
+      expect(
+        googleRepositoryMocks.persistGoogleCalendarConnection,
+      ).not.toHaveBeenCalled();
+    }
   });
 
   it("lists only verified CZW-owned remote deletion candidates during dry-run", async () => {
@@ -1050,6 +1226,9 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
       deleted: 1,
       unchanged: 0,
     });
+    expect(
+      googleRepositoryMocks.getCurrentPublishedVersionId,
+    ).not.toHaveBeenCalled();
     const fetchMock = vi.mocked(fetch);
     expect(fetchMock).not.toHaveBeenCalledWith(
       "https://www.googleapis.com/calendar/v3/calendars",
@@ -1470,9 +1649,6 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     expect(currentHash).toEqual(expect.any(String));
 
     vi.clearAllMocks();
-    googleRepositoryMocks.getCurrentPublishedVersionId.mockResolvedValue(
-      "version-current",
-    );
     googleRepositoryMocks.getGoogleCredential.mockResolvedValue({
       encrypted_refresh_token: encryptGoogleRefreshToken("refresh-token", env),
     });

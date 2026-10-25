@@ -218,7 +218,11 @@ const existingSubscription = {
 };
 
 let currentTimetable: PublicTimetable;
-let currentRevision: { updatedAt: string; sequence: number };
+let currentRevision: {
+  updatedAt: string;
+  sequence: number;
+  publishedVersionId: string;
+};
 
 describe("DR-40 existing calendar subscription propagation", () => {
   beforeEach(() => {
@@ -227,6 +231,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
     currentRevision = {
       updatedAt: "2026-08-09T08:00:00.000Z",
       sequence: 1,
+      publishedVersionId: "version-1",
     };
     repositoryMocks.createCalendarSubscriptionRecord.mockResolvedValue({
       id: "sub-existing",
@@ -273,6 +278,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
     currentRevision = {
       updatedAt: "2026-08-10T09:30:00.000Z",
       sequence: 2,
+      publishedVersionId: "version-2",
     };
 
     const after = await request({
@@ -344,6 +350,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
     currentRevision = {
       updatedAt: "2026-09-08T09:00:00.000Z",
       sequence: 2,
+      publishedVersionId: "version-1",
     };
 
     const after = await request({ url: feedPath });
@@ -432,6 +439,7 @@ describe("DR-40 existing calendar subscription propagation", () => {
     currentRevision = {
       updatedAt: "2026-09-08T10:02:00.000Z",
       sequence: 5,
+      publishedVersionId: "version-1",
     };
 
     const result = await request({ url: feedPath });
