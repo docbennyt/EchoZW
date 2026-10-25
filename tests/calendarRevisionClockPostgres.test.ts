@@ -326,6 +326,91 @@ describe.skipIf(!modulePath)(
       await db.query("commit");
     });
 
+    it("stays above a legacy reader after version 999 is allocated and published after migration", async () => {
+      await apply();
+      const before = await clock(a);
+      const unrelated = await clock(b);
+      const allocatedVersion = randomUUID();
+      await rows(
+        "insert into timetable_versions(id,timetable_id,version_number,status) values ($1,$2,999,'draft')",
+        [allocatedVersion, a],
+      );
+      expect(await clock(a)).toEqual(before);
+
+      await rows(
+        "update timetable_versions set status='published',published_at=clock_timestamp() where id=$1",
+        [allocatedVersion],
+      );
+      await rows(
+        "update timetables set current_published_version_id=$1 where id=$2",
+        [allocatedVersion, a],
+      );
+      // Reproduce the 754 reader's actual row-count clock after publication.
+      const [legacy] = await rows(
+        `select v.version_number::bigint
+          + (select count(*) + count(revoked_at) + count(superseded_at)
+             from timetable_correction_directives where timetable_id=t.id)
+          + (select count(*) + count(revoked_at)
+             from timetable_session_exceptions where timetable_id=t.id) as revision
+         from timetables t
+         join timetable_versions v on v.id=t.current_published_version_id
+         where t.id=$1`,
+        [a],
+      );
+      expect(Number(legacy.revision)).toBe(1017);
+      const published = await clock(a);
+      advanced(before, published);
+      expect(published.revision).toBeGreaterThan(Number(legacy.revision));
+      expect(published.revision).toBeLessThanOrEqual(2147483647);
+      expect(await clock(b)).toEqual(unrelated);
+    });
+
+    it("atomically rejects publication whose version high-water floor exceeds the RFC sequence maximum", async () => {
+      await apply();
+      const allocatedVersion = randomUUID();
+      await rows(
+        "insert into timetable_versions(id,timetable_id,version_number,status) values ($1,$2,2147483647,'draft')",
+        [allocatedVersion, a],
+      );
+      const before = await clock(a);
+      const pointer = await rows("select * from timetables where id=$1", [a]);
+
+      await expect(
+        rows(
+          "update timetables set current_published_version_id=$1 where id=$2",
+          [allocatedVersion, a],
+        ),
+      ).rejects.toMatchObject({
+        code: "23514",
+        constraint: "calendar_revision_rfc_sequence_range",
+      });
+      expect(await rows("select * from timetables where id=$1", [a])).toEqual(
+        pointer,
+      );
+      expect(await clock(a)).toEqual(before);
+    });
+
+    it("atomically rejects an increment at the RFC sequence maximum without clamping", async () => {
+      await apply();
+      await rows(
+        "update google_calendar_delivery_revisions set revision=2147483647 where timetable_id=$1",
+        [a],
+      );
+      const before = await clock(a);
+      expect(before.revision).toBe(2147483647);
+
+      await expect(
+        rows(
+          "update google_calendar_delivery_revisions set revision=revision+1 where timetable_id=$1",
+          [a],
+        ),
+      ).rejects.toMatchObject({
+        code: "23514",
+        constraint: "calendar_revision_rfc_sequence_range",
+      });
+      expect(await clock(a)).toEqual(before);
+    });
+
     it.each([
       "timetable_correction_directives",
       "timetable_session_exceptions",

@@ -42,6 +42,9 @@ begin
   if exists(select 1 from public.google_calendar_delivery_revisions where revision > 2147483647) then
     raise exception 'Calendar revision exceeds the supported RFC SEQUENCE range';
   end if;
+  alter table public.google_calendar_delivery_revisions
+    add constraint calendar_revision_rfc_sequence_range
+    check (revision between 1 and 2147483647);
 
   create function public.stamp_calendar_revision_clock()
   returns trigger language plpgsql set search_path = pg_catalog, public as $clock$
@@ -69,9 +72,15 @@ begin
     if v_old is not distinct from v_new then return null; end if;
     if tg_table_name = 'timetables' then
       if v_old ->> 'current_published_version_id' is not distinct from v_new ->> 'current_published_version_id' then return null; end if;
-      insert into public.google_calendar_delivery_revisions(timetable_id)
-      values ((coalesce(v_new, v_old) ->> 'id')::uuid)
-      on conflict(timetable_id) do update set revision = google_calendar_delivery_revisions.revision + 1;
+      -- Preserve the adoption high-water mark during a mixed-runtime rollout,
+      -- even if draft allocation jumps the published version number afterwards.
+      insert into public.google_calendar_delivery_revisions(timetable_id, revision)
+      select t.id,
+        greatest(1::bigint, coalesce((select max(v.version_number)::bigint from public.timetable_versions v where v.timetable_id=t.id), 1))
+        + 3 * (select count(*) from public.timetable_correction_directives c where c.timetable_id=t.id)
+        + 2 * (select count(*) from public.timetable_session_exceptions e where e.timetable_id=t.id) + 1
+      from public.timetables t where t.id=(coalesce(v_new, v_old) ->> 'id')::uuid
+      on conflict(timetable_id) do update set revision = greatest(google_calendar_delivery_revisions.revision + 1, excluded.revision);
     elsif tg_table_name in ('institutions', 'programmes', 'cohorts', 'academic_periods') then
       if (v_old - 'updated_at') is not distinct from (v_new - 'updated_at') then return null; end if;
       insert into public.google_calendar_delivery_revisions(timetable_id)
