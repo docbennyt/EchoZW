@@ -836,7 +836,7 @@
     "src/AppV2.tsx": "5f278a96215edbde79952a3c593ef6444ec6a1dd5ca8693dafc5b2483430b4ca",
     "src/AuthSetupPage.tsx": "12571894ddfe3d9a48214735b6b313b0c5ca84a918f1ecedb8dc8ac319ac8c33",
     "src/ClassRepAcademicPauseControl.tsx": "0762a03d131fc860c25b59cfca73a3cb22b3a4d0cf76f6aa699df4f7e16e5317",
-    "src/ClassRepCorrectionSafetyEnhancement.tsx": "94f253ce5c5744994fadb63c866175f4bf1053e989290def62d9f29f3d4d6be8",
+    "src/ClassRepCorrectionSafetyEnhancement.tsx": "47c452e9d13180c81add5950dd820a4a4ec7d4c6fc3ddb2f6aa90f93b11a8693",
     "src/FinderDemandPrompt.tsx": "3a2f62d36791dfc12157c2d710c96d1ec3bd966ae9c900df75453bb33d644a25",
     "src/FinderDiscovery.tsx": "9d5fa617a29918901ca583acd11c838b69b45f4ef8a32dfa4b7572031dabd617",
     "src/FounderOperationsCockpit.tsx": "a24a28b26d91521f10c606c5aaa5eca115019182ab874d53e389e4ecad0ab7f0",
