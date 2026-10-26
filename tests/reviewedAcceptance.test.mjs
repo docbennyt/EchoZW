@@ -58,6 +58,33 @@ const fixture = () => ({
 });
 
 describe("reviewed acceptance-only provenance", () => {
+  it("classifies a rejected artifact without exposing log or artifact values", () => {
+    const input = fixture();
+    input.artifacts[0].digest = "private-value-must-not-be-printed";
+    let failure;
+    try {
+      recoverReviewedWorker(input);
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure?.message).toBe("VERIFIED_DEPLOYMENT_ARTIFACT_REQUIRED");
+    expect(failure?.failedChecks).toEqual(["verifiedArtifactBinding"]);
+    expect(JSON.stringify(failure)).not.toContain("private-value");
+  });
+  it("distinguishes missing trusted log attribution from invalid artifact metadata", () => {
+    const input = fixture();
+    input.log = input.log.replaceAll(
+      "\tRecheck approval after environment review\t",
+      "\tUNKNOWN STEP\t",
+    );
+    let failure;
+    try {
+      recoverReviewedWorker(input);
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure?.failedChecks).toEqual(["candidateApproval"]);
+  });
   it("recovers the uploaded reviewed artifact even when post-upload verification failed", () => {
     expect(recoverReviewedWorker(fixture())).toEqual({ version, jobId: 123 });
   });
