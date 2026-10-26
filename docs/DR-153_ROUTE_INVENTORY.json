@@ -32,9 +32,7 @@
         "nodeOnlyDependencies": [],
         "backgroundDependencies": [],
         "cloudflareStatus": "static-assets",
-        "contractTests": [
-          "scripts/smoke-browser-release.mjs"
-        ],
+        "contractTests": ["scripts/smoke-browser-release.mjs"],
         "lastProvenRuntime": "Cloudflare exact-head preview",
         "remainingBlocker": null
       },
@@ -89,9 +87,7 @@
         "nodeOnlyDependencies": [],
         "backgroundDependencies": [],
         "cloudflareStatus": "static-assets",
-        "contractTests": [
-          "scripts/smoke-browser-release.mjs"
-        ],
+        "contractTests": ["scripts/smoke-browser-release.mjs"],
         "lastProvenRuntime": "Cloudflare exact-head preview",
         "remainingBlocker": "Provider-level Google OAuth callback still migrates with DR-171/DR-153 Google slice."
       },
@@ -181,15 +177,11 @@
         "path": "/api/health/ready",
         "authPolicy": "public readiness",
         "applicationService": "schemaCompatibility and Supabase connectivity",
-        "databaseDependencies": [
-          "Supabase REST schema compatibility checks"
-        ],
+        "databaseDependencies": ["Supabase REST schema compatibility checks"],
         "nodeOnlyDependencies": [],
         "backgroundDependencies": [],
         "cloudflareStatus": "native",
-        "contractTests": [
-          "tests/cloudflareRuntimeFoundation.test.ts"
-        ],
+        "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
         "lastProvenRuntime": "Cloudflare exact-head preview",
         "remainingBlocker": "Readiness is only production-cutover evidence when all required Supabase secrets are configured in Cloudflare."
       },
@@ -250,9 +242,7 @@
           "feed activity"
         ],
         "nodeOnlyDependencies": [],
-        "backgroundDependencies": [
-          "analytics waitUntil for feed activity"
-        ],
+        "backgroundDependencies": ["analytics waitUntil for feed activity"],
         "cloudflareStatus": "native-if-configured",
         "contractTests": [
           "tests/publicTimetableCore.test.ts",
@@ -287,10 +277,7 @@
         "applicationService": "Worker source intake to private R2 plus source processing queue",
         "databaseDependencies": [],
         "nodeOnlyDependencies": [],
-        "backgroundDependencies": [
-          "SOURCE_PROCESSING_QUEUE",
-          "SOURCE_BUCKET"
-        ],
+        "backgroundDependencies": ["SOURCE_PROCESSING_QUEUE", "SOURCE_BUCKET"],
         "cloudflareStatus": "native-if-configured",
         "contractTests": [
           "tests/cloudflareRuntimeFoundation.test.ts",
@@ -308,9 +295,7 @@
           "calendar subscriptions",
           "subscriber profile when provided"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -325,17 +310,11 @@
         "path": "/api/calendar/subscriptions/:id/revoke",
         "authPolicy": "subscription owner / possession of subscription id",
         "applicationService": "handleCalendarRequest",
-        "databaseDependencies": [
-          "calendar subscriptions"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["calendar subscriptions"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/deploymentSmoke.test.ts"
-        ],
+        "contractTests": ["tests/deploymentSmoke.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs native mutation adapter and idempotent revoke contract."
       },
@@ -348,9 +327,7 @@
           "calendar subscriptions",
           "google oauth state"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -370,12 +347,8 @@
           "google credentials",
           "calendar_event_sync_records"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "Google reconciliation retry path"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["Google reconciliation retry path"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/googleCalendarDirectSync.test.ts",
@@ -394,16 +367,12 @@
           "google credentials",
           "calendar_event_sync_records"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [
           "Google provider delete/revoke where authorized"
         ],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/googleCalendarDirectSync.test.ts"
-        ],
+        "contractTests": ["tests/googleCalendarDirectSync.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker adapter and safe provider revocation handling."
       },
@@ -442,9 +411,7 @@
         ],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/adminScopedRoutes.test.ts"
-        ],
+        "contractTests": ["tests/adminScopedRoutes.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Worker auth/session adapter and scoped assignment response."
       },
@@ -459,12 +426,8 @@
           "calendar revisions",
           "Google sync queue/retry state"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "Google reconciliation trigger"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["Google reconciliation trigger"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/correctionMutationsClient.test.ts",
@@ -484,9 +447,7 @@
           "audit records",
           "calendar revisions"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -501,18 +462,11 @@
         "path": "/api/admin/timetables/:id/pauses*",
         "authPolicy": "timetable editor / operational admin",
         "applicationService": "academicPauseAdminApi",
-        "databaseDependencies": [
-          "academic pauses",
-          "audit records"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["academic pauses", "audit records"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/adminScopedRoutes.test.ts"
-        ],
+        "contractTests": ["tests/adminScopedRoutes.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker admin adapter."
       },
@@ -527,12 +481,8 @@
           "sessions",
           "publication records"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "publication audit"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["publication audit"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/adminScopedRoutes.test.ts",
@@ -556,9 +506,7 @@
         "nodeOnlyDependencies": [
           "multipart/body parsing and Node XLSX/DOCX/PDF dependencies"
         ],
-        "backgroundDependencies": [
-          "raw source cleanup worker"
-        ],
+        "backgroundDependencies": ["raw source cleanup worker"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/staticTimetableImport*.test.ts",
@@ -577,12 +525,8 @@
           "staff assignments",
           "Supabase Auth invitations"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "email/invite delivery through Supabase"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["email/invite delivery through Supabase"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/adminAuth.test.ts",
@@ -601,16 +545,10 @@
           "mapping tables",
           "processing state"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "source processing worker"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["source processing worker"],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/sourceSnapshotApi.test.ts"
-        ],
+        "contractTests": ["tests/sourceSnapshotApi.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker admin adapter and processing trigger parity."
       },
@@ -619,20 +557,11 @@
         "path": "/api/internal/source-snapshots",
         "authPolicy": "internal source relay secret",
         "applicationService": "sourceSnapshotApi",
-        "databaseDependencies": [
-          "source snapshots",
-          "parse jobs"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "source parse/reconciliation jobs"
-        ],
+        "databaseDependencies": ["source snapshots", "parse jobs"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["source parse/reconciliation jobs"],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/sourceSnapshotApi.test.ts"
-        ],
+        "contractTests": ["tests/sourceSnapshotApi.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker internal-auth adapter or retirement in favor of R2/Queue source intake."
       },
@@ -641,12 +570,8 @@
         "path": "/api/analytics/events",
         "authPolicy": "public event ingestion with sanitization",
         "applicationService": "analyticsApi",
-        "databaseDependencies": [
-          "analytics events"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["analytics events"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -661,16 +586,9 @@
         "path": "/api/payments*",
         "authPolicy": "public checkout plus provider callbacks",
         "applicationService": "paymentApi",
-        "databaseDependencies": [
-          "payment purchases",
-          "payment audit"
-        ],
-        "nodeOnlyDependencies": [
-          "PesePay Node-side gateway calls"
-        ],
-        "backgroundDependencies": [
-          "payment provider callbacks"
-        ],
+        "databaseDependencies": ["payment purchases", "payment audit"],
+        "nodeOnlyDependencies": ["PesePay Node-side gateway calls"],
+        "backgroundDependencies": ["payment provider callbacks"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/paymentDomain.test.ts",
@@ -684,18 +602,11 @@
         "path": "/api/public/timetable-requests|/api/public/feedback",
         "authPolicy": "public with validation",
         "applicationService": "growthCaptureApi",
-        "databaseDependencies": [
-          "growth requests",
-          "feedback"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["growth requests", "feedback"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/deploymentSmoke.test.ts"
-        ],
+        "contractTests": ["tests/deploymentSmoke.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker adapter and public abuse controls."
       },
@@ -704,18 +615,11 @@
         "path": "/api/admin/growth*|/api/admin/analytics*",
         "authPolicy": "operational admin/founder",
         "applicationService": "growthInboxAdminApi and adminAnalyticsApi",
-        "databaseDependencies": [
-          "growth inbox",
-          "analytics aggregates"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["growth inbox", "analytics aggregates"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/healthAndObservability.test.ts"
-        ],
+        "contractTests": ["tests/healthAndObservability.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker admin adapter."
       },
@@ -724,20 +628,11 @@
         "path": "/api/push*",
         "authPolicy": "public subscription plus authenticated/admin sends where applicable",
         "applicationService": "pushNotificationApi",
-        "databaseDependencies": [
-          "push subscriptions",
-          "notification jobs"
-        ],
-        "nodeOnlyDependencies": [
-          "web-push package runtime compatibility"
-        ],
-        "backgroundDependencies": [
-          "PUSH_QUEUE"
-        ],
+        "databaseDependencies": ["push subscriptions", "notification jobs"],
+        "nodeOnlyDependencies": ["web-push package runtime compatibility"],
+        "backgroundDependencies": ["PUSH_QUEUE"],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/deploymentSmoke.test.ts"
-        ],
+        "contractTests": ["tests/deploymentSmoke.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker-compatible web-push/send strategy and queue consumer parity."
       },
@@ -748,13 +643,9 @@
         "applicationService": "Worker queue(batch)",
         "databaseDependencies": [],
         "nodeOnlyDependencies": [],
-        "backgroundDependencies": [
-          "SOURCE_BUCKET"
-        ],
+        "backgroundDependencies": ["SOURCE_BUCKET"],
         "cloudflareStatus": "native-incomplete",
-        "contractTests": [
-          "tests/cloudflareRuntimeFoundation.test.ts"
-        ],
+        "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
         "lastProvenRuntime": "Cloudflare exact-head preview",
         "remainingBlocker": "Consumer currently ACKs source_document_uploaded and does not yet parse into Supabase review evidence."
       },
@@ -767,16 +658,10 @@
           "source_documents metadata",
           "Supabase Storage timetable-sources"
         ],
-        "nodeOnlyDependencies": [
-          "Node production-server startup worker"
-        ],
-        "backgroundDependencies": [
-          "hourly cleanup interval on Railway Node"
-        ],
+        "nodeOnlyDependencies": ["Node production-server startup worker"],
+        "backgroundDependencies": ["hourly cleanup interval on Railway Node"],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/staticTimetableRawCleanup.test.ts"
-        ],
+        "contractTests": ["tests/staticTimetableRawCleanup.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker scheduled handler or explicit production-retained Node replacement before Railway retirement."
       }
@@ -836,18 +721,9 @@
     ],
     "productionCutover": "blocked; existing Vercel routing remains; source inventory is not deployed routing acceptance",
     "sourceEvidence": [
-      {
-        "file": "worker/index.mjs",
-        "line": 1
-      },
-      {
-        "file": "wrangler.jsonc",
-        "line": 1
-      },
-      {
-        "file": "vercel.json",
-        "line": 1
-      }
+      { "file": "worker/index.mjs", "line": 1 },
+      { "file": "wrangler.jsonc", "line": 1 },
+      { "file": "vercel.json", "line": 1 }
     ]
   },
   "legend": {
@@ -1096,9 +972,7 @@
         "line": 186,
         "role": "worker implementation"
       },
-      "contractTests": [
-        "tests/cloudflareRuntimeFoundation.test.ts"
-      ],
+      "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
@@ -1139,9 +1013,7 @@
       "databaseDependencies": [],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": [],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
@@ -1187,9 +1059,7 @@
         "table/storage reference: academic_schedule_pauses"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -1581,9 +1451,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -1680,13 +1548,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "listAcademicPeriods",
-      "databaseDependencies": [
-        "table/storage reference: academic_periods"
-      ],
+      "databaseDependencies": ["table/storage reference: academic_periods"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -1710,11 +1574,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 317,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 317, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -1760,9 +1620,7 @@
         "table/storage reference: institutions"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -1789,11 +1647,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 329,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 329, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -1839,9 +1693,7 @@
         "table/storage reference: institutions"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -1868,11 +1720,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 343,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 343, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -1925,9 +1773,7 @@
         "RPC: get_admin_analytics_overview"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -1940,9 +1786,7 @@
         "line": 173,
         "role": "503 unavailable response"
       },
-      "contractTests": [
-        "tests/adminAnalyticsApi.test.ts"
-      ],
+      "contractTests": ["tests/adminAnalyticsApi.test.ts"],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
@@ -2017,9 +1861,7 @@
         "RPC: get_admin_analytics_overview"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2098,13 +1940,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "listClassGroups",
-      "databaseDependencies": [
-        "table/storage reference: cohorts"
-      ],
+      "databaseDependencies": ["table/storage reference: cohorts"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2128,11 +1966,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 283,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 283, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -2178,9 +2012,7 @@
         "table/storage reference: programmes"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2207,11 +2039,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 293,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 293, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -2257,9 +2085,7 @@
         "table/storage reference: programmes"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2286,11 +2112,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 305,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 305, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -2331,13 +2153,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "growthInboxAdminApi",
       "applicationService": "updateFeedbackReview",
-      "databaseDependencies": [
-        "table/storage reference: product_feedback"
-      ],
+      "databaseDependencies": ["table/storage reference: product_feedback"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2409,9 +2227,7 @@
         "table/storage reference: timetable_requests"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2477,13 +2293,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "growthInboxAdminApi",
       "applicationService": "updateTimetableRequestStatus",
-      "databaseDependencies": [
-        "table/storage reference: timetable_requests"
-      ],
+      "databaseDependencies": ["table/storage reference: timetable_requests"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2549,13 +2361,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "listInstitutions",
-      "databaseDependencies": [
-        "table/storage reference: institutions"
-      ],
+      "databaseDependencies": ["table/storage reference: institutions"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2582,11 +2390,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 217,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 217, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -2627,13 +2431,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "createInstitution",
-      "databaseDependencies": [
-        "table/storage reference: institutions"
-      ],
+      "databaseDependencies": ["table/storage reference: institutions"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2661,11 +2461,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 225,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 225, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -2706,13 +2502,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "updateInstitution",
-      "databaseDependencies": [
-        "table/storage reference: institutions"
-      ],
+      "databaseDependencies": ["table/storage reference: institutions"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2740,11 +2532,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 237,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 237, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -2791,9 +2579,7 @@
         "table/storage reference: staff_users"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2819,11 +2605,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/adminApi.ts",
-          "line": 82,
-          "role": "dispatch"
-        },
+        { "file": "server/adminApi.ts", "line": 82, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -2881,9 +2663,7 @@
         ],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/adminScopedRoutes.test.ts"
-        ],
+        "contractTests": ["tests/adminScopedRoutes.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Worker auth/session adapter and scoped assignment response."
       }
@@ -2894,13 +2674,9 @@
       "authPolicy": "Supabase bearer; requireOperationalAdmin",
       "businessOwner": "pilotAdminApi",
       "applicationService": "listProgrammes",
-      "databaseDependencies": [
-        "table/storage reference: programmes"
-      ],
+      "databaseDependencies": ["table/storage reference: programmes"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -2924,11 +2700,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 249,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 249, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -2974,9 +2746,7 @@
         "table/storage reference: programmes"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3003,11 +2773,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 259,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 259, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -3053,9 +2819,7 @@
         "table/storage reference: programmes"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3082,11 +2846,7 @@
       "remainingBlocker": "Native operational-Admin canonical create/update transport reuses existing validation and repository services with explicit request-local bindings. Source tests cover RBAC, origin, bounded JSON, redaction and binding isolation; authenticated isolated-record staging mutation acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 271,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 271, "role": "dispatch" },
         {
           "file": "worker/adminEntities.mjs",
           "line": 72,
@@ -3133,9 +2893,7 @@
         "table/storage reference: staff_users"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3167,11 +2925,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/adminApi.ts",
-          "line": 64,
-          "role": "dispatch"
-        },
+        { "file": "server/adminApi.ts", "line": 64, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -3251,9 +3005,7 @@
         "table/storage reference: timetable_sources"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3330,9 +3082,7 @@
         "table/storage reference: timetable_source_snapshots"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3414,9 +3164,7 @@
         "table/storage reference: timetable_source_discovered_programmes"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3492,9 +3240,7 @@
         "table/storage reference: timetable_source_snapshots"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3577,9 +3323,7 @@
         "table/storage reference: staff_users"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3607,11 +3351,7 @@
       "remainingBlocker": "Native staff-manager read reuses existing staff listing and assignment projection. Source tests cover RBAC, no-store, redaction and no provisioning writes; exact-candidate deployed acceptance pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 91,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 91, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -3658,9 +3398,7 @@
         "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3688,11 +3426,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 130,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 130, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -3733,13 +3467,9 @@
       "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "assignClassRep",
-      "databaseDependencies": [
-        "RPC: czw_staff_lifecycle"
-      ],
+      "databaseDependencies": ["RPC: czw_staff_lifecycle"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3767,11 +3497,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 157,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 157, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -3818,9 +3544,7 @@
         "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3848,11 +3572,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 144,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 144, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -3898,9 +3618,7 @@
         "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -3928,11 +3646,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 118,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 118, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -3973,13 +3687,9 @@
       "authPolicy": "Supabase bearer; requireFounderSuperadmin; non-founder Admin invitation only",
       "businessOwner": "staffAdminApi",
       "applicationService": "revokeClassRepAssignment",
-      "databaseDependencies": [
-        "RPC: czw_staff_lifecycle"
-      ],
+      "databaseDependencies": ["RPC: czw_staff_lifecycle"],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -4005,11 +3715,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 172,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 172, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -4057,9 +3763,7 @@
         "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -4086,11 +3790,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 96,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 96, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -4137,9 +3837,7 @@
         "RPC: czw_staff_lifecycle"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -4165,11 +3863,7 @@
       "remainingBlocker": "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/staffAdminApi.ts",
-          "line": 104,
-          "role": "dispatch"
-        },
+        { "file": "server/staffAdminApi.ts", "line": 104, "role": "dispatch" },
         {
           "file": "worker/staffInvitations.mjs",
           "line": 94,
@@ -4228,9 +3922,7 @@
         "RPC: persist_static_document_import_v2"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
@@ -4351,9 +4043,7 @@
         "RPC: persist_static_document_import_v2"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
@@ -4474,9 +4164,7 @@
         "RPC: persist_static_document_import_v2"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
@@ -4597,9 +4285,7 @@
         "RPC: persist_static_document_import_v2"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
@@ -4709,9 +4395,7 @@
         "table/storage reference: programmes"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -4798,9 +4482,7 @@
         "RPC: persist_static_document_import_v2"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs",
@@ -4905,9 +4587,7 @@
       "applicationService": "buildCzwImportTemplateXlsx",
       "databaseDependencies": [],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "exceljs"
@@ -4976,9 +4656,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -5012,11 +4690,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 355,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 355, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 461,
@@ -5067,9 +4741,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -5103,11 +4775,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 363,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 363, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -5154,9 +4822,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -5190,11 +4856,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 382,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 382, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -5240,9 +4902,7 @@
         "table/storage reference: timetable_session_exceptions"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -7042,11 +6702,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 458,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 458, "role": "dispatch" },
         {
           "file": "worker/googleCalendarApi.mjs",
           "line": 221,
@@ -7146,9 +6802,7 @@
         "table/storage reference: academic_schedule_pauses"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -7567,9 +7221,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -7680,9 +7332,7 @@
         "table/storage reference: timetable_public_settings"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -7770,9 +7420,7 @@
         "table/storage reference: timetable_public_settings"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -7913,11 +7561,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 441,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 441, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -8019,9 +7663,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -8055,11 +7697,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 396,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 396, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -8106,9 +7744,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -8142,11 +7778,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 424,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 424, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -8193,9 +7825,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -8229,11 +7859,7 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/pilotAdminApi.ts",
-          "line": 411,
-          "role": "dispatch"
-        },
+        { "file": "server/pilotAdminApi.ts", "line": 411, "role": "dispatch" },
         {
           "file": "worker/adminTimetable.mjs",
           "line": 102,
@@ -8279,9 +7905,7 @@
         "RPC: resolve_analytics_person"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -8294,9 +7918,7 @@
         "line": 173,
         "role": "503 unavailable response"
       },
-      "contractTests": [
-        "tests/analyticsApi.test.ts"
-      ],
+      "contractTests": ["tests/analyticsApi.test.ts"],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
@@ -8304,11 +7926,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/analyticsApi.ts",
-          "line": 184,
-          "role": "dispatch"
-        },
+        { "file": "server/analyticsApi.ts", "line": 184, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -8352,12 +7970,8 @@
         "path": "/api/analytics/events",
         "authPolicy": "public event ingestion with sanitization",
         "applicationService": "analyticsApi",
-        "databaseDependencies": [
-          "analytics events"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["analytics events"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -8559,12 +8173,8 @@
           "google credentials",
           "calendar_event_sync_records"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "Google reconciliation retry path"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["Google reconciliation retry path"],
         "cloudflareStatus": "bridged",
         "contractTests": [
           "tests/googleCalendarDirectSync.test.ts",
@@ -8585,9 +8195,7 @@
       "externalDependencies": [
         "https://www.googleapis.com/auth/calendar.app.created"
       ],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
@@ -8768,9 +8376,7 @@
           "calendar subscriptions",
           "google oauth state"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -8908,16 +8514,12 @@
           "google credentials",
           "calendar_event_sync_records"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [
           "Google provider delete/revoke where authorized"
         ],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/googleCalendarDirectSync.test.ts"
-        ],
+        "contractTests": ["tests/googleCalendarDirectSync.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker adapter and safe provider revocation handling."
       }
@@ -8933,9 +8535,7 @@
       "externalDependencies": [
         "https://www.googleapis.com/auth/calendar.app.created"
       ],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [
         "Google reconciliation service; native Worker Queue/outbox implemented, migration and live provider acceptance pending"
       ],
@@ -9167,9 +8767,7 @@
           "calendar subscriptions",
           "subscriber profile when provided"
         ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
         "contractTests": [
@@ -9241,17 +8839,11 @@
         "path": "/api/calendar/subscriptions/:id/revoke",
         "authPolicy": "subscription owner / possession of subscription id",
         "applicationService": "handleCalendarRequest",
-        "databaseDependencies": [
-          "calendar subscriptions"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
+        "databaseDependencies": ["calendar subscriptions"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
         "backgroundDependencies": [],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/deploymentSmoke.test.ts"
-        ],
+        "contractTests": ["tests/deploymentSmoke.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs native mutation adapter and idempotent revoke contract."
       }
@@ -9302,10 +8894,7 @@
         "applicationService": "Worker source intake to private R2 plus source processing queue",
         "databaseDependencies": [],
         "nodeOnlyDependencies": [],
-        "backgroundDependencies": [
-          "SOURCE_PROCESSING_QUEUE",
-          "SOURCE_BUCKET"
-        ],
+        "backgroundDependencies": ["SOURCE_PROCESSING_QUEUE", "SOURCE_BUCKET"],
         "cloudflareStatus": "native-if-configured",
         "contractTests": [
           "tests/cloudflareRuntimeFoundation.test.ts",
@@ -9324,9 +8913,7 @@
       "databaseDependencies": [],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": [],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -9347,16 +8934,8 @@
       "remainingBlocker": "Deploy and capture exact candidate live response; no current live evidence recorded.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/healthApi.ts",
-          "line": 107,
-          "role": "dispatch"
-        },
-        {
-          "file": "worker/index.mjs",
-          "line": 896,
-          "role": "worker dispatch"
-        }
+        { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
+        { "file": "worker/index.mjs", "line": 896, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9392,12 +8971,8 @@
         "Supabase schema compatibility probes; dynamic table names in server/schemaCompatibility.ts"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -9419,16 +8994,8 @@
       "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/healthApi.ts",
-          "line": 117,
-          "role": "dispatch"
-        },
-        {
-          "file": "worker/index.mjs",
-          "line": 904,
-          "role": "worker dispatch"
-        }
+        { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
+        { "file": "worker/index.mjs", "line": 904, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9462,15 +9029,11 @@
         "path": "/api/health/ready",
         "authPolicy": "public readiness",
         "applicationService": "schemaCompatibility and Supabase connectivity",
-        "databaseDependencies": [
-          "Supabase REST schema compatibility checks"
-        ],
+        "databaseDependencies": ["Supabase REST schema compatibility checks"],
         "nodeOnlyDependencies": [],
         "backgroundDependencies": [],
         "cloudflareStatus": "native",
-        "contractTests": [
-          "tests/cloudflareRuntimeFoundation.test.ts"
-        ],
+        "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
         "lastProvenRuntime": "Cloudflare exact-head preview",
         "remainingBlocker": "Readiness is only production-cutover evidence when all required Supabase secrets are configured in Cloudflare."
       }
@@ -9484,9 +9047,7 @@
       "databaseDependencies": [],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": [],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -9507,11 +9068,7 @@
       "remainingBlocker": "Deploy and capture exact candidate live response; no current live evidence recorded.",
       "productionCriticality": "P0",
       "sourceEvidence": [
-        {
-          "file": "server/healthApi.ts",
-          "line": 112,
-          "role": "dispatch"
-        },
+        { "file": "server/healthApi.ts", "line": 112, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 200,
@@ -9559,9 +9116,7 @@
         "table/storage reference: timetable_sources"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -9577,9 +9132,7 @@
         "line": 173,
         "role": "503 unavailable response"
       },
-      "contractTests": [
-        "tests/sourceSnapshotApi.test.ts"
-      ],
+      "contractTests": ["tests/sourceSnapshotApi.test.ts"],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
@@ -9645,20 +9198,11 @@
         "path": "/api/internal/source-snapshots",
         "authPolicy": "internal source relay secret",
         "applicationService": "sourceSnapshotApi",
-        "databaseDependencies": [
-          "source snapshots",
-          "parse jobs"
-        ],
-        "nodeOnlyDependencies": [
-          "Node IncomingMessage/ServerResponse adapter"
-        ],
-        "backgroundDependencies": [
-          "source parse/reconciliation jobs"
-        ],
+        "databaseDependencies": ["source snapshots", "parse jobs"],
+        "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse adapter"],
+        "backgroundDependencies": ["source parse/reconciliation jobs"],
         "cloudflareStatus": "bridged",
-        "contractTests": [
-          "tests/sourceSnapshotApi.test.ts"
-        ],
+        "contractTests": ["tests/sourceSnapshotApi.test.ts"],
         "lastProvenRuntime": "Railway Node backend",
         "remainingBlocker": "Needs Worker internal-auth adapter or retirement in favor of R2/Queue source intake."
       }
@@ -9672,9 +9216,7 @@
       "databaseDependencies": [],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": [],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "unavailable",
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
@@ -9691,11 +9233,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/paymentApi.ts",
-          "line": 191,
-          "role": "dispatch"
-        },
+        { "file": "server/paymentApi.ts", "line": 191, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -9757,11 +9295,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/paymentApi.ts",
-          "line": 199,
-          "role": "dispatch"
-        },
+        { "file": "server/paymentApi.ts", "line": 199, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -9858,11 +9392,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/paymentApi.ts",
-          "line": 348,
-          "role": "dispatch"
-        },
+        { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -9959,11 +9489,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/paymentApi.ts",
-          "line": 348,
-          "role": "dispatch"
-        },
+        { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -10060,11 +9586,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/paymentApi.ts",
-          "line": 313,
-          "role": "dispatch"
-        },
+        { "file": "server/paymentApi.ts", "line": 313, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -10130,9 +9652,7 @@
         "table/storage reference: timetable_requests"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -10203,9 +9723,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -10284,9 +9802,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -10365,9 +9881,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -10446,9 +9960,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -10527,9 +10039,7 @@
         "table/storage reference: timetable_requests"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -10595,13 +10105,9 @@
       "authPolicy": "public; request validation required",
       "businessOwner": "publicTimetableApi",
       "applicationService": "listPublicTimetableDiscoveryResponse",
-      "databaseDependencies": [
-        "table/storage reference: timetables"
-      ],
+      "databaseDependencies": ["table/storage reference: timetables"],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -10712,9 +10218,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -10843,9 +10347,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -11015,9 +10517,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -11188,9 +10688,7 @@
         "RPC: record_calendar_feed_activity"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -11198,9 +10696,7 @@
         "node:fs/promises",
         "node:path"
       ],
-      "backgroundDependencies": [
-        "feed analytics; Worker waitUntil"
-      ],
+      "backgroundDependencies": ["feed analytics; Worker waitUntil"],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
@@ -11364,9 +10860,7 @@
           "feed activity"
         ],
         "nodeOnlyDependencies": [],
-        "backgroundDependencies": [
-          "analytics waitUntil for feed activity"
-        ],
+        "backgroundDependencies": ["analytics waitUntil for feed activity"],
         "cloudflareStatus": "native-if-configured",
         "contractTests": [
           "tests/publicTimetableCore.test.ts",
@@ -11394,9 +10888,7 @@
         "RPC: record_calendar_feed_activity"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks",
@@ -11404,9 +10896,7 @@
         "node:fs/promises",
         "node:path"
       ],
-      "backgroundDependencies": [
-        "feed analytics; Worker waitUntil"
-      ],
+      "backgroundDependencies": ["feed analytics; Worker waitUntil"],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
@@ -11570,9 +11060,7 @@
           "feed activity"
         ],
         "nodeOnlyDependencies": [],
-        "backgroundDependencies": [
-          "analytics waitUntil for feed activity"
-        ],
+        "backgroundDependencies": ["analytics waitUntil for feed activity"],
         "cloudflareStatus": "native-if-configured",
         "contractTests": [
           "tests/publicTimetableCore.test.ts",
@@ -11591,9 +11079,7 @@
       "databaseDependencies": [],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": [],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -11602,9 +11088,7 @@
         "line": 896,
         "role": "worker dispatch"
       },
-      "contractTests": [
-        "tests/cloudflareRuntimeFoundation.test.ts"
-      ],
+      "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
@@ -11617,11 +11101,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        {
-          "file": "worker/index.mjs",
-          "line": 896,
-          "role": "worker dispatch"
-        }
+        { "file": "worker/index.mjs", "line": 896, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -11640,9 +11120,7 @@
       "databaseDependencies": [],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
       "externalDependencies": [],
-      "nodeOnlyDependencies": [
-        "Node IncomingMessage/ServerResponse transport"
-      ],
+      "nodeOnlyDependencies": ["Node IncomingMessage/ServerResponse transport"],
       "backgroundDependencies": [],
       "cloudflareStatus": "native-not-live-proven",
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
@@ -11721,9 +11199,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -11750,11 +11226,7 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/seoPublic.ts",
-          "line": 77,
-          "role": "dispatch"
-        },
+        { "file": "server/seoPublic.ts", "line": 77, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
@@ -11805,9 +11277,7 @@
         "table/storage reference: timetables"
       ],
       "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
-      "externalDependencies": [
-        "Supabase PostgreSQL/Auth/REST"
-      ],
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
       "nodeOnlyDependencies": [
         "Node IncomingMessage/ServerResponse transport",
         "node:async_hooks"
@@ -11834,16 +11304,8 @@
       "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
       "productionCriticality": "P1",
       "sourceEvidence": [
-        {
-          "file": "server/seoPublic.ts",
-          "line": 77,
-          "role": "dispatch"
-        },
-        {
-          "file": "server/seoPublic.ts",
-          "line": 87,
-          "role": "dispatch"
-        },
+        { "file": "server/seoPublic.ts", "line": 77, "role": "dispatch" },
+        { "file": "server/seoPublic.ts", "line": 87, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
           "line": 173,
