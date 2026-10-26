@@ -9,10 +9,15 @@ vi.mock("@supabase/ssr", async (importOriginal) => {
     ...sdk,
     // Reset the SDK's independent singleton between tests, preserving app auth options.
     createBrowserClient: (
-      ...args: Parameters<typeof sdk.createBrowserClient>
+      url: string,
+      key: string,
+      options?: Pick<
+        NonNullable<Parameters<typeof sdk.createBrowserClient>[2]>,
+        "auth"
+      >,
     ) =>
-      sdk.createBrowserClient(args[0], args[1], {
-        ...args[2],
+      sdk.createBrowserClient(url, key, {
+        ...options,
         isSingleton: false,
       }),
   };

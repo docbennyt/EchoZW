@@ -30,10 +30,15 @@ function workingAuth() {
     setSession: vi.fn(async () => ({ data: {}, error: null })),
     exchangeCodeForSession: vi.fn(async () => ({ data: {}, error: null })),
     verifyOtp: vi.fn(async () => ({ data: {}, error: null })),
-    getSession: vi.fn(async () => ({
-      data: { session: { access_token: "session-only" } },
-      error: null,
-    })),
+    getSession: vi.fn(
+      async (): Promise<{
+        data: { session: { access_token: string } | null };
+        error: null;
+      }> => ({
+        data: { session: { access_token: "session-only" } },
+        error: null,
+      }),
+    ),
     updateUser: vi.fn(async () => ({ data: {}, error: null })),
   };
 }
