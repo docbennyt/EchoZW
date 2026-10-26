@@ -1445,6 +1445,7 @@ function UpdatePasswordPage() {
 
 function AuthCallbackPage() {
   const [message, setMessage] = useState("Completing sign-in...");
+  const codeExchangeRef = useRef<Promise<{ error: unknown }> | null>(null);
 
   usePageMetadata({
     title: "Completing sign-in | CalenderZW",
@@ -1474,7 +1475,8 @@ function AuthCallbackPage() {
       const urlHadAuthState = hasAuthRedirectParameters(url);
 
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        codeExchangeRef.current ??= supabase.auth.exchangeCodeForSession(code);
+        const { error } = await codeExchangeRef.current;
         if (!active) return;
         if (urlHadAuthState) {
           window.history.replaceState({}, "", AUTH_CALLBACK_PATH);

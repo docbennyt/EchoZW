@@ -197,6 +197,28 @@ describe("auth recovery helpers", () => {
     });
   });
 
+  it.each(["test-flow-id", ""])(
+    "preserves explicit PKCE flow selection through URL sanitization (%j)",
+    async (flowId) => {
+      const auth = authMock();
+      const url = new URL(
+        "https://calender.aido.co.zw/account/update-password?code=test-code",
+      );
+      url.searchParams.set("sb_flow_id", flowId);
+      const sanitize = vi.fn(() => {
+        url.search = "";
+      });
+      await restoreAuthSessionFromRedirect(auth as never, url, {
+        fallbackIntent: "recovery",
+        sanitize,
+      });
+      expect(sanitize).toHaveBeenCalledTimes(1);
+      expect(auth.exchangeCodeForSession).toHaveBeenCalledWith("test-code", {
+        flowId,
+      });
+    },
+  );
+
   it.each(["invite", "recovery"] as const)(
     "verifies canonical token-hash %s callbacks",
     async (type) => {

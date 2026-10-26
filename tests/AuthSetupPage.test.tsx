@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthSetupPage } from "../src/AuthSetupPage";
 import type { AdminSessionResponse } from "../src/api/adminSession";
@@ -88,6 +89,42 @@ beforeEach(() => {
 });
 
 describe("AuthSetupPage", () => {
+  it("waits for one recovery exchange across StrictMode effect replay", async () => {
+    const auth = workingAuth();
+    let finish!: () => void;
+    let established = false;
+    const exchange = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    auth.exchangeCodeForSession.mockImplementation(async () => {
+      await exchange;
+      established = true;
+      return { data: {}, error: null };
+    });
+    auth.getSession.mockImplementation(async () => ({
+      data: { session: established ? { access_token: "session-only" } : null },
+      error: null,
+    }));
+    createSupabaseClient.mockReturnValue({ auth });
+    window.history.replaceState(
+      {},
+      "",
+      "/account/update-password?code=single-use-fixture",
+    );
+    render(
+      <StrictMode>
+        <AuthSetupPage />
+      </StrictMode>,
+    );
+    finish();
+    expect(await screen.findByLabelText(/^New password$/i)).toBeInTheDocument();
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledExactlyOnceWith(
+      "single-use-fixture",
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(window.location.search).toBe("");
+    expect(track).not.toHaveBeenCalled();
+  });
   it("turns an invite into signup, sanitizes secrets, then resolves the server-authorized role", async () => {
     const auth = workingAuth();
     createSupabaseClient.mockReturnValue({ auth });

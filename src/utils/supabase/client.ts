@@ -18,7 +18,13 @@ export const createClient = () => {
 
   const { url, publishableKey } = getSupabaseConfig();
   try {
-    browserClient = createBrowserClient(url, publishableKey);
+    browserClient = createBrowserClient(url, publishableKey, {
+      auth: {
+        // Application callback pages own verification and URL sanitization.
+        // A predicate only filters implicit grants in auth-js, not PKCE exchanges.
+        detectSessionInUrl: false,
+      },
+    });
     return browserClient;
   } catch (error) {
     throw new BrowserAuthClientInitError(error);
