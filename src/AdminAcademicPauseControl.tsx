@@ -148,8 +148,12 @@ export function AdminAcademicPauseControl({
   }
 
   const today = todayKey();
-  const ongoing = pauses.filter((pause) => pauseLifecycle(pause, today) === "current");
-  const scheduled = pauses.filter((pause) => pauseLifecycle(pause, today) === "scheduled");
+  const ongoing = pauses.filter(
+    (pause) => pauseLifecycle(pause, today) === "current",
+  );
+  const scheduled = pauses.filter(
+    (pause) => pauseLifecycle(pause, today) === "scheduled",
+  );
   const ended = pauses
     .filter((pause) => pauseLifecycle(pause, today) === "ended")
     .sort((a, b) => b.endsOn.localeCompare(a.endsOn));
@@ -157,13 +161,25 @@ export function AdminAcademicPauseControl({
   function pauseScopeLabel(pause: AdminAcademicSchedulePause) {
     switch (pause.scopeType) {
       case "institution":
-        return institutions.find((item) => item.id === pause.institutionId)?.name ?? "Institution";
+        return (
+          institutions.find((item) => item.id === pause.institutionId)?.name ??
+          "Institution"
+        );
       case "programme":
-        return programmes.find((item) => item.id === pause.programmeId)?.name ?? "Programme";
+        return (
+          programmes.find((item) => item.id === pause.programmeId)?.name ??
+          "Programme"
+        );
       case "cohort":
-        return classGroups.find((item) => item.id === pause.cohortId)?.label ?? "Class group";
+        return (
+          classGroups.find((item) => item.id === pause.cohortId)?.label ??
+          "Class group"
+        );
       case "timetable":
-        return timetables.find((item) => item.id === pause.timetableId)?.classGroupLabel ?? "Timetable";
+        return (
+          timetables.find((item) => item.id === pause.timetableId)
+            ?.classGroupLabel ?? "Timetable"
+        );
       default:
         return pause.scopeType.replaceAll("_", " ");
     }
@@ -211,7 +227,8 @@ export function AdminAcademicPauseControl({
                       <div>
                         <strong>{pause.label}</strong>
                         <span>
-                          {pauseScopeLabel(pause)} · {pause.startsOn} → {pause.endsOn}
+                          {pauseScopeLabel(pause)} · {pause.startsOn} →{" "}
+                          {pause.endsOn}
                         </span>
                         {group.status === "ended" ? (
                           <span>Ended automatically · no action required</span>
@@ -258,7 +275,9 @@ export function AdminAcademicPauseControl({
           )}
         </div>
       ) : (
-        <p className="dr58-admin-empty">No current, upcoming or completed pauses.</p>
+        <p className="dr58-admin-empty">
+          No current, upcoming or completed pauses.
+        </p>
       )}
 
       <Dialog.Root open={open} onOpenChange={(next) => !busy && setOpen(next)}>
