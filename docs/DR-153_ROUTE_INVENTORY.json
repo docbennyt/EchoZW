@@ -934,7 +934,7 @@
     "src/vite-env.d.ts": "67ba1f5b1f143fc83aaae9454c491d181061a1e1feff96966887dc45c117d694",
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
-    "worker/editorMutations.mjs": "cc43df8f7cf74e3bac9945341fa0cd38eed7ae346eb9a72a40a023008326780f",
+    "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
     "worker/googleCalendarApi.mjs": "def9a4c0d2e8ef7041d67d4eba34de469679d58312b983592650ea8d393126f4",
     "worker/googleDelivery.mjs": "7ed1bc86961e5a05e9cd2e87296759ff932e9c58b6046674e93272abf90c362d",
     "worker/index.mjs": "191614ff5fd17ff34c820bfa635759887293305344d4723f3594226d77abf24a",
@@ -4911,7 +4911,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -4944,7 +4944,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -5021,7 +5021,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -5054,7 +5054,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -5190,7 +5190,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -5223,7 +5223,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -5356,7 +5356,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -5389,7 +5389,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -5525,7 +5525,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -5558,7 +5558,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -5690,7 +5690,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -5723,7 +5723,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -5855,7 +5855,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -5888,7 +5888,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -6019,7 +6019,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -6052,7 +6052,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -6185,7 +6185,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -6218,7 +6218,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -6349,7 +6349,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -6382,7 +6382,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],
@@ -6514,7 +6514,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/editorMutations.mjs",
-        "line": 78,
+        "line": 87,
         "role": "worker implementation"
       },
       "workerApplicationService": "correctionsCore.applyEditorMutation -> existing correction/exception repositories; audit/idempotency preserved",
@@ -6547,7 +6547,7 @@
         },
         {
           "file": "worker/editorMutations.mjs",
-          "line": 78,
+          "line": 87,
           "role": "worker implementation"
         }
       ],

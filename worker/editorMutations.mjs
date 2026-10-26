@@ -28,11 +28,11 @@ function json(body, status = 200, extraHeaders = {}) {
 }
 
 async function readJson(request) {
-  if (
-    !/^application\/json(?:\s*;|\s*$)/i.test(
-      request.headers.get("content-type") ?? "",
-    )
-  ) {
+  const isJson = /^application\/json(?:\s*;|\s*$)/i.test(
+    request.headers.get("content-type") ?? "",
+  );
+  const allowEmpty = request.method === "DELETE";
+  if (!isJson && !allowEmpty) {
     throw new PilotApiError(
       "UNSUPPORTED_MEDIA_TYPE",
       "Use application/json.",
@@ -61,6 +61,15 @@ async function readJson(request) {
     } finally {
       reader.releaseLock();
     }
+  }
+  // Workers can expose a non-null stream even when a DELETE has no body bytes.
+  if (allowEmpty && size === 0) return {};
+  if (!isJson) {
+    throw new PilotApiError(
+      "UNSUPPORTED_MEDIA_TYPE",
+      "Use application/json.",
+      415,
+    );
   }
   const bytes = new Uint8Array(size);
   let offset = 0;

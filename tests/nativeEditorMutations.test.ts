@@ -544,6 +544,51 @@ describe("native editor mutation transport with shared repositories", () => {
     );
     expect(removed?.status).toBe(200);
   });
+  it.each(["corrections", "exceptions"])(
+    "accepts an empty transport stream for bodyless %s DELETE",
+    async (collection) => {
+      state.rows = [{ id: itemId, timetable_id: timetableId, active: true }];
+      const response = await handleEditorMutations(
+        new Request(
+          `https://preview.example/api/admin/timetables/${timetableId}/${collection}/${itemId}`,
+          {
+            method: "DELETE",
+            headers: { authorization: "Bearer valid" },
+            body: new ReadableStream({
+              start(controller) {
+                controller.close();
+              },
+            }),
+            duplex: "half",
+          } as RequestInit,
+        ),
+        env,
+      );
+      expect(response?.status).toBe(200);
+      expect(response?.headers.get("cache-control")).toBe("no-store");
+    },
+  );
+  it.each([undefined, "text/plain"])(
+    "rejects nonempty DELETE without JSON media type: %s",
+    async (contentType) => {
+      state.rows = [{ id: itemId, timetable_id: timetableId, active: true }];
+      const headers = new Headers({ authorization: "Bearer valid" });
+      if (contentType) headers.set("content-type", contentType);
+      const response = await handleEditorMutations(
+        new Request(
+          `https://preview.example/api/admin/timetables/${timetableId}/corrections/${itemId}`,
+          {
+            method: "DELETE",
+            headers,
+            body: new TextEncoder().encode("{}"),
+          },
+        ),
+        env,
+      );
+      expect(response?.status).toBe(415);
+      expect(state.calls).toEqual([]);
+    },
+  );
   it("keeps simultaneous environments isolated", async () => {
     const other = { ...env, SUPABASE_SECRET_KEY: "other-fixture" };
     const responses = await Promise.all([
