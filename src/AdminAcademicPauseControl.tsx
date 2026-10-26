@@ -19,6 +19,7 @@ import type {
   AdminTimetableSummary,
 } from "./api/pilotTypes";
 import "./classRepAcademicPauseControl.css";
+import { pauseLifecycle } from "./domain/academicPauseLifecycle";
 
 const reasons: Array<{ value: AcademicPauseReason; label: string }> = [
   { value: "sim_break", label: "Sim Break" },
@@ -146,7 +147,27 @@ export function AdminAcademicPauseControl({
     };
   }
 
-  const active = pauses.filter((pause) => pause.active);
+  const today = todayKey();
+  const ongoing = pauses.filter((pause) => pauseLifecycle(pause, today) === "current");
+  const scheduled = pauses.filter((pause) => pauseLifecycle(pause, today) === "scheduled");
+  const ended = pauses
+    .filter((pause) => pauseLifecycle(pause, today) === "ended")
+    .sort((a, b) => b.endsOn.localeCompare(a.endsOn));
+
+  function pauseScopeLabel(pause: AdminAcademicSchedulePause) {
+    switch (pause.scopeType) {
+      case "institution":
+        return institutions.find((item) => item.id === pause.institutionId)?.name ?? "Institution";
+      case "programme":
+        return programmes.find((item) => item.id === pause.programmeId)?.name ?? "Programme";
+      case "cohort":
+        return classGroups.find((item) => item.id === pause.cohortId)?.label ?? "Class group";
+      case "timetable":
+        return timetables.find((item) => item.id === pause.timetableId)?.classGroupLabel ?? "Timetable";
+      default:
+        return pause.scopeType.replaceAll("_", " ");
+    }
+  }
 
   return (
     <section className="dr58-admin-panel" aria-labelledby="dr58-admin-title">
@@ -174,45 +195,70 @@ export function AdminAcademicPauseControl({
         </div>
       ) : null}
 
-      {active.length ? (
-        <div className="dr58-admin-list">
-          {active.slice(0, 8).map((pause) => (
-            <article key={pause.id}>
-              <div>
-                <strong>{pause.label}</strong>
-                <span>
-                  {pause.scopeType.replaceAll("_", " ")} · {pause.startsOn} →{" "}
-                  {pause.endsOn}
-                </span>
-              </div>
-              <button
-                type="button"
-                disabled={busy === pause.id}
-                onClick={() => {
-                  setBusy(pause.id);
-                  void deactivateBroadPause(accessToken, pause.id)
-                    .then(async () => {
-                      setMessage(`Classes resumed — ${pause.label}.`);
-                      await refresh();
-                    })
-                    .catch((error) =>
-                      setMessage(
-                        error instanceof Error
-                          ? error.message
-                          : "Could not resume classes.",
-                      ),
-                    )
-                    .finally(() => setBusy(""));
-                }}
-              >
-                <Play size={14} />
-                {busy === pause.id ? "Resuming…" : "Resume"}
-              </button>
-            </article>
-          ))}
+      {ongoing.length || scheduled.length || ended.length ? (
+        <div className="dr58-pause-groups">
+          {[
+            { title: "Current pauses", items: ongoing, status: "current" },
+            { title: "Upcoming pauses", items: scheduled, status: "scheduled" },
+            { title: "Completed periods", items: ended, status: "ended" },
+          ].map((group) =>
+            group.items.length ? (
+              <section key={group.status} aria-label={group.title}>
+                <h3>{group.title}</h3>
+                <div className="dr58-admin-list">
+                  {group.items.map((pause) => (
+                    <article key={pause.id}>
+                      <div>
+                        <strong>{pause.label}</strong>
+                        <span>
+                          {pauseScopeLabel(pause)} · {pause.startsOn} → {pause.endsOn}
+                        </span>
+                        {group.status === "ended" ? (
+                          <span>Ended automatically · no action required</span>
+                        ) : null}
+                      </div>
+                      {group.status !== "ended" ? (
+                        <button
+                          type="button"
+                          disabled={busy === pause.id}
+                          onClick={() => {
+                            setBusy(pause.id);
+                            void deactivateBroadPause(accessToken, pause.id)
+                              .then(async () => {
+                                setMessage(
+                                  group.status === "scheduled"
+                                    ? `Cancelled scheduled pause — ${pause.label}.`
+                                    : `Resumed early — ${pause.label}.`,
+                                );
+                                await refresh();
+                              })
+                              .catch((error) =>
+                                setMessage(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Could not update pause.",
+                                ),
+                              )
+                              .finally(() => setBusy(""));
+                          }}
+                        >
+                          <Play size={14} />
+                          {busy === pause.id
+                            ? "Updating…"
+                            : group.status === "scheduled"
+                              ? "Cancel pause"
+                              : "Resume early"}
+                        </button>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null,
+          )}
         </div>
       ) : (
-        <p className="dr58-admin-empty">No active academic pauses.</p>
+        <p className="dr58-admin-empty">No current, upcoming or completed pauses.</p>
       )}
 
       <Dialog.Root open={open} onOpenChange={(next) => !busy && setOpen(next)}>
