@@ -65,14 +65,16 @@ export function recoverReviewedWorker({ run, jobs, artifacts, log, sha }) {
     uploadLog,
     /^\s*CANDIDATE_SHA: ([a-f0-9]{40})$/gm,
   );
-  if (
-    approvalSha !== sha ||
-    preparedSha !== sha ||
-    uploadedSha !== sha ||
-    job("authorize")?.conclusion !== "success" ||
-    job("package")?.conclusion !== "success" ||
-    !["success", "failure"].includes(deployment?.conclusion) ||
-    ![
+  const checks = {
+    candidateApproval: approvalSha === sha,
+    candidateConfiguration: preparedSha === sha,
+    candidateUpload: uploadedSha === sha,
+    successfulAuthorization: job("authorize")?.conclusion === "success",
+    successfulPackaging: job("package")?.conclusion === "success",
+    verifiedDeploymentState: ["success", "failure"].includes(
+      deployment?.conclusion,
+    ),
+    verifiedDeploymentSteps: [
       "Recheck approval after environment review",
       "Verify artifact identity and bytes",
       "Prepare trusted deployment configuration",
@@ -80,16 +82,23 @@ export function recoverReviewedWorker({ run, jobs, artifacts, log, sha }) {
       deployment?.steps?.some(
         (step) => step.name === name && step.conclusion === "success",
       ),
-    ) ||
-    !artifacts.some(
+    ),
+    verifiedArtifactBinding: artifacts.some(
       (artifact) =>
         String(artifact.id) === artifactId &&
         artifact.name === `reviewed-worker-${sha}` &&
         !artifact.expired &&
         artifact.digest === `sha256:${digest}`,
-    )
-  )
-    throw new Error("VERIFIED_DEPLOYMENT_ARTIFACT_REQUIRED");
+    ),
+  };
+  const failedChecks = Object.entries(checks)
+    .filter(([, passed]) => !passed)
+    .map(([name]) => name);
+  if (failedChecks.length) {
+    const error = new Error("VERIFIED_DEPLOYMENT_ARTIFACT_REQUIRED");
+    error.failedChecks = failedChecks;
+    throw error;
+  }
   const versions = [
     ...uploadLog.matchAll(/^Current Version ID:\s*([a-f0-9-]{36})$/gm),
   ];
@@ -159,13 +168,26 @@ async function main() {
   } catch {
     throw new Error("TRUSTED_DEPLOYMENT_LOG_UNAVAILABLE");
   }
-  const { version } = recoverReviewedWorker({
-    run,
-    jobs,
-    artifacts,
-    log,
-    sha: process.env.CANDIDATE_SHA,
-  });
+  let version;
+  try {
+    ({ version } = recoverReviewedWorker({
+      run,
+      jobs,
+      artifacts,
+      log,
+      sha: process.env.CANDIDATE_SHA,
+    }));
+  } catch (error) {
+    if (error.failedChecks) {
+      console.error(
+        JSON.stringify({
+          event: "staging.provenance.rejected",
+          failedChecks: error.failedChecks,
+        }),
+      );
+    }
+    throw error;
+  }
   appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
   console.log(`Verified reviewed deployment provenance; Worker ${version}`);
 }
