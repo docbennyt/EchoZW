@@ -143,6 +143,30 @@ Do not add wildcard external domains to solve callback failures.
 
 ## Recommended hosted email templates
 
+### DR-178 staging prefetch protection
+
+The reviewed configuration artifacts are `supabase/templates/invite.html` and
+`supabase/templates/recovery.html`. They are **not applied by application deployment**.
+Deploy and verify the explicit Continue gate in `AuthSetupPage` before an operator
+approves changing either hosted template.
+
+Only the exact plain staging `/account/update-password` redirect uses a direct
+token-hash landing page. Loading that page sanitizes the URL but does not verify
+the token; an explicit Continue action starts verification. All other redirects,
+including production, retain the existing `{{ .ConfirmationURL }}` link. Keep the
+production Site URL and redirect allowlist unchanged. Query-bearing redirects do
+not match this deliberately exact conditional and retain the existing behavior.
+
+Apply the artifacts in Authentication > Emails only after exact-head review and
+staging deployment, then send one fresh recovery email through the existing QA
+account flow. Verify that opening the URL alone causes no provider verification;
+Continue verifies once and renders password fields. The owner enters/submits the
+password privately. Do not copy rendered email URLs, hashes, or credentials into
+logs. Rollback is the previous template body using `{{ .ConfirmationURL }}`.
+
+This mitigates GET-prefetch consumption, not automation that activates Continue.
+See [Supabase email-prefetch guidance](https://supabase.com/docs/guides/auth/auth-email-templates#email-prefetching).
+
 The application already supports today's implicit invitation links. The following token-hash form is the preferred future template architecture when the Supabase project permits Auth template customization.
 
 ### Invite template link

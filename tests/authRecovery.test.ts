@@ -160,6 +160,67 @@ describe("auth recovery helpers", () => {
     });
   });
 
+  it("establishes a complete implicit recovery session through Supabase", async () => {
+    const auth = authMock();
+    const sanitize = vi.fn();
+    const result = await restoreAuthSessionFromRedirect(
+      auth as never,
+      new URL(
+        "https://calender.aido.co.zw/account/update-password#access_token=test-access&refresh_token=test-refresh&type=recovery",
+      ),
+      { sanitize },
+    );
+    expect(sanitize).toHaveBeenCalledOnce();
+    expect(auth.setSession).toHaveBeenCalledExactlyOnceWith({
+      access_token: "test-access",
+      refresh_token: "test-refresh",
+    });
+    expect(result).toEqual({
+      ok: true,
+      intent: "recovery",
+      sessionEstablished: true,
+    });
+  });
+
+  it.each([
+    "access_token=test-access&type=recovery",
+    "refresh_token=test-refresh&type=recovery",
+  ])("rejects incomplete implicit recovery (%s)", async (fragment) => {
+    const auth = authMock();
+    const result = await restoreAuthSessionFromRedirect(
+      auth as never,
+      new URL(
+        `https://calender.aido.co.zw/account/update-password#${fragment}`,
+      ),
+      { sanitize: vi.fn() },
+    );
+    expect(auth.setSession).not.toHaveBeenCalled();
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      intent: "recovery",
+      code: "AUTH_RECOVERY_CALLBACK_INVALID",
+    });
+  });
+
+  it("never accepts an existing session when implicit recovery validation fails", async () => {
+    const auth = authMock({ setSessionError: new Error("invalid token") });
+    const result = await restoreAuthSessionFromRedirect(
+      auth as never,
+      new URL(
+        "https://calender.aido.co.zw/account/update-password#access_token=test-access&refresh_token=test-refresh&type=recovery",
+      ),
+      { sanitize: vi.fn() },
+    );
+    expect(auth.setSession).toHaveBeenCalledOnce();
+    expect(auth.getSession).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      ok: false,
+      intent: "recovery",
+      code: "AUTH_SESSION_ESTABLISHMENT_FAILED",
+    });
+  });
+
   it("fails closed for malformed implicit invitation credentials", async () => {
     const auth = authMock();
     const result = await restoreAuthSessionFromRedirect(

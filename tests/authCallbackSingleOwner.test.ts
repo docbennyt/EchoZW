@@ -46,6 +46,7 @@ const accessToken = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: use
 let client: SupabaseClient | undefined;
 let tokenRequests: Array<{ auth_code: string; code_verifier: string }>;
 let rejectExchange: boolean;
+let rejectUserToken: boolean;
 
 function seedVerifier() {
   document.cookie = `${storageKey}-code-verifier=${encodeURIComponent(JSON.stringify(`${verifier}/recovery`))}; Path=/`;
@@ -72,6 +73,7 @@ beforeEach(() => {
   storageKey = `sb-callback-fixture-${fixtureNumber}-auth-token`;
   tokenRequests = [];
   rejectExchange = false;
+  rejectUserToken = false;
   window.localStorage.clear();
   window.sessionStorage.clear();
   for (const cookie of document.cookie.split(";")) {
@@ -87,6 +89,27 @@ beforeEach(() => {
       const url = new URL(input instanceof Request ? input.url : String(input));
       if (url.origin !== projectUrl)
         throw new Error("Unexpected external request in callback fixture");
+      if (url.pathname === "/auth/v1/user" && init?.method === "GET") {
+        expect(window.location.search).toBe("");
+        expect(window.location.hash).toBe("");
+        return new Response(
+          JSON.stringify(
+            rejectUserToken
+              ? {
+                  code: "bad_jwt",
+                  msg: `Synthetic token rejected: ${accessToken}`,
+                }
+              : user,
+          ),
+          {
+            status: rejectUserToken ? 401 : 200,
+            headers: {
+              "content-type": "application/json",
+              "x-supabase-api-version": "2024-01-01",
+            },
+          },
+        );
+      }
       if (
         url.pathname === "/auth/v1/token" &&
         url.searchParams.get("grant_type") === "password" &&
@@ -157,6 +180,68 @@ afterEach(async () => {
 });
 
 describe("real SSR/Auth SDK callback ownership", () => {
+  it.each([false, true])(
+    "validates an implicit recovery through real SDK setSession (token rejected: %s)",
+    async (rejected) => {
+      rejectUserToken = rejected;
+      const refreshToken = "synthetic-implicit-recovery-refresh-token";
+      window.history.replaceState(
+        {},
+        "",
+        `/account/update-password#access_token=${accessToken}&refresh_token=${refreshToken}&type=recovery&token_type=bearer&expires_in=3600`,
+      );
+      const callbackUrl = new URL(window.location.href);
+      const { createClient } = await import("../src/utils/supabase/client");
+      client = createClient();
+      await client.auth.initialize();
+      expect(fetch).not.toHaveBeenCalled();
+      expect((await client.auth.getSession()).data.session).toBeNull();
+      const setSession = vi.spyOn(client.auth, "setSession");
+
+      const result = await restoreAuthSessionFromRedirect(
+        client.auth,
+        callbackUrl,
+      );
+
+      expect(setSession).toHaveBeenCalledExactlyOnceWith({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      const [requestUrl, options] = vi.mocked(fetch).mock.calls[0];
+      expect(String(requestUrl)).toBe(`${projectUrl}/auth/v1/user`);
+      expect(options?.method).toBe("GET");
+      expect(new Headers(options?.headers).get("authorization")).toBe(
+        `Bearer ${accessToken}`,
+      );
+      expect(tokenRequests).toEqual([]);
+      expect(window.location.pathname).toBe("/account/update-password");
+      expect(window.location.search).toBe("");
+      expect(window.location.hash).toBe("");
+      expect(JSON.stringify(result)).not.toContain(accessToken);
+      expect(JSON.stringify(result)).not.toContain(refreshToken);
+      if (rejected) {
+        expect(result).toEqual({
+          ok: false,
+          intent: "recovery",
+          code: "AUTH_SESSION_ESTABLISHMENT_FAILED",
+        });
+        expect((await client.auth.getSession()).data.session).toBeNull();
+        expect(document.cookie).not.toContain(`${storageKey}=`);
+      } else {
+        expect(result).toEqual({
+          ok: true,
+          intent: "recovery",
+          sessionEstablished: true,
+        });
+        expect((await client.auth.getSession()).data.session?.user.id).toBe(
+          user.id,
+        );
+        expect(document.cookie).toContain(`${storageKey}=`);
+      }
+    },
+  );
+
   it("retains explicit password login and cookie-backed session recovery on an ordinary page", async () => {
     const { auth } = await initialize("/admin/login", false);
     expect((await auth.getSession()).data.session).toBeNull();

@@ -30,6 +30,7 @@ const currentPath = () => window.location.pathname;
 
 type SetupStatus =
   | "checking"
+  | "confirmation"
   | "ready"
   | "updating"
   | "success"
@@ -78,6 +79,8 @@ function setupCopy(intent: AuthSetupIntent) {
 
 export function AuthSetupPage() {
   const initialUrl = new URL(window.location.href);
+  const callbackUrlRef = useRef(initialUrl);
+  const [verificationRequested, setVerificationRequested] = useState(false);
   const [intent, setIntent] = useState<AuthSetupIntent>(() =>
     authSetupIntentFromUrl(
       initialUrl,
@@ -115,7 +118,7 @@ export function AuthSetupPage() {
     let active = true;
 
     async function completeSetupRedirect() {
-      const url = new URL(window.location.href);
+      const url = callbackUrlRef.current;
       const fallbackIntent =
         currentPath() === PASSWORD_RESET_PATH ? "recovery" : "unknown";
       let supabase;
@@ -136,6 +139,21 @@ export function AuthSetupPage() {
         return;
       }
 
+      const type =
+        url.searchParams.get("type") ??
+        new URLSearchParams(url.hash.slice(1)).get("type");
+      if (
+        url.searchParams.get("token_hash") &&
+        (type === "invite" || type === "recovery") &&
+        !verificationRequested
+      ) {
+        // Opening or prefetching an email URL must not consume its one-time token.
+        window.history.replaceState({}, "", currentPath());
+        setStatus("confirmation");
+        return;
+      }
+
+      setStatus("checking");
       // Effect replay must join the first exchange, not consume its code or race its session.
       redirectCompletionRef.current ??= restoreAuthSessionFromRedirect(
         supabase.auth,
@@ -177,7 +195,7 @@ export function AuthSetupPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [verificationRequested]);
 
   async function resolveInvitedStaffAccess() {
     const supabase = supabaseRef.current;
@@ -297,6 +315,18 @@ export function AuthSetupPage() {
                     </a>
                   ) : null}
                 </>
+              ) : null}
+
+              {status === "confirmation" ? (
+                <BaseButton
+                  className="czw-button czw-button-primary"
+                  disabled={verificationRequested}
+                  onClick={() => setVerificationRequested(true)}
+                  type="button"
+                >
+                  <Lock size={17} />
+                  Continue
+                </BaseButton>
               ) : null}
 
               {showForm ? (

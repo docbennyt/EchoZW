@@ -177,14 +177,22 @@ export async function restoreAuthSessionFromRedirect(
     }
   } else if (accessToken || refreshToken) {
     sanitize();
-    if (explicitType !== "invite" || !accessToken || !refreshToken) {
+    if (
+      (explicitType !== "invite" && explicitType !== "recovery") ||
+      !accessToken ||
+      !refreshToken
+    ) {
       return {
         ok: false,
         intent,
         code:
-          explicitType && explicitType !== "invite"
+          explicitType &&
+          explicitType !== "invite" &&
+          explicitType !== "recovery"
             ? "AUTH_CALLBACK_TYPE_UNSUPPORTED"
-            : "AUTH_INVITE_CALLBACK_INVALID",
+            : intent === "recovery"
+              ? "AUTH_RECOVERY_CALLBACK_INVALID"
+              : "AUTH_INVITE_CALLBACK_INVALID",
       };
     }
     const { error } = await auth.setSession({
@@ -192,11 +200,11 @@ export async function restoreAuthSessionFromRedirect(
       refresh_token: refreshToken,
     });
     if (error) {
-      return {
-        ok: false,
-        intent: "invite",
-        code: "AUTH_INVITE_SESSION_FAILED",
-      };
+      return failureForIntent(
+        explicitType,
+        "AUTH_INVITE_SESSION_FAILED",
+        "AUTH_SESSION_ESTABLISHMENT_FAILED",
+      );
     }
   } else if (hasAuthRedirectParameters(url)) {
     sanitize();

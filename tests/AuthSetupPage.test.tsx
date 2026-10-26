@@ -94,6 +94,66 @@ beforeEach(() => {
 });
 
 describe("AuthSetupPage", () => {
+  it.each(["invite", "recovery"] as const)(
+    "does not consume a %s token hash until explicit confirmation",
+    async (type) => {
+      const auth = workingAuth();
+      createSupabaseClient.mockReturnValue({ auth });
+      window.history.replaceState(
+        {},
+        "",
+        `/account/update-password?token_hash=test-hash&type=${type}`,
+      );
+      render(
+        <StrictMode>
+          <AuthSetupPage />
+        </StrictMode>,
+      );
+      const continueButton = await screen.findByRole("button", {
+        name: /^Continue$/,
+      });
+      expect(auth.verifyOtp).not.toHaveBeenCalled();
+      expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
+      expect(auth.getSession).not.toHaveBeenCalled();
+      expect(window.location.search).toBe("");
+      expect(screen.queryByLabelText(/^New password$/i)).toBeNull();
+
+      fireEvent.click(continueButton);
+      fireEvent.click(continueButton);
+      expect(await screen.findByLabelText(/^New password$/i)).toBeVisible();
+      expect(auth.verifyOtp).toHaveBeenCalledExactlyOnceWith({
+        token_hash: "test-hash",
+        type,
+      });
+    },
+  );
+
+  it.each(["invite", "recovery"] as const)(
+    "also gates a token hash when %s type is in the fragment",
+    async (type) => {
+      const auth = workingAuth();
+      createSupabaseClient.mockReturnValue({ auth });
+      window.history.replaceState(
+        {},
+        "",
+        `/account/update-password?token_hash=test-hash#type=${type}`,
+      );
+      render(<AuthSetupPage />);
+      const continueButton = await screen.findByRole("button", {
+        name: /^Continue$/,
+      });
+      expect(auth.verifyOtp).not.toHaveBeenCalled();
+      expect(window.location.search).toBe("");
+      expect(window.location.hash).toBe("");
+      fireEvent.click(continueButton);
+      expect(await screen.findByLabelText(/^New password$/i)).toBeVisible();
+      expect(auth.verifyOtp).toHaveBeenCalledExactlyOnceWith({
+        token_hash: "test-hash",
+        type,
+      });
+    },
+  );
+
   it("waits for one recovery exchange across StrictMode effect replay", async () => {
     const auth = workingAuth();
     let finish!: () => void;
