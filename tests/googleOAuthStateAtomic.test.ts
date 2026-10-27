@@ -98,6 +98,9 @@ describe("Google OAuth state claim", () => {
     expect(results.filter(Boolean)).toHaveLength(1);
     expect(from).toHaveBeenCalledTimes(2);
     expect(query.delete).toHaveBeenCalledTimes(2);
+    expect(query.select).toHaveBeenCalledWith(
+      "state_hash, subscription_id, expires_at, connection_generation, anonymous_session_id",
+    );
     expect(query.delete.mock.invocationCallOrder[0]).toBeLessThan(
       query.select.mock.invocationCallOrder[0],
     );

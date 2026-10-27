@@ -46,7 +46,9 @@ export async function consumeGoogleOAuthState(input: {
     .from("google_calendar_oauth_states")
     .delete()
     .eq("state_hash", input.stateHash)
-    .select("state_hash, subscription_id, expires_at, connection_generation")
+    .select(
+      "state_hash, subscription_id, expires_at, connection_generation, anonymous_session_id",
+    )
     .maybeSingle();
   if (error)
     throw databaseError("Could not verify Google Calendar connection.", error);

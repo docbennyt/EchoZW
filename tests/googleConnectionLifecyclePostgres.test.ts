@@ -91,6 +91,15 @@ describe.skipIf(!modulePath)(
           "utf8",
         ),
       );
+      await db.query(
+        await readFile(
+          new URL(
+            "../supabase/migrations/20261027155427_google_oauth_state_owner.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
     }, 30000);
     beforeEach(async () => {
       await db.query("rollback");
@@ -122,6 +131,67 @@ describe.skipIf(!modulePath)(
         "select disconnect_google_calendar_connection($1,$2,false) as result",
         [subscription, owner],
       );
+
+    it("persists the verified initiating owner in single-use OAuth state", async () => {
+      expect(
+        (
+          await db.query(
+            "select start_google_calendar_connection($1,$2,'owned-state',now()+interval '10 minutes') as accepted",
+            [subscription, owner],
+          )
+        ).rows[0].accepted,
+      ).toBe(true);
+      const consumed = await db.query(
+        "delete from google_calendar_oauth_states where state_hash='owned-state' returning *",
+      );
+      expect(consumed.rows[0]).toMatchObject({
+        anonymous_session_id: owner,
+        subscription_id: subscription,
+        connection_generation: "0",
+      });
+      expect(
+        (
+          await db.query(
+            "delete from google_calendar_oauth_states where state_hash='owned-state' returning *",
+          )
+        ).rows,
+      ).toEqual([]);
+      expect(
+        (
+          await db.query(
+            "select start_google_calendar_connection($1,$2,'foreign-state',now()+interval '10 minutes') as accepted",
+            [subscription, "00000000-0000-4000-8000-000000000099"],
+          )
+        ).rows[0].accepted,
+      ).toBe(false);
+      expect(
+        (await db.query("select * from google_calendar_oauth_states")).rows,
+      ).toEqual([]);
+    });
+
+    it("leaves legacy ownerless state untrusted and keeps state creation service-only", async () => {
+      await db.query(
+        "insert into google_calendar_oauth_states(state_hash,subscription_id,expires_at,connection_generation) values ('legacy',$1,now()+interval '10 minutes',0)",
+        [subscription],
+      );
+      expect(
+        (
+          await db.query(
+            "delete from google_calendar_oauth_states where state_hash='legacy' returning anonymous_session_id",
+          )
+        ).rows[0].anonymous_session_id,
+      ).toBeNull();
+      const permissions = (
+        await db.query(
+          "select has_function_privilege('anon','public.start_google_calendar_connection(uuid,uuid,text,timestamptz)','execute') as anon, has_function_privilege('authenticated','public.start_google_calendar_connection(uuid,uuid,text,timestamptz)','execute') as authenticated, has_function_privilege('service_role','public.start_google_calendar_connection(uuid,uuid,text,timestamptz)','execute') as service",
+        )
+      ).rows[0];
+      expect(permissions).toEqual({
+        anon: false,
+        authenticated: false,
+        service: true,
+      });
+    });
 
     it("rejects callback persistence after disconnect holds the subscription lock", async () => {
       await db.query("begin");
