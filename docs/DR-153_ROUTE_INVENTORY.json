@@ -8125,7 +8125,8 @@
         "tests/googleCalendarExistingUserSync.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
         "tests/googleNativeSubscription.test.ts",
-        "tests/legal.test.ts"
+        "tests/legal.test.ts",
+        "tests/stagingCanarySecrets.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
