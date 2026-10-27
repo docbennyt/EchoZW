@@ -28,6 +28,8 @@ describe("trusted expiring staging canary bindings", () => {
       GOOGLE_CANARY_OWNER_ID: owner,
       GOOGLE_CANARY_TIMETABLE_ID: timetable,
       GOOGLE_CANARY_EXPIRES_AT: scope().expiresAt,
+      GOOGLE_REDIRECT_URI:
+        "https://next.calender.aido.co.zw/api/calendar/google/callback",
     });
     expect(() =>
       prepareCanarySecrets(JSON.stringify(scope()), sha, true, now),
@@ -41,7 +43,11 @@ describe("trusted expiring staging canary bindings", () => {
         true,
         now,
       ),
-    ).toMatchObject({ GOOGLE_CANARY_SUBSCRIPTION_ID: subscription });
+    ).toMatchObject({
+      GOOGLE_CANARY_SUBSCRIPTION_ID: subscription,
+      GOOGLE_REDIRECT_URI:
+        "https://next.calender.aido.co.zw/api/calendar/google/callback",
+    });
     for (const change of [
       { candidateSha: "f".repeat(40) },
       { timetableId: owner },
@@ -52,6 +58,10 @@ describe("trusted expiring staging canary bindings", () => {
       { expiresAt: "2099-01-01" },
       { expiresAt: "2026-10-26" },
       { ENABLE_GOOGLE_DELIVERY: "true" },
+      {
+        GOOGLE_REDIRECT_URI:
+          "https://calendar.aido.co.zw/api/calendar/google/callback",
+      },
     ]) {
       expect(() =>
         prepareCanarySecrets(

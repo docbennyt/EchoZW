@@ -46,6 +46,9 @@ export function prepareCanarySecrets(
     if (selected ? !isUuid(scope.subscriptionId) : selectedBindingPresent)
       throw invalid();
     return {
+      // Both OAuth steps must return to this staging Worker, never a legacy host.
+      GOOGLE_REDIRECT_URI:
+        "https://next.calender.aido.co.zw/api/calendar/google/callback",
       GOOGLE_CANARY_OWNER_ID: scope.ownerId,
       GOOGLE_CANARY_TIMETABLE_ID: scope.timetableId,
       GOOGLE_CANARY_EXPIRES_AT: scope.expiresAt,
