@@ -22,5 +22,9 @@ verify the column/function/grants, and deploy that reviewed app through the prot
 workflow. Renew the existing selected QA scope for that exact SHA; keep global Google
 delivery disabled. Restart the normal QA OAuth flow, verify real Queue/provider
 delivery, and preserve the failed run as evidence. Do not rerun or claim its acceptance
-passed. The separate mobile smoke selector repair needs acceptance-only verification
-against the existing deployed identity; it does not require redeploying unchanged code.
+passed. Merge the separately reviewed mobile smoke selector repair before dispatching
+this candidate so the same deployment receives corrected protected browser acceptance.
+Do not redeploy unchanged code merely to repair the verifier. Acceptance-only reruns
+remain available when the deployed candidate is still the current independently
+reviewed PR head; the previous 8d473f5 deployment is now historical because this PR
+has advanced.
