@@ -92,6 +92,62 @@ describe("native Google Web transport", () => {
     expect(response!.headers.get("cache-control")).toBe("no-store");
     expect(services.getPublicGoogleCalendarStatus).toHaveBeenCalledWith(env);
   });
+  it("keeps the canary status private to its owner and rejects other subscriptions before OAuth", async () => {
+    const bindings = {
+      ...env,
+      APP_ENV: "cloudflare-staging",
+      ENABLE_GOOGLE_DELIVERY: "false",
+      GOOGLE_CANARY_OWNER_ID: owner,
+      GOOGLE_CANARY_TIMETABLE_ID: timetableId,
+      GOOGLE_CANARY_SUBSCRIPTION_ID: subscriptionId,
+      GOOGLE_CANARY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
+    };
+    services.getPublicGoogleCalendarStatus.mockReturnValue({ enabled: true });
+    const status = "/api/calendar/google/status";
+    expect(
+      await (await handleGoogleCalendarRequest(
+        request(status),
+        bindings,
+      ))!.json(),
+    ).toMatchObject({ enabled: false });
+    expect(
+      await (await handleGoogleCalendarRequest(
+        request(status, undefined, {
+          cookie: `calenderzw_anon_session=${owner}`,
+        }),
+        bindings,
+      ))!.json(),
+    ).toMatchObject({ enabled: true });
+    repository.getCalendarSubscriptionById.mockResolvedValue({
+      id: subscriptionId,
+      provider: "google_api",
+      timetable_id: timetableId,
+      anonymous_session_id: owner,
+    });
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(
+          `/api/calendar/google/connect?subscriptionId=${subscriptionId}`,
+          undefined,
+          { cookie: `calenderzw_anon_session=${owner}` },
+        ),
+        bindings,
+      ))!.status,
+    ).toBe(302);
+    services.beginGoogleCalendarConnection.mockClear();
+    repository.getCalendarSubscriptionById.mockResolvedValue({ id: owner });
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(
+          `/api/calendar/google/connect?subscriptionId=${owner}`,
+          undefined,
+          { cookie: `calenderzw_anon_session=${owner}` },
+        ),
+        bindings,
+      ))!.status,
+    ).toBe(503);
+    expect(services.beginGoogleCalendarConnection).not.toHaveBeenCalled();
+  });
 
   it("checks credential compatibility only after admin and ownership checks without provider work", async () => {
     services.checkGoogleCredentialCompatibility.mockResolvedValue({

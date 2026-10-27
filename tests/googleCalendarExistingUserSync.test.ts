@@ -141,6 +141,111 @@ function ownershipFixture(url: string, init?: RequestInit) {
 }
 
 describe("DR-171 existing Google Calendar subscription propagation", () => {
+  it("allows only the selected canary callback and its matching OAuth-state owner", async () => {
+    const id = "33333333-3333-4333-8333-333333333333";
+    const owner = "11111111-1111-4111-8111-111111111111";
+    const timetableId = "22222222-2222-4222-8222-222222222222";
+    const bindings = {
+      ...env,
+      ENABLE_GOOGLE_DELIVERY: "false",
+      APP_ENV: "cloudflare-staging",
+      GOOGLE_CANARY_SUBSCRIPTION_ID: id,
+      GOOGLE_CANARY_OWNER_ID: owner,
+      GOOGLE_CANARY_TIMETABLE_ID: timetableId,
+      GOOGLE_CANARY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
+    };
+    const row = {
+      id,
+      anonymous_session_id: owner,
+      timetable_id: timetableId,
+      provider: "google_api",
+      status: "pending",
+    };
+    googleRepositoryMocks.consumeGoogleOAuthState.mockResolvedValueOnce({
+      subscription_id: id,
+      anonymous_session_id: "other",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+    });
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValueOnce(row);
+    await expect(
+      completeGoogleCalendarConnection({
+        code: "code",
+        state: "state",
+        env: bindings,
+      }),
+    ).rejects.toMatchObject({ code: "GOOGLE_STATE_INVALID" });
+    expect(fetch).not.toHaveBeenCalled();
+    googleRepositoryMocks.consumeGoogleOAuthState.mockResolvedValueOnce({
+      subscription_id: id,
+      anonymous_session_id: owner,
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+    });
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValueOnce(row);
+    vi.mocked(fetch).mockResolvedValueOnce(
+      okJson({ access_token: "access", refresh_token: "refresh" }),
+    );
+    const enqueueInitialSync = vi.fn().mockResolvedValue(undefined);
+    expect(
+      await completeGoogleCalendarConnection({
+        code: "code",
+        state: "state",
+        env: bindings,
+        enqueueInitialSync,
+      }),
+    ).toMatchObject({ subscriptionId: id });
+    expect(enqueueInitialSync).toHaveBeenCalledWith(
+      { subscriptionId: id, timetableId },
+      bindings,
+    );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("does not mark student connections failed when broad sync is invoked during the isolated test", async () => {
+    googleRepositoryMocks.listSyncableGoogleSubscriptions.mockResolvedValueOnce(
+      [{ id: "student", provider: "google_api", timetable_id: "tt-se41" }],
+    );
+    expect(
+      await syncGoogleSubscriptionsForTimetable("tt-se41", {
+        ...env,
+        APP_ENV: "cloudflare-staging",
+        ENABLE_GOOGLE_DELIVERY: "false",
+      }),
+    ).toEqual({ attempted: 0, succeeded: 0, failed: 0 });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).not.toHaveBeenCalled();
+  });
+  it("rejects an unrelated staging callback before exchanging code or persisting credentials", async () => {
+    googleRepositoryMocks.consumeGoogleOAuthState.mockResolvedValueOnce({
+      subscription_id: "sub-existing",
+      expires_at: new Date(Date.now() + 60000).toISOString(),
+    });
+    await expect(
+      completeGoogleCalendarConnection({
+        code: "code",
+        state: "state",
+        env: {
+          ...env,
+          APP_ENV: "cloudflare-staging",
+          ENABLE_GOOGLE_DELIVERY: "false",
+        },
+      }),
+    ).rejects.toMatchObject({ code: "GOOGLE_DELIVERY_UNAVAILABLE" });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(
+      googleRepositoryMocks.persistGoogleCalendarConnection,
+    ).not.toHaveBeenCalled();
+  });
+  it("rejects direct staging sync outside the selected canary before provider requests", async () => {
+    await expect(
+      syncGoogleSubscription("sub-existing", {
+        ...env,
+        APP_ENV: "cloudflare-staging",
+        ENABLE_GOOGLE_DELIVERY: "false",
+      }),
+    ).rejects.toMatchObject({ code: "GOOGLE_DELIVERY_UNAVAILABLE" });
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it("passes explicit bindings into the connection subscription lookup", async () => {
     repositoryMocks.getCalendarSubscriptionById.mockResolvedValueOnce({
       id: "sub-existing",

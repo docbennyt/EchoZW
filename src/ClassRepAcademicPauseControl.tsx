@@ -14,6 +14,7 @@ import type {
   PublicTimetable,
 } from "./api/pilotTypes";
 import { selectEffectiveRecurringSessions } from "./domain/resolvedSchedule";
+import { academicPauseDeliveryNotice } from "./domain/academicPauseDeliveryNotice";
 import "./classRepAcademicPauseControl.css";
 
 const reasonOptions: Array<{ value: AcademicPauseReason; label: string }> = [
@@ -136,9 +137,9 @@ export function ActiveAcademicPauseNotice({
                       assignment.timetableId,
                       pause.id,
                     )
-                      .then(async () => {
+                      .then(async (result) => {
                         onMessage(
-                          `Classes resumed — ${pause.label}. Calendar subscribers will receive the restored schedule.`,
+                          `Classes resumed — ${pause.label}. ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
                         );
                         await onRefresh();
                       })
@@ -228,7 +229,9 @@ export function ClassRepAcademicPauseAction({
         assignment.timetableId,
         toInput(form),
       );
-      onMessage(`Paused — ${result.pause.label}. ${impactText(result.impact)}`);
+      onMessage(
+        `Paused — ${result.pause.label}. ${impactText(result.impact)} ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
+      );
       setOpen(false);
       setForm(initialForm());
       setPreview(null);

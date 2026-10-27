@@ -5,6 +5,7 @@ import type {
   AdminAcademicSchedulePause,
 } from "./pilotTypes";
 import { adminFetch } from "./pilotAdmin";
+import type { AcademicPauseDelivery } from "../domain/academicPauseDeliveryNotice";
 import { createClient as createSupabaseBrowserClient } from "../utils/supabase/client";
 
 export type TimetablePauseInput = {
@@ -62,11 +63,7 @@ export async function createTimetablePause(
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
     impact: AcademicPauseImpact;
-    googleCalendarSync: {
-      attempted: number;
-      succeeded: number;
-      failed: number;
-    };
+    googleCalendarSync: AcademicPauseDelivery;
   }>(`/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses`, {
     method: "POST",
     accessToken: await freshAccessToken(accessToken),
@@ -91,11 +88,7 @@ export async function deactivateTimetablePause(
 ) {
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
-    googleCalendarSync: {
-      attempted: number;
-      succeeded: number;
-      failed: number;
-    };
+    googleCalendarSync: AcademicPauseDelivery;
   }>(
     `/api/admin/timetables/${encodeURIComponent(timetableId)}/pauses/${encodeURIComponent(pauseId)}`,
     {
@@ -118,11 +111,7 @@ export async function deactivateBroadPause(
 ) {
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
-    googleCalendarSync: {
-      attempted: number;
-      succeeded: number;
-      failed: number;
-    };
+    googleCalendarSync: AcademicPauseDelivery;
   }>(`/api/admin/academic-pauses/${encodeURIComponent(pauseId)}`, {
     method: "DELETE",
     accessToken: await freshAccessToken(accessToken),
@@ -150,11 +139,7 @@ export async function createBroadPause(
   return adminFetch<{
     pause: AdminAcademicSchedulePause;
     impact: AcademicPauseImpact;
-    googleCalendarSync: {
-      attempted: number;
-      succeeded: number;
-      failed: number;
-    };
+    googleCalendarSync: AcademicPauseDelivery;
   }>("/api/admin/academic-pauses", {
     method: "POST",
     accessToken: await freshAccessToken(accessToken),

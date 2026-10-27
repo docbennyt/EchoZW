@@ -756,16 +756,17 @@
     "server/analyticsApi.ts": "d05111ee74360a6157ad03f89eaeaa0b6d45e16a1dc0e16c09262f2583e97e07",
     "server/analyticsRepository.ts": "6607366efa0ef75ee576925c82e51bc9f11d76b9d06e2b3714a2a36f8b12db1b",
     "server/calendarRevisionRepository.ts": "a6388a6727d114e4e79a055e18daf562c9ee8dff796bbdd4e9b0f9be5f77ddff",
-    "server/calendarSubscriptionCore.ts": "7a1ff2558dc3674e2310ae04fc115469b0dfde72c03a647e0f59b9981b089dc9",
+    "server/calendarSubscriptionCore.ts": "570c0287407a83bb95a363d0aaa37313227ed409b4588ea6f98d42fb60400000",
     "server/calendarSubscriptionLifecycle.ts": "bc5e5e8f2258349d422f9ba82884f7e1e1bf47abceab883eb7d8b9a9ddf558e6",
     "server/correctionsAdminApi.ts": "351b8a8a584e9156506a4481f778cc5486889a0e07be420dc1ebf3f5356058b0",
     "server/correctionsCore.ts": "4b4feedbd677616f4861e365cf1af1a10a9a78c25625e0ac272f6c373880f660",
     "server/correctionsRepository.ts": "8440e438a897d943ce858bd4da8bba0c9e4aad94303eeb4841d513290af55c1e",
     "server/docxStructuredReader.ts": "34a63f0540c008768cc716e37ff7c604e9b4d2bff24140e81b64e5ecabb0ae02",
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
-    "server/googleCalendarDelivery.ts": "0239ecacf5e4be8606e28a1f5944983730d8d8471a5ac491df3c458a6261b0ad",
+    "server/googleCalendarDelivery.ts": "fc8c9397749361430c9511088bdf56b1e385d971ebdb45fe22adce806ba5ad88",
     "server/googleCalendarRepository.ts": "c912c8db8abf6f9199443f8a573e70f510f536a2bff7c646a786e5530fdf944e",
-    "server/googleCalendarSync.ts": "b7b1e1bef0628cfcbef18899a9b43d7323a0a82a2b104bbed07ca398be36533a",
+    "server/googleCalendarSync.ts": "cfdf3215eb1f59f9ab19b5860ac4066067cb902b24478730832b3eaa113638b3",
+    "server/googleDeliveryPolicy.ts": "1dcc3b90cbabb72f075db04eb92e9653f3cdffbf5d166a62be0a117df89dc1c3",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
     "server/growthCaptureRepository.ts": "49b4f42e3f1dbf74032a13cd932d44275a99d691ac4fe0f00116803cb0b87b46",
     "server/growthInboxAdminApi.ts": "a48838602baab4c8eee7bb810364297758021aeee7766d025812d1ccb3a45f73",
@@ -831,11 +832,11 @@
     "server/timetablePublicSettingsRepository.ts": "4cf3c1a6e00288ab78825a928acd0e43bdb68c25ca8bbf775de71ac4da9cc54e",
     "server/viteAnalyticsPlugin.ts": "d584008a01066c095993ef8a3309e17b95177153a28a6831a0858a3c71a6d081",
     "server/viteCalendarPlugin.ts": "c2c901efe7624c99e4905eb40190ada256130843d0723cf81122b3f8d6f68123",
-    "src/AdminAcademicPauseControl.tsx": "5c59c56a05b24e6cca0dfe047d1d43a709e3215c271317edd153a0c9f298e881",
+    "src/AdminAcademicPauseControl.tsx": "62983103e12329049e9eb00a8ff304d76a1d0e4541f75f47fb441334afe7c721",
     "src/App.tsx": "b83744299b8201694f8bdeec54a4513a6f0a6a64b472f0792d3635fc77799fe8",
     "src/AppV2.tsx": "5f278a96215edbde79952a3c593ef6444ec6a1dd5ca8693dafc5b2483430b4ca",
     "src/AuthSetupPage.tsx": "12571894ddfe3d9a48214735b6b313b0c5ca84a918f1ecedb8dc8ac319ac8c33",
-    "src/ClassRepAcademicPauseControl.tsx": "0762a03d131fc860c25b59cfca73a3cb22b3a4d0cf76f6aa699df4f7e16e5317",
+    "src/ClassRepAcademicPauseControl.tsx": "c7df145986da0d11fd61ba504abe2d04a2b2d66fae8375e573b5494c80b355e0",
     "src/ClassRepCorrectionSafetyEnhancement.tsx": "47c452e9d13180c81add5950dd820a4a4ec7d4c6fc3ddb2f6aa90f93b11a8693",
     "src/FinderDemandPrompt.tsx": "3a2f62d36791dfc12157c2d710c96d1ec3bd966ae9c900df75453bb33d644a25",
     "src/FinderDiscovery.tsx": "9d5fa617a29918901ca583acd11c838b69b45f4ef8a32dfa4b7572031dabd617",
@@ -854,7 +855,7 @@
     "src/StudentOnboardingAcceleration.tsx": "5e2c825abc2bab09b9bd28376eb9e425b1abc9046c130942af48634d12114ca5",
     "src/TimetablePublicSettingsControl.tsx": "97b8064911d63fe87ee7ff592e5c16f645ca476a24130511ac507790e7dfa14c",
     "src/analytics.ts": "ba8af1702275d210610f4059b4270ef1beb69f3a5d88868e5d01aa8415d49a16",
-    "src/api/academicPauses.ts": "32a76a360e7e1cc9454d925d3efc605b6aefdf5f68b9429c6708cd7cce85a3fd",
+    "src/api/academicPauses.ts": "1aa690e478f8aec91c2b1ee83a04a2994d3dfca018c3c72da3f56ecab86ad4f8",
     "src/api/adminAnalytics.ts": "710e0885f548f6b0530278f3566cec3cdeb31961ae872033d5d683cb7f1fd84c",
     "src/api/adminSession.ts": "d56e0d6e3d2fad61b30643deaffe9e5cec533f54be40922e0ee4fb860bc8cb31",
     "src/api/calendarSubscriptions.ts": "909604ad2ad05e062e0dc1176840c03a8be6cd254479039bffa9c866297c12a5",
@@ -875,6 +876,7 @@
     "src/dashboardTheme.tsx": "a716f771cabff58f5c1e2da79282889d88bd55acb71ae860473786a87394b4c5",
     "src/dashboardThemeContract.ts": "4705d38d90f6e62273753702162c5efd20117365f53497307a8efbf691d9b3ee",
     "src/domain/academicPause.ts": "92b36b7f2ded3e83a85517fe99ee45b4bb4d7d948d1f64331432eb9480c9faab",
+    "src/domain/academicPauseDeliveryNotice.ts": "251bc6171076d5895550eb1ec7461c97cad6278f05e454c081f4de3a8ef05bcd",
     "src/domain/academicPauseLifecycle.ts": "84f8b7dab113732e669ce924f2210029d93ab18e28c983e7035ea290dcde84ce",
     "src/domain/adminAnalytics.ts": "159c54271e7b341f880661204a73a1280efd5a996ab1f7c73d2d58a5b6197cb4",
     "src/domain/analytics.ts": "46b56a9752f378105fdc2021195c9dc3daa86d7297389a5f1b5e95ec62c9748a",
@@ -936,9 +938,9 @@
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
-    "worker/googleCalendarApi.mjs": "def9a4c0d2e8ef7041d67d4eba34de469679d58312b983592650ea8d393126f4",
-    "worker/googleDelivery.mjs": "7ed1bc86961e5a05e9cd2e87296759ff932e9c58b6046674e93272abf90c362d",
-    "worker/index.mjs": "191614ff5fd17ff34c820bfa635759887293305344d4723f3594226d77abf24a",
+    "worker/googleCalendarApi.mjs": "1f3d1517166bf22e9137691824f5c7ae2ecc82472348fcce68506e8c9fd9ce05",
+    "worker/googleDelivery.mjs": "c5265b073764bed66eae887ad3dbb44fcb3b6fa9bc48e692852f27278b54c223",
+    "worker/index.mjs": "55aa61a29d14807c697cd01dac8b9ee3db293639f4b5e92d8eb47edf34965d1d",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
@@ -1226,7 +1228,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1381,7 +1388,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5097,7 +5109,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5261,7 +5278,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5432,7 +5454,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5596,7 +5623,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5761,7 +5793,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5926,7 +5963,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6090,7 +6132,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6256,7 +6303,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6420,7 +6472,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6585,7 +6642,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6678,7 +6740,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 221,
+        "line": 226,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -6705,7 +6767,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 458, "role": "dispatch" },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 221,
+          "line": 226,
           "role": "worker implementation"
         }
       ],
@@ -6732,7 +6794,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1415,
+          "line": 1453,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6987,7 +7054,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7151,7 +7223,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7591,7 +7668,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1377,
+          "line": 1409,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8026,7 +8108,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 221,
+        "line": 226,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8057,7 +8139,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 221,
+          "line": 226,
           "role": "worker implementation"
         }
       ],
@@ -8084,7 +8166,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1254,
+          "line": 1274,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8269,7 +8356,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 221,
+        "line": 226,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8296,7 +8383,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 221,
+          "line": 226,
           "role": "worker implementation"
         }
       ],
@@ -8313,7 +8400,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 618,
+          "line": 635,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 41,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8417,7 +8509,7 @@
       "currentFunctionality": "Native local disconnect; optional remote calendar deletion explicitly unavailable.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 221,
+        "line": 226,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8443,7 +8535,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 221,
+          "line": 226,
           "role": "worker implementation"
         }
       ],
@@ -8460,7 +8552,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1451,
+          "line": 1489,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8543,7 +8635,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 221,
+        "line": 226,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8565,14 +8657,14 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 221,
+          "line": 226,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 608,
+          "line": 625,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8679,7 +8771,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 608,
+          "line": 625,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

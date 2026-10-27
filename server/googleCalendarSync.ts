@@ -5,6 +5,7 @@ import {
   randomBytes,
 } from "node:crypto";
 import type { PublicTimetable } from "../src/api/pilotTypes.js";
+import { googleSubscriptionAllowed } from "./googleDeliveryPolicy.js";
 import {
   buildGoogleAuthorizationUrl,
   buildGoogleTokenExchangeBody,
@@ -76,6 +77,22 @@ const googleRevokeEndpoint = "https://oauth2.googleapis.com/revoke";
 
 function asRecord(value: unknown) {
   return value as JsonRecord;
+}
+
+function assertCloudflareDeliveryScope(
+  env: NodeJS.ProcessEnv,
+  subscription: JsonRecord,
+) {
+  if (
+    env.APP_ENV?.startsWith("cloudflare-") &&
+    !googleSubscriptionAllowed(env, subscription)
+  ) {
+    throw new PilotApiError(
+      "GOOGLE_DELIVERY_UNAVAILABLE",
+      "Google Calendar delivery is temporarily unavailable.",
+      503,
+    );
+  }
 }
 
 function requireGoogleConfig(env: NodeJS.ProcessEnv) {
@@ -633,6 +650,7 @@ export async function beginGoogleCalendarConnection(input: {
     );
   }
   assertSubscriptionOwner(subscription, input.anonymousSessionId);
+  assertCloudflareDeliveryScope(env, subscription);
   if (subscription.revoked_at) {
     throw new PilotApiError(
       "SUBSCRIPTION_REVOKED",
@@ -690,11 +708,13 @@ async function reconcileGoogleSubscription(
   if (subscription.revoked_at || subscription.status === "disconnected") {
     return { created: 0, updated: 0, deleted: 0, unchanged: 0 };
   }
+  assertCloudflareDeliveryScope(env, subscription);
 
   const connectionGeneration = Number(
     subscription.google_connection_generation ?? 0,
   );
   const assertConnection = async () => {
+    assertCloudflareDeliveryScope(env, subscription);
     const accepted = await updateGoogleSubscription({
       subscriptionId,
       connectionGeneration,
@@ -1309,6 +1329,18 @@ export async function completeGoogleCalendarConnection(input: {
     );
   }
 
+  assertCloudflareDeliveryScope(env, subscription);
+  if (
+    env.APP_ENV === "cloudflare-staging" &&
+    env.ENABLE_GOOGLE_DELIVERY !== "true" &&
+    stateRow.anonymous_session_id !== subscription.anonymous_session_id
+  ) {
+    throw new PilotApiError(
+      "GOOGLE_STATE_INVALID",
+      "Google Calendar authorization expired. Please start again.",
+      400,
+    );
+  }
   const token = await exchangeAuthorizationCode({ code: input.code, env });
   const scope = token.scope || googleCalendarScope;
   if (!scope.split(/\s+/).includes(googleCalendarScope)) {
@@ -1381,7 +1413,13 @@ export async function syncGoogleSubscriptionsForTimetable(
   if (!getPublicGoogleCalendarStatus(env).enabled) {
     return { attempted: 0, succeeded: 0, failed: 0 };
   }
-  const subscriptions = await listSyncableGoogleSubscriptions(timetableId, env);
+  const subscriptions = (
+    await listSyncableGoogleSubscriptions(timetableId, env)
+  ).filter(
+    (row) =>
+      !env.APP_ENV?.startsWith("cloudflare-") ||
+      googleSubscriptionAllowed(env, row),
+  );
   let succeeded = 0;
   let failed = 0;
   for (const subscription of subscriptions) {

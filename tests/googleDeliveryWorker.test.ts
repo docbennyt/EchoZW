@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   claim: vi.fn(),
   deliver: vi.fn(),
   sync: vi.fn(),
+  recoverOne: vi.fn(),
+  subscription: vi.fn(),
 }));
 vi.mock("../server/googleCalendarDelivery.ts", () => ({
   enqueueSubscriptionReconciliation: mocks.enqueue,
@@ -14,6 +16,11 @@ vi.mock("../server/googleCalendarDelivery.ts", () => ({
   listReadyGoogleCalendarDeliveries: mocks.ready,
   claimGoogleCalendarSubscriptionDelivery: mocks.claim,
   deliverGoogleCalendarJob: mocks.deliver,
+  recoverGoogleCalendarSubscriptionDelivery: mocks.recoverOne,
+}));
+vi.mock("../server/pilotRepository.ts", async (original) => ({
+  ...(await original<typeof import("../server/pilotRepository.ts")>()),
+  getCalendarSubscriptionById: mocks.subscription,
 }));
 vi.mock("../server/googleCalendarSync.ts", () => ({
   syncGoogleSubscription: mocks.sync,
@@ -156,6 +163,47 @@ describe("Google durable delivery Worker handoff", () => {
     });
     expect(mocks.claim).not.toHaveBeenCalled();
     expect(item.retry).toHaveBeenCalled();
+  });
+  it("confines scheduled recovery and Queue claims to the selected canary", async () => {
+    const config = {
+      ...env(),
+      ENABLE_GOOGLE_DELIVERY: "false",
+      APP_ENV: "cloudflare-staging",
+      GOOGLE_CANARY_SUBSCRIPTION_ID: id,
+      GOOGLE_CANARY_OWNER_ID: "11111111-1111-4111-8111-111111111111",
+      GOOGLE_CANARY_TIMETABLE_ID: "22222222-2222-4222-8222-222222222222",
+      GOOGLE_CANARY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
+    };
+    mocks.subscription.mockResolvedValue({
+      id,
+      provider: "google_api",
+      status: "active",
+      anonymous_session_id: config.GOOGLE_CANARY_OWNER_ID,
+      timetable_id: config.GOOGLE_CANARY_TIMETABLE_ID,
+    });
+    mocks.recoverOne.mockResolvedValue(true);
+    await scheduleGoogleDelivery(config);
+    expect(mocks.recover).not.toHaveBeenCalled();
+    expect(mocks.ready).not.toHaveBeenCalled();
+    expect(mocks.recoverOne).toHaveBeenCalledWith(id, config);
+    expect(config.PUSH_QUEUE.send).toHaveBeenCalledWith({
+      type: "google_calendar_reconcile",
+      subscriptionId: id,
+    });
+    await consumeGoogleDeliveryMessage(message(), config);
+    expect(mocks.claim).toHaveBeenCalledWith(id, 300, config);
+    mocks.claim.mockClear();
+    const foreign = message();
+    foreign.body.subscriptionId = config.GOOGLE_CANARY_OWNER_ID;
+    await consumeGoogleDeliveryMessage(foreign, config);
+    expect(mocks.claim).not.toHaveBeenCalled();
+    expect(foreign.ack).not.toHaveBeenCalled();
+    expect(foreign.retry).toHaveBeenCalled();
+    mocks.subscription.mockResolvedValue({ id, anonymous_session_id: "other" });
+    await expect(
+      enqueueNativeGoogleSync({ subscriptionId: id }, config),
+    ).rejects.toMatchObject({ code: "GOOGLE_DELIVERY_UNAVAILABLE" });
+    expect(mocks.enqueue).not.toHaveBeenCalled();
   });
   it.each([
     { lastSyncedAt: "2026-10-23T12:00:00Z", ownershipReviewCount: 1 },

@@ -925,7 +925,6 @@ const application = {
     const googleResponse = await handleGoogleCalendarRequest(request, env, {
       enqueueInitialSync: enqueueNativeGoogleSync,
       enqueueReconciliation: enqueueNativeGoogleSync,
-      deliveryEnabled: env.ENABLE_GOOGLE_DELIVERY === "true",
     });
     if (googleResponse) return googleResponse;
 

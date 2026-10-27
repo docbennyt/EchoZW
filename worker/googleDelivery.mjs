@@ -5,14 +5,31 @@ import {
   claimGoogleCalendarSubscriptionDelivery,
   deliverGoogleCalendarJob,
   listReadyGoogleCalendarDeliveries,
+  recoverGoogleCalendarSubscriptionDelivery,
 } from "../server/googleCalendarDelivery.ts";
 import { syncGoogleSubscription } from "../server/googleCalendarSync.ts";
-import { PilotApiError } from "../server/pilotRepository.ts";
+import {
+  PilotApiError,
+  getCalendarSubscriptionById,
+} from "../server/pilotRepository.ts";
+import {
+  googleCanaryScope,
+  googleDeliveryTargetAllowed,
+  googleSubscriptionAllowed,
+} from "../server/googleDeliveryPolicy.ts";
 
 const enabled = (env) => env.ENABLE_GOOGLE_DELIVERY === "true";
 
 export async function enqueueNativeGoogleSync(input, env) {
-  if (!enabled(env) || !env.PUSH_QUEUE)
+  if (
+    !googleDeliveryTargetAllowed(env, input.subscriptionId) ||
+    !env.PUSH_QUEUE ||
+    (!enabled(env) &&
+      !googleSubscriptionAllowed(
+        env,
+        (await getCalendarSubscriptionById(input.subscriptionId, env)) ?? {},
+      ))
+  )
     throw new PilotApiError(
       "GOOGLE_DELIVERY_UNAVAILABLE",
       "Google Calendar delivery is temporarily unavailable.",
@@ -41,7 +58,20 @@ export async function enqueueNativeGoogleSync(input, env) {
 }
 
 export async function scheduleGoogleDelivery(env) {
-  if (!enabled(env)) return;
+  if (!enabled(env)) {
+    const scope = googleCanaryScope(env);
+    if (!scope?.subscription) return;
+    if (!env.PUSH_QUEUE) throw new Error("GOOGLE_DELIVERY_QUEUE_MISSING");
+    if (
+      await recoverGoogleCalendarSubscriptionDelivery(scope.subscription, env)
+    ) {
+      await env.PUSH_QUEUE.send({
+        type: "google_calendar_reconcile",
+        subscriptionId: scope.subscription,
+      });
+    }
+    return;
+  }
   if (!env.PUSH_QUEUE) throw new Error("GOOGLE_DELIVERY_QUEUE_MISSING");
   await recoverGoogleCalendarDelivery(100, env);
   const ids = await listReadyGoogleCalendarDeliveries(10, env);
@@ -55,7 +85,7 @@ export async function scheduleGoogleDelivery(env) {
 
 export async function consumeGoogleDeliveryMessage(message, env) {
   if (message.body?.type !== "google_calendar_reconcile") return false;
-  if (!enabled(env)) {
+  if (!googleDeliveryTargetAllowed(env, message.body.subscriptionId)) {
     message.retry({ delaySeconds: 300 });
     return true;
   }
@@ -65,6 +95,16 @@ export async function consumeGoogleDeliveryMessage(message, env) {
     return true;
   }
   try {
+    if (
+      !enabled(env) &&
+      !googleSubscriptionAllowed(
+        env,
+        (await getCalendarSubscriptionById(id, env)) ?? {},
+      )
+    ) {
+      message.retry({ delaySeconds: 300 });
+      return true;
+    }
     const job = await claimGoogleCalendarSubscriptionDelivery(id, 300, env);
     if (!job) {
       message.ack();

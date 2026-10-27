@@ -1,4 +1,56 @@
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
+import { getCalendarSubscriptionById } from "./pilotRepository.js";
+import { googleSubscriptionAllowed } from "./googleDeliveryPolicy.js";
+
+/** Recover one authorized canary without scanning/enqueuing student subscriptions.
+ * The Queue claim still owns due-time, lease and reconnect fencing.
+ */
+export async function recoverGoogleCalendarSubscriptionDelivery(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv,
+): Promise<boolean> {
+  const raw: unknown = await getCalendarSubscriptionById(subscriptionId, env);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+  const subscription = raw as Record<string, unknown>;
+  if (!googleSubscriptionAllowed(env, subscription)) return false;
+  if (!["active", "failed", "pending"].includes(String(subscription.status)))
+    return false;
+  const client = createSupabaseAdminClient(env);
+  // Select only presence, never credential material.
+  const credential = await client
+    .from("google_calendar_credentials")
+    .select("subscription_id")
+    .eq("subscription_id", subscriptionId)
+    .maybeSingle();
+  if (credential.error) throw new Error("GOOGLE_CANARY_RECOVERY_UNAVAILABLE");
+  if (!credential.data) return false;
+  const revision = await client
+    .from("google_calendar_delivery_revisions")
+    .select("revision")
+    .eq("timetable_id", String(subscription.timetable_id))
+    .maybeSingle();
+  const job = await client
+    .from("google_calendar_delivery_jobs")
+    .select(
+      "desired_revision,successful_revision,requested_generation,successful_generation,available_at,reconnect_required_at",
+    )
+    .eq("subscription_id", subscriptionId)
+    .maybeSingle();
+  if (revision.error || job.error || !revision.data)
+    throw new Error("GOOGLE_CANARY_RECOVERY_UNAVAILABLE");
+  const desired = BigInt(String(revision.data.revision));
+  if (!job.data || BigInt(String(job.data.desired_revision)) < desired) {
+    return enqueueSubscriptionReconciliation(subscriptionId, env);
+  }
+  const row = job.data;
+  return (
+    !row.reconnect_required_at &&
+    Date.parse(String(row.available_at)) <= Date.now() &&
+    (BigInt(String(row.successful_revision)) < desired ||
+      BigInt(String(row.successful_generation)) <
+        BigInt(String(row.requested_generation)))
+  );
+}
 
 export type GoogleCalendarDeliveryJob = {
   subscriptionId: string;

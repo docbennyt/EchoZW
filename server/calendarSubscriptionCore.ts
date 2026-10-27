@@ -11,6 +11,7 @@ import {
 } from "./pilotRepository.js";
 import { getPublicGoogleCalendarStatus } from "./googleCalendarSync.js";
 import { updateGoogleSubscription } from "./googleCalendarRepository.js";
+import { googleEnrollmentAllowed } from "./googleDeliveryPolicy.js";
 
 export async function createNativeFeedSubscription(
   input: CreateSubscriptionInput,
@@ -35,7 +36,11 @@ export async function createNativeFeedSubscription(
   }
   if (
     input.provider === "google_api" &&
-    (context.env.ENABLE_GOOGLE_DELIVERY !== "true" ||
+    (!googleEnrollmentAllowed(
+      context.env,
+      context.anonymousSessionId,
+      input.timetableId,
+    ) ||
       !getPublicGoogleCalendarStatus(context.env).enabled)
   ) {
     throw new PilotApiError(

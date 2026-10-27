@@ -20,6 +20,7 @@ import type {
 } from "./api/pilotTypes";
 import "./classRepAcademicPauseControl.css";
 import { pauseLifecycle } from "./domain/academicPauseLifecycle";
+import { academicPauseDeliveryNotice } from "./domain/academicPauseDeliveryNotice";
 
 const reasons: Array<{ value: AcademicPauseReason; label: string }> = [
   { value: "sim_break", label: "Sim Break" },
@@ -241,11 +242,9 @@ export function AdminAcademicPauseControl({
                           onClick={() => {
                             setBusy(pause.id);
                             void deactivateBroadPause(accessToken, pause.id)
-                              .then(async () => {
+                              .then(async (result) => {
                                 setMessage(
-                                  group.status === "scheduled"
-                                    ? `Cancelled scheduled pause — ${pause.label}.`
-                                    : `Resumed early — ${pause.label}.`,
+                                  `${group.status === "scheduled" ? `Cancelled scheduled pause — ${pause.label}.` : `Resumed early — ${pause.label}.`} ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
                                 );
                                 await refresh();
                               })
@@ -468,7 +467,9 @@ export function AdminAcademicPauseControl({
                       setBusy("save");
                       void createBroadPause(accessToken, input())
                         .then(async (result) => {
-                          setMessage(`Paused — ${impactText(result.impact)}`);
+                          setMessage(
+                            `Paused — ${impactText(result.impact)} ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
+                          );
                           setOpen(false);
                           setPreview(null);
                           setLabel("");

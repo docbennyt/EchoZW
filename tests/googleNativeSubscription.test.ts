@@ -79,4 +79,26 @@ describe("native pending Google subscription creation", () => {
     expect(result.feedUrl).toBeUndefined();
     expect(result.downloadUrl).toBeUndefined();
   });
+  it("allows only the designated owner/timetable to prepare a pending canary while global delivery stays off", async () => {
+    const owner = "33333333-3333-4333-8333-333333333333";
+    const bindings = {
+      ...env,
+      ENABLE_GOOGLE_DELIVERY: "false",
+      APP_ENV: "cloudflare-staging",
+      GOOGLE_CANARY_OWNER_ID: owner,
+      GOOGLE_CANARY_TIMETABLE_ID: input.timetableId,
+      GOOGLE_CANARY_EXPIRES_AT: new Date(Date.now() + 3600000).toISOString(),
+    };
+    await createNativeFeedSubscription(input, {
+      ...context,
+      anonymousSessionId: owner,
+      env: bindings,
+    });
+    expect(repo.createCalendarSubscriptionRecord).toHaveBeenCalledOnce();
+    repo.createCalendarSubscriptionRecord.mockClear();
+    await expect(
+      createNativeFeedSubscription(input, { ...context, env: bindings }),
+    ).rejects.toMatchObject({ code: "GOOGLE_NOT_CONFIGURED" });
+    expect(repo.createCalendarSubscriptionRecord).not.toHaveBeenCalled();
+  });
 });

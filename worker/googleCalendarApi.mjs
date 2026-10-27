@@ -21,6 +21,10 @@ import {
 } from "../server/supabase/auth.ts";
 import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
 import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
+import {
+  googleCanaryScope,
+  googleSubscriptionAllowed,
+} from "../server/googleDeliveryPolicy.ts";
 
 const disconnectSchema = z
   .object({
@@ -192,6 +196,7 @@ async function targetedSync(request, env, timetableId, options) {
   }
   if (
     !options.deliveryEnabled ||
+    !googleSubscriptionAllowed(env, subscription) ||
     typeof options.enqueueReconciliation !== "function"
   ) {
     throw new PilotApiError(
@@ -222,7 +227,9 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
   options = {
     ...options,
     deliveryEnabled:
-      options.deliveryEnabled ?? env.ENABLE_GOOGLE_DELIVERY === "true",
+      options.deliveryEnabled ??
+      (env.ENABLE_GOOGLE_DELIVERY === "true" ||
+        Boolean(googleCanaryScope(env)?.subscription)),
   };
   const url = new URL(request.url);
   const route = url.pathname.match(
@@ -262,9 +269,13 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
       );
     if (route === "status") {
       const status = getPublicGoogleCalendarStatus(env);
+      const scope = googleCanaryScope(env);
       return respond({
         ...status,
-        enabled: status.enabled && options.deliveryEnabled,
+        enabled:
+          status.enabled &&
+          ((options.deliveryEnabled && env.ENABLE_GOOGLE_DELIVERY === "true") ||
+            Boolean(scope && sessionOwner(request) === scope.owner)),
       });
     }
     if (route === "connect") {
@@ -279,6 +290,19 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
         z.string().uuid(),
         url.searchParams.get("subscriptionId"),
       );
+      if (
+        env.ENABLE_GOOGLE_DELIVERY !== "true" &&
+        !googleSubscriptionAllowed(
+          env,
+          (await getCalendarSubscriptionById(subscriptionId, env)) ?? {},
+        )
+      ) {
+        throw new PilotApiError(
+          "GOOGLE_INITIAL_SYNC_UNAVAILABLE",
+          "Google Calendar connection is temporarily unavailable.",
+          503,
+        );
+      }
       const location = await beginGoogleCalendarConnection({
         subscriptionId,
         anonymousSessionId: sessionOwner(request),
@@ -299,7 +323,14 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
     // Redirects use configured application origin (or the actual request origin),
     // never forwarded host headers or provider-controlled redirect parameters.
     const publicOrigin = getPublicAppUrl(
-      { ...env, PUBLIC_APP_URL: env.PUBLIC_APP_URL ?? url.origin },
+      {
+        ...env,
+        PUBLIC_APP_URL:
+          env.APP_ENV === "cloudflare-staging" &&
+          env.STAGING_ORIGIN === url.origin
+            ? url.origin
+            : (env.PUBLIC_APP_URL ?? url.origin),
+      },
       "production",
     );
     const code = url.searchParams.get("code");
