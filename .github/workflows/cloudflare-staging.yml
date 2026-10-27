@@ -131,12 +131,15 @@ jobs:
         id: deploy
         run: |
           set -o pipefail
-          npx wrangler@4.147.0 deploy --config staging-deploy.json --env staging --no-bundle --var SOURCE_SHA:$CANDIDATE_SHA --var SUPABASE_URL:$SUPABASE_URL --var VITE_SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY | tee /tmp/reviewed-deploy.log
+          trap 'rm -f staging-canary-secrets.json' EXIT
+          node scripts/prepare-staging-canary-secrets.mjs
+          npx wrangler@4.147.0 deploy --config staging-deploy.json --env staging --no-bundle --secrets-file staging-canary-secrets.json --var SOURCE_SHA:$CANDIDATE_SHA --var SUPABASE_URL:$SUPABASE_URL --var VITE_SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY | tee /tmp/reviewed-deploy.log
           node scripts/verify-active-worker-deployment.mjs
         env:
           CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CALENDERZW_STAGING_GOOGLE_CANARY: ${{ secrets.CALENDERZW_STAGING_GOOGLE_CANARY }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - name: Verify deployed identity before acceptance
