@@ -303,6 +303,8 @@ export async function buildInventory(
   const bridge = /return\s+proxyLegacyBackend\(/.test(worker.text);
   const unavailable = worker.text.includes("EDGE_ROUTE_UNAVAILABLE");
   const workerRoutes = [
+    ["GET", "/api/admin/analytics/metrics", "handleNativeAdminAnalytics"],
+    ["GET", "/api/admin/analytics/overview", "handleNativeAdminAnalytics"],
     ...[
       "institutions",
       "programmes",
@@ -801,6 +803,11 @@ export async function buildInventory(
         item.method === "GET"
           ? "Native staff-manager read reuses existing staff listing and assignment projection. Source tests cover RBAC, no-store, redaction and no provisioning writes; exact-candidate deployed acceptance pending."
           : "Founder-authorized native invitation reuses existing Supabase Auth enrollment, protected membership and audit. Existing authorized non-founder account granted Admin through deployed c807 UI; separate dedicated-account sign-in and protected reads remain unverified.";
+    }
+    if (nativeSpec?.[2] === "handleNativeAdminAnalytics") {
+      contractTests.push("tests/nativeAdminAnalytics.test.ts");
+      remainingBlocker =
+        "Native operational-Admin metrics and overview reuse existing definitions, validated filters and repository with explicit request bindings. Source tests cover authentication/authorization denial, no-store, invalid filters, redacted database failure and subsequent recovery. Authenticated deployed business acceptance remains pending.";
     }
     if (nativeSpec?.[2] === "handleNativeAdminEntities") {
       contractTests.push(

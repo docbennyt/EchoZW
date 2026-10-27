@@ -935,12 +935,13 @@
     "src/utils/supabase/runtimeConfig.ts": "1c5883d82f77b87aa55838c83dc2ebb7ea1d6a48faf91b64d0c7c95814f32cc4",
     "src/utils/supabase/server.ts": "d51672809f7030b84e135be92188c943973027af203b2fbd55aed32895b6113a",
     "src/vite-env.d.ts": "67ba1f5b1f143fc83aaae9454c491d181061a1e1feff96966887dc45c117d694",
+    "worker/adminAnalytics.mjs": "1f963b00f579430c74dc2a8fdec661cd2e4e020f00270ac00fc4af222eabeef0",
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
     "worker/googleCalendarApi.mjs": "1f3d1517166bf22e9137691824f5c7ae2ecc82472348fcce68506e8c9fd9ce05",
     "worker/googleDelivery.mjs": "c5265b073764bed66eae887ad3dbb44fcb3b6fa9bc48e692852f27278b54c223",
-    "worker/index.mjs": "55aa61a29d14807c697cd01dac8b9ee3db293639f4b5e92d8eb47edf34965d1d",
+    "worker/index.mjs": "9227e279f5d2cf2b26a5931f10cd4d12dcd84ec666acde5e98a4808e8882c5c3",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
@@ -948,12 +949,12 @@
   "counts": {
     "httpRoutes": 103,
     "nodeDispatchRoutes": 101,
-    "nativeImplementedNotLiveProven": 68,
+    "nativeImplementedNotLiveProven": 70,
     "nativeLiveProven": 0,
     "nativeIncomplete": 2,
     "intentionallyDisabled": 0,
     "bridged": 0,
-    "unavailable": 33
+    "unavailable": 31
   },
   "routes": [
     {
@@ -971,7 +972,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 186,
+        "line": 187,
         "role": "worker implementation"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -984,7 +985,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 186,
+          "line": 187,
           "role": "worker implementation"
         }
       ],
@@ -1021,7 +1022,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -1039,7 +1040,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -1071,7 +1072,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1096,7 +1097,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -1166,7 +1167,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1191,7 +1192,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -1326,7 +1327,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1351,7 +1352,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -1473,7 +1474,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1497,7 +1498,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -1572,7 +1573,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1589,7 +1590,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 317, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -1791,19 +1792,23 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/adminAnalytics.mjs",
+        "line": 26,
+        "role": "worker implementation"
       },
-      "contractTests": ["tests/adminAnalyticsApi.test.ts"],
+      "contractTests": [
+        "tests/adminAnalyticsApi.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminAnalytics.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin metrics and overview reuse existing definitions, validated filters and repository with explicit request bindings. Source tests cover authentication/authorization denial, no-store, invalid filters, redacted database failure and subsequent recovery. Authenticated deployed business acceptance remains pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         {
@@ -1812,9 +1817,9 @@
           "role": "dispatch"
         },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/adminAnalytics.mjs",
+          "line": 26,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -1879,22 +1884,24 @@
         "node:async_hooks"
       ],
       "backgroundDependencies": [],
-      "cloudflareStatus": "unavailable",
-      "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
-        "file": "worker/index.mjs",
-        "line": 173,
-        "role": "503 unavailable response"
+        "file": "worker/adminAnalytics.mjs",
+        "line": 26,
+        "role": "worker implementation"
       },
       "contractTests": [
         "tests/adminAnalyticsApi.test.ts",
-        "tests/adminScopedRoutes.test.ts"
+        "tests/adminScopedRoutes.test.ts",
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/nativeAdminAnalytics.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
       "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
-      "remainingBlocker": "Worker 503 EDGE_ROUTE_UNAVAILABLE; implement service parity and prove deployed behavior.",
+      "remainingBlocker": "Native operational-Admin metrics and overview reuse existing definitions, validated filters and repository with explicit request bindings. Source tests cover authentication/authorization denial, no-store, invalid filters, redacted database failure and subsequent recovery. Authenticated deployed business acceptance remains pending.",
       "productionCriticality": "P1",
       "sourceEvidence": [
         {
@@ -1903,9 +1910,9 @@
           "role": "dispatch"
         },
         {
-          "file": "worker/index.mjs",
-          "line": 173,
-          "role": "503 unavailable response"
+          "file": "worker/adminAnalytics.mjs",
+          "line": 26,
+          "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
@@ -1964,7 +1971,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1981,7 +1988,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 283, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -2177,7 +2184,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2195,7 +2202,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -2249,7 +2256,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2267,7 +2274,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -2317,7 +2324,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -2335,7 +2342,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -2385,7 +2392,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2405,7 +2412,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 217, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -2601,7 +2608,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2620,7 +2627,7 @@
         { "file": "server/adminApi.ts", "line": 82, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -2698,7 +2705,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2715,7 +2722,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 249, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -2915,7 +2922,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2940,7 +2947,7 @@
         { "file": "server/adminApi.ts", "line": 64, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -3027,7 +3034,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3045,7 +3052,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -3106,7 +3113,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3124,7 +3131,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -3186,7 +3193,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3204,7 +3211,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -3264,7 +3271,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -3282,7 +3289,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -3948,7 +3955,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -3969,7 +3976,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4069,7 +4076,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4090,7 +4097,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4190,7 +4197,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4211,7 +4218,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4311,7 +4318,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4332,7 +4339,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4417,7 +4424,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4438,7 +4445,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4508,7 +4515,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4529,7 +4536,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4609,7 +4616,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -4630,7 +4637,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -4678,7 +4685,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 461,
+        "line": 462,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -4705,7 +4712,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 355, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 461,
+          "line": 462,
           "role": "worker implementation"
         }
       ],
@@ -6879,7 +6886,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6913,7 +6920,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -6983,7 +6990,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7017,7 +7024,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -7152,7 +7159,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7186,7 +7193,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -7308,7 +7315,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 585,
+        "line": 586,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7342,7 +7349,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 585,
+          "line": 586,
           "role": "worker implementation"
         }
       ],
@@ -7419,7 +7426,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 687,
+        "line": 688,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7450,7 +7457,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 687,
+          "line": 688,
           "role": "worker implementation"
         }
       ],
@@ -7507,7 +7514,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 687,
+        "line": 688,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7538,7 +7545,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 687,
+          "line": 688,
           "role": "worker implementation"
         }
       ],
@@ -7997,7 +8004,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/analyticsApi.test.ts"],
@@ -8011,7 +8018,7 @@
         { "file": "server/analyticsApi.ts", "line": 184, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -8288,7 +8295,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -8306,7 +8313,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -8718,7 +8725,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 738,
+        "line": 739,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8749,7 +8756,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 738,
+          "line": 739,
           "role": "worker implementation"
         }
       ],
@@ -8958,7 +8965,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 841,
+        "line": 842,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8974,7 +8981,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 841,
+          "line": 842,
           "role": "worker implementation"
         }
       ],
@@ -9011,7 +9018,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 896,
+        "line": 897,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9027,7 +9034,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 896, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 897, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9070,7 +9077,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 904,
+        "line": 905,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9087,7 +9094,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 904, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 905, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9145,7 +9152,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 200,
+        "line": 201,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9163,7 +9170,7 @@
         { "file": "server/healthApi.ts", "line": 112, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 200,
+          "line": 201,
           "role": "worker implementation"
         }
       ],
@@ -9221,7 +9228,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": ["tests/sourceSnapshotApi.test.ts"],
@@ -9239,7 +9246,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9314,7 +9321,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9328,7 +9335,7 @@
         { "file": "server/paymentApi.ts", "line": 191, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9376,7 +9383,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9390,7 +9397,7 @@
         { "file": "server/paymentApi.ts", "line": 199, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9473,7 +9480,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9487,7 +9494,7 @@
         { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9570,7 +9577,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9584,7 +9591,7 @@
         { "file": "server/paymentApi.ts", "line": 348, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9667,7 +9674,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9681,7 +9688,7 @@
         { "file": "server/paymentApi.ts", "line": 313, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9754,7 +9761,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9772,7 +9779,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9828,7 +9835,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9846,7 +9853,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9907,7 +9914,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -9925,7 +9932,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -9986,7 +9993,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -10004,7 +10011,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -10065,7 +10072,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -10083,7 +10090,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -10141,7 +10148,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [],
@@ -10159,7 +10166,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -10209,7 +10216,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 422,
+        "line": 423,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10235,7 +10242,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 422,
+          "line": 423,
           "role": "worker implementation"
         }
       ],
@@ -10320,7 +10327,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 422,
+        "line": 423,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10346,7 +10353,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 422,
+          "line": 423,
           "role": "worker implementation"
         }
       ],
@@ -10450,7 +10457,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 338,
+        "line": 339,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10481,7 +10488,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 338,
+          "line": 339,
           "role": "worker implementation"
         }
       ],
@@ -10620,7 +10627,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 338,
+        "line": 339,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10651,7 +10658,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 338,
+          "line": 339,
           "role": "worker implementation"
         }
       ],
@@ -10793,7 +10800,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 338,
+        "line": 339,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10835,7 +10842,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 338,
+          "line": 339,
           "role": "worker implementation"
         }
       ],
@@ -10993,7 +11000,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 338,
+        "line": 339,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -11035,7 +11042,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 338,
+          "line": 339,
           "role": "worker implementation"
         }
       ],
@@ -11177,7 +11184,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 896,
+        "line": 897,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -11193,7 +11200,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 896, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 897, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -11218,7 +11225,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 210,
+        "line": 211,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -11242,7 +11249,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 210,
+          "line": 211,
           "role": "worker implementation"
         }
       ],
@@ -11301,7 +11308,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -11321,7 +11328,7 @@
         { "file": "server/seoPublic.ts", "line": 77, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
@@ -11379,7 +11386,7 @@
       "currentFunctionality": "Unsupported in Worker; explicit service unavailable.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 173,
+        "line": 174,
         "role": "503 unavailable response"
       },
       "contractTests": [
@@ -11400,7 +11407,7 @@
         { "file": "server/seoPublic.ts", "line": 87, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 173,
+          "line": 174,
           "role": "503 unavailable response"
         }
       ],
