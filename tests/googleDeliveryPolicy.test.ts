@@ -108,72 +108,57 @@ const recovery = () => ({
 });
 
 describe("single-subscription recovery policy", () => {
-  it("permits one existing active account, never new enrollments", () => {
+  it("only permits an active matching owner and subscription", () => {
     const bindings = recovery();
     const active = { ...row(), status: "active" };
-    expect(googleRecoveryScope(bindings)).toMatchObject({
-      owner,
-      timetable,
-      subscription,
-    });
+    const expected = { owner, timetable, subscription };
+    expect(googleRecoveryScope(bindings)).toMatchObject(expected);
     expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(true);
     expect(googleDeliveryTargetAllowed(bindings, owner)).toBe(false);
     expect(googleDeliveryTargetAllowed({}, undefined)).toBe(false);
     expect(googleSubscriptionAllowed(bindings, active)).toBe(true);
     expect(googleEnrollmentAllowed(bindings, owner, timetable)).toBe(false);
-    for (const field of [
-      "id",
-      "anonymous_session_id",
-      "timetable_id",
-      "provider",
-    ]) {
-      expect(
-        googleSubscriptionAllowed(bindings, {
-          ...active,
-          [field]: "different",
-        }),
-      ).toBe(false);
+    const fields = ["id", "anonymous_session_id", "timetable_id", "provider"];
+    for (const field of fields) {
+      const foreign = { ...active, [field]: "different" };
+      expect(googleSubscriptionAllowed(bindings, foreign)).toBe(false);
     }
-    for (const patch of [
-      { status: "failed" },
-      { status: "disconnected" },
-      { revoked_at: "2026-10-28T00:00:00Z" },
-    ]) {
-      expect(
-        googleSubscriptionAllowed(bindings, { ...active, ...patch }),
-      ).toBe(false);
-    }
+    expect(googleSubscriptionAllowed(bindings, row())).toBe(false);
+    const failed = { ...active, status: "failed" };
+    const revoked = { ...active, revoked_at: "2026-10-28" };
+    expect(googleSubscriptionAllowed(bindings, failed)).toBe(false);
+    expect(googleSubscriptionAllowed(bindings, revoked)).toBe(false);
   });
 
-  it("rejects invalid, expired, and cross-release scope", () => {
+  it("rejects expired, invalid and cross-release recovery scopes", () => {
     const good = recovery();
     const payload = JSON.parse(good.GOOGLE_RECOVERY_CANARY);
     const secret = (patch: Record<string, unknown>) => ({
       GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, ...patch }),
     });
-    for (const override of [
+    const expired = new Date(0).toISOString();
+    const tooLong = new Date(Date.now() + 172800000).toISOString();
+    const invalid = [
       { APP_ENV: "production" },
       { SOURCE_SHA: "b".repeat(40) },
-      { ENABLE_GOOGLE_DELIVERY: "true" },
       { GOOGLE_RECOVERY_CANARY: "not-json" },
       secret({ subscriptionId: [subscription] }),
       secret({ ownerId: "*" }),
       secret({ candidateSha: "b".repeat(40) }),
-      secret({ expiresAt: new Date(0).toISOString() }),
-      secret({
-        expiresAt: new Date(Date.now() + 48 * 3600000).toISOString(),
-      }),
+      secret({ expiresAt: expired }),
+      secret({ expiresAt: tooLong }),
       secret({ mode: "preview" }),
       secret({ extra: "unsafe" }),
-    ]) {
+    ];
+    for (const override of invalid) {
       const bindings = { ...good, ...override };
       expect(googleRecoveryScope(bindings)).toBeNull();
-      if (bindings.ENABLE_GOOGLE_DELIVERY !== "true") {
-        expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(false);
-        expect(
-          googleSubscriptionAllowed(bindings, { ...row(), status: "active" }),
-        ).toBe(false);
-      }
+      expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(false);
+      const active = { ...row(), status: "active" };
+      expect(googleSubscriptionAllowed(bindings, active)).toBe(false);
     }
+    expect(
+      googleRecoveryScope({ ...good, ENABLE_GOOGLE_DELIVERY: "true" }),
+    ).toBeNull();
   });
 });
