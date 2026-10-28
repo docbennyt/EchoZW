@@ -92,8 +92,9 @@ vi.mock("../server/academicPauseCore.ts", async (importOriginal) => {
   };
 });
 vi.mock("../server/googleCalendarDelivery.ts", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("../server/googleCalendarDelivery.ts")>();
+  const original = await importOriginal<
+    typeof import("../server/googleCalendarDelivery.ts")
+  >();
   return {
     ...original,
     recoverGoogleCalendarDelivery: vi.fn(async () => {
