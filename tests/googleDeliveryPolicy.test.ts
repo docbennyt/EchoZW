@@ -2,6 +2,8 @@
 import { describe, expect, it } from "vitest";
 import {
   googleCanaryScope,
+  googleRecoveryScope,
+  googleDeliveryTargetAllowed,
   googleEnrollmentAllowed,
   googleSubscriptionAllowed,
 } from "../server/googleDeliveryPolicy";
@@ -87,5 +89,76 @@ describe("isolated staging Google delivery policy", () => {
     ).toBe(true);
     expect(googleEnrollmentAllowed({}, owner, timetable)).toBe(false);
     expect(googleSubscriptionAllowed({}, row())).toBe(false);
+  });
+});
+
+const candidateSha = "a".repeat(40);
+const recovery = () => ({
+  APP_ENV: "cloudflare-staging",
+  ENABLE_GOOGLE_DELIVERY: "false",
+  SOURCE_SHA: candidateSha,
+  GOOGLE_RECOVERY_CANARY: JSON.stringify({
+    candidateSha,
+    ownerId: owner,
+    timetableId: timetable,
+    subscriptionId: subscription,
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    mode: "deliver",
+  }),
+});
+
+describe("scoped Google recovery for an existing connected student", () => {
+  it("limits provider work to one exact existing active connection without enabling enrollment", () => {
+    const bindings = recovery();
+    expect(googleRecoveryScope(bindings)).toMatchObject({
+      owner,
+      timetable,
+      subscription,
+    });
+    expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(true);
+    expect(googleDeliveryTargetAllowed(bindings, owner)).toBe(false);
+    expect(googleSubscriptionAllowed(bindings, { ...row(), status: "active" })).toBe(true);
+    expect(googleEnrollmentAllowed(bindings, owner, timetable)).toBe(false);
+    for (const field of ["id", "anonymous_session_id", "timetable_id", "provider"]) {
+      expect(
+        googleSubscriptionAllowed(bindings, {
+          ...row(),
+          status: "active",
+          [field]: "different",
+        }),
+      ).toBe(false);
+    }
+    for (const patch of [
+      { status: "failed" },
+      { status: "disconnected" },
+      { revoked_at: "2026-10-28T00:00:00Z" },
+    ]) {
+      expect(googleSubscriptionAllowed(bindings, { ...row(), status: "active", ...patch })).toBe(false);
+    }
+  });
+
+  it("fails closed for production, mismatched release, expired scope and invalid authorization", () => {
+    const good = recovery();
+    const payload = JSON.parse(good.GOOGLE_RECOVERY_CANARY);
+    for (const override of [
+      { APP_ENV: "production" },
+      { SOURCE_SHA: "b".repeat(40) },
+      { ENABLE_GOOGLE_DELIVERY: "true" },
+      { GOOGLE_RECOVERY_CANARY: "not-json" },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, subscriptionId: [subscription] }) },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, ownerId: "*" }) },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, candidateSha: "b".repeat(40) }) },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, expiresAt: new Date(0).toISOString() }) },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, expiresAt: new Date(Date.now() + 48 * 3600000).toISOString() }) },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, mode: "preview" }) },
+      { GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, extra: "unsafe" }) },
+    ]) {
+      const bindings = { ...good, ...override };
+      expect(googleRecoveryScope(bindings)).toBeNull();
+      if (bindings.ENABLE_GOOGLE_DELIVERY !== "true") {
+        expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(false);
+        expect(googleSubscriptionAllowed(bindings, { ...row(), status: "active" })).toBe(false);
+      }
+    }
   });
 });
