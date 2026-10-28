@@ -15,10 +15,7 @@ const changedSources = Object.keys(expected.sourceSnapshot).filter(
   (file) => inventory.sourceSnapshot?.[file] !== expected.sourceSnapshot[file],
 );
 if (JSON.stringify(inventory) !== JSON.stringify(expected)) {
-  const changedKeys = Object.keys(expected).filter(
-    (key) => JSON.stringify(inventory[key]) !== JSON.stringify(expected[key]),
-  );
-  const differentRoutes = expected.routes.flatMap((route, index) => {
+  const changes = expected.routes.flatMap((route, index) => {
     const previous = inventory.routes[index] ?? {};
     const fields = Object.keys(route).filter(
       (key) => JSON.stringify(route[key]) !== JSON.stringify(previous[key]),
@@ -26,21 +23,15 @@ if (JSON.stringify(inventory) !== JSON.stringify(expected)) {
     return fields.length
       ? [
           {
-            route: route.method + " " + route.path,
-            fields,
-            previous,
-            generated: route,
+            index,
+            values: Object.fromEntries(
+              fields.map((field) => [field, route[field]]),
+            ),
           },
         ]
       : [];
   });
-  console.error(
-    "Route inventory drift diagnostics:",
-    JSON.stringify({
-      changedKeys,
-      differentRoutes: differentRoutes.slice(0, 8),
-    }).slice(0, 22000),
-  );
+  console.error("DRIFT_PATCH_JSON=" + JSON.stringify(changes));
 }
 assert(
   JSON.stringify(inventory) === JSON.stringify(expected),
