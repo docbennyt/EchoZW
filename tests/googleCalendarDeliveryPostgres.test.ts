@@ -135,7 +135,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
       await db.exec(
         await readFile(
           new URL(
-            "../supabase/migrations/20261028182029_scoped_google_calendar_recovery.sql",
+            "../supabase/migrations/20261028183415_scoped_google_calendar_recovery.sql",
             import.meta.url,
           ),
           "utf8",
