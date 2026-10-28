@@ -26,6 +26,62 @@ export function googleCanaryScope(env: Bindings) {
   return { owner, timetable, subscription, expires };
 }
 
+/**
+ * Explicit one-subscription recovery for already-connected accounts.
+ * Staging-only, release-pinned and short-lived; never enables enrollment or
+ * removes the global production delivery gate.
+ */
+export function googleRecoveryScope(env: Bindings) {
+  const raw = env.GOOGLE_RECOVERY_CANARY;
+  if (
+    env.APP_ENV !== "cloudflare-staging" ||
+    env.ENABLE_GOOGLE_DELIVERY === "true" ||
+    typeof raw !== "string" ||
+    raw.length > 1024
+  ) return null;
+  try {
+    const scope = JSON.parse(raw);
+    const keys = [
+      "candidateSha",
+      "ownerId",
+      "timetableId",
+      "subscriptionId",
+      "expiresAt",
+      "mode",
+    ];
+    if (
+      !scope ||
+      Array.isArray(scope) ||
+      typeof scope !== "object" ||
+      Object.keys(scope).length !== keys.length ||
+      Object.keys(scope).some((key) => !keys.includes(key))
+    ) return null;
+    const expires = Date.parse(scope.expiresAt);
+    const remaining = expires - Date.now();
+    if (
+      scope.mode !== "deliver" ||
+      typeof scope.candidateSha !== "string" ||
+      !/^[a-f0-9]{40}$/.test(scope.candidateSha) ||
+      scope.candidateSha !== env.SOURCE_SHA ||
+      !uuid(scope.ownerId) ||
+      !uuid(scope.timetableId) ||
+      !uuid(scope.subscriptionId) ||
+      typeof scope.expiresAt !== "string" ||
+      !Number.isFinite(remaining) ||
+      remaining <= 0 ||
+      remaining > 86400000
+    ) return null;
+    return {
+      owner: scope.ownerId as string,
+      timetable: scope.timetableId as string,
+      subscription: scope.subscriptionId as string,
+      expires,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function googleEnrollmentAllowed(
   env: Bindings,
   owner: unknown,
@@ -40,12 +96,14 @@ export function googleEnrollmentAllowed(
 
 export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
-  const scope = googleCanaryScope(env);
+  const qa = googleCanaryScope(env);
+  const recovery = googleRecoveryScope(env);
+  const matches = (scope: ReturnType<typeof googleCanaryScope>) =>
+    scope?.subscription === row.id &&
+    scope.owner === row.anonymous_session_id &&
+    scope.timetable === row.timetable_id;
   return Boolean(
-    scope?.subscription &&
-    row.id === scope.subscription &&
-    row.anonymous_session_id === scope.owner &&
-    row.timetable_id === scope.timetable &&
+    (matches(qa) || (matches(recovery) && row.status === "active")) &&
     row.provider === "google_api" &&
     !row.revoked_at &&
     row.status !== "disconnected",
@@ -54,6 +112,7 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
 
 export function googleDeliveryTargetAllowed(env: Bindings, id: unknown) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
-  const scope = googleCanaryScope(env);
-  return Boolean(scope?.subscription && id === scope.subscription);
+  return Boolean(
+    (googleRecoveryScope(env)?.subscription ?? googleCanaryScope(env)?.subscription) === id,
+  );
 }
