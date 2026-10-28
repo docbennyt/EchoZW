@@ -57,7 +57,7 @@ export function googleRecoveryScope(env: Bindings) {
       Object.keys(scope).length !== keys.length ||
       Object.keys(scope).some((key) => !keys.includes(key))
     )
-    return null;
+      return null;
     const expires = Date.parse(scope.expiresAt);
     const remaining = expires - Date.now();
     if (
@@ -73,7 +73,7 @@ export function googleRecoveryScope(env: Bindings) {
       remaining <= 0 ||
       remaining > 86400000
     )
-    return null;
+      return null;
     return {
       owner: scope.ownerId as string,
       timetable: scope.timetableId as string,
