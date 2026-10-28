@@ -941,7 +941,7 @@
     "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
     "worker/googleCalendarApi.mjs": "1f3d1517166bf22e9137691824f5c7ae2ecc82472348fcce68506e8c9fd9ce05",
     "worker/googleDelivery.mjs": "c5265b073764bed66eae887ad3dbb44fcb3b6fa9bc48e692852f27278b54c223",
-    "worker/index.mjs": "9227e279f5d2cf2b26a5931f10cd4d12dcd84ec666acde5e98a4808e8882c5c3",
+    "worker/index.mjs": "70210a571fd9be62090f4e9b71eadd506f49551c1c77c59dc9a64e0b3b88e226",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
