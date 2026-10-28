@@ -1,0 +1,106 @@
+name: Cloudflare Google Recovery Operations
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Exact reviewed application SHA already deployed on staging
+        required: true
+        type: string
+      pull_request:
+        description: Reviewed application pull request
+        required: true
+        type: string
+      deployment_run:
+        description: Successful protected staging deployment run
+        required: true
+        type: string
+      mode:
+        description: Explicit operation; preview and verify never authorize delivery
+        required: true
+        type: choice
+        options: [preflight, preview, verify, canary, disable]
+        default: preview
+      selection:
+        description: Zero-based ordinal in the private operator plan; no student IDs
+        required: true
+        type: string
+        default: "0"
+
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: cloudflare-staging
+  cancel-in-progress: false
+
+jobs:
+  authorize:
+    if: github.ref == 'refs/heads/Calender'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.authorize.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify existing exact application approval and CI
+        id: authorize
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+
+  operate:
+    needs: authorize
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: cloudflare-staging
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - name: Recheck exact approval after environment policy
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+      - name: Recover reviewed deployment provenance
+        id: provenance
+        run: node scripts/recover-reviewed-worker.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          DEPLOYMENT_RUN: ${{ inputs.deployment_run }}
+      - name: Verify active version through Cloudflare API
+        run: node scripts/verify-active-worker-deployment.mjs
+        env:
+          EXPECTED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Verify public release before administrative authentication
+        run: node scripts/verify-staging-identity.mjs
+        env:
+          EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
+          EXPECTED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
+      - name: Run explicit bounded operation with redacted results
+        run: node scripts/recover-hit-google.mjs
+        env:
+          EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
+          EXPECTED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
+          RECOVERY_MODE: ${{ inputs.mode }}
+          RECOVERY_INDEX: ${{ inputs.selection }}
+          RECOVERY_PLAN: ${{ secrets.CALENDERZW_STAGING_GOOGLE_RECOVERY }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          CALENDERZW_STAGING_ADMIN_EMAIL: ${{ secrets.CALENDERZW_STAGING_ADMIN_EMAIL }}
+          CALENDERZW_STAGING_ADMIN_PASSWORD: ${{ secrets.CALENDERZW_STAGING_ADMIN_PASSWORD }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
