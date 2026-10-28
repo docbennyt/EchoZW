@@ -14,6 +14,27 @@ const expected = await buildInventory(inventory);
 const changedSources = Object.keys(expected.sourceSnapshot).filter(
   (file) => inventory.sourceSnapshot?.[file] !== expected.sourceSnapshot[file],
 );
+if (JSON.stringify(inventory) !== JSON.stringify(expected)) {
+  const changedKeys = Object.keys(expected).filter(
+    (key) => JSON.stringify(inventory[key]) !== JSON.stringify(expected[key]),
+  );
+  const differentRoutes = expected.routes.flatMap((route, index) => {
+    const previous = inventory.routes[index] ?? {};
+    const fields = Object.keys(route).filter(
+      (key) => JSON.stringify(route[key]) !== JSON.stringify(previous[key]),
+    );
+    return fields.length
+      ? [{ route: route.method + " " + route.path, fields, previous, generated: route }]
+      : [];
+  });
+  console.error(
+    "Route inventory drift diagnostics:",
+    JSON.stringify({
+      changedKeys,
+      differentRoutes: differentRoutes.slice(0, 8),
+    }).slice(0, 22000),
+  );
+}
 assert(
   JSON.stringify(inventory) === JSON.stringify(expected),
   `Source/route inventory drift${changedSources.length ? ` (${changedSources.join(", ")})` : ""}: run node scripts/generate-cloudflare-route-inventory.mjs and review changes.`,
