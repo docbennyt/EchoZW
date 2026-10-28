@@ -640,11 +640,23 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
     async function persistPendingGoogleDelivery() {
       try {
         const recoveredJobs = await recoverGoogleCalendarDelivery(100, env);
-        return { attempted: 0, succeeded: 0, failed: 0, pending: true, recoveredJobs };
+        return {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          pending: true,
+          recoveredJobs,
+        };
       } catch {
         // The pause is already committed. The revision remains available for
         // scheduled recovery; never make a successful save look like a failed write.
-        return { attempted: 0, succeeded: 0, failed: 0, pending: true, recoveryDeferred: true };
+        return {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          pending: true,
+          recoveryDeferred: true,
+        };
       }
     }
     if (request.method === "DELETE") {
@@ -652,7 +664,10 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
         { actor, pauseId: action, timetableId },
         env,
       );
-      return json({ pause, googleCalendarSync: await persistPendingGoogleDelivery() });
+      return json({
+        pause,
+        googleCalendarSync: await persistPendingGoogleDelivery(),
+      });
     }
     const body = await readNativeJsonBody(request);
     const pauseInput = timetableId
@@ -668,7 +683,11 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
       env,
     );
     return json(
-      { pause, impact, googleCalendarSync: await persistPendingGoogleDelivery() },
+      {
+        pause,
+        impact,
+        googleCalendarSync: await persistPendingGoogleDelivery(),
+      },
       { status: 201 },
     );
   } catch (error) {
