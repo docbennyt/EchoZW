@@ -38,7 +38,8 @@ export function googleRecoveryScope(env: Bindings) {
     env.ENABLE_GOOGLE_DELIVERY === "true" ||
     typeof raw !== "string" ||
     raw.length > 1024
-  ) return null;
+  )
+    return null;
   try {
     const scope = JSON.parse(raw);
     const keys = [
@@ -55,7 +56,8 @@ export function googleRecoveryScope(env: Bindings) {
       typeof scope !== "object" ||
       Object.keys(scope).length !== keys.length ||
       Object.keys(scope).some((key) => !keys.includes(key))
-    ) return null;
+    )
+    return null;
     const expires = Date.parse(scope.expiresAt);
     const remaining = expires - Date.now();
     if (
@@ -70,7 +72,8 @@ export function googleRecoveryScope(env: Bindings) {
       !Number.isFinite(remaining) ||
       remaining <= 0 ||
       remaining > 86400000
-    ) return null;
+    )
+    return null;
     return {
       owner: scope.ownerId as string,
       timetable: scope.timetableId as string,
@@ -112,7 +115,8 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
 
 export function googleDeliveryTargetAllowed(env: Bindings, id: unknown) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
-  return Boolean(
-    (googleRecoveryScope(env)?.subscription ?? googleCanaryScope(env)?.subscription) === id,
-  );
+  const target =
+    googleRecoveryScope(env)?.subscription ??
+    googleCanaryScope(env)?.subscription;
+  return Boolean(target && target === id);
 }
