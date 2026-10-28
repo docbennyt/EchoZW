@@ -102,7 +102,8 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
   const qa = googleCanaryScope(env);
   const recovery = googleRecoveryScope(env);
   const matches = (scope: ReturnType<typeof googleCanaryScope>) =>
-    scope?.subscription === row.id &&
+    scope !== null &&
+    scope.subscription === row.id &&
     scope.owner === row.anonymous_session_id &&
     scope.timetable === row.timetable_id;
   return Boolean(
