@@ -36,6 +36,11 @@ describe.skipIf(!modulePath && !pgModulePath)(
       (await db.query(sql, params)).rows;
     const recover = async (limit = 100) =>
       rows("select recover_google_calendar_delivery($1) as count", [limit]);
+    const recoverScoped = async (ids: string[] | null, limit = 100) =>
+      rows("select recover_google_calendar_delivery($1, $2::uuid[]) as count", [
+        limit,
+        ids,
+      ]);
     const claim = async (limit = 10) =>
       rows("select * from claim_google_calendar_delivery($1, 300)", [limit]);
     const finish = async (job: Row, outcome = "success") =>
@@ -127,6 +132,15 @@ describe.skipIf(!modulePath && !pgModulePath)(
           "utf8",
         ),
       );
+      await db.exec(
+        await readFile(
+          new URL(
+            "../supabase/migrations/20261028183415_scoped_google_calendar_recovery.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
     }, 30_000);
 
     beforeEach(async () => {
@@ -141,6 +155,260 @@ describe.skipIf(!modulePath && !pgModulePath)(
     });
     afterAll(async () => {
       await db?.close();
+    });
+
+    it("recovers only selected timetables and treats empty scope as no work", async () => {
+      await rows(
+        "insert into timetables(id, current_published_version_id, institution_id) values ($1, gen_random_uuid(), $1)",
+        [second],
+      );
+      await rows(
+        "insert into calendar_subscriptions values ($1, $1, 'google_api', 'active', null)",
+        [second],
+      );
+      expect(await recoverScoped([])).toEqual([{ count: 0 }]);
+      expect(await rows("select * from google_calendar_delivery_jobs")).toEqual(
+        [],
+      );
+      expect(await recoverScoped([timetable, timetable])).toEqual([
+        { count: 1 },
+      ]);
+      expect(
+        await rows("select subscription_id from google_calendar_delivery_jobs"),
+      ).toEqual([{ subscription_id: subscription }]);
+      // The original unscoped RPC remains the eventual recovery path.
+      expect(await recover()).toEqual([{ count: 1 }]);
+      await expect(recoverScoped(null)).rejects.toThrow();
+      expect(
+        await rows("select * from google_calendar_delivery_jobs"),
+      ).toHaveLength(2);
+    });
+
+    it("replays scoped recovery without advancing generations or successful revisions", async () => {
+      expect(await recoverScoped([timetable])).toEqual([{ count: 1 }]);
+      const [initial] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(await recoverScoped([timetable, timetable])).toEqual([
+        { count: 0 },
+      ]);
+      expect(await rows("select * from google_calendar_delivery_jobs")).toEqual(
+        [initial],
+      );
+      const [job] = await claim();
+      expect(await finish(job)).toBe(true);
+      const [completed] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(await recoverScoped([timetable])).toEqual([{ count: 0 }]);
+      expect(await rows("select * from google_calendar_delivery_jobs")).toEqual(
+        [completed],
+      );
+      expect(await claim()).toEqual([]);
+    });
+
+    it("applies the recovery limit within the selected timetable scope", async () => {
+      await rows(
+        "insert into timetables(id, current_published_version_id) values ($1, gen_random_uuid())",
+        [second],
+      );
+      await rows(
+        "insert into calendar_subscriptions values ($1, $1, 'google_api', 'active', null)",
+        [second],
+      );
+      expect(await recoverScoped([second], 1)).toEqual([{ count: 1 }]);
+      expect(
+        await rows("select subscription_id from google_calendar_delivery_jobs"),
+      ).toEqual([{ subscription_id: second }]);
+    });
+
+    it("coalesces scoped changes while preserving live lease ownership and generation", async () => {
+      await recoverScoped([timetable]);
+      const [job] = await claim();
+      await rows(
+        "insert into push_notification_outbox(timetable_id) values ($1)",
+        [timetable],
+      );
+      expect(await recoverScoped([timetable])).toEqual([{ count: 1 }]);
+      const [updated] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(updated.desired_revision).toBe(2);
+      for (const field of [
+        "lease_token",
+        "lease_expires_at",
+        "claimed_revision",
+        "claimed_generation",
+        "requested_generation",
+        "available_at",
+        "attempt_count",
+      ]) {
+        expect(updated[field]).toEqual(job[field]);
+      }
+      expect(await claim()).toEqual([]);
+      expect(await finish(job)).toBe(true);
+      const [next] = await claim();
+      expect(next.claimed_revision).toBe(2);
+      expect(await finish(job)).toBe(false);
+      expect(await finish(next)).toBe(true);
+    });
+
+    it("preserves scoped retry backoff and unchanged reconnect credentials across new revisions", async () => {
+      await recoverScoped([timetable]);
+      const [job] = await claim();
+      await finish(job, "retry");
+      const [retry] = await rows("select * from google_calendar_delivery_jobs");
+      await rows(
+        "insert into push_notification_outbox(timetable_id) values ($1)",
+        [timetable],
+      );
+      await recoverScoped([timetable]);
+      const [deferred] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(deferred.available_at).toEqual(retry.available_at);
+      expect(deferred.attempt_count).toBe(retry.attempt_count);
+      expect(deferred.last_error_code).toBe(retry.last_error_code);
+      expect(await claim()).toEqual([]);
+      await rows(
+        "insert into google_calendar_credentials values ($1, '2020-01-01')",
+        [subscription],
+      );
+      await db.exec(
+        "update google_calendar_delivery_jobs set available_at = now() - interval '1 second'",
+      );
+      const [retried] = await claim();
+      await finish(retried, "reconnect");
+      const [blocked] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      await rows(
+        "insert into push_notification_outbox(timetable_id) values ($1)",
+        [timetable],
+      );
+      await recoverScoped([timetable]);
+      const [stillBlocked] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(stillBlocked.reconnect_required_at).toEqual(
+        blocked.reconnect_required_at,
+      );
+      expect(stillBlocked.credential_updated_at).toEqual(
+        blocked.credential_updated_at,
+      );
+      expect(stillBlocked.successful_revision).toBe(0);
+      expect(await claim()).toEqual([]);
+      await db.exec(
+        "update google_calendar_credentials set updated_at = clock_timestamp() + interval '1 second'",
+      );
+      await recoverScoped([timetable]);
+      const [resumed] = await claim();
+      expect(resumed.claimed_revision).toBe(3);
+    });
+
+    it.skipIf(!pgModulePath)(
+      "coalesces concurrent scoped recovery and replay without duplicate jobs or generation bumps",
+      async () => {
+        const worker = await connect!();
+        try {
+          const sql =
+            "select recover_google_calendar_delivery(100, $1::uuid[]) as count";
+          await Promise.all([
+            db.query(sql, [[timetable]]),
+            worker.query(sql, [[timetable]]),
+          ]);
+          expect(
+            await rows(
+              "select subscription_id, desired_revision, requested_generation from google_calendar_delivery_jobs",
+            ),
+          ).toEqual([
+            {
+              subscription_id: subscription,
+              desired_revision: 1,
+              requested_generation: 1,
+            },
+          ]);
+          await rows(
+            "insert into push_notification_outbox(timetable_id) values ($1)",
+            [timetable],
+          );
+          await Promise.all([
+            db.query(sql, [[timetable]]),
+            worker.query(sql, [[timetable]]),
+          ]);
+          expect(
+            await rows(
+              "select subscription_id, desired_revision, requested_generation from google_calendar_delivery_jobs",
+            ),
+          ).toEqual([
+            {
+              subscription_id: subscription,
+              desired_revision: 2,
+              requested_generation: 1,
+            },
+          ]);
+          const [job] = await claim();
+          expect(await finish(job)).toBe(true);
+          await Promise.all([
+            db.query(sql, [[timetable]]),
+            worker.query(sql, [[timetable]]),
+          ]);
+          expect(await claim()).toEqual([]);
+        } finally {
+          await worker.close();
+        }
+      },
+    );
+
+    it("does not advance delivery revisions for no-op pause updates or inactive drafts", async () => {
+      await rows(
+        "insert into academic_schedule_pauses(scope_type, timetable_id, active, label) values ('timetable', $1, false, 'draft')",
+        [timetable],
+      );
+      await db.exec(
+        "update academic_schedule_pauses set label = 'draft edited'",
+      );
+      expect(
+        await rows(
+          "select revision from google_calendar_delivery_revisions where timetable_id = $1",
+          [timetable],
+        ),
+      ).toEqual([{ revision: 1 }]);
+      await db.exec("update academic_schedule_pauses set active = true");
+      await db.exec(
+        "update academic_schedule_pauses set active = active, label = label",
+      );
+      expect(
+        await rows(
+          "select revision from google_calendar_delivery_revisions where timetable_id = $1",
+          [timetable],
+        ),
+      ).toEqual([{ revision: 2 }]);
+    });
+
+    it("keeps institution pause changes isolated from unrelated institutions", async () => {
+      await rows("update timetables set institution_id = $1 where id = $2", [
+        timetable,
+        timetable,
+      ]);
+      await rows(
+        "insert into timetables(id, current_published_version_id, institution_id) values ($1, gen_random_uuid(), $1)",
+        [second],
+      );
+      await rows(
+        "insert into academic_schedule_pauses(scope_type, institution_id, active) values ('institution', $1, true)",
+        [timetable],
+      );
+      await db.exec("update academic_schedule_pauses set active = false");
+      await db.exec("update academic_schedule_pauses set active = true");
+      expect(
+        await rows(
+          "select timetable_id, revision from google_calendar_delivery_revisions order by timetable_id",
+        ),
+      ).toEqual([
+        { timetable_id: timetable, revision: 4 },
+        { timetable_id: second, revision: 1 },
+      ]);
     });
 
     it("continues durably without advancing success, hot-looping or retaining an old lease", async () => {
@@ -671,6 +939,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
       const functions = [
         "observe_google_calendar_delivery_revision()",
         "recover_google_calendar_delivery(integer)",
+        "recover_google_calendar_delivery(integer,uuid[])",
         "claim_google_calendar_delivery(integer,integer,uuid)",
         "enqueue_google_calendar_subscription(uuid)",
         "list_google_calendar_delivery_ready(integer)",
@@ -711,6 +980,13 @@ describe.skipIf(!modulePath && !pgModulePath)(
         (
           await rows(
             "select has_function_privilege('service_role', 'claim_google_calendar_delivery(integer,integer,uuid)', 'execute') as allowed",
+          )
+        )[0].allowed,
+      ).toBe(true);
+      expect(
+        (
+          await rows(
+            "select has_function_privilege('service_role', 'recover_google_calendar_delivery(integer,uuid[])', 'execute') as allowed",
           )
         )[0].allowed,
       ).toBe(true);

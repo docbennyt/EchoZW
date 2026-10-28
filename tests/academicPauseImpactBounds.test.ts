@@ -326,6 +326,7 @@ describe("bounded academic pause impact", () => {
       expect(result.impact.affectedTimetableCountKnown).toBe(
         failure !== "scope",
       );
+      if (failure === "scope") expect(result.timetableIds).toBeNull();
     },
   );
 

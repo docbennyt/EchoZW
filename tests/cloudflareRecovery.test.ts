@@ -707,7 +707,7 @@ describe("native recovery with Railway unreachable and no process credentials", 
           creatorRole: "class_rep",
         },
         impact: { affectedTimetableCount: 1, newlySuppressedLectureCount: 2 },
-        googleCalendarSync: { attempted: 0, skipped: true },
+        googleCalendarSync: { attempted: 0, pending: true },
       });
       const feed = await request("/calendar/feed/existing-fixture-token.ics");
       expect(feed.status).toBe(200);
@@ -721,7 +721,7 @@ describe("native recovery with Railway unreachable and no process credentials", 
       expect(resumed.status).toBe(200);
       expect(await resumed.json()).toMatchObject({
         pause: { active: false },
-        googleCalendarSync: { skipped: true },
+        googleCalendarSync: { pending: true },
       });
       expect(
         await (

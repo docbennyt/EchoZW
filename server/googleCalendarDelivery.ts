@@ -77,9 +77,20 @@ async function rpc(
 export async function recoverGoogleCalendarDelivery(
   limit = 100,
   env?: NodeJS.ProcessEnv,
+  timetableIds?: string[],
 ): Promise<number> {
+  if (timetableIds?.length === 0) return 0;
   return Number(
-    await rpc("recover_google_calendar_delivery", { p_limit: limit }, env),
+    await rpc(
+      "recover_google_calendar_delivery",
+      {
+        p_limit: limit,
+        ...(timetableIds === undefined
+          ? {}
+          : { p_timetable_ids: [...new Set(timetableIds)] }),
+      },
+      env,
+    ),
   );
 }
 

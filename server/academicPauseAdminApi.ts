@@ -54,7 +54,15 @@ function sendError(res: ServerResponse, error: unknown) {
   });
 }
 
-async function syncAffectedCalendars(timetableIds: string[]) {
+async function syncAffectedCalendars(timetableIds: string[] | null) {
+  if (timetableIds === null)
+    return {
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      pending: true,
+      recoveryDeferred: true,
+    };
   let attempted = 0;
   let succeeded = 0;
   let failed = 0;
