@@ -1234,7 +1234,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1394,7 +1394,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5121,7 +5121,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5290,7 +5290,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5466,7 +5466,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5635,7 +5635,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5805,7 +5805,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5975,7 +5975,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6144,7 +6144,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6315,7 +6315,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6484,7 +6484,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6654,7 +6654,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6747,7 +6747,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 226,
+        "line": 227,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -6774,7 +6774,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 458, "role": "dispatch" },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 226,
+          "line": 227,
           "role": "worker implementation"
         }
       ],
@@ -6806,7 +6806,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7066,7 +7066,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7235,7 +7235,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7680,7 +7680,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8115,7 +8115,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 226,
+        "line": 227,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8147,7 +8147,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 226,
+          "line": 227,
           "role": "worker implementation"
         }
       ],
@@ -8179,7 +8179,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8364,7 +8364,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 226,
+        "line": 227,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8391,7 +8391,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 226,
+          "line": 227,
           "role": "worker implementation"
         }
       ],
@@ -8413,7 +8413,7 @@
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 41,
+          "line": 100,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8517,7 +8517,7 @@
       "currentFunctionality": "Native local disconnect; optional remote calendar deletion explicitly unavailable.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 226,
+        "line": 227,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8543,7 +8543,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 226,
+          "line": 227,
           "role": "worker implementation"
         }
       ],
@@ -8643,7 +8643,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 226,
+        "line": 227,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8665,7 +8665,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 226,
+          "line": 227,
           "role": "worker implementation"
         }
       ],
