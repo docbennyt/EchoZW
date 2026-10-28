@@ -323,7 +323,9 @@ export async function runGoogleRecovery(env, dependencies = {}) {
       });
     } finally {
       if (scopeProvisioned) {
-        await cf("DELETE", "/secrets/GOOGLE_RECOVERY_CANARY");
+        const before = await settings();
+        if (before.bindings.some((b) => b.name === "GOOGLE_RECOVERY_CANARY"))
+          await cf("DELETE", "/secrets/GOOGLE_RECOVERY_CANARY");
         const value = await settings();
         if (value.bindings.some((b) => b.name === "GOOGLE_RECOVERY_CANARY"))
           fail("RECOVERY_DISABLE_NOT_CONFIRMED");

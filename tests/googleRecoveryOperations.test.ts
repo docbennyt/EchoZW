@@ -315,6 +315,16 @@ describe("bounded canary authorization and revocation", () => {
             /^\/client\/v4\/accounts\/f{32}\/workers\/scripts\/calenderzw-edge-staging\/(settings|deployments|secrets(?:\/GOOGLE_RECOVERY_CANARY)?)$/,
           );
           if (init.method === "PUT") {
+            if (scenario === "rejected-put")
+              return Response.json(
+                {
+                  success: false,
+                  errors: [
+                    { message: "private-provider-rejected-scope", code: 10000 },
+                  ],
+                },
+                { status: 403 },
+              );
             scopePresent = true;
             const scope = JSON.parse(JSON.parse(String(init.body)).text);
             expect(scope).toMatchObject({
@@ -331,7 +341,17 @@ describe("bounded canary authorization and revocation", () => {
             if (scenario === "lost-put")
               throw new Error("private-lost-response");
           }
-          if (init.method === "DELETE") scopePresent = false;
+          if (init.method === "DELETE") {
+            if (!scopePresent)
+              return Response.json(
+                {
+                  success: false,
+                  errors: [{ message: "private-secret-not-found" }],
+                },
+                { status: 404 },
+              );
+            scopePresent = false;
+          }
           const result = target.pathname.endsWith("/settings")
             ? {
                 bindings: [
@@ -445,6 +465,24 @@ describe("bounded canary authorization and revocation", () => {
         });
     },
   );
+  it("verifies absent authorization after a rejected scope PUT without masking its sanitized report with DELETE 404", async () => {
+    const request = provider("rejected-put");
+    const report = await runGoogleRecovery(operationalEnv(), {
+      request,
+      delay: async () => {},
+    });
+    expect(writes(request, "PUT")).toHaveLength(1);
+    expect(writes(request, "DELETE")).toHaveLength(0);
+    expect(queues(request)).toHaveLength(0);
+    expect(report.recoveryAuthorizationAbsent).toBe(true);
+    expect(report.results).toContainEqual({
+      index: 0,
+      error: "RECOVERY_CONFIGURATION_OPERATION_FAILED",
+    });
+    expect(JSON.stringify(report)).not.toMatch(
+      /private-provider|private-secret|private-cloudflare/,
+    );
+  });
   it.each([undefined, JSON.stringify(plan())])(
     "disables authority with absent or expired plan without admin authentication",
     async (raw) => {
