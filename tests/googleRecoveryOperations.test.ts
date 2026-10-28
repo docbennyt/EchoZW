@@ -393,7 +393,9 @@ describe("bounded canary authorization and revocation", () => {
                   },
                 }
               : {}),
-            ...(queued ? { wouldUpdate: 0, unchanged: 5 } : {}),
+            ...(queued
+              ? { wouldUpdate: 0, unchanged: 5, remoteContentsVerified: true }
+              : {}),
           },
         });
       },

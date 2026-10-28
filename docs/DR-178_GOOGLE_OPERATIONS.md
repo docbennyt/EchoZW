@@ -56,8 +56,10 @@ logged. A credential compatibility result proves decryption only. A full preview
 also exercises refresh and Google reads; it does not independently prove write
 permissions until Google accepts a mutation.
 
-The current adapter's preview compares local mapping hashes and remote ownership.
-`mappingComparisonConverged` therefore is deliberately **not** `fullyVerified`.
+Older adapters compare local mapping hashes and remote ownership only. Canary
+completion now additionally requires `remoteContentsVerified:true` from the
+guarded adapter, proving actual provider payload comparison, including recurrence
+and reminders. `mappingComparisonConverged` is still **not** `fullyVerified`.
 Require independent database revision/generation postconditions and actual remote
 event content (including EXDATEs and exam preservation) before widening recovery.
 Do not count queued requests, snapshots or acknowledged messages as provider

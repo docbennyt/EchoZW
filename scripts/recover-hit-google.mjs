@@ -86,9 +86,17 @@ function redactedPreview(value) {
     "wouldDelete",
     "unchanged",
     "ownershipReviewCount",
+    "publishedRevision",
+    "connectionGeneration",
+    "remoteContentMismatchCount",
   ])
     result[key] = integer(value?.[key]) ? value[key] : null;
-  return { ...result, readOnly: value?.readOnly === true };
+  return {
+    ...result,
+    readOnly: value?.readOnly === true,
+    remoteReadComplete: value?.remoteReadComplete === true,
+    remoteContentsVerified: value?.remoteContentsVerified === true,
+  };
 }
 
 export async function runGoogleRecovery(env, dependencies = {}) {
@@ -290,9 +298,11 @@ export async function runGoogleRecovery(env, dependencies = {}) {
         if (
           previewIsSafe(after) &&
           after.wouldUpdate === 0 &&
-          after.unchanged === after.expectedEvents
+          after.unchanged === after.expectedEvents &&
+          after.remoteContentsVerified === true
         ) {
           result.mappingComparisonConverged = true;
+          result.remoteContentsVerified = true;
           break;
         }
       }
