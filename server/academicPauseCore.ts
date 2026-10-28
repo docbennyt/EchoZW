@@ -262,7 +262,13 @@ export async function createPauseWithImpact(
 ) {
   const { impact, timetableIds } = await previewImpact(pauseInput, env);
   const pause = await createAcademicPause({ actor, pause: pauseInput }, env);
-  return { pause, impact, timetableIds };
+  return {
+    pause,
+    impact,
+    // Failed impact reads do not mean that the committed pause has no targets.
+    timetableIds:
+      impact.affectedTimetableCountKnown === false ? null : timetableIds,
+  };
 }
 
 export async function deactivatePauseWithTimetables(
@@ -270,9 +276,15 @@ export async function deactivatePauseWithTimetables(
   env?: NodeJS.ProcessEnv,
 ) {
   const pause = await deactivateAcademicPause(input, env);
-  const timetableIds = await listPublishedTimetableIdsForPauseScope(
-    inputFromStoredPause(pause),
-    env,
-  );
-  return { pause, timetableIds };
+  try {
+    const timetableIds = await listPublishedTimetableIdsForPauseScope(
+      inputFromStoredPause(pause),
+      env,
+    );
+    return { pause, timetableIds };
+  } catch {
+    // Deactivation and its database revision intent have already committed.
+    // Preserve that outcome; scheduled recovery can resolve subscribers later.
+    return { pause, timetableIds: null };
+  }
 }

@@ -747,8 +747,8 @@
     ]
   },
   "sourceSnapshot": {
-    "server/academicPauseAdminApi.ts": "f57822131ffe2fb9ae8bd7a6cf1a410509933579489c58844c059b4c6dc6bff0",
-    "server/academicPauseCore.ts": "73054447408506c526bec5033421a38908c82b97935794b8682693281ed86e47",
+    "server/academicPauseAdminApi.ts": "f05d6cb477b875ac20954fb7ac3f606a0146e973b971113a01382175ae947849",
+    "server/academicPauseCore.ts": "37d12b15a2a4ecdb5ad65ab788697cb96c24c6cccd8b491c54eace98a5732157",
     "server/academicPauseRepository.ts": "a976a24e60e05ab488d61be58cf7cd618af7a30cecfb26e120573cf810ee7e60",
     "server/adminAnalyticsApi.ts": "75e0f10c9831a42db31cce50ab1d3e6f8d2d25f283ebab89727aef609d936f13",
     "server/adminAnalyticsRepository.ts": "3b121e604beb17d6c3c9838893aa4519b8c997e1ce71220d0992ac017fac58f2",
@@ -763,7 +763,7 @@
     "server/correctionsRepository.ts": "8440e438a897d943ce858bd4da8bba0c9e4aad94303eeb4841d513290af55c1e",
     "server/docxStructuredReader.ts": "34a63f0540c008768cc716e37ff7c604e9b4d2bff24140e81b64e5ecabb0ae02",
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
-    "server/googleCalendarDelivery.ts": "fc8c9397749361430c9511088bdf56b1e385d971ebdb45fe22adce806ba5ad88",
+    "server/googleCalendarDelivery.ts": "1561ba3ad64595bf679141cc02efa8b65e7294d02893828e282d4cefd2821235",
     "server/googleCalendarRepository.ts": "6bf9d28433c7f08e117ee3ec1d0217e1f66657c46b057e583a0d3d8ded5ffccf",
     "server/googleCalendarSync.ts": "cfdf3215eb1f59f9ab19b5860ac4066067cb902b24478730832b3eaa113638b3",
     "server/googleDeliveryPolicy.ts": "1dcc3b90cbabb72f075db04eb92e9653f3cdffbf5d166a62be0a117df89dc1c3",
@@ -941,7 +941,7 @@
     "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
     "worker/googleCalendarApi.mjs": "1f3d1517166bf22e9137691824f5c7ae2ecc82472348fcce68506e8c9fd9ce05",
     "worker/googleDelivery.mjs": "c5265b073764bed66eae887ad3dbb44fcb3b6fa9bc48e692852f27278b54c223",
-    "worker/index.mjs": "4e66004262b15c4d807de237426ecd1290ad6e730fe4c1b0c1d5a74cc4c2503d",
+    "worker/index.mjs": "5ebded4836f70a39c5b997777b54dcb941c296bbbc70ad9c33517b5bf03a5421",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
@@ -1092,7 +1092,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 122,
+          "line": 130,
           "role": "dispatch"
         },
         {
@@ -1104,7 +1104,7 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 122,
+          "line": 130,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1187,7 +1187,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 135,
+          "line": 143,
           "role": "dispatch"
         },
         {
@@ -1199,7 +1199,7 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 138,
+          "line": 146,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1347,7 +1347,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 151,
+          "line": 159,
           "role": "dispatch"
         },
         {
@@ -1359,12 +1359,12 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 151,
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 268,
+          "line": 274,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1493,7 +1493,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 126,
+          "line": 134,
           "role": "dispatch"
         },
         {
@@ -1505,7 +1505,7 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 129,
+          "line": 137,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6915,7 +6915,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 84,
+          "line": 92,
           "role": "dispatch"
         },
         {
@@ -6927,7 +6927,7 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 84,
+          "line": 92,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7019,7 +7019,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 96,
+          "line": 104,
           "role": "dispatch"
         },
         {
@@ -7031,7 +7031,7 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 96,
+          "line": 104,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7188,7 +7188,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 109,
+          "line": 117,
           "role": "dispatch"
         },
         {
@@ -7200,12 +7200,12 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 109,
+          "line": 117,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/academicPauseCore.ts",
-          "line": 268,
+          "line": 274,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7344,7 +7344,7 @@
       "sourceEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 90,
+          "line": 98,
           "role": "dispatch"
         },
         {
@@ -7356,7 +7356,7 @@
       "dependencyEvidence": [
         {
           "file": "server/academicPauseAdminApi.ts",
-          "line": 90,
+          "line": 98,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7426,7 +7426,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 717,
+        "line": 724,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7457,7 +7457,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 717,
+          "line": 724,
           "role": "worker implementation"
         }
       ],
@@ -7514,7 +7514,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 717,
+        "line": 724,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7545,7 +7545,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 717,
+          "line": 724,
           "role": "worker implementation"
         }
       ],
@@ -8726,7 +8726,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 768,
+        "line": 775,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8757,7 +8757,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 768,
+          "line": 775,
           "role": "worker implementation"
         }
       ],
@@ -8966,7 +8966,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 871,
+        "line": 878,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8982,7 +8982,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 871,
+          "line": 878,
           "role": "worker implementation"
         }
       ],
@@ -9019,7 +9019,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 926,
+        "line": 933,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9035,7 +9035,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 926, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 933, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9078,7 +9078,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 934,
+        "line": 941,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9095,7 +9095,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 934, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 941, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -11185,7 +11185,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 926,
+        "line": 933,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -11201,7 +11201,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 926, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 933, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {

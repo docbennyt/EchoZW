@@ -637,9 +637,16 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
     }
     // A committed pause advances the durable timetable revision in Supabase.
     // Recover per-subscription jobs without making Google API calls in this request.
-    async function persistPendingGoogleDelivery() {
+    async function persistPendingGoogleDelivery(timetableIds) {
       try {
-        const recoveredJobs = await recoverGoogleCalendarDelivery(100, env);
+        // Never broaden a scoped edit into a global subscription recovery.
+        if (!Array.isArray(timetableIds))
+          throw new Error("PAUSE_SCOPE_MISSING");
+        const recoveredJobs = await recoverGoogleCalendarDelivery(
+          100,
+          env,
+          timetableIds,
+        );
         return {
           attempted: 0,
           succeeded: 0,
@@ -660,13 +667,13 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
       }
     }
     if (request.method === "DELETE") {
-      const { pause } = await deactivatePauseWithTimetables(
+      const { pause, timetableIds } = await deactivatePauseWithTimetables(
         { actor, pauseId: action, timetableId },
         env,
       );
       return json({
         pause,
-        googleCalendarSync: await persistPendingGoogleDelivery(),
+        googleCalendarSync: await persistPendingGoogleDelivery(timetableIds),
       });
     }
     const body = await readNativeJsonBody(request);
@@ -677,7 +684,7 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
       const { impact } = await previewImpact(pauseInput, env);
       return json({ impact });
     }
-    const { pause, impact } = await createPauseWithImpact(
+    const { pause, impact, timetableIds } = await createPauseWithImpact(
       actor,
       pauseInput,
       env,
@@ -686,7 +693,7 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
       {
         pause,
         impact,
-        googleCalendarSync: await persistPendingGoogleDelivery(),
+        googleCalendarSync: await persistPendingGoogleDelivery(timetableIds),
       },
       { status: 201 },
     );
