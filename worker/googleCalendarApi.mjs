@@ -23,6 +23,7 @@ import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
 import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
 import {
   googleCanaryScope,
+  googleRecoveryScope,
   googleSubscriptionAllowed,
 } from "../server/googleDeliveryPolicy.ts";
 
@@ -224,12 +225,14 @@ async function targetedSync(request, env, timetableId, options) {
 // The parent supplies a durable enqueue hook; importing delivery here would
 // couple the provider service back to its job dispatcher.
 export async function handleGoogleCalendarRequest(request, env, options = {}) {
+  const hasRecoveryScope = Boolean(googleRecoveryScope(env)?.subscription);
   options = {
     ...options,
     deliveryEnabled:
       options.deliveryEnabled ??
       (env.ENABLE_GOOGLE_DELIVERY === "true" ||
-        Boolean(googleCanaryScope(env)?.subscription)),
+        Boolean(googleCanaryScope(env)?.subscription) ||
+        hasRecoveryScope),
   };
   const url = new URL(request.url);
   const route = url.pathname.match(

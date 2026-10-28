@@ -14,6 +14,7 @@ import {
 } from "../server/pilotRepository.ts";
 import {
   googleCanaryScope,
+  googleRecoveryScope,
   googleDeliveryTargetAllowed,
   googleSubscriptionAllowed,
 } from "../server/googleDeliveryPolicy.ts";
@@ -59,7 +60,7 @@ export async function enqueueNativeGoogleSync(input, env) {
 
 export async function scheduleGoogleDelivery(env) {
   if (!enabled(env)) {
-    const scope = googleCanaryScope(env);
+    const scope = googleRecoveryScope(env) ?? googleCanaryScope(env);
     if (!scope?.subscription) return;
     if (!env.PUSH_QUEUE) throw new Error("GOOGLE_DELIVERY_QUEUE_MISSING");
     if (

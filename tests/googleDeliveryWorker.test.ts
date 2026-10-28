@@ -224,3 +224,56 @@ describe("Google durable delivery Worker handoff", () => {
     expect(item.retry).toHaveBeenCalled();
   });
 });
+
+describe("bounded subscriber recovery", () => {
+  it("reconciles only the selected account, never unrelated queue work", async () => {
+    vi.resetAllMocks();
+    const owner = "11111111-1111-4111-8111-111111111111";
+    const timetable = "22222222-2222-4222-8222-222222222222";
+    const sha = "a".repeat(40);
+    const config = {
+      APP_ENV: "cloudflare-staging",
+      ENABLE_GOOGLE_DELIVERY: "false",
+      SOURCE_SHA: sha,
+      GOOGLE_RECOVERY_CANARY: JSON.stringify({
+        candidateSha: sha,
+        ownerId: owner,
+        timetableId: timetable,
+        subscriptionId: id,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        mode: "deliver",
+      }),
+      PUSH_QUEUE: { send: vi.fn(), sendBatch: vi.fn() },
+    };
+    mocks.recoverOne.mockResolvedValue(true);
+    mocks.subscription.mockResolvedValue({
+      id,
+      anonymous_session_id: owner,
+      timetable_id: timetable,
+      provider: "google_api",
+      status: "active",
+    });
+    mocks.claim.mockResolvedValue({ subscriptionId: id, revision: 1 });
+    mocks.deliver.mockResolvedValue(true);
+    mocks.sync.mockResolvedValue({ lastSyncedAt: "2026-10-28T19:00:00Z" });
+    await scheduleGoogleDelivery(config);
+    expect(mocks.recoverOne).toHaveBeenCalledOnce();
+    expect(mocks.recoverOne).toHaveBeenCalledWith(id, config);
+    expect(mocks.recover).not.toHaveBeenCalled();
+    expect(mocks.ready).not.toHaveBeenCalled();
+    expect(config.PUSH_QUEUE.send).toHaveBeenCalledWith({
+      type: "google_calendar_reconcile",
+      subscriptionId: id,
+    });
+    const permitted = message();
+    await consumeGoogleDeliveryMessage(permitted, config);
+    expect(mocks.claim).toHaveBeenCalledWith(id, 300, config);
+    const other = message();
+    other.body.subscriptionId = timetable;
+    mocks.claim.mockClear();
+    await consumeGoogleDeliveryMessage(other, config);
+    expect(mocks.claim).not.toHaveBeenCalled();
+    expect(other.retry).toHaveBeenCalledWith({ delaySeconds: 300 });
+    expect(other.ack).not.toHaveBeenCalled();
+  });
+});

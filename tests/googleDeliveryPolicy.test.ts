@@ -2,6 +2,8 @@
 import { describe, expect, it } from "vitest";
 import {
   googleCanaryScope,
+  googleRecoveryScope,
+  googleDeliveryTargetAllowed,
   googleEnrollmentAllowed,
   googleSubscriptionAllowed,
 } from "../server/googleDeliveryPolicy";
@@ -87,5 +89,76 @@ describe("isolated staging Google delivery policy", () => {
     ).toBe(true);
     expect(googleEnrollmentAllowed({}, owner, timetable)).toBe(false);
     expect(googleSubscriptionAllowed({}, row())).toBe(false);
+  });
+});
+
+const candidateSha = "a".repeat(40);
+const recovery = () => ({
+  APP_ENV: "cloudflare-staging",
+  ENABLE_GOOGLE_DELIVERY: "false",
+  SOURCE_SHA: candidateSha,
+  GOOGLE_RECOVERY_CANARY: JSON.stringify({
+    candidateSha,
+    ownerId: owner,
+    timetableId: timetable,
+    subscriptionId: subscription,
+    expiresAt: new Date(Date.now() + 3600000).toISOString(),
+    mode: "deliver",
+  }),
+});
+
+describe("single-subscription recovery policy", () => {
+  it("only permits an active matching owner and subscription", () => {
+    const bindings = recovery();
+    const active = { ...row(), status: "active" };
+    const expected = { owner, timetable, subscription };
+    expect(googleRecoveryScope(bindings)).toMatchObject(expected);
+    expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(true);
+    expect(googleDeliveryTargetAllowed(bindings, owner)).toBe(false);
+    expect(googleDeliveryTargetAllowed({}, undefined)).toBe(false);
+    expect(googleSubscriptionAllowed(bindings, active)).toBe(true);
+    expect(googleEnrollmentAllowed(bindings, owner, timetable)).toBe(false);
+    const fields = ["id", "anonymous_session_id", "timetable_id", "provider"];
+    for (const field of fields) {
+      const foreign = { ...active, [field]: "different" };
+      expect(googleSubscriptionAllowed(bindings, foreign)).toBe(false);
+    }
+    expect(googleSubscriptionAllowed(bindings, row())).toBe(false);
+    const failed = { ...active, status: "failed" };
+    const revoked = { ...active, revoked_at: "2026-10-28" };
+    expect(googleSubscriptionAllowed(bindings, failed)).toBe(false);
+    expect(googleSubscriptionAllowed(bindings, revoked)).toBe(false);
+  });
+
+  it("rejects expired, invalid and cross-release recovery scopes", () => {
+    const good = recovery();
+    const payload = JSON.parse(good.GOOGLE_RECOVERY_CANARY);
+    const secret = (patch: Record<string, unknown>) => ({
+      GOOGLE_RECOVERY_CANARY: JSON.stringify({ ...payload, ...patch }),
+    });
+    const expired = new Date(0).toISOString();
+    const tooLong = new Date(Date.now() + 172800000).toISOString();
+    const invalid = [
+      { APP_ENV: "production" },
+      { SOURCE_SHA: "b".repeat(40) },
+      { GOOGLE_RECOVERY_CANARY: "not-json" },
+      secret({ subscriptionId: [subscription] }),
+      secret({ ownerId: "*" }),
+      secret({ candidateSha: "b".repeat(40) }),
+      secret({ expiresAt: expired }),
+      secret({ expiresAt: tooLong }),
+      secret({ mode: "preview" }),
+      secret({ extra: "unsafe" }),
+    ];
+    for (const override of invalid) {
+      const bindings = { ...good, ...override };
+      expect(googleRecoveryScope(bindings)).toBeNull();
+      expect(googleDeliveryTargetAllowed(bindings, subscription)).toBe(false);
+      const active = { ...row(), status: "active" };
+      expect(googleSubscriptionAllowed(bindings, active)).toBe(false);
+    }
+    expect(
+      googleRecoveryScope({ ...good, ENABLE_GOOGLE_DELIVERY: "true" }),
+    ).toBeNull();
   });
 });
