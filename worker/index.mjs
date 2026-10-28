@@ -23,6 +23,7 @@ import {
   getCalendarSubscriptionByTokenHash,
 } from "../server/pilotRepository.ts";
 import { buildRevisionAwareCalendar } from "../server/pilotCalendarCore.ts";
+import { recoverGoogleCalendarDelivery } from "../server/googleCalendarDelivery.ts";
 import { recordCalendarFeedActivity } from "../server/analyticsRepository.ts";
 import {
   AdminAuthError,
@@ -634,18 +635,24 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
           : await listAcademicPauses(env),
       });
     }
-    const googleCalendarSync = {
-      attempted: 0,
-      succeeded: 0,
-      failed: 0,
-      skipped: true,
-    };
+    // A committed pause advances the durable timetable revision in Supabase.
+    // Recover per-subscription jobs without making Google API calls in this request.
+    async function persistPendingGoogleDelivery() {
+      try {
+        const recoveredJobs = await recoverGoogleCalendarDelivery(100, env);
+        return { attempted: 0, succeeded: 0, failed: 0, pending: true, recoveredJobs };
+      } catch {
+        // The pause is already committed. The revision remains available for
+        // scheduled recovery; never make a successful save look like a failed write.
+        return { attempted: 0, succeeded: 0, failed: 0, pending: true, recoveryDeferred: true };
+      }
+    }
     if (request.method === "DELETE") {
       const { pause } = await deactivatePauseWithTimetables(
         { actor, pauseId: action, timetableId },
         env,
       );
-      return json({ pause, googleCalendarSync });
+      return json({ pause, googleCalendarSync: await persistPendingGoogleDelivery() });
     }
     const body = await readNativeJsonBody(request);
     const pauseInput = timetableId
@@ -660,7 +667,10 @@ async function handleNativeAcademicPauses(request, env, timetableId, action) {
       pauseInput,
       env,
     );
-    return json({ pause, impact, googleCalendarSync }, { status: 201 });
+    return json(
+      { pause, impact, googleCalendarSync: await persistPendingGoogleDelivery() },
+      { status: 201 },
+    );
   } catch (error) {
     if (error instanceof AdminAuthError) return adminAuthError(error);
     if (error instanceof AcademicPauseRepositoryError) {
