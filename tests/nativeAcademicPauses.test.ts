@@ -166,7 +166,7 @@ describe("native existing timetable pause transport", () => {
     });
     expect(state.writes).toEqual([]);
   });
-  it("persists durable recovery after create and resume without claiming remote delivery", async () => {
+  it("persists Google work without claiming remote delivery", async () => {
     const created = await request("POST", "", body);
     expect(created.status).toBe(201);
     expect(await created.json()).toMatchObject({
@@ -190,7 +190,7 @@ describe("native existing timetable pause transport", () => {
     expect(state.writes).toEqual(["create", "resume"]);
     expect(state.envs.every((value) => value === env)).toBe(true);
   });
-  it("keeps committed pauses truthful if delivery recovery is temporarily unavailable", async () => {
+  it("reports deferred recovery after a committed pause", async () => {
     state.recoveryFails = true;
     const response = await request("POST", "", body);
     expect(response.status).toBe(201);
