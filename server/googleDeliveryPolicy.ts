@@ -49,6 +49,10 @@ export function googleRecoveryScope(env: Bindings) {
       "subscriptionId",
       "expiresAt",
       "mode",
+      "revision",
+      "connectionGeneration",
+      "maxCreates",
+      "maxDeletes",
     ];
     if (
       !scope ||
@@ -62,6 +66,13 @@ export function googleRecoveryScope(env: Bindings) {
     const remaining = expires - Date.now();
     if (
       scope.mode !== "deliver" ||
+      !Number.isSafeInteger(scope.revision) ||
+      scope.revision < 1 ||
+      scope.revision > 2147483647 ||
+      !Number.isSafeInteger(scope.connectionGeneration) ||
+      scope.connectionGeneration < 0 ||
+      scope.maxCreates !== 0 ||
+      scope.maxDeletes !== 0 ||
       typeof scope.candidateSha !== "string" ||
       !/^[a-f0-9]{40}$/.test(scope.candidateSha) ||
       scope.candidateSha !== env.SOURCE_SHA ||
@@ -79,6 +90,10 @@ export function googleRecoveryScope(env: Bindings) {
       timetable: scope.timetableId as string,
       subscription: scope.subscriptionId as string,
       expires,
+      revision: scope.revision as number,
+      connectionGeneration: scope.connectionGeneration as number,
+      maxCreates: 0,
+      maxDeletes: 0,
     };
   } catch {
     return null;
@@ -107,7 +122,11 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
     scope.owner === row.anonymous_session_id &&
     scope.timetable === row.timetable_id;
   return Boolean(
-    (matches(qa) || (matches(recovery) && row.status === "active")) &&
+    (matches(qa) ||
+      (matches(recovery) &&
+        row.status === "active" &&
+        Number(row.google_connection_generation ?? 0) ===
+          recovery?.connectionGeneration)) &&
     row.provider === "google_api" &&
     !row.revoked_at &&
     row.status !== "disconnected",

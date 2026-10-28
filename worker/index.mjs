@@ -386,6 +386,7 @@ async function handleNativeCalendarIcs(request, env, ctx) {
     const { ics, revision } = await buildRevisionAwareCalendar({
       timetableId,
       reminders,
+      examReminders: subscription.exam_reminder_offsets_minutes ?? [],
       publicOrigin,
       env,
     });

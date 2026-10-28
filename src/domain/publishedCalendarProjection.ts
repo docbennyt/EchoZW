@@ -13,6 +13,10 @@ import {
   formatIcsUtc,
   zonedDateTimeToUtc,
 } from "./timezone.js";
+import {
+  academicEventCategory,
+  type AcademicEventCategory,
+} from "./academicEventCategory.js";
 
 const weekdayMap: Record<number, string> = {
   1: "MO",
@@ -52,6 +56,8 @@ export type CanonicalPublishedCalendarEvent = {
   venue: string;
   lecturer: string | null;
   sessionType: string | null;
+  /** Present on current projections; optional on retained exported artifacts. */
+  eventCategory?: AcademicEventCategory;
   notes: string | null;
   lastModifiedUtc: string;
   sequence: number;
@@ -172,6 +178,7 @@ function normalizePublicOrigin(value: string) {
 export function projectPublishedTimetable(input: {
   timetable: PublicTimetable;
   reminderOffsetsMinutes?: number[];
+  examReminderOffsetsMinutes?: number[];
   publicOrigin?: string;
 }): CanonicalPublishedCalendar {
   const timetable = input.timetable;
@@ -206,10 +213,21 @@ export function projectPublishedTimetable(input: {
   const recurrenceUntilUtc = formatIcsUtc(
     zonedDateTimeToUtc(timetable.endsOn, "23:59:59", timezone),
   );
+  const examReminderOffsets = [
+    ...new Set(
+      (input.examReminderOffsetsMinutes ?? []).filter(
+        (value) => Number.isInteger(value) && value > 0 && value <= 40320,
+      ),
+    ),
+  ]
+    .sort((a, b) => b - a)
+    .slice(0, 5);
   const lastModifiedUtc = formatIcsUtc(new Date(timetable.publishedAt));
 
   const recurringSessions = resolveRecurringSessions(timetable);
   const recurringEvents = recurringSessions.map((session) => {
+    if (academicEventCategory(session.sessionType) === "exam")
+      throw new Error("Examinations require explicitly dated sessions.");
     if (!session.stableSessionKey.trim()) {
       throw new Error(
         "Published timetable session is missing stable identity.",
@@ -281,6 +299,7 @@ export function projectPublishedTimetable(input: {
       venue: session.venue ?? "",
       lecturer: session.lecturer,
       sessionType: session.sessionType,
+      eventCategory: academicEventCategory(session.sessionType),
       notes: session.notes,
       lastModifiedUtc,
       sequence: timetable.versionNumber,
@@ -324,10 +343,14 @@ export function projectPublishedTimetable(input: {
         venue: session.venue ?? "",
         lecturer: session.lecturer,
         sessionType: session.sessionType,
+        eventCategory: academicEventCategory(session.sessionType),
         notes: session.notes,
         lastModifiedUtc,
         sequence: timetable.versionNumber,
-        alarms: reminderOffsets.map((minutesBefore) => ({
+        alarms: (academicEventCategory(session.sessionType) === "exam"
+          ? examReminderOffsets
+          : reminderOffsets
+        ).map((minutesBefore) => ({
           minutesBefore,
           description: alarmDescription(session.courseName, minutesBefore),
         })),

@@ -765,8 +765,8 @@
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
     "server/googleCalendarDelivery.ts": "1561ba3ad64595bf679141cc02efa8b65e7294d02893828e282d4cefd2821235",
     "server/googleCalendarRepository.ts": "6bf9d28433c7f08e117ee3ec1d0217e1f66657c46b057e583a0d3d8ded5ffccf",
-    "server/googleCalendarSync.ts": "cfdf3215eb1f59f9ab19b5860ac4066067cb902b24478730832b3eaa113638b3",
-    "server/googleDeliveryPolicy.ts": "8156f6e4d4d2b861ba1e16c97f65ab81b7294210d60460ab2b05cf61b3a68bf1",
+    "server/googleCalendarSync.ts": "d32b3496f891d1b9b140dcb663e69a3781a0115db07bb082b6ef4106862d885c",
+    "server/googleDeliveryPolicy.ts": "d88508fec225773dcd0349f2e01265ec3afe63e2c92ba66129899da2f163f437",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
     "server/growthCaptureRepository.ts": "49b4f42e3f1dbf74032a13cd932d44275a99d691ac4fe0f00116803cb0b87b46",
     "server/growthInboxAdminApi.ts": "a48838602baab4c8eee7bb810364297758021aeee7766d025812d1ccb3a45f73",
@@ -779,13 +779,13 @@
     "server/pdfTextReader.ts": "47337bdfb4ebd678a340d09f17c0651dd5375d9565292b5da9c00fb399f29464",
     "server/pesepayGateway.ts": "96c8a8693fcd8a425fbce8ed51609bf44e7e5cd92c25480d4ed84d4438205cb0",
     "server/pilotAdminApi.ts": "0f50c6bde4e1b2491163729f0c58f2c159035957bde5ade541385e2978c2c5e6",
-    "server/pilotCalendarApi.ts": "bcee8f1eb15f4ae1c73cc16b4ab41dbb6e1d3579dd320fb183fa5a3709034c41",
-    "server/pilotCalendarCore.ts": "580bfd3475b5a2c10cbf40117b12195cbefdb9d1e2504a967ee0e36f1db78e48",
-    "server/pilotRepository.ts": "95bb0058a402617bee84517f06aa62acbbcbdcb5f5bdb286928ba4fd86e12867",
+    "server/pilotCalendarApi.ts": "cbdc6bc4de2e49ecb850f824a3f13a0f98a178281fae57e7fb507a3d78826781",
+    "server/pilotCalendarCore.ts": "dbf4027d345624e4409bfc6eef4b1e6a49fb203ae5b3fbce9c0f1495b9833517",
+    "server/pilotRepository.ts": "e295befa2a2dc65da7fd6c33ac4ecff69173b8673b04cbcce722e79d6462c3fa",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
     "server/publicTimetableApi.ts": "84901a5a825c5b0b0549221f7f2cfdbe3191db33eaf221f418135e284f91bf73",
     "server/publicTimetableCore.ts": "2e4c1d1a7596e5178cccd1a9124c2d1df47aa1822aa4a202d9b406beea6b7c69",
-    "server/publishedCalendar.ts": "9b17c504ec2aa8897ec16d6ec6c15f032b445e0d304b85e2cb31884cbdb93049",
+    "server/publishedCalendar.ts": "4ecdc5b93d705d2a8042148129cf6bc64116988bd5898c38168f3292711eda7c",
     "server/publishedTimetableSnapshot.ts": "27ccbcccd76a77538d524a2b9121e0d88984ccf3218b9c1dd6b0d9ac9a11eb52",
     "server/pushConfig.ts": "72287b6b88dc81ef835fa9d6c15943d60a3ee15f3c7c93a097f5158bcd1bb544",
     "server/pushNotificationApi.ts": "e3236f2c4728c3fce47a25cb6e526f644522fc159c1a3313441e2b00cd481632",
@@ -862,7 +862,7 @@
     "src/api/correctionMutations.ts": "bf2680f9f27942669e62bce06f109426a8e1ae89ac3993dc8aca46c9f4791c9d",
     "src/api/payments.ts": "ffb4336b3fcd1c12e5eff63ab94b3e31f61bba84746a90d5a85fbe9cca0c0a81",
     "src/api/pilotAdmin.ts": "ffbef1b076bd77f9d5c82a5059a31e83b1bb376cf18d962992f676afd93aeb93",
-    "src/api/pilotTypes.ts": "484ff611a4a4d443009931ef94c5897c470efd60f4a67783fbf3b850edc9e301",
+    "src/api/pilotTypes.ts": "aad7e947cb738b3ebb69a271251e0250934403ef38795411524c58baad1b5880",
     "src/api/publicDiscovery.ts": "b34e641f5c0ad96f602c6881530a020f0098aa76f4d2de85704e02b28da768d4",
     "src/api/publicTimetable.ts": "328199b24b15c424a50f72acacaa106538f4df5ed9f25b07c100f11348d5902d",
     "src/api/sourceGatewayAdmin.ts": "567578ebcf2b0d55dc674686ac758bc0cdd7ba13a1c7af2442b0739adcb56a3c",
@@ -875,7 +875,8 @@
     "src/config/legal.ts": "72d12978f7a6347511e7a4ba4ddd3251359993c6850acfe9a270bef69bba5b76",
     "src/dashboardTheme.tsx": "a716f771cabff58f5c1e2da79282889d88bd55acb71ae860473786a87394b4c5",
     "src/dashboardThemeContract.ts": "4705d38d90f6e62273753702162c5efd20117365f53497307a8efbf691d9b3ee",
-    "src/domain/academicPause.ts": "92b36b7f2ded3e83a85517fe99ee45b4bb4d7d948d1f64331432eb9480c9faab",
+    "src/domain/academicEventCategory.ts": "69cece0b594f490fb2d4384463628869f4bc00a321a6cd8a10d155217a17679b",
+    "src/domain/academicPause.ts": "cdad34846f4650348d7a2121f79dab1b868daff2dd466aba0b4a41c581c4160b",
     "src/domain/academicPauseDeliveryNotice.ts": "251bc6171076d5895550eb1ec7461c97cad6278f05e454c081f4de3a8ef05bcd",
     "src/domain/academicPauseLifecycle.ts": "84f8b7dab113732e669ce924f2210029d93ab18e28c983e7035ea290dcde84ce",
     "src/domain/adminAnalytics.ts": "159c54271e7b341f880661204a73a1280efd5a996ab1f7c73d2d58a5b6197cb4",
@@ -900,9 +901,9 @@
     "src/domain/personalTimetableScene.ts": "155eeb107b255dd8009fd5e949e08a6312c095576b99a3e07778794706dc19ff",
     "src/domain/publicTimetable.ts": "37a34378ff3919b4f8ab06deb49c27e786612f1c42e9a19f2405839ea930348a",
     "src/domain/publicUrl.ts": "fe18fc89813a44c0c9844afa69b5c5fdf9ba9ff6dd9baca28595cec0fde173a7",
-    "src/domain/publishedCalendarProjection.ts": "923fcb1c9f030d38e382c48735aca51a30b3e1310300601c6a6c518ead884d0f",
+    "src/domain/publishedCalendarProjection.ts": "0c2ad94fd1dfa83374f2449073cd3340f25452a46002f8b8e8ff4eca5c0c1108",
     "src/domain/reminders.ts": "36dd599c07ab9dc4cd9cb744d7ebf4752f79c75173dc486aee19d14a9e969a9c",
-    "src/domain/resolvedSchedule.ts": "4bb413728954867edde5dd6520a61b586d399a68d5fb6742f661f51079927e8a",
+    "src/domain/resolvedSchedule.ts": "a9bd2d996b40e5874dbe97f22bfd8ebc22c5e0a0cf79309b9f35d12760159a2b",
     "src/domain/seo.ts": "41d86674fc2ef424b5ef4ac90f7034b3ff200d7f178fdb694a52e1b46576fd14",
     "src/domain/shareAttribution.ts": "e2e6fd720ff8f4bcee423a8c5487bce58837f5049ee9054b714b5b07868e3e3d",
     "src/domain/sourceSnapshots.ts": "2a16cc792c691c3c1bbc5847fa31bb5f9712c1272cba27fd3501bab4905dbe6b",
@@ -941,7 +942,7 @@
     "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
     "worker/googleCalendarApi.mjs": "4ea2cd714a57272a1dbcc3a52722b9a0de59de8adcfb23567fcccf1ba3bc510f",
     "worker/googleDelivery.mjs": "8d4a0de35ad931dc4232f5597736c76687f2260f0bca5421240ce94717f70105",
-    "worker/index.mjs": "5ebded4836f70a39c5b997777b54dcb941c296bbbc70ad9c33517b5bf03a5421",
+    "worker/index.mjs": "05838b0a2e8695d9b25aa5d8f159818c594e72ea23345bc8150f9ff20b26015f",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "b1a6c9de24d3c6cfc1a2e1747c72514487cdf4bcc2cbced232f7ac6c98f344e9",
     "wrangler.jsonc": "bfcc70594ce72f007d4c623a4d75edb148364f54cf138adad75986498b75df04"
@@ -1072,7 +1073,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1097,7 +1098,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -1167,7 +1168,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1192,7 +1193,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -1229,17 +1230,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1258,8 +1259,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 76,
+          "line": 81,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1274,12 +1280,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1327,7 +1333,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1352,7 +1358,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -1389,17 +1395,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1418,8 +1424,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1434,12 +1445,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1474,7 +1485,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1498,7 +1509,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -1525,7 +1536,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2126,
+          "line": 2158,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1539,13 +1550,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 76,
+          "line": 81,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1573,7 +1589,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1590,7 +1606,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 317, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -1607,7 +1623,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1112,
+          "line": 1158,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1680,7 +1696,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1135,
+          "line": 1181,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1753,7 +1769,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1189,
+          "line": 1235,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1971,7 +1987,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1988,7 +2004,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 283, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -2005,7 +2021,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 936,
+          "line": 982,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2078,7 +2094,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 956,
+          "line": 1002,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2151,7 +2167,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1031,
+          "line": 1077,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2392,7 +2408,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2412,7 +2428,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 217, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -2429,7 +2445,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 728,
+          "line": 774,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2500,7 +2516,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 743,
+          "line": 789,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2571,7 +2587,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 797,
+          "line": 843,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2608,7 +2624,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2627,7 +2643,7 @@
         { "file": "server/adminApi.ts", "line": 82, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -2705,7 +2721,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2722,7 +2738,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 249, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -2739,7 +2755,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 839,
+          "line": 885,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2812,7 +2828,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 859,
+          "line": 905,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2885,7 +2901,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 894,
+          "line": 940,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -2922,7 +2938,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2947,7 +2963,7 @@
         { "file": "server/adminApi.ts", "line": 64, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -4685,7 +4701,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 463,
+        "line": 464,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -4712,7 +4728,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 355, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 463,
+          "line": 464,
           "role": "worker implementation"
         }
       ],
@@ -4729,7 +4745,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1290,
+          "line": 1336,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4814,7 +4830,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1498,
+          "line": 1544,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4895,7 +4911,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1498,
+          "line": 1544,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -4986,7 +5002,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 35,
+          "line": 39,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5116,17 +5132,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5145,8 +5161,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5161,12 +5182,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5285,17 +5306,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5314,8 +5335,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5330,12 +5356,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5461,17 +5487,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5490,8 +5516,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5506,12 +5537,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5630,17 +5661,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5659,8 +5690,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5675,12 +5711,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5800,17 +5836,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5829,8 +5865,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5845,12 +5886,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5970,17 +6011,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5999,8 +6040,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6015,12 +6061,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6139,17 +6185,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6168,8 +6214,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6184,12 +6235,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6310,17 +6361,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6339,8 +6390,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6355,12 +6411,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6479,17 +6535,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6508,8 +6564,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6524,12 +6585,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6649,17 +6710,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6678,8 +6739,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6694,12 +6760,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6801,12 +6867,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1453,
+          "line": 1607,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6816,7 +6882,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6835,8 +6901,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6851,12 +6922,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6886,7 +6957,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6920,7 +6991,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -6990,7 +7061,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7024,7 +7095,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -7061,17 +7132,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7090,8 +7161,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 76,
+          "line": 81,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7106,12 +7182,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7159,7 +7235,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7193,7 +7269,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -7230,17 +7306,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7259,8 +7335,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7275,12 +7356,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7315,7 +7396,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 587,
+        "line": 588,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7349,7 +7430,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 587,
+          "line": 588,
           "role": "worker implementation"
         }
       ],
@@ -7376,7 +7457,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2126,
+          "line": 2158,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7390,13 +7471,18 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 76,
+          "line": 81,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7426,7 +7512,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 724,
+        "line": 725,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7457,7 +7543,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 724,
+          "line": 725,
           "role": "worker implementation"
         }
       ],
@@ -7469,7 +7555,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 35,
+          "line": 39,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7514,7 +7600,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 724,
+        "line": 725,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7545,7 +7631,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 724,
+          "line": 725,
           "role": "worker implementation"
         }
       ],
@@ -7557,7 +7643,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 35,
+          "line": 39,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7675,12 +7761,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1409,
+          "line": 1563,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7690,7 +7776,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7709,8 +7795,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7725,12 +7816,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7806,7 +7897,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1644,
+          "line": 1690,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7887,7 +7978,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1885,
+          "line": 1931,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7968,7 +8059,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1810,
+          "line": 1856,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8174,12 +8265,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1274,
+          "line": 1428,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8189,7 +8280,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8213,8 +8304,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8239,12 +8335,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8408,12 +8504,12 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 635,
+          "line": 692,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 100,
+          "line": 115,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8423,7 +8519,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8560,7 +8656,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1489,
+          "line": 1643,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8570,7 +8666,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8672,7 +8768,7 @@
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 625,
+          "line": 682,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8726,7 +8822,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 775,
+        "line": 776,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8757,7 +8853,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 775,
+          "line": 776,
           "role": "worker implementation"
         }
       ],
@@ -8779,7 +8875,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 625,
+          "line": 682,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8789,7 +8885,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2133,
+          "line": 2165,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8805,6 +8901,11 @@
         {
           "file": "server/viteCalendarPlugin.ts",
           "line": 268,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8966,7 +9067,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 878,
+        "line": 879,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8982,7 +9083,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 878,
+          "line": 879,
           "role": "worker implementation"
         }
       ],
@@ -9019,7 +9120,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 933,
+        "line": 934,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9035,7 +9136,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 933, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 934, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9078,7 +9179,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 941,
+        "line": 942,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9095,7 +9196,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 941, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 942, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -10217,7 +10318,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 424,
+        "line": 425,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10243,7 +10344,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 424,
+          "line": 425,
           "role": "worker implementation"
         }
       ],
@@ -10255,7 +10356,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1246,
+          "line": 1292,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10328,7 +10429,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 424,
+        "line": 425,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10354,7 +10455,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 424,
+          "line": 425,
           "role": "worker implementation"
         }
       ],
@@ -10371,7 +10472,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2119,
+          "line": 2151,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10400,8 +10501,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 124,
+          "line": 128,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         }
       ],
@@ -10521,7 +10627,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10550,8 +10656,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10561,12 +10672,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10691,7 +10802,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2184,
+          "line": 2216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10720,8 +10831,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10731,12 +10847,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10833,7 +10949,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 452,
+          "line": 459,
           "role": "dispatch"
         },
         {
@@ -10870,7 +10986,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 452,
+          "line": 459,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10880,7 +10996,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2200,
+          "line": 2232,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10909,8 +11025,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10925,12 +11046,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11033,7 +11154,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 452,
+          "line": 459,
           "role": "dispatch"
         },
         {
@@ -11070,7 +11191,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 452,
+          "line": 459,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11080,7 +11201,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2200,
+          "line": 2232,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11109,8 +11230,13 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "src/domain/academicEventCategory.ts",
+          "line": 22,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "src/domain/academicPause.ts",
-          "line": 60,
+          "line": 65,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11125,12 +11251,12 @@
         },
         {
           "file": "src/domain/publishedCalendarProjection.ts",
-          "line": 172,
+          "line": 178,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "src/domain/resolvedSchedule.ts",
-          "line": 329,
+          "line": 342,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11185,7 +11311,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 933,
+        "line": 934,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -11201,7 +11327,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 933, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 934, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -11341,7 +11467,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1290,
+          "line": 1336,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11420,7 +11546,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 1290,
+          "line": 1336,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

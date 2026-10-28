@@ -6,6 +6,10 @@ import type {
   TimetableSessionException,
 } from "../api/pilotTypes.js";
 import { getApplicableAcademicPause } from "./academicPause.js";
+import {
+  academicEventCategory,
+  examExceptionRootId,
+} from "./academicEventCategory.js";
 import { zonedDateTimeToUtc } from "./timezone.js";
 
 export type ResolvedScheduleSession = PublicTimetableSession & {
@@ -180,6 +184,7 @@ export function selectEffectiveRecurringSessions(
 function buildExtraSession(
   exception: TimetableSessionException,
   timeZone: string,
+  history: TimetableSessionException[],
 ): ResolvedScheduleOccurrence | null {
   const startTime = normalizeTime(exception.startTime);
   const endTime = normalizeTime(exception.endTime);
@@ -191,7 +196,10 @@ function buildExtraSession(
   ) {
     return null;
   }
-  const stableSessionKey = `extra-${exception.id}`;
+  const stableSessionKey =
+    academicEventCategory(exception.sessionType) === "exam"
+      ? `exam:extra-${examExceptionRootId(exception, history)}`
+      : `extra-${exception.id}`;
   const session: ResolvedScheduleSession = {
     stableSessionKey,
     originStableSessionKey: stableSessionKey,
@@ -291,7 +299,11 @@ function buildUnpausedScheduleForDate(
 
   for (const exception of exceptions) {
     if (exception.exceptionType !== "extra") continue;
-    const extra = buildExtraSession(exception, timeZone);
+    const extra = buildExtraSession(
+      exception,
+      timeZone,
+      timetable.exceptions ?? [],
+    );
     if (extra) occurrences.push(extra);
   }
 
@@ -309,6 +321,7 @@ export function resolveScheduleForDateDetailed(
 
   for (const occurrence of buildUnpausedScheduleForDate(timetable, dateKey)) {
     const pause = getApplicableAcademicPause(timetable.pauses, {
+      sessionType: occurrence.session.sessionType,
       start: occurrence.start,
       end: occurrence.end,
       dateKey: occurrence.dateKey,

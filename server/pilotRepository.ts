@@ -20,6 +20,10 @@ import type {
   TimetableSessionException,
 } from "../src/api/pilotTypes.js";
 import { listActiveAcademicPausesForTimetable } from "./academicPauseRepository.js";
+import {
+  academicEventCategory,
+  examExceptionRootId,
+} from "../src/domain/academicEventCategory.js";
 
 type JsonRecord = Record<string, unknown>;
 type QueryResult<T> = { data: T | null; error: { message?: string } | null };
@@ -288,6 +292,7 @@ function mapPublicCorrection(row: JsonRecord): TimetableCorrectionDirective {
 function mapPublicException(row: JsonRecord): TimetableSessionException {
   return {
     id: String(row.id),
+    supersedesId: row.supersedes_id ? String(row.supersedes_id) : null,
     stableSessionKey: row.stable_session_key
       ? String(row.stable_session_key)
       : null,
@@ -313,6 +318,47 @@ function mapPublicException(row: JsonRecord): TimetableSessionException {
     active: Boolean(row.active),
     createdAt: String(row.created_at),
   };
+}
+
+function mapPublishedExceptions(rows: unknown[]) {
+  const history = rows.map((row) => mapPublicException(row as JsonRecord));
+  return history
+    .filter((row) => row.active)
+    .map((row) =>
+      row.exceptionType === "extra" &&
+      academicEventCategory(row.sessionType) === "exam"
+        ? { ...row, identityRootId: examExceptionRootId(row, history) }
+        : row,
+    );
+}
+
+async function loadPublishedExceptionHistory(
+  client: ReturnType<typeof createPilotAdminClient>,
+  timetableId: string,
+) {
+  const rows: JsonRecord[] = [];
+  const pageSize = 500;
+  for (let page = 0; page < 20; page += 1) {
+    const batch = await expectData<JsonRecord[]>(
+      client
+        .from("timetable_session_exceptions")
+        .select(
+          "id, supersedes_id, stable_session_key, exception_date, exception_type, replacement_starts_at, replacement_ends_at, course_code, course_name, start_time, end_time, venue, lecturer, session_type, notes, reason, provenance, active, created_at",
+        )
+        .eq("timetable_id", timetableId)
+        .order("id")
+        .range(page * pageSize, (page + 1) * pageSize - 1),
+      "DATABASE_UNAVAILABLE",
+      "Could not load timetable exceptions.",
+    );
+    rows.push(...(batch ?? []));
+    if ((batch?.length ?? 0) < pageSize) return rows;
+  }
+  throw new PilotApiError(
+    "EXAM_IDENTITY_HISTORY_LIMIT",
+    "Timetable exception history exceeds the bounded calendar limit. Contact an administrator.",
+    503,
+  );
 }
 
 async function expectData<T = unknown>(
@@ -2026,19 +2072,7 @@ async function getPublishedTimetable(
       "DATABASE_UNAVAILABLE",
       "Could not load timetable corrections.",
     ),
-    expectData(
-      client
-        .from("timetable_session_exceptions")
-        .select(
-          "id, stable_session_key, exception_date, exception_type, replacement_starts_at, replacement_ends_at, course_code, course_name, start_time, end_time, venue, lecturer, session_type, notes, reason, provenance, active, created_at",
-        )
-        .eq("timetable_id", String((timetable as JsonRecord).id))
-        .eq("active", true)
-        .order("exception_date")
-        .order("start_time"),
-      "DATABASE_UNAVAILABLE",
-      "Could not load timetable exceptions.",
-    ),
+    loadPublishedExceptionHistory(client, String((timetable as JsonRecord).id)),
   ]);
 
   const timetableRecord = timetable as JsonRecord;
@@ -2109,9 +2143,7 @@ async function getPublishedTimetable(
     corrections: (corrections ?? []).map((row: unknown) =>
       mapPublicCorrection(row as JsonRecord),
     ),
-    exceptions: (exceptions ?? []).map((row: unknown) =>
-      mapPublicException(row as JsonRecord),
-    ),
+    exceptions: mapPublishedExceptions(exceptions ?? []),
     pauses,
   } satisfies PublicTimetable;
 }

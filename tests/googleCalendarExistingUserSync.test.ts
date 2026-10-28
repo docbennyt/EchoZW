@@ -741,6 +741,195 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
       env,
     );
   });
+  function guardedRecoveryFixture(
+    options: {
+      missingCalendar?: boolean;
+      generation?: number;
+      revision?: number;
+      create?: boolean;
+      remove?: boolean;
+      lateRevision?: boolean;
+      remoteContent?: boolean;
+    } = {},
+  ) {
+    const id = "33333333-3333-4333-8333-333333333333";
+    const owner = "11111111-1111-4111-8111-111111111111";
+    const timetableId = "22222222-2222-4222-8222-222222222222";
+    const sourceSha = "a".repeat(40);
+    const bindings = {
+      ...env,
+      ENABLE_GOOGLE_DELIVERY: "false",
+      APP_ENV: "cloudflare-staging",
+      SOURCE_SHA: sourceSha,
+      GOOGLE_RECOVERY_CANARY: JSON.stringify({
+        candidateSha: sourceSha,
+        ownerId: owner,
+        timetableId,
+        subscriptionId: id,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(),
+        mode: "deliver",
+        revision: 1,
+        connectionGeneration: 0,
+        maxCreates: 0,
+        maxDeletes: 0,
+      }),
+    };
+    repositoryMocks.getCalendarSubscriptionById.mockResolvedValue({
+      id,
+      provider: "google_api",
+      status: "active",
+      anonymous_session_id: owner,
+      timetable_id: timetableId,
+      google_connection_generation: options.generation ?? 0,
+      external_calendar_id: options.missingCalendar ? null : "cal-existing",
+      reminder_offsets_minutes: [30],
+      revoked_at: null,
+    });
+    const published = timetable({
+      timetableId,
+      ...(options.remove ? { sessions: [] } : {}),
+    });
+    repositoryMocks.getPublishedTimetableById.mockResolvedValue(published);
+    let revision = options.revision ?? 1;
+    revisionMocks.getCalendarRevision.mockImplementation(async () => ({
+      sequence: revision,
+      updatedAt: "2026-08-11T10:30:00.000Z",
+      publishedVersionId: "version-current",
+    }));
+    googleRepositoryMocks.listGoogleEventSyncRecords.mockResolvedValue(
+      options.create
+        ? []
+        : [
+            {
+              internal_event_id: "ise4105-tue-corrected",
+              external_event_id: "event-ise4105",
+              content_hash: "stale-hash",
+            },
+          ],
+    );
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (String(url) === "https://oauth2.googleapis.com/token")
+        return okJson({ access_token: "access-token" });
+      if (init?.method === "GET" && String(url).includes("/events")) {
+        if (options.lateRevision) revision = 2;
+        const listed = {
+          items: options.create
+            ? []
+            : [
+                {
+                  id: "event-ise4105",
+                  ...(options.remoteContent
+                    ? {
+                        summary: "stale lecture",
+                        start: {
+                          dateTime: "2026-08-11T01:00:00+02:00",
+                          timeZone: "Africa/Harare",
+                        },
+                        end: {
+                          dateTime: "2026-08-11T02:00:00+02:00",
+                          timeZone: "Africa/Harare",
+                        },
+                        recurrence: [
+                          "RRULE:FREQ=WEEKLY",
+                          "EXDATE:20261027T101500Z",
+                        ],
+                        reminders: { useDefault: true },
+                      }
+                    : {}),
+                  extendedProperties: {
+                    private: {
+                      calenderzwTimetableId: timetableId,
+                      calenderzwStableSessionKey: "ise4105-tue-corrected",
+                    },
+                  },
+                },
+              ],
+        };
+        return okJson(
+          String(url).includes("/events?") ? listed : listed.items[0],
+        );
+      }
+      throw new Error(
+        `Unexpected guarded recovery provider mutation ${init?.method}`,
+      );
+    });
+    return { id, bindings };
+  }
+
+  it.each([{ missingCalendar: true }, { generation: 1 }, { revision: 2 }])(
+    "blocks invalid recovery state before token exchange: %j",
+    async (options) => {
+      const { id, bindings } = guardedRecoveryFixture(options);
+      await expect(syncGoogleSubscription(id, bindings)).rejects.toMatchObject({
+        code:
+          "missingCalendar" in options
+            ? "GOOGLE_RECOVERY_MUTATION_FORBIDDEN"
+            : "generation" in options
+              ? "GOOGLE_DELIVERY_UNAVAILABLE"
+              : "GOOGLE_RECOVERY_REVISION_CHANGED",
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(googleRepositoryMocks.getGoogleCredential).not.toHaveBeenCalled();
+    },
+  );
+  it.each([{ create: true }, { remove: true }])(
+    "blocks fresh projection creates/deletes under update-only recovery: %j",
+    async (options) => {
+      const { id, bindings } = guardedRecoveryFixture(options);
+      await expect(syncGoogleSubscription(id, bindings)).rejects.toMatchObject({
+        code: "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+      });
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.some(
+            ([url, init]) =>
+              String(url).includes("/calendar/v3/") &&
+              ["POST", "PUT", "DELETE"].includes(init?.method ?? ""),
+          ),
+      ).toBe(false);
+    },
+  );
+  it("rechecks a late published revision change before updating Google", async () => {
+    const { id, bindings } = guardedRecoveryFixture({ lateRevision: true });
+    await expect(syncGoogleSubscription(id, bindings)).rejects.toMatchObject({
+      code: "GOOGLE_RECOVERY_REVISION_CHANGED",
+    });
+    expect(
+      vi.mocked(fetch).mock.calls.some(([, init]) => init?.method === "PUT"),
+    ).toBe(false);
+  });
+  it.each([false, true])(
+    "does not claim actual remote convergence for missing or stale provider payloads: complete=%s",
+    async (remoteContent) => {
+      const { id, bindings } = guardedRecoveryFixture({ remoteContent });
+      const preview = await previewGoogleSubscriptionSync(id, bindings);
+      expect(preview).toMatchObject({
+        readOnly: true,
+        remoteContentsVerified: false,
+        remoteContentMismatchCount: 1,
+        remoteReadComplete: remoteContent,
+      });
+      expect(preview.executionGuard).toEqual(
+        remoteContent
+          ? {
+              revision: 1,
+              connectionGeneration: 0,
+              maxCreates: 0,
+              maxDeletes: 0,
+            }
+          : undefined,
+      );
+      expect(
+        vi
+          .mocked(fetch)
+          .mock.calls.some(([, init]) =>
+            ["PUT", "DELETE"].includes(init?.method ?? ""),
+          ),
+      ).toBe(false);
+    },
+  );
+
   beforeEach(() => {
     vi.clearAllMocks();
     googleRepositoryMocks.updateGoogleSubscription

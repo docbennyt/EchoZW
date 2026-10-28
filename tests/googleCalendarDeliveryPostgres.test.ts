@@ -99,7 +99,8 @@ describe.skipIf(!modulePath && !pgModulePath)(
         timetable_id uuid, institution_id uuid, programme_id uuid, cohort_id uuid, active boolean, label text);
       create table public.calendar_subscriptions(
         id uuid primary key, timetable_id uuid references timetables(id),
-        provider text, status text, revoked_at timestamptz);
+        provider text, status text, revoked_at timestamptz,
+        reminder_offsets_minutes jsonb not null default '[]'::jsonb);
       create table public.google_calendar_credentials(
         subscription_id uuid primary key references calendar_subscriptions(id), updated_at timestamptz);
       create table public.push_notification_outbox(
@@ -141,6 +142,15 @@ describe.skipIf(!modulePath && !pgModulePath)(
           "utf8",
         ),
       );
+      await db.exec(
+        await readFile(
+          new URL(
+            "../supabase/migrations/20261028212057_independent_exam_reminders.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
     }, 30_000);
 
     beforeEach(async () => {
@@ -150,12 +160,272 @@ describe.skipIf(!modulePath && !pgModulePath)(
       delete from push_notification_outbox;
       delete from timetables where id <> '${timetable}';
       update google_calendar_delivery_revisions set revision = 1;
-      insert into calendar_subscriptions values ('${subscription}', '${timetable}', 'google_api', 'active', null);
+      insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) values ('${subscription}', '${timetable}', 'google_api', 'active', null);
     `);
     });
     afterAll(async () => {
       await db?.close();
     });
+
+    it("defaults subscriptions to no exam reminders and preserves lecture settings when exam reminders change", async () => {
+      expect(
+        await rows(
+          "select exam_reminder_offsets_minutes from calendar_subscriptions where id = $1",
+          [subscription],
+        ),
+      ).toEqual([{ exam_reminder_offsets_minutes: [] }]);
+      await rows(
+        "update calendar_subscriptions set reminder_offsets_minutes = '[30,15]'::jsonb where id = $1",
+        [subscription],
+      );
+      await rows(
+        "update calendar_subscriptions set exam_reminder_offsets_minutes = $1::integer[] where id = $2",
+        [[1440, 60], subscription],
+      );
+      expect(
+        await rows(
+          "select reminder_offsets_minutes, exam_reminder_offsets_minutes from calendar_subscriptions where id = $1",
+          [subscription],
+        ),
+      ).toEqual([
+        {
+          reminder_offsets_minutes: [30, 15],
+          exam_reminder_offsets_minutes: [1440, 60],
+        },
+      ]);
+      await rows(
+        "update calendar_subscriptions set exam_reminder_offsets_minutes = $1::integer[] where id = $2",
+        [[120], subscription],
+      );
+      expect(
+        await rows(
+          "select reminder_offsets_minutes, exam_reminder_offsets_minutes from calendar_subscriptions where id = $1",
+          [subscription],
+        ),
+      ).toEqual([
+        {
+          reminder_offsets_minutes: [30, 15],
+          exam_reminder_offsets_minutes: [120],
+        },
+      ]);
+    });
+
+    it.each([
+      { label: "zero", value: [0] },
+      { label: "negative", value: [-1] },
+      { label: "null member", value: [60, null] },
+      { label: "null array", value: null },
+      { label: "too many", value: [1, 2, 3, 4, 5, 6] },
+      { label: "over 28 days", value: [40321] },
+    ])(
+      "rejects $label exam reminders without persisting an invalid update",
+      async ({ value }) => {
+        await expect(
+          rows(
+            "update calendar_subscriptions set exam_reminder_offsets_minutes = $1::integer[] where id = $2",
+            [value, subscription],
+          ),
+        ).rejects.toMatchObject({ code: value === null ? "23502" : "23514" });
+        expect(
+          await rows(
+            "select exam_reminder_offsets_minutes from calendar_subscriptions where id = $1",
+            [subscription],
+          ),
+        ).toEqual([{ exam_reminder_offsets_minutes: [] }]);
+      },
+    );
+
+    it("durably enqueues each changed exam reminder setting once and ignores identical updates", async () => {
+      const change = (offsets: number[]) =>
+        rows(
+          "update calendar_subscriptions set exam_reminder_offsets_minutes = $1::integer[] where id = $2",
+          [offsets, subscription],
+        );
+      await change([1440, 60]);
+      expect(
+        await rows(
+          "select subscription_id, desired_revision, requested_generation from google_calendar_delivery_jobs",
+        ),
+      ).toEqual([
+        {
+          subscription_id: subscription,
+          desired_revision: 1,
+          requested_generation: 1,
+        },
+      ]);
+      const [first] = await rows("select * from google_calendar_delivery_jobs");
+      await change([1440, 60]);
+      expect(await rows("select * from google_calendar_delivery_jobs")).toEqual(
+        [first],
+      );
+      await change([120]);
+      expect(
+        await rows(
+          "select subscription_id, desired_revision, requested_generation from google_calendar_delivery_jobs",
+        ),
+      ).toEqual([
+        {
+          subscription_id: subscription,
+          desired_revision: 1,
+          requested_generation: 2,
+        },
+      ]);
+      await change([120]);
+      expect(
+        (
+          await rows(
+            "select requested_generation from google_calendar_delivery_jobs",
+          )
+        )[0].requested_generation,
+      ).toBe(2);
+    });
+
+    it("preserves an active delivery lease while exam reminder changes request the next generation", async () => {
+      await recover();
+      const [job] = await claim();
+      await rows(
+        "update calendar_subscriptions set exam_reminder_offsets_minutes = '{60}' where id = $1",
+        [subscription],
+      );
+      const [updated] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(updated.requested_generation).toBe(
+        (job.requested_generation as number) + 1,
+      );
+      for (const field of [
+        "lease_token",
+        "lease_expires_at",
+        "claimed_revision",
+        "claimed_generation",
+        "attempt_count",
+        "available_at",
+        "successful_revision",
+        "successful_generation",
+      ]) {
+        expect(updated[field]).toEqual(job[field]);
+      }
+      expect(await claim()).toEqual([]);
+      expect(await finish(job)).toBe(true);
+      const [next] = await claim();
+      expect(next.claimed_generation).toBe(2);
+      expect(next.claimed_revision).toBe(job.claimed_revision);
+      expect(await finish(job)).toBe(false);
+      expect(await finish(next)).toBe(true);
+      expect(await claim()).toEqual([]);
+    });
+
+    it("does not bypass reconnect fences when exam reminder settings change", async () => {
+      await rows(
+        "insert into google_calendar_credentials values ($1, '2020-01-01')",
+        [subscription],
+      );
+      await recover();
+      const [job] = await claim();
+      expect(await finish(job, "reconnect")).toBe(true);
+      const [blocked] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      await rows(
+        "update calendar_subscriptions set exam_reminder_offsets_minutes = '{60}' where id = $1",
+        [subscription],
+      );
+      const [updated] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(updated.requested_generation).toBe(2);
+      for (const field of [
+        "reconnect_required_at",
+        "credential_updated_at",
+        "available_at",
+        "last_error_code",
+        "successful_revision",
+        "successful_generation",
+      ]) {
+        expect(updated[field]).toEqual(blocked[field]);
+      }
+      expect(await claim()).toEqual([]);
+    });
+
+    it("preserves retry backoff when exam reminders change", async () => {
+      await recover();
+      const [job] = await claim();
+      expect(await finish(job, "retry")).toBe(true);
+      const [deferred] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      await rows(
+        "update calendar_subscriptions set exam_reminder_offsets_minutes = '{60}' where id = $1",
+        [subscription],
+      );
+      const [updated] = await rows(
+        "select * from google_calendar_delivery_jobs",
+      );
+      expect(updated.requested_generation).toBe(2);
+      expect(updated.available_at).toEqual(deferred.available_at);
+      expect(updated.attempt_count).toEqual(deferred.attempt_count);
+      expect(await claim()).toEqual([]);
+    });
+
+    it.each([
+      {
+        provider: "google_api",
+        status: "active",
+        revoked: false,
+        eligible: true,
+      },
+      {
+        provider: "google_api",
+        status: "failed",
+        revoked: false,
+        eligible: true,
+      },
+      {
+        provider: "google_api",
+        status: "active",
+        revoked: true,
+        eligible: false,
+      },
+      {
+        provider: "ics_download",
+        status: "active",
+        revoked: false,
+        eligible: false,
+      },
+      {
+        provider: "google_api",
+        status: "disconnected",
+        revoked: false,
+        eligible: false,
+      },
+      {
+        provider: "google_api",
+        status: "pending",
+        revoked: false,
+        eligible: false,
+      },
+    ])(
+      "keeps existing enqueue eligibility for $provider/$status revoked=$revoked",
+      async ({ provider, status, revoked, eligible }) => {
+        await rows(
+          "update calendar_subscriptions set provider = $1, status = $2, revoked_at = $3 where id = $4",
+          [provider, status, revoked ? "2020-01-01" : null, subscription],
+        );
+        await rows(
+          "update calendar_subscriptions set exam_reminder_offsets_minutes = '{60}' where id = $1",
+          [subscription],
+        );
+        expect(
+          await rows(
+            "select subscription_id, requested_generation from google_calendar_delivery_jobs",
+          ),
+        ).toEqual(
+          eligible
+            ? [{ subscription_id: subscription, requested_generation: 1 }]
+            : [],
+        );
+      },
+    );
 
     it("recovers only selected timetables and treats empty scope as no work", async () => {
       await rows(
@@ -163,7 +433,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
         [second],
       );
       await rows(
-        "insert into calendar_subscriptions values ($1, $1, 'google_api', 'active', null)",
+        "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) values ($1, $1, 'google_api', 'active', null)",
         [second],
       );
       expect(await recoverScoped([])).toEqual([{ count: 0 }]);
@@ -213,7 +483,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
         [second],
       );
       await rows(
-        "insert into calendar_subscriptions values ($1, $1, 'google_api', 'active', null)",
+        "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) values ($1, $1, 'google_api', 'active', null)",
         [second],
       );
       expect(await recoverScoped([second], 1)).toEqual([{ count: 1 }]);
@@ -486,7 +756,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
     it("excludes pending OAuth subscriptions without credentials from enqueue, recovery, listing and claims", async () => {
       await db.exec("update calendar_subscriptions set status = 'pending'");
       await rows(
-        "insert into calendar_subscriptions select gen_random_uuid(), $1, 'google_api', 'pending', null from generate_series(1,21)",
+        "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) select gen_random_uuid(), $1, 'google_api', 'pending', null from generate_series(1,21)",
         [timetable],
       );
       expect(
@@ -712,7 +982,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
 
     it("caps ready listing at 25 and recovery at its requested limit", async () => {
       await rows(
-        "insert into calendar_subscriptions select gen_random_uuid(), $1, 'google_api', 'active', null from generate_series(1, 30)",
+        "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) select gen_random_uuid(), $1, 'google_api', 'active', null from generate_series(1, 30)",
         [timetable],
       );
       await recover(1);
@@ -873,7 +1143,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
       "serializes independent concurrent claimers and skips locked subscription rows",
       async () => {
         await rows(
-          "insert into calendar_subscriptions values ($1, $2, 'google_api', 'active', null)",
+          "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) values ($1, $2, 'google_api', 'active', null)",
           [second, timetable],
         );
         await recover();
@@ -908,7 +1178,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
 
     it("bounds recovery/claims and excludes revoked/disconnected/non-Google subscriptions", async () => {
       await rows(
-        "insert into calendar_subscriptions values ($1, $2, 'google_api', 'failed', null)",
+        "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) values ($1, $2, 'google_api', 'failed', null)",
         [second, timetable],
       );
       for (const [provider, status, revoked] of [
@@ -917,7 +1187,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
         ["ics_download", "active", null],
       ]) {
         await rows(
-          "insert into calendar_subscriptions values (gen_random_uuid(), $1, $2, $3, $4)",
+          "insert into calendar_subscriptions(id, timetable_id, provider, status, revoked_at) values (gen_random_uuid(), $1, $2, $3, $4)",
           [timetable, provider, status, revoked],
         );
       }
@@ -938,6 +1208,7 @@ describe.skipIf(!modulePath && !pgModulePath)(
     it("protects RLS tables and all RPCs from PUBLIC, anon and authenticated", async () => {
       const functions = [
         "observe_google_calendar_delivery_revision()",
+        "observe_exam_reminder_policy_change()",
         "recover_google_calendar_delivery(integer)",
         "recover_google_calendar_delivery(integer,uuid[])",
         "claim_google_calendar_delivery(integer,integer,uuid)",

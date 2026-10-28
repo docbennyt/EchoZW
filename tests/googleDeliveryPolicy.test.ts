@@ -104,6 +104,10 @@ const recovery = () => ({
     subscriptionId: subscription,
     expiresAt: new Date(Date.now() + 3600000).toISOString(),
     mode: "deliver",
+    revision: 1,
+    connectionGeneration: 0,
+    maxCreates: 0,
+    maxDeletes: 0,
   }),
 });
 

@@ -10,11 +10,13 @@ import {
 export function generatePublishedTimetableIcs(input: {
   timetable: PublicTimetable;
   reminderOffsetsMinutes: number[];
+  examReminderOffsetsMinutes?: number[];
   publicOrigin?: string;
 }) {
   const calendar = projectPublishedTimetable({
     timetable: input.timetable,
     reminderOffsetsMinutes: input.reminderOffsetsMinutes,
+    examReminderOffsetsMinutes: input.examReminderOffsetsMinutes,
     publicOrigin: input.publicOrigin,
   });
   const dtStamp = formatIcsUtc(new Date(calendar.publishedAt));

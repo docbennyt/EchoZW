@@ -429,6 +429,13 @@ export async function handlePilotCalendarRequest(
         .reminder_offsets_minutes ?? []) as number[];
       const { ics, revision } = await buildRevisionAwareCalendar({
         timetableId,
+        examReminders: Array.isArray(
+          (subscription as Record<string, unknown>)
+            .exam_reminder_offsets_minutes,
+        )
+          ? ((subscription as Record<string, unknown>)
+              .exam_reminder_offsets_minutes as number[])
+          : [],
         reminders,
         publicOrigin,
         env,
@@ -467,6 +474,13 @@ export async function handlePilotCalendarRequest(
         .reminder_offsets_minutes ?? []) as number[];
       const { ics, revision } = await buildRevisionAwareCalendar({
         timetableId,
+        examReminders: Array.isArray(
+          (subscription as Record<string, unknown>)
+            .exam_reminder_offsets_minutes,
+        )
+          ? ((subscription as Record<string, unknown>)
+              .exam_reminder_offsets_minutes as number[])
+          : [],
         reminders,
         publicOrigin,
         env,

@@ -4,6 +4,7 @@ import { loadPublishedTimetableSnapshot } from "./publishedTimetableSnapshot.js"
 export async function buildRevisionAwareCalendar(input: {
   timetableId: string;
   reminders: number[];
+  examReminders?: number[];
   publicOrigin: string;
   env: NodeJS.ProcessEnv;
 }) {
@@ -19,6 +20,7 @@ export async function buildRevisionAwareCalendar(input: {
   const ics = generatePublishedTimetableIcs({
     timetable: resolvedTimetable,
     reminderOffsetsMinutes: input.reminders,
+    examReminderOffsetsMinutes: input.examReminders,
     publicOrigin: input.publicOrigin,
   });
   return { ics, revision };

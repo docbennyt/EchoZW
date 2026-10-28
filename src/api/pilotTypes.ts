@@ -250,6 +250,8 @@ export type TimetableCorrectionDirective = {
 
 export type TimetableSessionException = {
   id: string;
+  /** Root of immutable exam amendment history, resolved before public serialization. */
+  identityRootId?: string;
   stableSessionKey: string | null;
   exceptionDate: string;
   exceptionType: "cancelled" | "moved" | "extra";

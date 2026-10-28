@@ -5,7 +5,11 @@ import {
   randomBytes,
 } from "node:crypto";
 import type { PublicTimetable } from "../src/api/pilotTypes.js";
-import { googleSubscriptionAllowed } from "./googleDeliveryPolicy.js";
+import {
+  googleRecoveryScope,
+  googleSubscriptionAllowed,
+} from "./googleDeliveryPolicy.js";
+import { getCalendarRevision } from "./calendarRevisionRepository.js";
 import {
   buildGoogleAuthorizationUrl,
   buildGoogleTokenExchangeBody,
@@ -69,6 +73,7 @@ type GoogleEventPayload = {
 type GoogleManagedRemoteEvent = {
   id: string;
   stableSessionKey: string;
+  content: JsonRecord;
 };
 
 const googleCalendarApi = "https://www.googleapis.com/calendar/v3";
@@ -310,7 +315,7 @@ function googleManagedEventFromItem(
   if (!id || itemTimetableId !== timetableId || !stableSessionKey) {
     return null;
   }
-  return { id, stableSessionKey };
+  return { id, stableSessionKey, content: record as JsonRecord };
 }
 
 async function listRemoteManagedEvents(input: {
@@ -327,7 +332,8 @@ async function listRemoteManagedEvents(input: {
       showDeleted: "false",
       singleEvents: "false",
       maxResults: "2500",
-      fields: "items(id,extendedProperties/private),nextPageToken",
+      fields:
+        "items(id,summary,description,location,start,end,recurrence,reminders,extendedProperties/private),nextPageToken",
     });
     if (pageToken) params.set("pageToken", pageToken);
     const data = await googleApiRequest({
@@ -550,7 +556,13 @@ function googleEventPayload(input: {
     recurrence: recurrence.length ? recurrence : undefined,
     reminders: {
       useDefault: false,
-      overrides: [...new Set(input.reminders)]
+      overrides: [
+        ...new Set(
+          event.eventCategory === "exam"
+            ? event.alarms.map((alarm) => alarm.minutesBefore)
+            : input.reminders,
+        ),
+      ]
         .filter((minutes) => Number.isInteger(minutes) && minutes > 0)
         .slice(0, 5)
         .map((minutes) => ({ method: "popup" as const, minutes })),
@@ -568,6 +580,51 @@ function contentHash(payload: GoogleEventPayload) {
   return createHash("sha256")
     .update(JSON.stringify(payload), "utf8")
     .digest("base64url");
+}
+
+function remotePayloadMatches(
+  remote: JsonRecord,
+  expected: GoogleEventPayload,
+) {
+  const normalize = (value: JsonRecord) => {
+    const start = getNestedRecord(value, "start");
+    const end = getNestedRecord(value, "end");
+    const reminders = getNestedRecord(value, "reminders");
+    const overrides = Array.isArray(reminders?.overrides)
+      ? reminders.overrides
+      : [];
+    return JSON.stringify({
+      summary: value.summary ?? "",
+      description: value.description ?? "",
+      location: value.location ?? "",
+      start: Date.parse(String(start?.dateTime)),
+      end: Date.parse(String(end?.dateTime)),
+      startZone: start?.timeZone,
+      endZone: end?.timeZone,
+      recurrence: [
+        ...(Array.isArray(value.recurrence) ? value.recurrence : []),
+      ].sort(),
+      useDefault: reminders?.useDefault === true,
+      overrides: overrides
+        .map((item) => {
+          const row = asRecord(item);
+          return `${row.method}:${row.minutes}`;
+        })
+        .sort(),
+    });
+  };
+  return normalize(remote) === normalize(expected as unknown as JsonRecord);
+}
+
+function hasRemoteContent(event: GoogleManagedRemoteEvent) {
+  return Boolean(
+    Number.isFinite(
+      Date.parse(String(getNestedRecord(event.content, "start")?.dateTime)),
+    ) &&
+    Number.isFinite(
+      Date.parse(String(getNestedRecord(event.content, "end")?.dateTime)),
+    ),
+  );
 }
 
 async function createSecondaryCalendar(input: {
@@ -709,12 +766,33 @@ async function reconcileGoogleSubscription(
     return { created: 0, updated: 0, deleted: 0, unchanged: 0 };
   }
   assertCloudflareDeliveryScope(env, subscription);
+  const recovery = googleRecoveryScope(env);
+  const recoveryScope =
+    recovery?.subscription === subscriptionId ? recovery : null;
+  if (recoveryScope && !subscription.external_calendar_id)
+    throw new PilotApiError(
+      "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+      "Recovery requires an existing calendar.",
+      409,
+    );
 
   const connectionGeneration = Number(
     subscription.google_connection_generation ?? 0,
   );
   const assertConnection = async () => {
     assertCloudflareDeliveryScope(env, subscription);
+    if (recoveryScope) {
+      const current = await getCalendarRevision(
+        String(subscription.timetable_id),
+        env,
+      );
+      if (current.sequence !== recoveryScope.revision)
+        throw new PilotApiError(
+          "GOOGLE_RECOVERY_REVISION_CHANGED",
+          "The published schedule changed. Preview recovery again.",
+          409,
+        );
+    }
     const accepted = await updateGoogleSubscription({
       subscriptionId,
       connectionGeneration,
@@ -730,8 +808,24 @@ async function reconcileGoogleSubscription(
   const writeGoogleEvent = async (
     input: Parameters<typeof googleApiRequest>[0],
   ) => {
+    if (recoveryScope && (input.method === "POST" || input.method === "DELETE"))
+      throw new PilotApiError(
+        "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+        "This recovery permits existing event updates only.",
+        409,
+      );
     await assertConnection();
-    return googleApiRequest(input);
+    const result = await googleApiRequest(input);
+    if (recoveryScope)
+      console.log(
+        JSON.stringify({
+          event: "google.delivery.provider_mutation_accepted",
+          operation: "update",
+          sourceSha: env.SOURCE_SHA,
+          revision: recoveryScope.revision,
+        }),
+      );
+    return result;
   };
 
   const timetableId = String(subscription.timetable_id);
@@ -739,6 +833,12 @@ async function reconcileGoogleSubscription(
     timetableId,
     env,
   );
+  if (recoveryScope && revision.sequence !== recoveryScope.revision)
+    throw new PilotApiError(
+      "GOOGLE_RECOVERY_REVISION_CHANGED",
+      "The published schedule changed. Preview recovery again.",
+      409,
+    );
   const resolvedTimetable: PublicTimetable = {
     ...timetable,
     publishedAt: revision.updatedAt,
@@ -750,6 +850,11 @@ async function reconcileGoogleSubscription(
   const projection = projectPublishedTimetable({
     timetable: resolvedTimetable,
     reminderOffsetsMinutes: reminders,
+    examReminderOffsetsMinutes: Array.isArray(
+      subscription.exam_reminder_offsets_minutes,
+    )
+      ? (subscription.exam_reminder_offsets_minutes as number[])
+      : [],
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
   const publishedVersionId = revision.publishedVersionId;
@@ -893,7 +998,13 @@ async function reconcileGoogleSubscription(
       externalEventId &&
       externalEventId === previousExternalEventId &&
       previousRemoteStillManaged &&
-      previous?.content_hash === hash
+      previous?.content_hash === hash &&
+      (!recoveryScope ||
+        remotePayloadMatches(
+          remoteManagedEvents.find((item) => item.id === externalEventId)
+            ?.content ?? {},
+          payload,
+        ))
     ) {
       retainedRemoteEventIds.add(externalEventId);
       unchanged += 1;
@@ -1132,6 +1243,11 @@ export async function previewGoogleSubscriptionSync(
   const projection = projectPublishedTimetable({
     timetable: resolvedTimetable,
     reminderOffsetsMinutes: reminders,
+    examReminderOffsetsMinutes: Array.isArray(
+      subscription.exam_reminder_offsets_minutes,
+    )
+      ? (subscription.exam_reminder_offsets_minutes as number[])
+      : [],
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
   const { accessToken } = await loadAccessToken(subscriptionId, env);
@@ -1172,6 +1288,11 @@ export async function previewGoogleSubscriptionSync(
   let wouldUpdate = 0;
   let wouldDelete = 0;
   let unchanged = 0;
+  let remoteContentMismatchCount = 0;
+  const remoteReadComplete = remoteManagedEvents.every(hasRemoteContent);
+  const remoteById = new Map(
+    remoteManagedEvents.map((item) => [item.id, item]),
+  );
 
   for (const event of projection.events) {
     nextIds.add(event.stableSessionKey);
@@ -1202,11 +1323,21 @@ export async function previewGoogleSubscriptionSync(
       ? previousExternalEventId
       : (remoteMatches?.[0]?.id ?? null);
 
+    const remote = externalEventId
+      ? remoteById.get(externalEventId)
+      : undefined;
+    const contentMatches = Boolean(
+      remote &&
+      hasRemoteContent(remote) &&
+      remotePayloadMatches(remote.content, payload),
+    );
+    if (!contentMatches) remoteContentMismatchCount += 1;
     if (
       externalEventId &&
       externalEventId === previousExternalEventId &&
       previousRemoteStillManaged &&
-      previous?.content_hash === hash
+      previous?.content_hash === hash &&
+      (!remote || !hasRemoteContent(remote) || contentMatches)
     ) {
       retainedRemoteEventIds.add(externalEventId);
       unchanged += 1;
@@ -1260,6 +1391,29 @@ export async function previewGoogleSubscriptionSync(
     timetableId,
     readOnly: true,
     ownershipReviewCount: ownershipReviewIds.size,
+    publishedRevision: revision.sequence,
+    connectionGeneration: Number(
+      subscription.google_connection_generation ?? 0,
+    ),
+    remoteReadComplete,
+    remoteContentMismatchCount,
+    remoteContentsVerified:
+      remoteReadComplete &&
+      remoteContentMismatchCount === 0 &&
+      remoteManagedEvents.length === projection.events.length &&
+      ownershipReviewIds.size === 0 &&
+      wouldCreate === 0 &&
+      wouldDelete === 0,
+    executionGuard: remoteReadComplete
+      ? {
+          revision: revision.sequence,
+          connectionGeneration: Number(
+            subscription.google_connection_generation ?? 0,
+          ),
+          maxCreates: 0,
+          maxDeletes: 0,
+        }
+      : undefined,
     remoteManagedDeletionCandidates,
     expectedEvents: projection.events.length,
     remoteManagedEvents: remoteManagedEvents.length,
