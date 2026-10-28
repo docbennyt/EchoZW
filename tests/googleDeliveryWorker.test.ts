@@ -225,9 +225,8 @@ describe("Google durable delivery Worker handoff", () => {
   });
 });
 
-
-describe("HIT single-subscription emergency recovery delivery", () => {
-  it("uses only the release-pinned existing account and rejects unrelated queue work", async () => {
+describe("bounded subscriber recovery", () => {
+  it("reconciles only the selected account, never unrelated queue work", async () => {
     vi.resetAllMocks();
     const owner = "11111111-1111-4111-8111-111111111111";
     const timetable = "22222222-2222-4222-8222-222222222222";
@@ -248,8 +247,11 @@ describe("HIT single-subscription emergency recovery delivery", () => {
     };
     mocks.recoverOne.mockResolvedValue(true);
     mocks.subscription.mockResolvedValue({
-      id, anonymous_session_id: owner, timetable_id: timetable,
-      provider: "google_api", status: "active",
+      id,
+      anonymous_session_id: owner,
+      timetable_id: timetable,
+      provider: "google_api",
+      status: "active",
     });
     mocks.claim.mockResolvedValue({ subscriptionId: id, revision: 1 });
     mocks.deliver.mockResolvedValue(true);
@@ -260,7 +262,8 @@ describe("HIT single-subscription emergency recovery delivery", () => {
     expect(mocks.recover).not.toHaveBeenCalled();
     expect(mocks.ready).not.toHaveBeenCalled();
     expect(config.PUSH_QUEUE.send).toHaveBeenCalledWith({
-      type: "google_calendar_reconcile", subscriptionId: id,
+      type: "google_calendar_reconcile",
+      subscriptionId: id,
     });
     const permitted = message();
     await consumeGoogleDeliveryMessage(permitted, config);
