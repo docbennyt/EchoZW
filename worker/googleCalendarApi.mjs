@@ -23,6 +23,7 @@ import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
 import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
 import {
   googleCanaryScope,
+  googleRecoveryScope,
   googleSubscriptionAllowed,
 } from "../server/googleDeliveryPolicy.ts";
 
@@ -229,7 +230,7 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
     deliveryEnabled:
       options.deliveryEnabled ??
       (env.ENABLE_GOOGLE_DELIVERY === "true" ||
-        Boolean(googleCanaryScope(env)?.subscription)),
+        Boolean(googleCanaryScope(env)?.subscription || googleRecoveryScope(env)?.subscription)),
   };
   const url = new URL(request.url);
   const route = url.pathname.match(
