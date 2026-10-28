@@ -31,6 +31,12 @@ const plan = () => ({
   subscriptions: [{ ...subscription }],
 });
 const safePreview = {
+  executionGuard: {
+    revision: 3,
+    connectionGeneration: 2,
+    maxCreates: 0,
+    maxDeletes: 0,
+  },
   readOnly: true,
   ownershipReviewCount: 0,
   expectedEvents: 5,
@@ -317,6 +323,10 @@ describe("bounded canary authorization and revocation", () => {
               ownerId: subscription.ownerId,
               timetableId: subscription.timetableId,
               mode: "deliver",
+              revision: 3,
+              connectionGeneration: 2,
+              maxCreates: 0,
+              maxDeletes: 0,
             });
             if (scenario === "lost-put")
               throw new Error("private-lost-response");
@@ -364,6 +374,25 @@ describe("bounded canary authorization and revocation", () => {
             subscriptionId: subscription.subscriptionId,
             timetableId: subscription.timetableId,
             ...(scenario === "unsafe" ? { wouldDelete: 1 } : {}),
+            ...(scenario === "missing-guard"
+              ? { executionGuard: undefined }
+              : {}),
+            ...(scenario === "stale-guard"
+              ? {
+                  executionGuard: {
+                    ...safePreview.executionGuard,
+                    revision: 2,
+                  },
+                }
+              : {}),
+            ...(scenario === "stale-generation"
+              ? {
+                  executionGuard: {
+                    ...safePreview.executionGuard,
+                    connectionGeneration: 1,
+                  },
+                }
+              : {}),
             ...(queued ? { wouldUpdate: 0, unchanged: 5 } : {}),
           },
         });
@@ -379,15 +408,18 @@ describe("bounded canary authorization and revocation", () => {
         JSON.parse(String(init?.body)).dryRun === false,
     );
 
-  it("never provisions authority or queues delivery for an unsafe preview", async () => {
-    const request = provider("unsafe");
-    await runGoogleRecovery(operationalEnv(), {
-      request,
-      delay: async () => {},
-    });
-    expect(writes(request, "PUT")).toHaveLength(0);
-    expect(queues(request)).toHaveLength(0);
-  });
+  it.each(["unsafe", "missing-guard", "stale-guard", "stale-generation"])(
+    "never provisions authority or queues delivery for %s",
+    async (scenario) => {
+      const request = provider(scenario);
+      await runGoogleRecovery(operationalEnv(), {
+        request,
+        delay: async () => {},
+      });
+      expect(writes(request, "PUT")).toHaveLength(0);
+      expect(queues(request)).toHaveLength(0);
+    },
+  );
   it.each(["success", "enqueue-failure", "lost-put"])(
     "revokes canary authority after %s",
     async (scenario) => {

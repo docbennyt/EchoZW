@@ -230,15 +230,24 @@ export async function runGoogleRecovery(env, dependencies = {}) {
       )
         fail("GOOGLE_DIAGNOSTIC_IDENTITY_MISMATCH");
       const safe = previewIsSafe(preview);
+      const guard = preview.executionGuard;
+      const guarded = Boolean(
+        guard?.revision === row.desiredRevision &&
+        guard?.connectionGeneration === row.connectionGeneration &&
+        guard?.maxCreates === 0 &&
+        guard?.maxDeletes === 0,
+      );
       const result = {
         index,
         desiredRevision: row.desiredRevision,
         credentialCheckPassed: true,
         preview: redactedPreview(preview),
-        safeToProceed: safe && row.status === "active",
+        previewWithinInitialBounds: safe,
+        safeToProceed: safe && guarded && row.status === "active",
       };
       report.results.push(result);
       if (mode !== "canary") continue;
+      if (!guarded) fail("GOOGLE_EXECUTION_GUARD_UNAVAILABLE");
       if (!safe || row.status !== "active" || !row.lastSyncedAt)
         fail("GOOGLE_CANARY_UNSAFE_PREVIEW");
       await verifyStagingIdentity(env, request);
@@ -257,6 +266,10 @@ export async function runGoogleRecovery(env, dependencies = {}) {
           Math.min(Date.parse(plan.expiresAt), Date.now() + 1800000),
         ).toISOString(),
         mode: "deliver",
+        revision: guard.revision,
+        connectionGeneration: guard.connectionGeneration,
+        maxCreates: 0,
+        maxDeletes: 0,
       };
       // If the response is lost, finally still attempts revocation.
       scopeProvisioned = true;

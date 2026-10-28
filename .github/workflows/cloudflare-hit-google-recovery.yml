@@ -80,21 +80,22 @@ jobs:
           CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
           DEPLOYMENT_RUN: ${{ inputs.deployment_run }}
       - name: Verify active version through Cloudflare API
-        run: node scripts/verify-active-worker-deployment.mjs
+        id: current
+        run: node scripts/verify-recovery-worker.mjs
         env:
-          EXPECTED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
+          REVIEWED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       - name: Verify public release before administrative authentication
         run: node scripts/verify-staging-identity.mjs
         env:
           EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
-          EXPECTED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
+          EXPECTED_WORKER_VERSION: ${{ steps.current.outputs.version }}
       - name: Run explicit bounded operation with redacted results
         run: node scripts/recover-hit-google.mjs
         env:
           EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
-          EXPECTED_WORKER_VERSION: ${{ steps.provenance.outputs.version }}
+          EXPECTED_WORKER_VERSION: ${{ steps.current.outputs.version }}
           RECOVERY_MODE: ${{ inputs.mode }}
           RECOVERY_INDEX: ${{ inputs.selection }}
           RECOVERY_PLAN: ${{ secrets.CALENDERZW_STAGING_GOOGLE_RECOVERY }}

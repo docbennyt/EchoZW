@@ -3,7 +3,9 @@
 Run `Cloudflare Google Recovery Operations` from `Calender`. This is trusted
 control-plane tooling, not a Worker deployment. It reuses the existing exact-head
 application approval, deployment provenance, Cloudflare active-version check,
-public identity check and protected test-account sign-in. No operator browser
+public identity check and protected test-account sign-in. Configuration-only
+versions must retain the reviewed script content hash, runtime and every binding
+except the temporary recovery secret; otherwise authentication is blocked. No operator browser
 login or exported OAuth credentials are needed.
 
 Provision the private environment secret `CALENDERZW_STAGING_GOOGLE_RECOVERY`
@@ -30,6 +32,10 @@ ordinal. The workflow serializes with staging deployments and acceptance.
   a successful preview with no ownership conflict, missing/empty calendar,
   creation or deletion. This conservative initial policy permits in-place updates
   only. Review any creation/deletion separately rather than adding an override.
+  The preview must also advertise an execution guard matching the selected live
+  revision and connection generation with zero allowed creations/deletions. Until
+  that guarded runtime is reviewed and deployed, canary mode fails closed; the
+  earlier identity-only recovery scope is insufficient for this bounded policy.
   Recheck the approved release and global delivery disabled setting before
   setting the existing single-subscription `GOOGLE_RECOVERY_CANARY` binding. Its
   expiry is at most 30 minutes and never later than the private plan expiry.
@@ -40,8 +46,9 @@ ordinal. The workflow serializes with staging deployments and acceptance.
 - `disable`: remove temporary recovery authorization. An expired selection plan
   must not prevent revocation. Identity and Cloudflare configuration checks still
   apply. A process killed before cleanup leaves only the bounded authorization TTL;
-  use authorized Cloudflare secret deletion if provenance has changed and the
-  workflow correctly refuses the old active-version assertion.
+  the workflow accepts configuration-only versions only after comparing the
+  actual script content hash, runtime and retained bindings with reviewed provenance.
+  Changed code or unrelated configuration still fails closed.
 
 Reports contain only ordinals, counts, sanitized codes and application/Worker
 release identities. No raw provider response or remote deletion candidate IDs are
