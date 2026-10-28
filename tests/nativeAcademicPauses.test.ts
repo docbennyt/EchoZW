@@ -6,6 +6,8 @@ const state = vi.hoisted(() => ({
   assigned: true,
   writes: [] as string[],
   envs: [] as unknown[],
+  recoveries: 0,
+  recoveryFails: false,
 }));
 vi.mock("../server/supabase/userClient.js", () => ({
   createSupabaseUserClient: () => ({
@@ -89,6 +91,18 @@ vi.mock("../server/academicPauseCore.ts", async (importOriginal) => {
     }),
   };
 });
+vi.mock("../server/googleCalendarDelivery.ts", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("../server/googleCalendarDelivery.ts")>();
+  return {
+    ...original,
+    recoverGoogleCalendarDelivery: vi.fn(async () => {
+      state.recoveries += 1;
+      if (state.recoveryFails) throw new Error("database unavailable");
+      return 3;
+    }),
+  };
+});
 import worker from "../worker/index.mjs";
 const env = {
   SUPABASE_URL: "https://fixture.supabase.co",
@@ -130,6 +144,8 @@ describe("native existing timetable pause transport", () => {
     state.assigned = true;
     state.writes = [];
     state.envs = [];
+    state.recoveries = 0;
+    state.recoveryFails = false;
   });
   it("lists only through the scoped timetable service with request bindings", async () => {
     const response = await request();
@@ -149,21 +165,43 @@ describe("native existing timetable pause transport", () => {
     });
     expect(state.writes).toEqual([]);
   });
-  it("creates and resumes using existing services without pretending Google propagated", async () => {
+  it("persists durable recovery after create and resume without claiming remote delivery", async () => {
     const created = await request("POST", "", body);
     expect(created.status).toBe(201);
     expect(await created.json()).toMatchObject({
       pause: { timetableId },
-      googleCalendarSync: { skipped: true, attempted: 0 },
+      googleCalendarSync: {
+        pending: true,
+        recoveredJobs: 3,
+        attempted: 0,
+      },
     });
     const resumed = await request(
       "DELETE",
       "/a3d25330-a637-42cd-9053-22ed99c66c45",
     );
     expect(resumed.status).toBe(200);
-    expect(await resumed.json()).toMatchObject({ pause: { active: false } });
+    expect(await resumed.json()).toMatchObject({
+      pause: { active: false },
+      googleCalendarSync: { pending: true, recoveredJobs: 3 },
+    });
+    expect(state.recoveries).toBe(2);
     expect(state.writes).toEqual(["create", "resume"]);
     expect(state.envs.every((value) => value === env)).toBe(true);
+  });
+  it("keeps committed pauses truthful if delivery recovery is temporarily unavailable", async () => {
+    state.recoveryFails = true;
+    const response = await request("POST", "", body);
+    expect(response.status).toBe(201);
+    expect(await response.json()).toMatchObject({
+      googleCalendarSync: {
+        pending: true,
+        recoveryDeferred: true,
+        attempted: 0,
+      },
+    });
+    expect(state.writes).toEqual(["create"]);
+    expect(state.recoveries).toBe(1);
   });
   it("denies anonymous, unassigned and cross-origin writes", async () => {
     expect(
