@@ -58,6 +58,61 @@ const fixture = () => ({
 });
 
 describe("reviewed acceptance-only provenance", () => {
+  const aggregateFixture = () => {
+    const input = fixture();
+    const commands = {
+      "Recheck approval after environment review":
+        "node scripts/authorize-staging-candidate.mjs",
+      "Verify artifact identity and bytes":
+        'gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/reviewed-worker.zip',
+      "Prepare trusted deployment configuration":
+        'gh api "repos/$GITHUB_REPOSITORY/contents/wrangler.jsonc?ref=$CANDIDATE_SHA" -H "Accept: application/vnd.github.raw+json" > /tmp/candidate-wrangler.jsonc',
+      "Deploy reviewed bundle": "set -o pipefail",
+    };
+    input.jobs[2].steps.push({
+      name: "Deploy reviewed bundle",
+      conclusion: "success",
+    });
+    for (const step of input.jobs[2].steps) {
+      step.started_at = "2026-10-24T21:07:52Z";
+      step.completed_at = "2026-10-24T21:07:52Z";
+    }
+    input.log = Object.entries(commands)
+      .map(([name, command]) =>
+        [
+          `deploy\tUNKNOWN STEP\t2026-10-24T21:07:52.001Z ##[group]Run ${command}`,
+          ...input.log
+            .split("\n")
+            .filter((line) => line.split("\t")[1] === name)
+            .map((line) => line.replace(`\t${name}\t`, "\tUNKNOWN STEP\t")),
+        ].join("\n"),
+      )
+      .join("\n");
+    return input;
+  };
+  it("recovers aggregate job logs using exact trusted command groups and step timestamps", () => {
+    expect(recoverReviewedWorker(aggregateFixture())).toEqual({
+      version,
+      jobId: 123,
+    });
+  });
+  it.each(["wrong-command", "wrong-time", "duplicate-group"])(
+    "rejects ambiguous aggregate provenance: %s",
+    (scenario) => {
+      const input = aggregateFixture();
+      if (scenario === "wrong-command")
+        input.log = input.log.replace(
+          "node scripts/authorize-staging-candidate.mjs",
+          "node untrusted.mjs",
+        );
+      if (scenario === "wrong-time")
+        input.jobs[2].steps[0].started_at = "2026-10-25T21:07:52Z";
+      if (scenario === "duplicate-group") input.log += "\n" + input.log;
+      expect(() => recoverReviewedWorker(input)).toThrow(
+        "VERIFIED_DEPLOYMENT_ARTIFACT_REQUIRED",
+      );
+    },
+  );
   it("classifies a rejected artifact without exposing log or artifact values", () => {
     const input = fixture();
     input.artifacts[0].digest = "private-value-must-not-be-printed";

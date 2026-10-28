@@ -26,6 +26,51 @@ export function recoverReviewedWorker({ run, jobs, artifacts, log, sha }) {
     throw new Error("TRUSTED_DEPLOYMENT_RUN_REQUIRED");
   const job = (name) => latestJob(jobs, name);
   const deployment = job("deploy");
+  // GitHub sometimes retains only the aggregate job log. gh then labels every
+  // line UNKNOWN STEP. Recover attribution only from exact trusted run commands
+  // within the successful API step's timestamp window; never scan arbitrary text.
+  const commands = {
+    "Recheck approval after environment review":
+      "node scripts/authorize-staging-candidate.mjs",
+    "Verify artifact identity and bytes":
+      'gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/reviewed-worker.zip',
+    "Prepare trusted deployment configuration":
+      'gh api "repos/$GITHUB_REPOSITORY/contents/wrangler.jsonc?ref=$CANDIDATE_SHA" -H "Accept: application/vnd.github.raw+json" > /tmp/candidate-wrangler.jsonc',
+    "Deploy reviewed bundle": "set -o pipefail",
+  };
+  const aggregateLines = log
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter((parts) => parts[0] === "deploy" && parts[1] === "UNKNOWN STEP")
+    .map((parts) => parts.slice(2).join("\t").replace(/\r$/, ""));
+  const aggregateStepLog = (name) => {
+    const step = deployment?.steps?.find((step) => step.name === name);
+    const start = Date.parse(step?.started_at);
+    const end = Date.parse(step?.completed_at);
+    if (
+      step?.conclusion !== "success" ||
+      !Number.isFinite(start) ||
+      !Number.isFinite(end)
+    )
+      return "";
+    const header = `##[group]Run ${commands[name]}`;
+    const starts = aggregateLines.flatMap((line, index) =>
+      line.replace(/^\S+\s/, "") === header ? [index] : [],
+    );
+    if (starts.length !== 1) return "";
+    const index = starts[0];
+    const timestamp = Date.parse(aggregateLines[index].split(" ")[0]);
+    // API step timestamps have second precision; log timestamps have fractions.
+    if (timestamp < start || timestamp >= end + 1000) return "";
+    const following = aggregateLines.slice(index + 1);
+    const next = following.findIndex((line) =>
+      /^\S+\s##\[group\]Run /.test(line),
+    );
+    return following
+      .slice(0, next < 0 ? undefined : next)
+      .map((line) => line.replace(/^\S+\s/, ""))
+      .join("\n");
+  };
   // gh prefixes log lines with the authenticated job and step, not PR output.
   const stepLog = (name) =>
     log
@@ -38,7 +83,7 @@ export function recoverReviewedWorker({ run, jobs, artifacts, log, sha }) {
           .join("\t")
           .replace(/^\S+\s/, ""),
       )
-      .join("\n");
+      .join("\n") || aggregateStepLog(name);
   const oneValue = (text, expression) => {
     const matches = [...text.matchAll(expression)];
     return matches.length === 1 ? matches[0][1] : undefined;
