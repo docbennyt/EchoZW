@@ -24,7 +24,14 @@ if (JSON.stringify(inventory) !== JSON.stringify(expected)) {
       (key) => JSON.stringify(route[key]) !== JSON.stringify(previous[key]),
     );
     return fields.length
-      ? [{ route: route.method + " " + route.path, fields, previous, generated: route }]
+      ? [
+          {
+            route: route.method + " " + route.path,
+            fields,
+            previous,
+            generated: route,
+          },
+        ]
       : [];
   });
   console.error(
