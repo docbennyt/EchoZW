@@ -39,6 +39,7 @@ import { handleNativeAdminEntities } from "./adminEntities.mjs";
 import { handleNativeAdminAnalytics } from "./adminAnalytics.mjs";
 import { handleNativeStaffInvitation } from "./staffInvitations.mjs";
 import { handleGoogleCalendarRequest } from "./googleCalendarApi.mjs";
+import { handleGoogleCredentialRecovery } from "./googleCredentialRecoveryApi.mjs";
 import {
   enqueueNativeGoogleSync,
   scheduleGoogleDelivery,
@@ -959,6 +960,12 @@ const application = {
     if (url.pathname === "/api/edge/source-documents") {
       return handleSourceDocumentUpload(request, env, ctx);
     }
+
+    const credentialRecoveryResponse = await handleGoogleCredentialRecovery(
+      request,
+      env,
+    );
+    if (credentialRecoveryResponse) return credentialRecoveryResponse;
 
     const googleResponse = await handleGoogleCalendarRequest(request, env, {
       enqueueInitialSync: enqueueNativeGoogleSync,

@@ -148,6 +148,80 @@ export async function getGoogleCredential(
   return (data ?? null) as JsonRecord | null;
 }
 
+export async function listGoogleCredentials(
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const { data, error } = await client(env)
+    .from("google_calendar_credentials")
+    .select(
+      "subscription_id, encrypted_refresh_token, created_at, updated_at, encryption_migration_id",
+    )
+    .order("created_at", { ascending: true })
+    .order("subscription_id", { ascending: true });
+  if (error)
+    throw databaseError("Could not load Google Calendar access.", error);
+  return (data ?? []) as JsonRecord[];
+}
+
+export async function beginGoogleCredentialKeyMigration(input: {
+  subscriptionId: string;
+  expectedCiphertext: string;
+  newCiphertext: string;
+  migrationId: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "begin_google_credential_key_migration",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_expected_ciphertext: input.expectedCiphertext,
+      p_new_ciphertext: input.newCiphertext,
+      p_migration_id: input.migrationId,
+    },
+  );
+  if (error)
+    throw databaseError("Could not migrate Google Calendar access.", error);
+  return data === true;
+}
+
+export async function verifyGoogleCredentialKeyMigration(input: {
+  subscriptionId: string;
+  expectedCiphertext: string;
+  migrationId: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "verify_google_credential_key_migration",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_expected_ciphertext: input.expectedCiphertext,
+      p_migration_id: input.migrationId,
+    },
+  );
+  if (error)
+    throw databaseError("Could not verify Google Calendar access.", error);
+  return data === true;
+}
+
+export async function revertGoogleCredentialKeyMigration(input: {
+  subscriptionId: string;
+  expectedCiphertext: string;
+  migrationId: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "revert_google_credential_key_migration",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_expected_ciphertext: input.expectedCiphertext,
+      p_migration_id: input.migrationId,
+    },
+  );
+  if (error)
+    throw databaseError("Could not restore Google Calendar access.", error);
+  return data === true;
+}
+
 export async function deleteGoogleCredential(
   subscriptionId: string,
   env: NodeJS.ProcessEnv = process.env,

@@ -365,6 +365,11 @@ export async function buildInventory(
       "/api/admin/timetables/:timetableId/google-calendar-sync",
       "handleGoogleCalendarRequest",
     ],
+    [
+      "POST",
+      "/api/admin/google-credential-recovery",
+      "handleGoogleCredentialRecovery",
+    ],
     ["GET", "/api/calendar/google/connect", "handleGoogleCalendarRequest"],
     ["GET", "/api/calendar/google/callback", "handleGoogleCalendarRequest"],
     ["POST", "/api/calendar/google/disconnect", "handleGoogleCalendarRequest"],
