@@ -87,7 +87,7 @@ export async function runLegacyGoogleCredentialRecovery(
       fail("RECOVERY_DEPLOYMENT_UNVERIFIED");
     return deployment.versions[0].version_id;
   };
-  const verifyTemporaryVersion = async () => {
+  const verifyTemporaryVersion = async (provisioned) => {
     const version = await activeVersion();
     await verifyStagingIdentity(
       { ...env, EXPECTED_WORKER_VERSION: version },
@@ -97,14 +97,22 @@ export async function runLegacyGoogleCredentialRecovery(
       { ...env, REVIEWED_WORKER_VERSION: env.EXPECTED_WORKER_VERSION },
       request,
     );
+    const activeResources = await cf("GET", `/versions/${version}`);
+    const activeBindings = activeResources.resources?.bindings;
+    if (!Array.isArray(activeBindings))
+      fail("RECOVERY_ACTIVE_BINDINGS_UNVERIFIED");
+    const matching = temporaryBindings.every(
+      (name) =>
+        activeBindings.some((binding) => binding.name === name) === provisioned,
+    );
+    if (!matching) fail("RECOVERY_ACTIVE_BINDINGS_NOT_CONVERGED");
     return version;
   };
-  const verifyCleanupVersion = async () => {
+  const verifyConvergedVersion = async (provisioned) => {
     let lastError;
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
-        await verifyTemporaryVersion();
-        return;
+        return await verifyTemporaryVersion(provisioned);
       } catch (error) {
         lastError = error;
         if (attempt < 4) await pause((attempt + 1) * 1000);
@@ -143,7 +151,9 @@ export async function runLegacyGoogleCredentialRecovery(
         mode,
       }),
     });
-    const workerVersion = await verifyTemporaryVersion();
+    // Secret provisioning creates new Worker versions. Wait for the active
+    // deployment and public version metadata to converge before credential access.
+    const workerVersion = await verifyConvergedVersion(true);
     const response = await request(
       `${origin}/api/admin/google-credential-recovery`,
       {
@@ -204,7 +214,7 @@ export async function runLegacyGoogleCredentialRecovery(
           fail("RECOVERY_DISABLE_NOT_CONFIRMED");
         // Secret deletion creates new Worker versions. Allow Cloudflare's active
         // deployment and public version metadata to converge before failing closed.
-        await verifyCleanupVersion();
+        await verifyConvergedVersion(false);
       } catch (error) {
         cleanupError = error;
       }
