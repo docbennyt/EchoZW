@@ -34,9 +34,7 @@ if (JSON.stringify(inventory) !== JSON.stringify(expected)) {
   const changedKeys = Object.keys(expected).filter(
     (key) => JSON.stringify(expected[key]) !== JSON.stringify(inventory[key]),
   );
-  console.error(
-    "DRIFT_PATCH_JSON=" + JSON.stringify({ changedKeys, changes }),
-  );
+  console.error("DRIFT_PATCH_JSON=" + JSON.stringify({ changedKeys, changes }));
 }
 assert(
   JSON.stringify(inventory) === JSON.stringify(expected),
