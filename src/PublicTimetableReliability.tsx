@@ -34,6 +34,7 @@ import {
   projectPublishedTimetable,
   type CanonicalPublishedCalendarEvent,
 } from "./domain/publishedCalendarProjection";
+import { academicEventCategory } from "./domain/academicEventCategory";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 import { pauseLifecycle } from "./domain/academicPauseLifecycle";
@@ -111,6 +112,15 @@ const reminderChoices: Array<{
 ];
 
 function formatPauseDate(dateKey: string) {
+  return new Intl.DateTimeFormat("en-ZW", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${dateKey}T12:00:00Z`));
+}
+
+function formatAcademicDate(dateKey: string) {
   return new Intl.DateTimeFormat("en-ZW", {
     day: "numeric",
     month: "long",
@@ -351,7 +361,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const groupedEvents = useMemo(() => {
     const map = new Map<number, CanonicalPublishedCalendarEvent[]>();
     for (let weekday = 1; weekday <= 7; weekday += 1) map.set(weekday, []);
-    for (const event of projection?.events ?? []) {
+    for (const event of projection?.events.filter((item) => item.recurring) ??
+      []) {
       map.get(event.weekday)?.push(event);
     }
     for (const events of map.values()) {
@@ -361,6 +372,21 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     }
     return map;
   }, [projection]);
+
+  const examEvents = useMemo(
+    () =>
+      (projection?.events ?? [])
+        .filter((event) => !event.recurring && event.eventCategory === "exam")
+        .sort((left, right) =>
+          left.firstStartUtc.localeCompare(right.firstStartUtc),
+        ),
+    [projection],
+  );
+
+  const recurringEventCount = useMemo(
+    () => (projection?.events ?? []).filter((event) => event.recurring).length,
+    [projection],
+  );
 
   const activeWeekdays = useMemo(
     () =>
@@ -373,7 +399,11 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const matrixStartTimes = useMemo(
     () =>
       Array.from(
-        new Set((projection?.events ?? []).map((event) => event.startTime)),
+        new Set(
+          (projection?.events ?? [])
+            .filter((event) => event.recurring)
+            .map((event) => event.startTime),
+        ),
       ).sort((left, right) => left.localeCompare(right)),
     [projection],
   );
@@ -383,6 +413,10 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     [timetable, scheduleNow],
   );
   const nextClass = upcoming[0] ?? null;
+  const nextOccurrenceLabel =
+    nextClass && academicEventCategory(nextClass.session.sessionType) === "exam"
+      ? "Next exam"
+      : "Next class";
   const tomorrow = useMemo(
     () => (timetable ? getTomorrowSchedule(timetable, scheduleNow) : null),
     [timetable, scheduleNow],
@@ -1262,7 +1296,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             <div className="pt-conversion-grid">
               <div className="pt-conversion-main">
                 <article className="pt-next-card">
-                  <span className="pt-next-label">Next class</span>
+                  <span className="pt-next-label">{nextOccurrenceLabel}</span>
                   {nextClass ? (
                     <>
                       <strong className="pt-next-time">
@@ -1364,6 +1398,53 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           </div>
         </section>
 
+        {examEvents.length > 0 ? (
+          <section className="pt-exams" aria-labelledby="pt-exams-title">
+            <div className="pt-section-heading">
+              <div>
+                <span className="pt-kicker">Dated academic events</span>
+                <h2 id="pt-exams-title">Published examinations</h2>
+              </div>
+              <p>
+                {examEvents.length === 1
+                  ? "1 published examination"
+                  : `${examEvents.length} published examinations`}
+              </p>
+            </div>
+            <p className="pt-exam-trust-note">
+              These dated examinations remain visible while regular lectures are
+              paused. Check the publication time above for corrections.
+            </p>
+            <div className="pt-exam-grid">
+              {examEvents.map((event) => (
+                <article
+                  className={`pt-exam-card ${courseToneClass(event.courseCode)}`}
+                  key={event.stableSessionKey}
+                >
+                  <div className="pt-exam-date">
+                    <strong>
+                      {formatAcademicDate(event.exceptionDate as string)}
+                    </strong>
+                    <time dateTime={event.localStart}>
+                      {localTimeLabel(event.startTime)}–
+                      {localTimeLabel(event.endTime)}
+                    </time>
+                  </div>
+                  <div className="pt-exam-copy">
+                    <span>{event.sessionType || "Examination"}</span>
+                    <strong>{event.courseCode}</strong>
+                    <h3>{event.courseName}</h3>
+                    <p>
+                      <MapPin size={16} aria-hidden="true" />
+                      {event.venue || "Venue not set"}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <section
           className="pt-tomorrow"
           id="tomorrow"
@@ -1376,13 +1457,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
             </div>
             <p>
               {tomorrow.sessions.length === 1
-                ? "1 published class"
-                : `${tomorrow.sessions.length} published classes`}
+                ? "1 published event"
+                : `${tomorrow.sessions.length} published events`}
             </p>
           </div>
           {tomorrow.sessions.length === 0 ? (
             <div className="pt-tomorrow-empty">
-              No published classes tomorrow.
+              No published events tomorrow.
             </div>
           ) : (
             <div className="pt-tomorrow-grid">
@@ -1407,13 +1488,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
           )}
         </section>
 
-        <section className="pt-schedule" aria-labelledby="pt-week-title">
+        <section className="pt-schedule" aria-label="Regular weekly schedule">
           <div className="pt-section-heading">
             <div>
               <span className="pt-kicker">Regular weekly schedule</span>
               <h2 id="pt-week-title">Weekly timetable</h2>
             </div>
-            <p>{projection.events.length} published weekly sessions</p>
+            <p>{recurringEventCount} published weekly sessions</p>
           </div>
 
           {currentPauses.length > 0 ? (
