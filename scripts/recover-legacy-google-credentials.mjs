@@ -18,6 +18,10 @@ export async function runLegacyGoogleCredentialRecovery(
   dependencies = {},
 ) {
   const request = dependencies.request ?? fetch;
+  const pause =
+    dependencies.pause ??
+    ((milliseconds) =>
+      new Promise((resolve) => setTimeout(resolve, milliseconds)));
   const mode = env.CREDENTIAL_RECOVERY_MODE;
   if (!["compatibility", "migrate"].includes(mode))
     fail("RECOVERY_MODE_INVALID");
@@ -94,6 +98,19 @@ export async function runLegacyGoogleCredentialRecovery(
       request,
     );
     return version;
+  };
+  const verifyCleanupVersion = async () => {
+    let lastError;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        await verifyTemporaryVersion();
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt < 4) await pause((attempt + 1) * 1000);
+      }
+    }
+    throw lastError;
   };
 
   const initialSettings = await settings();
@@ -185,7 +202,9 @@ export async function runLegacyGoogleCredentialRecovery(
           )
         )
           fail("RECOVERY_DISABLE_NOT_CONFIRMED");
-        await verifyTemporaryVersion();
+        // Secret deletion creates new Worker versions. Allow Cloudflare's active
+        // deployment and public version metadata to converge before failing closed.
+        await verifyCleanupVersion();
       } catch (error) {
         cleanupError = error;
       }
