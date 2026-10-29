@@ -10,12 +10,17 @@ const response = await fetch(
   },
 );
 const body = await response.json();
+const deployments = body?.deployments ?? body?.result?.deployments;
 const firstRelease =
-  response.status === 404 &&
-  body?.errors?.some((error) => error.code === 10007);
+  (response.status === 404 &&
+    body?.errors?.some((error) => error.code === 10007)) ||
+  (response.ok &&
+    body?.success === true &&
+    Array.isArray(deployments) &&
+    deployments.length === 0);
 if (!firstRelease && (!response.ok || body?.success === false))
   throw new Error("PRODUCTION_ROLLBACK_LOOKUP_FAILED");
-const active = (body?.deployments ?? body?.result?.deployments)?.[0];
+const active = deployments?.[0];
 const version = active?.versions?.[0]?.version_id;
 if (
   !firstRelease &&
