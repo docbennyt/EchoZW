@@ -91,5 +91,60 @@
         ],
       },
     },
+    "production": {
+      "workers_dev": false,
+      "preview_urls": false,
+      "routes": [
+        {
+          "pattern": "backend.calender.aido.co.zw",
+          "custom_domain": true,
+        },
+      ],
+      "version_metadata": {
+        "binding": "CF_VERSION_METADATA",
+      },
+      "vars": {
+        "APP_ENV": "cloudflare-production",
+        "PUBLIC_APP_URL": "https://calender.aido.co.zw",
+        "ENABLE_GOOGLE_DELIVERY": "false",
+      },
+      "triggers": { "crons": ["* * * * *"] },
+      "r2_buckets": [
+        {
+          "binding": "SOURCE_BUCKET",
+          "bucket_name": "calenderzw-source-production",
+        },
+        {
+          "binding": "CALENDAR_ARTIFACT_BUCKET",
+          "bucket_name": "calenderzw-calendar-artifacts-production",
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "SOURCE_PROCESSING_QUEUE",
+            "queue": "calenderzw-source-processing-production",
+          },
+          {
+            "binding": "PUSH_QUEUE",
+            "queue": "calenderzw-push-production",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "calenderzw-source-processing-production",
+            "dead_letter_queue": "calenderzw-source-processing-dlq-production",
+            "max_retries": 5,
+          },
+          {
+            "queue": "calenderzw-push-production",
+            "dead_letter_queue": "calenderzw-push-dlq-production",
+            "max_retries": 5,
+            "max_batch_size": 1,
+            "max_concurrency": 1,
+          },
+        ],
+      },
+    },
   },
 }

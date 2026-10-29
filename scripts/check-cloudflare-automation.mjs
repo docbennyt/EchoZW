@@ -101,10 +101,16 @@ assert(
 );
 assert(
   production.includes("environment: cloudflare-production") &&
-    production.includes("git merge-base --is-ancestor") &&
-    production.includes("Production deploy: disabled until DR-166"),
-  "production cutover remains gated.",
+    production.includes("verify-production-environment.mjs") &&
+    production.includes("authorize-staging-candidate.mjs") &&
+    production.includes("prepare-production-deployment.mjs") &&
+    production.includes("--env production") &&
+    production.includes("--no-bundle") &&
+    production.includes("ENABLE_GOOGLE_DELIVERY:false") &&
+    production.includes("verify-production-origin.mjs") &&
+    production.includes("Public hostname cutover: not performed"),
+  "production backend release must remain reviewed, isolated and fail closed before public cutover.",
 );
 console.log(
-  "Cloudflare automation: unprivileged PR verification; reviewed immutable staging; isolated deployment and acceptance.",
+  "Cloudflare automation: unprivileged PR verification; reviewed immutable staging; protected production backend release without implicit public cutover.",
 );

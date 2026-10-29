@@ -1,53 +1,178 @@
-name: Cloudflare Production Gate
+name: Cloudflare Production Backend Release
 
 on:
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Git ref/SHA to validate for a future production deploy."
+      candidate_sha:
+        description: Full immutable candidate SHA approved by a reviewer
         required: true
-        default: Calender
+        type: string
+      pull_request:
+        description: Pull request containing the approved candidate
+        required: true
         type: string
 
 permissions:
   contents: read
+  pull-requests: read
+  actions: read
 
 concurrency:
   group: cloudflare-production
   cancel-in-progress: false
 
 jobs:
-  validate-production-ref:
-    name: Validate production deploy eligibility
+  authorize:
+    if: github.ref == 'refs/heads/Calender'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment: cloudflare-production
+    outputs:
+      sha: ${{ steps.authorize.outputs.sha }}
     steps:
-      - name: Checkout requested ref
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
+          persist-credentials: false
+      - name: Require genuine production environment approval
+        run: node scripts/verify-production-environment.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Verify current candidate approval and CI
+        id: authorize
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
 
-      - name: Validate ref is reachable from Calender
-        id: validate
+  package:
+    needs: authorize
+    runs-on: ubuntu-latest
+    services:
+      delivery-postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: dr166
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 15478:5432
+        options: >-
+          --health-cmd "pg_isready -U dr166 -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DR178_PG_MODULE: ${{ github.workspace }}/node_modules/pg/lib/index.js
+      DR178_REQUIRE_POSTGRES: "true"
+    timeout-minutes: 30
+    outputs:
+      artifact_id: ${{ steps.bundle.outputs.artifact-id }}
+      artifact_digest: ${{ steps.bundle.outputs.artifact-digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.authorize.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+      - run: npm run worker:check
+      - run: npm run worker:automation:check
+      - run: npx wrangler@4.147.0 deploy --env production --dry-run --outdir bundle
+      - uses: actions/upload-artifact@v4
+        id: bundle
+        with:
+          name: production-worker-${{ needs.authorize.outputs.sha }}
+          path: |
+            bundle/index.js
+            dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    needs: [authorize, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: cloudflare-production
+    outputs:
+      version: ${{ steps.deploy.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - run: npm ci --ignore-scripts
+      - name: Recheck approval after environment review
         run: |
-          checked_out_sha="$(git rev-parse HEAD)"
-          git fetch origin Calender
-          calender_sha="$(git rev-parse origin/Calender)"
-          echo "checked_out_sha=${checked_out_sha}"
-          echo "calender_sha=${calender_sha}"
-          git merge-base --is-ancestor "${checked_out_sha}" origin/Calender
-          echo "sha=${checked_out_sha}" >> "$GITHUB_OUTPUT"
-
-      - name: Production deploy intentionally disabled
+          node scripts/verify-production-environment.mjs
+          node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+      - name: Verify artifact identity and bytes
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > /tmp/production-worker.zip
+          python3 scripts/extract-staging-artifact.py /tmp/production-worker.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: ${{ needs.package.outputs.artifact_id }}
+          ARTIFACT_DIGEST: ${{ needs.package.outputs.artifact_digest }}
+      - name: Prepare trusted deployment configuration
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/contents/wrangler.jsonc?ref=$CANDIDATE_SHA" -H "Accept: application/vnd.github.raw+json" > /tmp/candidate-wrangler.jsonc
+          node scripts/prepare-production-deployment.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_CONFIG_PATH: /tmp/candidate-wrangler.jsonc
+      - name: Ensure isolated production storage and queues
+        run: node scripts/ensure-production-cloudflare-resources.mjs
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Deploy reviewed production backend with Google delivery disabled
+        id: deploy
+        run: |
+          set -o pipefail
+          trap 'rm -f production-secrets.json' EXIT
+          node scripts/prepare-production-secrets.mjs
+          npx wrangler@4.147.0 deploy --config production-deploy.json --env production --no-bundle --secrets-file production-secrets.json --var SOURCE_SHA:$CANDIDATE_SHA --var SUPABASE_URL:$SUPABASE_URL --var VITE_SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY --var GOOGLE_CLIENT_ID:$GOOGLE_CLIENT_ID --var GOOGLE_REDIRECT_URI:$GOOGLE_REDIRECT_URI --var WEB_PUSH_VAPID_PUBLIC_KEY:$WEB_PUSH_VAPID_PUBLIC_KEY --var WEB_PUSH_VAPID_SUBJECT:$WEB_PUSH_VAPID_SUBJECT --var ENABLE_GOOGLE_DELIVERY:false | tee /tmp/production-deploy.log
+          node scripts/verify-production-worker-deployment.mjs
+        env:
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
+          EDGE_SOURCE_UPLOAD_SECRET: ${{ secrets.EDGE_SOURCE_UPLOAD_SECRET }}
+          WEB_PUSH_VAPID_PUBLIC_KEY: ${{ vars.WEB_PUSH_VAPID_PUBLIC_KEY }}
+          WEB_PUSH_VAPID_PRIVATE_KEY: ${{ secrets.WEB_PUSH_VAPID_PRIVATE_KEY }}
+          WEB_PUSH_VAPID_SUBJECT: ${{ vars.WEB_PUSH_VAPID_SUBJECT }}
+      - name: Verify production-only origin before any Vercel cutover
+        run: node scripts/verify-production-origin.mjs
+        env:
+          EXPECTED_RELEASE_SHA: ${{ needs.authorize.outputs.sha }}
+          EXPECTED_WORKER_VERSION: ${{ steps.deploy.outputs.version }}
+      - name: Record rollback and cutover state
         run: |
           {
-            echo "## Cloudflare production gate"
+            echo "## Cloudflare production backend ready"
             echo
-            echo "- Requested ref: \`${{ inputs.ref }}\`"
-            echo "- Exact SHA: \`${{ steps.validate.outputs.sha }}\`"
-            echo "- Reachable from \`Calender\`: yes"
-            echo "- Production deploy: disabled until DR-166 cutover approval"
+            echo "- Candidate: \`${{ needs.authorize.outputs.sha }}\`"
+            echo "- Worker version: \`${{ steps.deploy.outputs.version }}\`"
+            echo "- Backend origin: \`https://backend.calender.aido.co.zw\`"
+            echo "- Google delivery: disabled"
+            echo "- Public hostname cutover: not performed by this workflow"
+            echo "- Rollback: rerun this workflow with the previously approved PR head"
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "Production Cloudflare deploy is intentionally disabled until DR-166 cutover approval."
