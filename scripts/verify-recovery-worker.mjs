@@ -13,9 +13,14 @@ function canonical(value) {
 }
 
 export function sameReviewedResources(reviewed, active) {
+  const temporaryRecoveryBindings = new Set([
+    "GOOGLE_RECOVERY_CANARY",
+    "GOOGLE_CREDENTIAL_RECOVERY_SCOPE",
+    "LEGACY_TOKEN_ENCRYPTION_KEY",
+  ]);
   const bindings = (value) =>
     value?.bindings
-      ?.filter((b) => b.name !== "GOOGLE_RECOVERY_CANARY")
+      ?.filter((b) => !temporaryRecoveryBindings.has(b.name))
       .sort((a, b) => a.name.localeCompare(b.name));
   return Boolean(
     reviewed?.script?.etag &&

@@ -24,6 +24,11 @@ describe("recovery version provenance", () => {
         bindings: [
           ...resources().bindings,
           { name: "GOOGLE_RECOVERY_CANARY", type: "secret_text" },
+          {
+            name: "GOOGLE_CREDENTIAL_RECOVERY_SCOPE",
+            type: "secret_text",
+          },
+          { name: "LEGACY_TOKEN_ENCRYPTION_KEY", type: "secret_text" },
         ],
       };
       expect(
