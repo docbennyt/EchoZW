@@ -273,6 +273,137 @@ describe("DR-64 student Add-to-Calendar conversion", () => {
       screen.queryByRole("status", { name: "Current class pauses" }),
     ).toBeNull();
   });
+  it("shows dated examinations separately from the regular weekly timetable during the lecture pause", async () => {
+    vi.setSystemTime(new Date("2026-10-29T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      pauses: [
+        {
+          id: "lecture-pause",
+          scopeType: "institution",
+          stableSessionKey: null,
+          startsOn: "2026-10-26",
+          endsOn: "2026-11-30",
+          allDay: true,
+          startsAt: null,
+          endsAt: null,
+          reason: "other",
+          label: "Lectures paused during examinations",
+          active: true,
+          createdAt: "2026-10-26T00:00:00Z",
+        },
+      ],
+      exceptions: [
+        {
+          id: "published-exam-root",
+          stableSessionKey: null,
+          exceptionDate: "2026-11-02",
+          exceptionType: "extra",
+          replacementStartsAt: null,
+          replacementEndsAt: null,
+          courseCode: "HIT4101",
+          courseName: "Software Engineering",
+          startTime: "09:00:00",
+          endTime: "12:00:00",
+          venue: "Exam Hall",
+          lecturer: null,
+          sessionType: "Examination",
+          notes: null,
+          reason: "Approved examination timetable",
+          provenance: "Reviewed institutional source",
+          active: true,
+          createdAt: "2026-10-29T08:00:00Z",
+        },
+      ],
+    });
+
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+
+    const exams = await screen.findByRole("region", {
+      name: "Published examinations",
+    });
+    expect(within(exams).getByText("Software Engineering")).toBeInTheDocument();
+    expect(within(exams).getByText("HIT4101")).toBeInTheDocument();
+    expect(within(exams).getByText("2 November 2026")).toBeInTheDocument();
+    expect(within(exams).getByText("09:00–12:00")).toBeInTheDocument();
+    expect(within(exams).getByText("Exam Hall")).toBeInTheDocument();
+
+    const weekly = screen.getByRole("region", {
+      name: "Regular weekly schedule",
+    });
+    expect(within(weekly).queryByText("HIT4101")).toBeNull();
+    expect(within(weekly).getAllByText("HIT1101")).not.toHaveLength(0);
+    expect(screen.getByText("Next exam")).toBeInTheDocument();
+  });
+  it("keeps a dated non-exam event visible outside the recurring weekly grid", async () => {
+    vi.setSystemTime(new Date("2026-10-29T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      exceptions: [
+        {
+          id: "dated-workshop",
+          stableSessionKey: null,
+          exceptionDate: "2026-11-03",
+          exceptionType: "extra",
+          replacementStartsAt: null,
+          replacementEndsAt: null,
+          courseCode: "HIT4200",
+          courseName: "Research workshop",
+          startTime: "13:00:00",
+          endTime: "14:00:00",
+          venue: "Workshop room",
+          lecturer: null,
+          sessionType: "Workshop",
+          notes: null,
+          reason: "Published extra",
+          provenance: "Staging fixture",
+          active: true,
+          createdAt: "2026-10-29T08:00:00Z",
+        },
+      ],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const dated = await screen.findByRole("region", {
+      name: "Other published events",
+    });
+    expect(within(dated).getByText("Research workshop")).toBeInTheDocument();
+    expect(within(dated).getByText("3 November 2026")).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Regular weekly schedule" }),
+      ).queryByText("HIT4200"),
+    ).toBeNull();
+  });
+  it.each(["Lecture", "Workshop"])(
+    "displays moved %s times in the institution timezone",
+    async (sessionType) => {
+      vi.setSystemTime(new Date("2026-10-29T10:00:00Z"));
+      mocks.fetchPublicTimetable.mockResolvedValue({
+        ...timetable,
+        sessions: [{ ...timetable.sessions[0], sessionType }],
+        exceptions: [
+          {
+            id: "moved-event",
+            stableSessionKey: timetable.sessions[0].stableSessionKey,
+            exceptionDate: "2026-11-02",
+            exceptionType: "moved",
+            replacementStartsAt: "2026-11-02T07:00:00Z",
+            replacementEndsAt: "2026-11-02T10:00:00Z",
+            active: true,
+            createdAt: "2026-10-29T08:00:00Z",
+          },
+        ],
+      });
+      render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+      const region = await screen.findByRole("region", {
+        name: "Other published events",
+      });
+      expect(within(region).getByText("09:00–12:00")).toHaveAttribute(
+        "datetime",
+        "2026-11-02T07:00:00.000Z",
+      );
+    },
+  );
   it.each([
     ["08:00:00", "09:00:00", false],
     ["09:00:00", "11:00:00", true],
