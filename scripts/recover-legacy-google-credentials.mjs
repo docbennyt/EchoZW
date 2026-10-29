@@ -97,8 +97,8 @@ export async function runLegacyGoogleCredentialRecovery(
       { ...env, REVIEWED_WORKER_VERSION: env.EXPECTED_WORKER_VERSION },
       request,
     );
-    const activeBindings = (await cf("GET", `/versions/${version}`))
-      .resources?.bindings;
+    const activeResources = await cf("GET", `/versions/${version}`);
+    const activeBindings = activeResources.resources?.bindings;
     if (!Array.isArray(activeBindings))
       fail("RECOVERY_ACTIVE_BINDINGS_UNVERIFIED");
     const matching = temporaryBindings.every(
