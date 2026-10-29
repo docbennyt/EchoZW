@@ -204,7 +204,11 @@ describe("protected legacy-key operation", () => {
             resources: {
               bindings: [
                 { name: "SOURCE_SHA", type: "plain_text", text: sha },
-                { name: "ENABLE_GOOGLE_DELIVERY", type: "plain_text", text: "false" },
+                {
+                  name: "ENABLE_GOOGLE_DELIVERY",
+                  type: "plain_text",
+                  text: "false",
+                },
                 { name: "TOKEN_ENCRYPTION_KEY", type: "secret_text" },
               ],
             },
