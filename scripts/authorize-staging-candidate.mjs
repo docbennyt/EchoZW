@@ -3,8 +3,14 @@ import { appendFileSync } from "node:fs";
 export function authorizeCandidate({ sha, pull, reviews, runs, permissions }) {
   if (!/^[a-f0-9]{40}$/.test(sha ?? ""))
     throw new Error("INVALID_CANDIDATE_SHA");
+  const reviewedState =
+    pull.state === "open" ||
+    (pull.state === "closed" &&
+      pull.merged === true &&
+      Boolean(pull.merged_at) &&
+      Boolean(pull.merge_commit_sha));
   if (
-    pull.state !== "open" ||
+    !reviewedState ||
     pull.base.ref !== "Calender" ||
     pull.head.repo?.full_name !== "docbennyt/EchoZW" ||
     pull.head.sha !== sha
