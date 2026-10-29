@@ -2204,7 +2204,8 @@
       },
       "contractTests": [
         "tests/cloudflareRuntimeFoundation.test.ts",
-        "tests/googleCredentialRecoveryWorker.test.ts"
+        "tests/googleCredentialRecoveryWorker.test.ts",
+        "tests/legacyGoogleCredentialRecoveryOperations.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",

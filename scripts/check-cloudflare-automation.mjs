@@ -1,12 +1,14 @@
 import { readFile } from "node:fs/promises";
 
 const read = (path) => readFile(path, "utf8");
-const [preview, staging, production, smoke] = await Promise.all([
-  read(".github/workflows/cloudflare-pr-preview.yml"),
-  read(".github/workflows/cloudflare-staging.yml"),
-  read(".github/workflows/cloudflare-production-gate.yml"),
-  read("scripts/smoke-native-recovery.mjs"),
-]);
+const [preview, staging, production, smoke, credentialRecovery] =
+  await Promise.all([
+    read(".github/workflows/cloudflare-pr-preview.yml"),
+    read(".github/workflows/cloudflare-staging.yml"),
+    read(".github/workflows/cloudflare-production-gate.yml"),
+    read("scripts/smoke-native-recovery.mjs"),
+    read(".github/workflows/cloudflare-legacy-google-credential-recovery.yml"),
+  ]);
 function assert(condition, message) {
   if (!condition)
     throw new Error(`Cloudflare automation check failed: ${message}`);
@@ -75,6 +77,27 @@ assert(
   smoke.includes("BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN") &&
     smoke.includes("BLOCKED: CALENDERZW_STAGING_FEED_URL"),
   "missing admin and original-feed acceptance remain blocking.",
+);
+const credentialRecoveryJob = credentialRecovery.split("  recover:")[1];
+assert(
+  credentialRecovery.includes("workflow_dispatch:") &&
+    credentialRecovery.includes("github.ref == 'refs/heads/Calender'") &&
+    !credentialRecovery.includes("\n  pull_request:") &&
+    !credentialRecovery.includes("\n  pull_request_target:") &&
+    !credentialRecovery.includes("\n  workflow_run:"),
+  "legacy-key recovery must be an explicit trusted-branch operation.",
+);
+assert(
+  credentialRecoveryJob?.includes("environment: cloudflare-staging") &&
+    credentialRecoveryJob.includes("persist-credentials: false") &&
+    credentialRecoveryJob.includes("authorize-staging-candidate.mjs") &&
+    credentialRecoveryJob.includes("recover-reviewed-worker.mjs") &&
+    credentialRecoveryJob.includes("verify-recovery-worker.mjs") &&
+    credentialRecoveryJob.includes("recover-legacy-google-credentials.mjs") &&
+    credentialRecoveryJob.includes(
+      "secrets.CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY",
+    ),
+  "legacy key access must stay inside reviewed protected recovery.",
 );
 assert(
   production.includes("environment: cloudflare-production") &&
