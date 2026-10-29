@@ -23,7 +23,8 @@ const env = () => ({
   EXPECTED_RELEASE_SHA: sha,
   EXPECTED_WORKER_VERSION: "10000000-0000-4000-8000-000000000001",
   CREDENTIAL_RECOVERY_MODE: "compatibility",
-  CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY: "private-legacy-key",
+  CREDENTIAL_RECOVERY_KEY_SOURCE: "railway",
+  CALENDERZW_SELECTED_TOKEN_ENCRYPTION_KEY: "private-legacy-key",
   CLOUDFLARE_ACCOUNT_ID: "f".repeat(32),
   CLOUDFLARE_API_TOKEN: "private-cloudflare-token",
 });
@@ -232,11 +233,53 @@ describe("protected legacy-key operation", () => {
     const request = provider();
     await expect(
       runLegacyGoogleCredentialRecovery(
-        { ...env(), CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY: "" },
+        { ...env(), CALENDERZW_SELECTED_TOKEN_ENCRYPTION_KEY: "" },
         { request },
       ),
-    ).rejects.toThrow("LEGACY_TOKEN_ENCRYPTION_KEY_REQUIRED");
+    ).rejects.toThrow("SELECTED_TOKEN_ENCRYPTION_KEY_REQUIRED");
     expect(request).not.toHaveBeenCalled();
+  });
+
+  it("fails closed for an unknown or empty key source", async () => {
+    for (const keySource of ["", "historical3", "RAILWAY"]) {
+      const request = provider();
+      await expect(
+        runLegacyGoogleCredentialRecovery(
+          { ...env(), CREDENTIAL_RECOVERY_KEY_SOURCE: keySource },
+          { request },
+        ),
+      ).rejects.toThrow("RECOVERY_KEY_SOURCE_INVALID");
+      expect(request).not.toHaveBeenCalled();
+    }
+  });
+
+  it("permits historical2 only for read-only compatibility", async () => {
+    const request = provider();
+    await expect(
+      runLegacyGoogleCredentialRecovery(
+        {
+          ...env(),
+          CREDENTIAL_RECOVERY_KEY_SOURCE: "historical2",
+          CREDENTIAL_RECOVERY_MODE: "migrate",
+        },
+        { request },
+      ),
+    ).rejects.toThrow("HISTORICAL2_COMPATIBILITY_ONLY");
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it("reports the selected source without exposing the selected key", async () => {
+    const request = provider();
+    const report = await runLegacyGoogleCredentialRecovery(
+      {
+        ...env(),
+        CREDENTIAL_RECOVERY_KEY_SOURCE: "historical2",
+        CALENDERZW_SELECTED_TOKEN_ENCRYPTION_KEY: "private-historical2-key",
+      },
+      { request },
+    );
+    expect(report.keySource).toBe("historical2");
+    expect(JSON.stringify(report)).not.toContain("private-historical2-key");
   });
 
   it("attempts removal of both bindings when provisioning is interrupted", async () => {

@@ -96,8 +96,21 @@ assert(
     credentialRecoveryJob.includes("recover-legacy-google-credentials.mjs") &&
     credentialRecoveryJob.includes(
       "secrets.CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY",
+    ) &&
+    credentialRecoveryJob.includes(
+      "secrets.CALENDERZW_HISTORICAL_TOKEN_ENCRYPTION_KEY_2",
+    ) &&
+    credentialRecovery.includes("options: [railway, historical2]") &&
+    credentialRecoveryJob.includes(
+      "inputs.key_source == 'historical2' && inputs.mode == 'compatibility'",
+    ) &&
+    !credentialRecoveryJob.includes(
+      "secrets.CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY ||",
+    ) &&
+    !credentialRecoveryJob.includes(
+      "secrets.CALENDERZW_HISTORICAL_TOKEN_ENCRYPTION_KEY_2 ||",
     ),
-  "legacy key access must stay inside reviewed protected recovery.",
+  "each historical key must stay inside its explicit reviewed protected recovery path.",
 );
 assert(
   production.includes("environment: cloudflare-production") &&
