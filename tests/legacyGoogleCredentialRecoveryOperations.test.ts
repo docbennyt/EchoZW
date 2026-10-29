@@ -143,6 +143,29 @@ describe("protected legacy-key operation", () => {
     expect(deletions.join(" ")).toContain("GOOGLE_CREDENTIAL_RECOVERY_SCOPE");
   });
 
+  it("waits for secret-deletion versions to reach the public Worker", async () => {
+    const request = provider();
+    const pauses: number[] = [];
+    let identityChecks = 0;
+    mocks.identity.mockImplementation(async () => {
+      identityChecks += 1;
+      if (identityChecks === 3 || identityChecks === 4)
+        throw new Error("STAGING_IDENTITY_MISMATCH_AUTHENTICATION_BLOCKED");
+      return { sourceSha: sha };
+    });
+
+    const report = await runLegacyGoogleCredentialRecovery(env(), {
+      request,
+      pause: async (milliseconds) => {
+        pauses.push(milliseconds);
+      },
+    });
+
+    expect(report.temporaryRecoveryBindingsAbsent).toBe(true);
+    expect(pauses).toEqual([1000, 2000]);
+    expect(identityChecks).toBe(5);
+  });
+
   it("fails before configuration writes when the legacy key is unavailable", async () => {
     const request = provider();
     await expect(
