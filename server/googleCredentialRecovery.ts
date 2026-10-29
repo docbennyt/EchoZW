@@ -49,11 +49,14 @@ function recoveryScope(
       env.GOOGLE_CREDENTIAL_RECOVERY_SCOPE ?? "",
     ) as JsonRecord;
     const expiry = Date.parse(String(scope.expiresAt ?? ""));
+    const keySource = String(scope.keySource ?? "");
     if (
       env.APP_ENV !== "cloudflare-staging" ||
       !/^[a-f0-9]{40}$/.test(env.SOURCE_SHA ?? "") ||
       scope.candidateSha !== env.SOURCE_SHA ||
       scope.mode !== requestedMode ||
+      !["railway", "historical2"].includes(keySource) ||
+      (keySource === "historical2" && requestedMode !== "compatibility") ||
       !Number.isFinite(expiry) ||
       expiry <= now ||
       expiry - now > 60 * 60 * 1000 ||
