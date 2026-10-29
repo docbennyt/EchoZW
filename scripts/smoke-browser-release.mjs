@@ -219,9 +219,9 @@ for (const viewport of [
         if (!/\b\d{1,2}:\d{2}\b/.test(bodyText)) {
           throw new Error("Timetable route did not show class times.");
         }
-        const addButton = page.getByRole("button", {
-          name: /Add to Calendar/i,
-        });
+        const addButton = page
+          .locator(".pt-primary-actions")
+          .getByRole("button", { name: "Add to Calendar", exact: true });
         await addButton.waitFor({ state: "visible", timeout: 10_000 });
         await addButton.click();
         await page
@@ -230,6 +230,22 @@ for (const viewport of [
           )
           .first()
           .waitFor({ state: "visible", timeout: 10_000 });
+        await page.getByRole("dialog").waitFor({ state: "visible" });
+        if (viewport.name === "mobile") {
+          await page
+            .getByRole("button", {
+              name: "Close Add to Calendar dialog",
+              exact: true,
+            })
+            .click();
+          await page.locator("footer").scrollIntoViewIfNeeded();
+          const stickyButton = page
+            .locator(".pt-sticky-cta")
+            .getByRole("button", { name: "Add to Calendar", exact: true });
+          await stickyButton.waitFor({ state: "visible", timeout: 10_000 });
+          await stickyButton.click();
+          await page.getByRole("dialog").waitFor({ state: "visible" });
+        }
       }
 
       if (
