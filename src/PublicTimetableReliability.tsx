@@ -1435,9 +1435,16 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     <strong>
                       {formatAcademicDate(event.exceptionDate as string)}
                     </strong>
-                    <time dateTime={event.localStart}>
-                      {localTimeLabel(event.startTime)}–
-                      {localTimeLabel(event.endTime)}
+                    <time dateTime={event.firstStartUtc}>
+                      {formatOccurrenceTime(
+                        new Date(event.firstStartUtc),
+                        timetable.institutionTimezone,
+                      )}
+                      –
+                      {formatOccurrenceTime(
+                        new Date(event.firstEndUtc),
+                        timetable.institutionTimezone,
+                      )}
                     </time>
                   </div>
                   <div className="pt-exam-copy">
@@ -1473,9 +1480,16 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     <strong>
                       {formatAcademicDate(event.exceptionDate as string)}
                     </strong>
-                    <time dateTime={event.localStart}>
-                      {localTimeLabel(event.startTime)}–
-                      {localTimeLabel(event.endTime)}
+                    <time dateTime={event.firstStartUtc}>
+                      {formatOccurrenceTime(
+                        new Date(event.firstStartUtc),
+                        timetable.institutionTimezone,
+                      )}
+                      –
+                      {formatOccurrenceTime(
+                        new Date(event.firstEndUtc),
+                        timetable.institutionTimezone,
+                      )}
                     </time>
                   </div>
                   <div className="pt-exam-copy">

@@ -374,6 +374,36 @@ describe("DR-64 student Add-to-Calendar conversion", () => {
       ).queryByText("HIT4200"),
     ).toBeNull();
   });
+  it.each(["Lecture", "Workshop"])(
+    "displays moved %s times in the institution timezone",
+    async (sessionType) => {
+      vi.setSystemTime(new Date("2026-10-29T10:00:00Z"));
+      mocks.fetchPublicTimetable.mockResolvedValue({
+        ...timetable,
+        sessions: [{ ...timetable.sessions[0], sessionType }],
+        exceptions: [
+          {
+            id: "moved-event",
+            stableSessionKey: timetable.sessions[0].stableSessionKey,
+            exceptionDate: "2026-11-02",
+            exceptionType: "moved",
+            replacementStartsAt: "2026-11-02T07:00:00Z",
+            replacementEndsAt: "2026-11-02T10:00:00Z",
+            active: true,
+            createdAt: "2026-10-29T08:00:00Z",
+          },
+        ],
+      });
+      render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+      const region = await screen.findByRole("region", {
+        name: "Other published events",
+      });
+      expect(within(region).getByText("09:00–12:00")).toHaveAttribute(
+        "datetime",
+        "2026-11-02T07:00:00.000Z",
+      );
+    },
+  );
   it.each([
     ["08:00:00", "09:00:00", false],
     ["09:00:00", "11:00:00", true],
