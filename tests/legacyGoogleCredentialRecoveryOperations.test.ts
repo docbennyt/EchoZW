@@ -65,7 +65,9 @@ function provider() {
                   },
                 ],
               }
-            : {};
+            : target.pathname.includes("/versions/")
+              ? { resources: { bindings: [...bindings.values()] } }
+              : {};
         return Response.json({ success: true, result });
       }
       expect(target.href).toBe(
@@ -188,6 +190,38 @@ describe("protected legacy-key operation", () => {
     expect(report.temporaryRecoveryBindingsAbsent).toBe(true);
     expect(pauses).toEqual([1000, 2000]);
     expect(identityChecks).toBe(5);
+  });
+
+  it("rejects stale active-version bindings until provisioning actually converges", async () => {
+    const base = provider();
+    const pauses: number[] = [];
+    let versionChecks = 0;
+    const request = vi.fn(async (...args: Parameters<typeof fetch>) => {
+      if (String(args[0]).includes("/versions/") && versionChecks++ < 2) {
+        return Response.json({
+          success: true,
+          result: {
+            resources: {
+              bindings: [
+                { name: "SOURCE_SHA", type: "plain_text", text: sha },
+                { name: "ENABLE_GOOGLE_DELIVERY", type: "plain_text", text: "false" },
+                { name: "TOKEN_ENCRYPTION_KEY", type: "secret_text" },
+              ],
+            },
+          },
+        });
+      }
+      return base(...args);
+    });
+    const report = await runLegacyGoogleCredentialRecovery(env(), {
+      request,
+      pause: async (milliseconds) => {
+        pauses.push(milliseconds);
+      },
+    });
+    expect(report.legacyDecryptionSuccessful).toBe(true);
+    expect(report.temporaryRecoveryBindingsAbsent).toBe(true);
+    expect(pauses).toEqual([1000, 2000]);
   });
 
   it("fails before configuration writes when the legacy key is unavailable", async () => {
