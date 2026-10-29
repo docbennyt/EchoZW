@@ -335,6 +335,45 @@ describe("DR-64 student Add-to-Calendar conversion", () => {
     expect(within(weekly).getAllByText("HIT1101")).not.toHaveLength(0);
     expect(screen.getByText("Next exam")).toBeInTheDocument();
   });
+  it("keeps a dated non-exam event visible outside the recurring weekly grid", async () => {
+    vi.setSystemTime(new Date("2026-10-29T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      exceptions: [
+        {
+          id: "dated-workshop",
+          stableSessionKey: null,
+          exceptionDate: "2026-11-03",
+          exceptionType: "extra",
+          replacementStartsAt: null,
+          replacementEndsAt: null,
+          courseCode: "HIT4200",
+          courseName: "Research workshop",
+          startTime: "13:00:00",
+          endTime: "14:00:00",
+          venue: "Workshop room",
+          lecturer: null,
+          sessionType: "Workshop",
+          notes: null,
+          reason: "Published extra",
+          provenance: "Staging fixture",
+          active: true,
+          createdAt: "2026-10-29T08:00:00Z",
+        },
+      ],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const dated = await screen.findByRole("region", {
+      name: "Other published events",
+    });
+    expect(within(dated).getByText("Research workshop")).toBeInTheDocument();
+    expect(within(dated).getByText("3 November 2026")).toBeInTheDocument();
+    expect(
+      within(
+        screen.getByRole("region", { name: "Regular weekly schedule" }),
+      ).queryByText("HIT4200"),
+    ).toBeNull();
+  });
   it.each([
     ["08:00:00", "09:00:00", false],
     ["09:00:00", "11:00:00", true],

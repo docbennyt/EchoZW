@@ -388,6 +388,16 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     [projection],
   );
 
+  const otherDatedEvents = useMemo(
+    () =>
+      (projection?.events ?? [])
+        .filter((event) => !event.recurring && event.eventCategory !== "exam")
+        .sort((left, right) =>
+          left.firstStartUtc.localeCompare(right.firstStartUtc),
+        ),
+    [projection],
+  );
+
   const activeWeekdays = useMemo(
     () =>
       Array.from({ length: 7 }, (_, index) => index + 1).filter(
@@ -1432,6 +1442,44 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                   </div>
                   <div className="pt-exam-copy">
                     <span>{event.sessionType || "Examination"}</span>
+                    <strong>{event.courseCode}</strong>
+                    <h3>{event.courseName}</h3>
+                    <p>
+                      <MapPin size={16} aria-hidden="true" />
+                      {event.venue || "Venue not set"}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {otherDatedEvents.length > 0 ? (
+          <section className="pt-exams" aria-labelledby="pt-dated-events-title">
+            <div className="pt-section-heading">
+              <div>
+                <span className="pt-kicker">Dated academic events</span>
+                <h2 id="pt-dated-events-title">Other published events</h2>
+              </div>
+            </div>
+            <div className="pt-exam-grid">
+              {otherDatedEvents.map((event) => (
+                <article
+                  className={`pt-exam-card ${courseToneClass(event.courseCode)}`}
+                  key={event.stableSessionKey}
+                >
+                  <div className="pt-exam-date">
+                    <strong>
+                      {formatAcademicDate(event.exceptionDate as string)}
+                    </strong>
+                    <time dateTime={event.localStart}>
+                      {localTimeLabel(event.startTime)}–
+                      {localTimeLabel(event.endTime)}
+                    </time>
+                  </div>
+                  <div className="pt-exam-copy">
+                    <span>{event.sessionType || "Academic event"}</span>
                     <strong>{event.courseCode}</strong>
                     <h3>{event.courseName}</h3>
                     <p>
