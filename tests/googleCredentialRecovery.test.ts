@@ -85,19 +85,50 @@ describe("protected legacy credential compatibility", () => {
     expect(repo.list).not.toHaveBeenCalled();
   });
 
-  it("authenticates the oldest preserved record before scanning all credentials", async () => {
+  it("counts compatible records even when the oldest needs another historical key", async () => {
     const repo = repository([
       row(1, "oldest", "other"),
       row(2, "later", "legacy"),
     ]);
+    const report = await recoverGoogleCredentialEncryption(
+      "compatibility",
+      env("compatibility"),
+      repo,
+      now,
+    );
+    expect(report).toMatchObject({
+      totalCredentials: 2,
+      legacyDecryptionSuccessful: true,
+      oldestCredentialLegacyCompatible: false,
+      decryptableWithLegacyKey: 1,
+      needingAnotherHistoricalKey: 1,
+      migratedAndVerified: 0,
+    });
+    expect(repo.begin).not.toHaveBeenCalled();
+  });
+
+  it("reports zero legacy matches without mutating credentials and blocks migration", async () => {
+    const repo = repository([
+      row(1, "oldest", "other"),
+      row(2, "current", "current"),
+    ]);
+    const report = await recoverGoogleCredentialEncryption(
+      "compatibility",
+      env("compatibility"),
+      repo,
+      now,
+    );
+    expect(report).toMatchObject({
+      legacyDecryptionSuccessful: false,
+      oldestCredentialLegacyCompatible: false,
+      decryptableWithLegacyKey: 0,
+      decryptableWithCurrentKey: 1,
+      needingAnotherHistoricalKey: 1,
+      migratedAndVerified: 0,
+    });
     await expect(
-      recoverGoogleCredentialEncryption(
-        "compatibility",
-        env("compatibility"),
-        repo,
-        now,
-      ),
-    ).rejects.toMatchObject({ code: "GOOGLE_LEGACY_HISTORICAL_AUTH_FAILED" });
+      recoverGoogleCredentialEncryption("migrate", env("migrate"), repo, now),
+    ).rejects.toMatchObject({ code: "GOOGLE_LEGACY_KEY_NOT_COMPATIBLE" });
     expect(repo.begin).not.toHaveBeenCalled();
   });
 
@@ -116,6 +147,7 @@ describe("protected legacy credential compatibility", () => {
     );
     expect(report).toEqual({
       legacyDecryptionSuccessful: true,
+      oldestCredentialLegacyCompatible: true,
       totalCredentials: 4,
       decryptableWithLegacyKey: 2,
       decryptableWithCurrentKey: 1,
@@ -151,6 +183,28 @@ describe("protected legacy credential compatibility", () => {
     expect(repo.begin.mock.calls[0][0].newCiphertext).not.toBe(
       legacyRow.encrypted_refresh_token,
     );
+  });
+
+  it("migrates only individually authenticated legacy rows even when oldest cannot decrypt", async () => {
+    const repo = repository([
+      row(1, "older-key", "other"),
+      row(2, "recoverable", "legacy"),
+      row(3, "current", "current"),
+    ]);
+    const report = await recoverGoogleCredentialEncryption(
+      "migrate",
+      env("migrate"),
+      repo,
+      now,
+    );
+    expect(report).toMatchObject({
+      oldestCredentialLegacyCompatible: false,
+      decryptableWithLegacyKey: 1,
+      needingAnotherHistoricalKey: 1,
+      migratedAndVerified: 1,
+    });
+    expect(repo.begin).toHaveBeenCalledTimes(1);
+    expect(repo.verify).toHaveBeenCalledTimes(1);
   });
 
   it("does not record success when compare-and-swap loses a concurrent update", async () => {
