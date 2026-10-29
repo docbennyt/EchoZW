@@ -112,11 +112,9 @@ export async function recoverGoogleCredentialEncryption(
   );
   if (!rows.length) throw unavailable("GOOGLE_CREDENTIALS_NOT_FOUND");
 
-  const historical = credentialFields(rows[0]);
-  if (!decryptOrNull(historical.ciphertext, legacyKey)) {
-    throw unavailable("GOOGLE_LEGACY_HISTORICAL_AUTH_FAILED");
-  }
-
+  // Classify every credential: the oldest record may predate the recovered
+  // Railway key or have been encrypted under another historical key.
+  // A mismatch on that single row is not proof that all rows are incompatible.
   const classified = rows.map((row) => {
     const fields = credentialFields(row);
     return {
@@ -125,11 +123,12 @@ export async function recoverGoogleCredentialEncryption(
       currentToken: decryptOrNull(fields.ciphertext, currentKey),
     };
   });
+  const legacyMatchCount = classified.filter((item) => item.legacyToken).length;
   const report = {
-    legacyDecryptionSuccessful: true,
+    legacyDecryptionSuccessful: legacyMatchCount > 0,
+    oldestCredentialLegacyCompatible: Boolean(classified[0].legacyToken),
     totalCredentials: classified.length,
-    decryptableWithLegacyKey: classified.filter((item) => item.legacyToken)
-      .length,
+    decryptableWithLegacyKey: legacyMatchCount,
     decryptableWithCurrentKey: classified.filter((item) => item.currentToken)
       .length,
     decryptableWithBothKeys: classified.filter(
@@ -142,6 +141,8 @@ export async function recoverGoogleCredentialEncryption(
     concurrentUpdatesSkipped: 0,
   };
   if (mode === "compatibility") return report;
+  if (legacyMatchCount === 0)
+    throw unavailable("GOOGLE_LEGACY_KEY_NOT_COMPATIBLE");
 
   for (const item of classified) {
     if (!item.legacyToken || item.currentToken) continue;
