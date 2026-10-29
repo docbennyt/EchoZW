@@ -108,6 +108,8 @@ export async function runLegacyGoogleCredentialRecovery(
 
   let provisioningStarted = false;
   let report;
+  let operationError;
+  let cleanupError;
   try {
     provisioningStarted = true;
     await cf("PUT", "/secrets", {
@@ -154,24 +156,50 @@ export async function runLegacyGoogleCredentialRecovery(
       workerVersion,
       ...value.credentialRecovery,
     };
+  } catch (error) {
+    operationError = error;
   } finally {
     if (provisioningStarted) {
+      let deletionFailed = false;
       for (const name of temporaryBindings) {
-        await cf("DELETE", `/secrets/${name}`, undefined, true);
+        let deleted = false;
+        for (let attempt = 0; attempt < 3 && !deleted; attempt++) {
+          try {
+            await cf("DELETE", `/secrets/${name}`, undefined, true);
+            deleted = true;
+          } catch {
+            // Continue deleting other temporary credentials even on failure.
+          }
+        }
+        if (!deleted) deletionFailed = true;
       }
-      const after = await settings();
-      if (
-        temporaryBindings.some((name) =>
-          after.bindings.some((binding) => binding.name === name),
-        ) ||
-        !after.bindings.some(
-          (binding) => binding.name === "TOKEN_ENCRYPTION_KEY",
+      try {
+        const after = await settings();
+        if (
+          deletionFailed ||
+          temporaryBindings.some((name) =>
+            after.bindings.some((binding) => binding.name === name),
+          ) ||
+          !after.bindings.some(
+            (binding) => binding.name === "TOKEN_ENCRYPTION_KEY",
+          )
         )
-      )
-        fail("RECOVERY_DISABLE_NOT_CONFIRMED");
-      await verifyTemporaryVersion();
+          fail("RECOVERY_DISABLE_NOT_CONFIRMED");
+        await verifyTemporaryVersion();
+      } catch (error) {
+        cleanupError = error;
+      }
     }
   }
+  if (cleanupError) {
+    if (operationError)
+      throw new AggregateError(
+        [operationError, cleanupError],
+        "RECOVERY_DISABLE_NOT_CONFIRMED",
+      );
+    throw cleanupError;
+  }
+  if (operationError) throw operationError;
   return { ...report, temporaryRecoveryBindingsAbsent: true };
 }
 
