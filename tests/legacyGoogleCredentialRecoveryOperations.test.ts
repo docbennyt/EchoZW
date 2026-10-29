@@ -123,7 +123,6 @@ describe("protected legacy-key operation", () => {
     );
   });
 
-
   it("still deletes both bindings when one DELETE fails temporarily", async () => {
     const base = provider();
     let firstDelete = true;
@@ -150,7 +149,7 @@ describe("protected legacy-key operation", () => {
     ).toBe(true);
   });
 
-  it("preserves original failure and attempts all cleanups after repeated errors", async () => {
+  it("attempts all removals despite repeated errors", async () => {
     const base = provider();
     const request = vi.fn(async (...args: Parameters<typeof fetch>) => {
       const [url, init] = args;
