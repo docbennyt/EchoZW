@@ -26,6 +26,34 @@ describe("reviewed staging authorization", () => {
   it("allows only the current immutable reviewed candidate with passing checks", () => {
     expect(authorizeCandidate(fixture())).toBe(sha);
   });
+  it("permits reviewed merged heads but rejects unmerged closed PRs", () => {
+    const input = fixture();
+    const merged = {
+      ...input,
+      pull: {
+        ...input.pull,
+        state: "closed",
+        merged: true,
+        merged_at: "2026-10-29T07:00:00Z",
+        merge_commit_sha: "b".repeat(40),
+      },
+    };
+    expect(authorizeCandidate(merged)).toBe(sha);
+    const unmerged = {
+      ...merged,
+      pull: { ...merged.pull, merged: false },
+    };
+    expect(() => authorizeCandidate(unmerged)).toThrow(
+      "CANDIDATE_HEAD_MISMATCH",
+    );
+    const noMergeEvidence = {
+      ...merged,
+      pull: { ...merged.pull, merged_at: null },
+    };
+    expect(() => authorizeCandidate(noMergeEvidence)).toThrow(
+      "CANDIDATE_HEAD_MISMATCH",
+    );
+  });
   it("rejects mutable refs, stale head approvals and self approval", () => {
     expect(() => authorizeCandidate({ ...fixture(), sha: "Calender" })).toThrow(
       "INVALID_CANDIDATE_SHA",
