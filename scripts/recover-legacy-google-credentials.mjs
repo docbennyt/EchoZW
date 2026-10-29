@@ -25,10 +25,15 @@ export async function runLegacyGoogleCredentialRecovery(
   const mode = env.CREDENTIAL_RECOVERY_MODE;
   if (!["compatibility", "migrate"].includes(mode))
     fail("RECOVERY_MODE_INVALID");
+  const keySource = env.CREDENTIAL_RECOVERY_KEY_SOURCE;
+  if (!["railway", "historical2"].includes(keySource))
+    fail("RECOVERY_KEY_SOURCE_INVALID");
+  if (keySource === "historical2" && mode !== "compatibility")
+    fail("HISTORICAL2_COMPATIBILITY_ONLY");
   if (env.GITHUB_REF !== "refs/heads/Calender")
     fail("TRUSTED_WORKFLOW_BRANCH_REQUIRED");
-  if (!env.CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY)
-    fail("LEGACY_TOKEN_ENCRYPTION_KEY_REQUIRED");
+  if (!env.CALENDERZW_SELECTED_TOKEN_ENCRYPTION_KEY)
+    fail("SELECTED_TOKEN_ENCRYPTION_KEY_REQUIRED");
   const initial = await verifyStagingIdentity(env, request);
   await verifyRecoveryWorker(
     { ...env, REVIEWED_WORKER_VERSION: env.EXPECTED_WORKER_VERSION },
@@ -140,7 +145,7 @@ export async function runLegacyGoogleCredentialRecovery(
     await cf("PUT", "/secrets", {
       name: "LEGACY_TOKEN_ENCRYPTION_KEY",
       type: "secret_text",
-      text: env.CALENDERZW_LEGACY_TOKEN_ENCRYPTION_KEY,
+      text: env.CALENDERZW_SELECTED_TOKEN_ENCRYPTION_KEY,
     });
     await cf("PUT", "/secrets", {
       name: "GOOGLE_CREDENTIAL_RECOVERY_SCOPE",
@@ -149,6 +154,7 @@ export async function runLegacyGoogleCredentialRecovery(
         candidateSha: env.EXPECTED_RELEASE_SHA,
         expiresAt: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
         mode,
+        keySource,
       }),
     });
     // Secret provisioning creates new Worker versions. Wait for the active
@@ -179,6 +185,7 @@ export async function runLegacyGoogleCredentialRecovery(
     }
     report = {
       mode,
+      keySource,
       sourceSha: initial.sourceSha,
       workerVersion,
       ...value.credentialRecovery,

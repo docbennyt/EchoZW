@@ -23,7 +23,10 @@ const row = (
   created_at: new Date(now + id * 1000).toISOString(),
   updated_at: new Date(now + id * 1000).toISOString(),
 });
-const env = (mode: "compatibility" | "migrate") =>
+const env = (
+  mode: "compatibility" | "migrate",
+  keySource: "railway" | "historical2" = "railway",
+) =>
   ({
     APP_ENV: "cloudflare-staging",
     SOURCE_SHA: sha,
@@ -33,6 +36,7 @@ const env = (mode: "compatibility" | "migrate") =>
       candidateSha: sha,
       expiresAt: new Date(now + 30 * 60 * 1000).toISOString(),
       mode,
+      keySource,
     }),
   }) as NodeJS.ProcessEnv;
 
@@ -70,6 +74,15 @@ describe("protected legacy credential compatibility", () => {
           candidateSha: sha,
           expiresAt: new Date(now - 1).toISOString(),
           mode: "compatibility",
+          keySource: "railway",
+        }),
+      },
+      {
+        GOOGLE_CREDENTIAL_RECOVERY_SCOPE: JSON.stringify({
+          candidateSha: sha,
+          expiresAt: new Date(now + 30 * 60 * 1000).toISOString(),
+          mode: "compatibility",
+          keySource: "unknown",
         }),
       },
     ]) {
@@ -82,6 +95,19 @@ describe("protected legacy credential compatibility", () => {
         ),
       ).rejects.toThrow("Google credential recovery is unavailable");
     }
+    expect(repo.list).not.toHaveBeenCalled();
+  });
+
+  it("rejects a historical2 migration before reading credentials", async () => {
+    const repo = repository([row(1, "one", "legacy")]);
+    await expect(
+      recoverGoogleCredentialEncryption(
+        "migrate",
+        env("migrate", "historical2"),
+        repo,
+        now,
+      ),
+    ).rejects.toThrow("Google credential recovery is unavailable");
     expect(repo.list).not.toHaveBeenCalled();
   });
 
