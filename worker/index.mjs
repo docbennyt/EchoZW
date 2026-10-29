@@ -1,19 +1,82 @@
-/* global Headers, Response, URL, fetch, Request, crypto */
+/* global Headers, Response, URL, Request, crypto, TextEncoder, TextDecoder, console */
+
+import {
+  PilotApiError,
+  listInstitutions,
+  listProgrammes,
+  listClassGroups,
+  listAcademicPeriods,
+  listTimetables,
+} from "../server/pilotRepository.ts";
+import {
+  getPublicTimetableResponse,
+  listPublicTimetableDiscoveryResponse,
+} from "../server/publicTimetableCore.ts";
+import {
+  buildRuntimePublicConfig,
+  runtimeConfigResponseHeaders,
+  serializeRuntimeConfigScript,
+} from "../server/runtimePublicConfig.ts";
+import { checkReadiness } from "../server/healthApi.ts";
+import {
+  getCalendarSubscriptionById,
+  getCalendarSubscriptionByTokenHash,
+} from "../server/pilotRepository.ts";
+import { buildRevisionAwareCalendar } from "../server/pilotCalendarCore.ts";
+import { recoverGoogleCalendarDelivery } from "../server/googleCalendarDelivery.ts";
+import { recordCalendarFeedActivity } from "../server/analyticsRepository.ts";
+import {
+  AdminAuthError,
+  requireStaffUser,
+  requireOperationalAdmin,
+  requireTimetableEditor,
+  requireFounderSuperadmin,
+} from "../server/supabase/auth.ts";
+import { z } from "zod";
+import { handleEditorMutations } from "./editorMutations.mjs";
+import { handleNativeAdminTimetable } from "./adminTimetable.mjs";
+import { handleNativeAdminEntities } from "./adminEntities.mjs";
+import { handleNativeAdminAnalytics } from "./adminAnalytics.mjs";
+import { handleNativeStaffInvitation } from "./staffInvitations.mjs";
+import { handleGoogleCalendarRequest } from "./googleCalendarApi.mjs";
+import { handleGoogleCredentialRecovery } from "./googleCredentialRecoveryApi.mjs";
+import {
+  enqueueNativeGoogleSync,
+  scheduleGoogleDelivery,
+  consumeGoogleDeliveryMessage,
+} from "./googleDelivery.mjs";
+import {
+  AcademicPauseRepositoryError,
+  listAcademicPausesForTimetable,
+  listAcademicPauses,
+} from "../server/academicPauseRepository.ts";
+import {
+  scopedInput,
+  broadInput,
+  previewImpact,
+  createPauseWithImpact,
+  deactivatePauseWithTimetables,
+} from "../server/academicPauseCore.ts";
+import { createSupabaseAdminClient } from "../server/supabase/adminClient.ts";
+import { createSupabaseUserClient } from "../server/supabase/userClient.ts";
+import {
+  classifyAnalyticsClient,
+  isAnalyticsUuid,
+} from "../src/domain/analytics.ts";
+import { sha256Base64Url } from "../src/domain/token.ts";
+import { subscriptionRequestSchema } from "../src/domain/subscriptions.ts";
+import { createNativeFeedSubscription } from "../server/calendarSubscriptionCore.ts";
+import { revokeOwnedFeedSubscription } from "../server/calendarSubscriptionLifecycle.ts";
+import {
+  getTimetablePublicDisplaySettings,
+  updateTimetablePublicDisplaySettings,
+} from "../server/timetablePublicSettingsRepository.ts";
 
 const DYNAMIC_PREFIXES = ["/api/", "/calendar/"];
 const DYNAMIC_EXACT_PATHS = new Set([
   "/runtime-config.js",
   "/sitemap.xml",
   "/healthz",
-]);
-const MAX_SOURCE_DOCUMENT_BYTES = 10 * 1024 * 1024;
-const DOCX_MIME_TYPE =
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-const ACCEPTED_DOCX_MIME_TYPES = new Set([
-  DOCX_MIME_TYPE,
-  "application/octet-stream",
-  "application/zip",
-  "application/x-zip-compressed",
 ]);
 
 function json(body, init = {}) {
@@ -22,6 +85,54 @@ function json(body, init = {}) {
   headers.set("cache-control", "no-store");
   applySecurityHeaders(headers);
   return new Response(JSON.stringify(body), { ...init, headers });
+}
+
+function publicApiError(error) {
+  if (error instanceof PilotApiError) {
+    return json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: error.status },
+    );
+  }
+
+  return json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "We could not complete that request. Please try again.",
+      },
+    },
+    { status: 500 },
+  );
+}
+
+function adminAuthError(error) {
+  if (error instanceof AdminAuthError) {
+    return json(
+      {
+        error: {
+          code: error.code,
+          message: error.message,
+        },
+      },
+      { status: error.status },
+    );
+  }
+
+  return json(
+    {
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "We could not complete that request. Please try again.",
+      },
+    },
+    { status: 500 },
+  );
 }
 
 function applySecurityHeaders(headers) {
@@ -62,56 +173,17 @@ function redirectLocation(url) {
   return null;
 }
 
-async function proxyLegacyBackend(request, env) {
-  if (!env.LEGACY_BACKEND_ORIGIN) {
-    return json(
-      {
-        error: {
-          code: "EDGE_BACKEND_NOT_CONFIGURED",
-          message: "The staging backend bridge is not configured.",
-        },
+function unavailable(code = "EDGE_ROUTE_UNAVAILABLE") {
+  return json(
+    {
+      error: {
+        code,
+        message:
+          "This service is temporarily unavailable during backend recovery.",
       },
-      { status: 503 },
-    );
-  }
-
-  const incoming = new URL(request.url);
-  const target = new URL(
-    `${incoming.pathname}${incoming.search}`,
-    env.LEGACY_BACKEND_ORIGIN,
+    },
+    { status: 503 },
   );
-  const headers = new Headers(request.headers);
-  headers.delete("host");
-  headers.set("x-forwarded-host", incoming.host);
-  headers.set("x-forwarded-proto", incoming.protocol.replace(":", ""));
-  headers.set("x-calenderzw-edge-runtime", "cloudflare-staging-bridge");
-
-  const init = {
-    method: request.method,
-    headers,
-    redirect: "manual",
-  };
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = request.body;
-  }
-
-  const upstream = await fetch(target, init);
-  const responseHeaders = new Headers(upstream.headers);
-  applySecurityHeaders(responseHeaders);
-  responseHeaders.set("x-calenderzw-edge-runtime", "cloudflare-staging-bridge");
-
-  if (
-    incoming.pathname.startsWith("/api/") ||
-    incoming.pathname === "/runtime-config.js"
-  ) {
-    responseHeaders.set("cache-control", "no-store");
-  }
-
-  return new Response(upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers: responseHeaders,
-  });
 }
 
 function releasePayload(env) {
@@ -123,8 +195,38 @@ function releasePayload(env) {
     workerVersion: env.CF_VERSION_METADATA?.id ?? null,
     workerVersionTag: env.CF_VERSION_METADATA?.tag ?? null,
     workerVersionTimestamp: env.CF_VERSION_METADATA?.timestamp ?? null,
-    legacyBackendBridge: Boolean(env.LEGACY_BACKEND_ORIGIN),
+    legacyBackendBridge: false,
+    feedActivityRecording: env.ENABLE_FEED_ACTIVITY === "true",
   };
+}
+
+function backendReleasePayload(env) {
+  return {
+    runtime: "cloudflare-workers",
+    environment: env.APP_ENV ?? null,
+    sourceSha: env.SOURCE_SHA ?? null,
+    service: "calenderzw-edge",
+    workerVersion: env.CF_VERSION_METADATA?.id ?? null,
+  };
+}
+
+function serveRuntimeConfig(env) {
+  try {
+    const script = serializeRuntimeConfigScript(buildRuntimePublicConfig(env));
+    const headers = new Headers(runtimeConfigResponseHeaders(script.length));
+    applySecurityHeaders(headers);
+    return new Response(script, { status: 200, headers });
+  } catch {
+    return json(
+      {
+        error: {
+          code: "RUNTIME_CONFIG_UNAVAILABLE",
+          message: "Browser runtime configuration is unavailable.",
+        },
+      },
+      { status: 503 },
+    );
+  }
 }
 
 function notFound() {
@@ -136,34 +238,8 @@ function notFound() {
   return new Response("Not found.", { status: 404, headers });
 }
 
-function headerValue(headers, name) {
-  return headers.get(name)?.trim() ?? "";
-}
-
-function decodeFilename(value) {
-  if (!value) return "";
-  try {
-    return decodeURIComponent(value).trim();
-  } catch {
-    return value.trim();
-  }
-}
-
-function safeFilename(value) {
-  return value.replace(/[^\w.\- ()]/g, "_").slice(0, 180);
-}
-
-function hex(buffer) {
-  return [...new Uint8Array(buffer)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function monthKey(now = new Date()) {
-  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(
-    2,
-    "0",
-  )}`;
+function requestHeaderValue(request, name) {
+  return request.headers.get(name)?.trim() ?? "";
 }
 
 function assertSourceUploadBindings(env) {
@@ -181,7 +257,627 @@ function assertSourceUploadBindings(env) {
   return null;
 }
 
-async function handleSourceDocumentUpload(request, env, ctx) {
+function assertSourceUploadAuth(request, env) {
+  const expected = env.EDGE_SOURCE_UPLOAD_SECRET?.trim();
+  if (!expected) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_AUTH_NOT_CONFIGURED",
+          message: "Source upload authentication is not configured.",
+        },
+      },
+      { status: 503 },
+    );
+  }
+
+  const auth = request.headers.get("authorization") ?? "";
+  const bearerMatch = auth.match(/^Bearer\s+(.+)$/i);
+  const supplied =
+    bearerMatch?.[1]?.trim() ??
+    request.headers.get("x-calenderzw-edge-upload-secret")?.trim() ??
+    "";
+
+  if (!supplied || supplied !== expected) {
+    return json(
+      {
+        error: {
+          code: "SOURCE_UPLOAD_AUTH_REQUIRED",
+          message: "Authenticated source upload access is required.",
+        },
+      },
+      { status: 401 },
+    );
+  }
+
+  return null;
+}
+
+function safeCalendarFileName(value) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80);
+}
+
+function requestHasEtag(request, etag) {
+  const header = request.headers.get("if-none-match");
+  if (!header) return false;
+  return header
+    .split(",")
+    .map((value) => value.trim())
+    .some((value) => value === "*" || value === etag);
+}
+
+async function writeIcsResponse(request, calendarName, ics, lastModifiedValue) {
+  const etag = `"${await sha256Base64Url(ics)}"`;
+  const lastModified = new Date(lastModifiedValue);
+  if (Number.isNaN(lastModified.getTime())) {
+    throw new Error("Published timetable has an invalid revision timestamp.");
+  }
+  const headers = new Headers({
+    "content-type": "text/calendar; charset=utf-8",
+    "content-disposition": `inline; filename="${safeCalendarFileName(calendarName)}.ics"`,
+    "cache-control": "private, no-cache, max-age=0, must-revalidate",
+    "referrer-policy": "no-referrer",
+    "x-robots-tag": "noindex, nofollow",
+    vary: "Accept-Encoding",
+    etag,
+    "last-modified": lastModified.toUTCString(),
+  });
+  applySecurityHeaders(headers);
+
+  if (requestHasEtag(request, etag)) {
+    return new Response(null, { status: 304, headers });
+  }
+  headers.set("content-length", String(new TextEncoder().encode(ics).length));
+  if (request.method === "HEAD") {
+    return new Response(null, { status: 200, headers });
+  }
+  return new Response(ics, { status: 200, headers });
+}
+
+async function handleNativeCalendarIcs(request, env, ctx) {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  if (!hasSupabaseServerConfig(env))
+    return unavailable("EDGE_SERVER_CONFIG_MISSING");
+
+  const url = new URL(request.url);
+  const publicOrigin = env.PUBLIC_APP_URL ?? url.origin;
+  const downloadMatch = url.pathname.match(
+    /^\/calendar\/download\/([^/]+)\.ics$/,
+  );
+  const feedMatch = url.pathname.match(/^\/calendar\/feed\/([^/]+)\.ics$/);
+
+  try {
+    let subscription;
+    let statusCode = 200;
+    if (downloadMatch) {
+      subscription = await getCalendarSubscriptionById(
+        decodeURIComponent(downloadMatch[1]),
+        env,
+      );
+      if (!subscription || subscription.revoked_at) {
+        throw new PilotApiError(
+          "NOT_FOUND",
+          "Calendar download not found.",
+          404,
+        );
+      }
+    } else if (feedMatch) {
+      const token = decodeURIComponent(feedMatch[1]);
+      const tokenHash = await sha256Base64Url(token);
+      subscription = await getCalendarSubscriptionByTokenHash(tokenHash, env);
+      if (!subscription || subscription.revoked_at) {
+        throw new PilotApiError("NOT_FOUND", "Calendar feed not found.", 404);
+      }
+    } else {
+      return null;
+    }
+
+    const timetableId = String(subscription.timetable_id);
+    const reminders = subscription.reminder_offsets_minutes ?? [];
+    const { ics, revision } = await buildRevisionAwareCalendar({
+      timetableId,
+      reminders,
+      examReminders: subscription.exam_reminder_offsets_minutes ?? [],
+      publicOrigin,
+      env,
+    });
+    const response = await writeIcsResponse(
+      request,
+      String(subscription.calendar_name),
+      ics,
+      revision.updatedAt,
+    );
+    statusCode = response.status;
+
+    if (feedMatch && env.ENABLE_FEED_ACTIVITY === "true") {
+      const subscriptionId = String(subscription.id);
+      const client = classifyAnalyticsClient(
+        requestHeaderValue(request, "user-agent"),
+      );
+      ctx.waitUntil(
+        recordCalendarFeedActivity({ subscriptionId, statusCode, client }, env),
+      );
+    }
+
+    return response;
+  } catch (error) {
+    return publicApiError(error);
+  }
+}
+
+function hasSupabaseServerConfig(env) {
+  return Boolean(
+    (env.SUPABASE_URL || env.VITE_SUPABASE_URL) &&
+    (env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY) &&
+    (env.VITE_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY),
+  );
+}
+
+async function handleNativePublicTimetableApi(request, env) {
+  const url = new URL(request.url);
+  if (request.method !== "GET") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  if (!hasSupabaseServerConfig(env))
+    return unavailable("EDGE_SERVER_CONFIG_MISSING");
+  try {
+    if (url.pathname === "/api/public/timetables") {
+      return json(await listPublicTimetableDiscoveryResponse(env), {
+        headers: {
+          "cache-control": "public, max-age=60, stale-while-revalidate=300",
+          "x-calenderzw-edge-runtime": "cloudflare-native-public-api",
+        },
+      });
+    }
+
+    const match = url.pathname.match(/^\/api\/public\/timetables\/([^/]+)$/);
+    if (match) {
+      return json(
+        await getPublicTimetableResponse(decodeURIComponent(match[1]), env),
+        {
+          headers: {
+            "x-calenderzw-edge-runtime": "cloudflare-native-public-api",
+          },
+        },
+      );
+    }
+  } catch (error) {
+    return publicApiError(error);
+  }
+
+  return null;
+}
+
+async function handleNativeAdminSession(request, env) {
+  if (request.method !== "GET") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+
+  try {
+    const url = new URL(request.url);
+    const guard = !["/api/admin/session", "/api/admin/my/timetables"].includes(
+      url.pathname,
+    )
+      ? requireOperationalAdmin
+      : requireStaffUser;
+    const context = await guard(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+        method: request.method,
+        url: new URL(request.url).pathname,
+      },
+      {
+        createUserClient: (accessToken) =>
+          createSupabaseUserClient(accessToken, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+
+    if (url.pathname === "/api/admin/institutions") {
+      return json({ institutions: await listInstitutions(env) });
+    }
+    if (url.pathname === "/api/admin/programmes") {
+      return json({
+        programmes: await listProgrammes(
+          url.searchParams.get("institutionId") ?? undefined,
+          env,
+        ),
+      });
+    }
+    if (url.pathname === "/api/admin/class-groups") {
+      return json({
+        classGroups: await listClassGroups(
+          url.searchParams.get("programmeId") ?? undefined,
+          env,
+        ),
+      });
+    }
+    if (url.pathname === "/api/admin/academic-periods") {
+      return json({
+        academicPeriods: await listAcademicPeriods(
+          url.searchParams.get("institutionId") ?? undefined,
+          env,
+        ),
+      });
+    }
+    if (url.pathname === "/api/admin/timetables") {
+      return json({ timetables: await listTimetables(env) });
+    }
+    if (url.pathname === "/api/admin/my/timetables") {
+      return json({ timetables: context.assignments });
+    }
+    return json({
+      authenticated: true,
+      admin: true,
+      user: context.user,
+      staff: context.staff,
+      permissions: context.permissions,
+      assignments: context.assignments,
+    });
+  } catch (error) {
+    return adminAuthError(error);
+  }
+}
+
+async function readNativeJsonBody(request) {
+  if (
+    !/^application\/json(?:\s*;|\s*$)/i.test(
+      request.headers.get("content-type") ?? "",
+    )
+  ) {
+    throw new PilotApiError(
+      "UNSUPPORTED_MEDIA_TYPE",
+      "Use application/json.",
+      415,
+    );
+  }
+  const reader = request.body?.getReader();
+  const chunks = [];
+  let size = 0;
+  if (reader) {
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 16384) {
+          await reader.cancel();
+          throw new PilotApiError(
+            "BODY_TOO_LARGE",
+            "Request body is too large.",
+            413,
+          );
+        }
+        chunks.push(value);
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    throw new PilotApiError("VALIDATION_FAILED", "Invalid JSON request.", 422);
+  }
+}
+
+async function handleNativeAcademicPauses(request, env, timetableId, action) {
+  const authorize = timetableId
+    ? requireTimetableEditor
+    : requireOperationalAdmin;
+  const allowed =
+    action === undefined
+      ? ["GET", "POST"]
+      : action === "preview"
+        ? ["POST"]
+        : ["DELETE"];
+  if (!allowed.includes(request.method)) {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405, headers: { allow: allowed.join(", ") } },
+    );
+  }
+  const origin = request.headers.get("origin");
+  if (
+    (origin !== null && origin !== new URL(request.url).origin) ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  ) {
+    return json(
+      {
+        error: {
+          code: "ORIGIN_NOT_ALLOWED",
+          message: "Use the application origin.",
+        },
+      },
+      { status: 403 },
+    );
+  }
+  try {
+    const authRequest = {
+      headers: {
+        authorization: request.headers.get("authorization") ?? undefined,
+      },
+    };
+    const authDependencies = {
+      createUserClient: (token) => createSupabaseUserClient(token, env),
+      createAdminClient: () => createSupabaseAdminClient(env),
+    };
+    const actor = timetableId
+      ? await authorize(authRequest, timetableId, authDependencies)
+      : await authorize(authRequest, authDependencies);
+    if (request.method === "GET") {
+      return json({
+        pauses: timetableId
+          ? await listAcademicPausesForTimetable(timetableId, env)
+          : await listAcademicPauses(env),
+      });
+    }
+    // A committed pause advances the durable timetable revision in Supabase.
+    // Recover per-subscription jobs without making Google API calls in this request.
+    async function persistPendingGoogleDelivery(timetableIds) {
+      try {
+        // Never broaden a scoped edit into a global subscription recovery.
+        if (!Array.isArray(timetableIds))
+          throw new Error("PAUSE_SCOPE_MISSING");
+        const recoveredJobs = await recoverGoogleCalendarDelivery(
+          100,
+          env,
+          timetableIds,
+        );
+        return {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          pending: true,
+          recoveredJobs,
+        };
+      } catch {
+        // The pause is already committed. The revision remains available for
+        // scheduled recovery; never make a successful save look like a failed write.
+        return {
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          pending: true,
+          recoveryDeferred: true,
+        };
+      }
+    }
+    if (request.method === "DELETE") {
+      const { pause, timetableIds } = await deactivatePauseWithTimetables(
+        { actor, pauseId: action, timetableId },
+        env,
+      );
+      return json({
+        pause,
+        googleCalendarSync: await persistPendingGoogleDelivery(timetableIds),
+      });
+    }
+    const body = await readNativeJsonBody(request);
+    const pauseInput = timetableId
+      ? scopedInput(timetableId, body)
+      : broadInput(body);
+    if (action === "preview") {
+      const { impact } = await previewImpact(pauseInput, env);
+      return json({ impact });
+    }
+    const { pause, impact, timetableIds } = await createPauseWithImpact(
+      actor,
+      pauseInput,
+      env,
+    );
+    return json(
+      {
+        pause,
+        impact,
+        googleCalendarSync: await persistPendingGoogleDelivery(timetableIds),
+      },
+      { status: 201 },
+    );
+  } catch (error) {
+    if (error instanceof AdminAuthError) return adminAuthError(error);
+    if (error instanceof AcademicPauseRepositoryError) {
+      return json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.status },
+      );
+    }
+    if (error instanceof z.ZodError) {
+      return json(
+        {
+          error: {
+            code: "VALIDATION_FAILED",
+            message: "Check the no-lecture period details.",
+            details: error.flatten().fieldErrors,
+          },
+        },
+        { status: 422 },
+      );
+    }
+    return publicApiError(error);
+  }
+}
+
+async function handleNativePublicSettings(request, env, timetableId) {
+  if (!["GET", "PUT"].includes(request.method))
+    return json({ error: { code: "METHOD_NOT_ALLOWED" } }, { status: 405 });
+  const origin = request.headers.get("origin");
+  if (
+    (origin !== null && origin !== new URL(request.url).origin) ||
+    request.headers.get("sec-fetch-site") === "cross-site"
+  )
+    return json({ error: { code: "ORIGIN_NOT_ALLOWED" } }, { status: 403 });
+  try {
+    const actor = await requireFounderSuperadmin(
+      {
+        headers: {
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+      },
+      {
+        createUserClient: (token) => createSupabaseUserClient(token, env),
+        createAdminClient: () => createSupabaseAdminClient(env),
+      },
+    );
+    if (request.method === "GET")
+      return json({
+        settings: await getTimetablePublicDisplaySettings(timetableId, env),
+      });
+    const parsed = z
+      .object({ showVisualPreview: z.boolean(), showChangeAlerts: z.boolean() })
+      .strict()
+      .parse(await readNativeJsonBody(request));
+    return json({
+      settings: await updateTimetablePublicDisplaySettings(
+        { timetableId, staffUserId: actor.staff.id, ...parsed },
+        env,
+      ),
+    });
+  } catch (error) {
+    if (error instanceof AdminAuthError) return adminAuthError(error);
+    if (error instanceof z.ZodError)
+      return json(
+        {
+          error: {
+            code: "VALIDATION_FAILED",
+            message: "Provide both public settings as booleans.",
+          },
+        },
+        { status: 422 },
+      );
+    return publicApiError(error);
+  }
+}
+
+async function handleNativeSubscription(request, env) {
+  if (request.method !== "POST") {
+    return json(
+      { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
+      { status: 405 },
+    );
+  }
+  const url = new URL(request.url);
+  const origin = request.headers.get("origin");
+  if (origin && origin !== url.origin) {
+    return json(
+      {
+        error: {
+          code: "ORIGIN_NOT_ALLOWED",
+          message: "Use the application origin.",
+        },
+      },
+      { status: 403 },
+    );
+  }
+  if (!hasSupabaseServerConfig(env))
+    return unavailable("EDGE_SERVER_CONFIG_MISSING");
+  try {
+    const reader = request.body?.getReader();
+    const chunks = [];
+    let size = 0;
+    if (reader) {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > 16384) {
+          await reader.cancel();
+          return json(
+            {
+              error: {
+                code: "BODY_TOO_LARGE",
+                message: "Request body is too large.",
+              },
+            },
+            { status: 413 },
+          );
+        }
+        chunks.push(value);
+      }
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.length;
+    }
+    let body;
+    try {
+      body = JSON.parse(new TextDecoder().decode(bytes));
+    } catch {
+      return json(
+        {
+          error: { code: "VALIDATION_ERROR", message: "Invalid JSON request." },
+        },
+        { status: 422 },
+      );
+    }
+    const parsed = subscriptionRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return json(
+        {
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Invalid calendar subscription request.",
+          },
+        },
+        { status: 422 },
+      );
+    }
+    const cookieId = request.headers
+      .get("cookie")
+      ?.split(";")
+      .map((x) => x.trim())
+      .find((x) => x.startsWith("calenderzw_anon_session="))
+      ?.slice("calenderzw_anon_session=".length);
+    const suppliedId = request.headers.get("x-calenderzw-anonymous-id");
+    const anonymousSessionId = isAnalyticsUuid(suppliedId)
+      ? suppliedId
+      : isAnalyticsUuid(cookieId)
+        ? cookieId
+        : crypto.randomUUID();
+    const result = await createNativeFeedSubscription(parsed.data, {
+      publicOrigin: url.origin,
+      anonymousSessionId,
+      env,
+    });
+    return json(result, {
+      status: 201,
+      headers: {
+        "set-cookie": `calenderzw_anon_session=${anonymousSessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=31536000`,
+      },
+    });
+  } catch (error) {
+    return publicApiError(error);
+  }
+}
+
+async function handleSourceDocumentUpload(request, env) {
   if (request.method !== "POST") {
     return json(
       { error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." } },
@@ -192,132 +888,12 @@ async function handleSourceDocumentUpload(request, env, ctx) {
   const bindingError = assertSourceUploadBindings(env);
   if (bindingError) return bindingError;
 
-  const declaredSize = Number(request.headers.get("content-length") ?? 0);
-  if (
-    Number.isFinite(declaredSize) &&
-    declaredSize > MAX_SOURCE_DOCUMENT_BYTES
-  ) {
-    return json(
-      {
-        error: {
-          code: "FILE_TOO_LARGE",
-          message: "The DOCX file exceeds the 10 MB source upload limit.",
-        },
-      },
-      { status: 413 },
-    );
-  }
+  const authError = assertSourceUploadAuth(request, env);
+  if (authError) return authError;
 
-  const filename = safeFilename(
-    decodeFilename(headerValue(request.headers, "x-calenderzw-filename")),
-  );
-  if (!filename || !filename.toLocaleLowerCase("en").endsWith(".docx")) {
-    return json(
-      {
-        error: {
-          code: "DOCX_REQUIRED",
-          message:
-            "CalenderZW source upload currently accepts DOCX files only.",
-        },
-      },
-      { status: 422 },
-    );
-  }
-
-  const mimeType = headerValue(request.headers, "content-type")
-    .split(";")[0]
-    .trim()
-    .toLowerCase();
-  if (!ACCEPTED_DOCX_MIME_TYPES.has(mimeType)) {
-    return json(
-      {
-        error: {
-          code: "DOCX_MIME_REQUIRED",
-          message: "CalenderZW source upload accepts DOCX documents only.",
-        },
-      },
-      { status: 415 },
-    );
-  }
-
-  const bytes = await request.arrayBuffer();
-  if (bytes.byteLength === 0) {
-    return json(
-      {
-        error: {
-          code: "EMPTY_FILE",
-          message: "Choose a DOCX timetable document to upload.",
-        },
-      },
-      { status: 422 },
-    );
-  }
-  if (bytes.byteLength > MAX_SOURCE_DOCUMENT_BYTES) {
-    return json(
-      {
-        error: {
-          code: "FILE_TOO_LARGE",
-          message: "The DOCX file exceeds the 10 MB source upload limit.",
-        },
-      },
-      { status: 413 },
-    );
-  }
-
-  const signature = new Uint8Array(bytes.slice(0, 4));
-  if (
-    signature[0] !== 0x50 ||
-    signature[1] !== 0x4b ||
-    signature[2] !== 0x03 ||
-    signature[3] !== 0x04
-  ) {
-    return json(
-      {
-        error: {
-          code: "DOCX_ZIP_INVALID",
-          message: "That file is not a valid DOCX ZIP container.",
-        },
-      },
-      { status: 422 },
-    );
-  }
-
-  const sha256 = hex(await crypto.subtle.digest("SHA-256", bytes));
-  const r2Key = `source-documents/${monthKey()}/${sha256}/source.docx`;
-  await env.SOURCE_BUCKET.put(r2Key, bytes, {
-    httpMetadata: { contentType: DOCX_MIME_TYPE },
-    customMetadata: {
-      sha256,
-      originalFilename: filename,
-      parser: "static-docx-matrix-v1",
-      visibility: "private",
-    },
-  });
-
-  const job = {
-    kind: "source_document_uploaded",
-    r2Key,
-    sha256,
-    originalFilename: filename,
-    mimeType: DOCX_MIME_TYPE,
-    sizeBytes: bytes.byteLength,
-    uploadedAt: new Date().toISOString(),
-  };
-  ctx.waitUntil(env.SOURCE_PROCESSING_QUEUE.send(job));
-
-  return json(
-    {
-      document: {
-        r2Key,
-        sha256,
-        originalFilename: filename,
-        mimeType: DOCX_MIME_TYPE,
-        sizeBytes: bytes.byteLength,
-        queued: true,
-      },
-    },
-    { status: 202 },
-  );
+  // Intake stays closed until parse-to-review processing is implemented. Existing
+  // queued objects are retried/DLQ'd below rather than acknowledged and lost.
+  return unavailable("SOURCE_PROCESSOR_UNAVAILABLE");
 }
 
 async function serveSpaShell(request, env) {
@@ -344,12 +920,31 @@ async function serveAssetOr404(request, env) {
   return withSecurityHeaders(assetResponse);
 }
 
-export default {
+const application = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === "/__release") {
       return json(releasePayload(env));
+    }
+
+    if (url.pathname === "/runtime-config.js") {
+      return serveRuntimeConfig(env);
+    }
+
+    if (url.pathname === "/api/health/live" || url.pathname === "/healthz") {
+      return json({ status: "ok" });
+    }
+
+    if (url.pathname === "/api/health/release") {
+      return json(backendReleasePayload(env));
+    }
+
+    if (url.pathname === "/api/health/ready") {
+      const readiness = await checkReadiness(env);
+      return json(readiness, {
+        status: readiness.status === "ready" ? 200 : 503,
+      });
     }
 
     const redirectTo = redirectLocation(url);
@@ -366,11 +961,132 @@ export default {
       return handleSourceDocumentUpload(request, env, ctx);
     }
 
-    // Transitional staging bridge only. The final Cloudflare runtime replaces
-    // this with native Worker adapters before production cutover. Browser HTML
-    // is NEVER proxied to Railway.
+    const credentialRecoveryResponse = await handleGoogleCredentialRecovery(
+      request,
+      env,
+    );
+    if (credentialRecoveryResponse) return credentialRecoveryResponse;
+
+    const googleResponse = await handleGoogleCalendarRequest(request, env, {
+      enqueueInitialSync: enqueueNativeGoogleSync,
+      enqueueReconciliation: enqueueNativeGoogleSync,
+    });
+    if (googleResponse) return googleResponse;
+
+    const staffInvitationResponse = await handleNativeStaffInvitation(
+      request,
+      env,
+    );
+    if (staffInvitationResponse) return staffInvitationResponse;
+
+    const editorResponse = await handleEditorMutations(request, env);
+    if (editorResponse) return editorResponse;
+    const analyticsResponse = await handleNativeAdminAnalytics(request, env);
+    if (analyticsResponse) return analyticsResponse;
+    const entityResponse = await handleNativeAdminEntities(request, env);
+    if (entityResponse) return entityResponse;
+    const adminTimetableResponse = await handleNativeAdminTimetable(
+      request,
+      env,
+    );
+    if (adminTimetableResponse) return adminTimetableResponse;
+    const settingsMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([0-9a-f-]{36})\/public-settings$/i,
+    );
+    if (settingsMatch)
+      return handleNativePublicSettings(request, env, settingsMatch[1]);
+
+    if (
+      url.pathname === "/api/admin/session" ||
+      url.pathname === "/api/admin/institutions" ||
+      url.pathname === "/api/admin/my/timetables" ||
+      [
+        "/api/admin/programmes",
+        "/api/admin/class-groups",
+        "/api/admin/academic-periods",
+        "/api/admin/timetables",
+      ].includes(url.pathname)
+    ) {
+      return handleNativeAdminSession(request, env);
+    }
+
+    const pausesMatch = url.pathname.match(
+      /^\/api\/admin\/timetables\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/pauses(?:\/(preview|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}))?$/i,
+    );
+    if (pausesMatch) {
+      return handleNativeAcademicPauses(
+        request,
+        env,
+        pausesMatch[1],
+        pausesMatch[2],
+      );
+    }
+
+    const broadPauseMatch = url.pathname.match(
+      /^\/api\/admin\/academic-pauses(?:\/(preview|[0-9a-f-]{36}))?$/i,
+    );
+    if (broadPauseMatch)
+      return handleNativeAcademicPauses(
+        request,
+        env,
+        undefined,
+        broadPauseMatch[1],
+      );
+
+    const revokeMatch = url.pathname.match(
+      /^\/api\/calendar\/subscriptions\/([0-9a-f-]{36})\/revoke$/i,
+    );
+    if (revokeMatch) {
+      if (request.method !== "POST")
+        return json({ error: { code: "METHOD_NOT_ALLOWED" } }, { status: 405 });
+      if (
+        request.headers.get("origin") !== url.origin ||
+        request.headers.get("sec-fetch-site") === "cross-site"
+      )
+        return json({ error: { code: "ORIGIN_NOT_ALLOWED" } }, { status: 403 });
+      const cookie =
+        request.headers
+          .get("cookie")
+          ?.split(";")
+          .map((value) => value.trim())
+          .find((value) => value.startsWith("calenderzw_anon_session="))
+          ?.slice("calenderzw_anon_session=".length) ?? null;
+      try {
+        return json(
+          await revokeOwnedFeedSubscription(revokeMatch[1], cookie, env),
+        );
+      } catch (error) {
+        return publicApiError(error);
+      }
+    }
+
+    if (url.pathname === "/api/calendar/subscriptions") {
+      return handleNativeSubscription(request, env);
+    }
+
+    if (
+      url.pathname.startsWith("/calendar/feed/") ||
+      url.pathname.startsWith("/calendar/download/")
+    ) {
+      const nativeCalendar = await handleNativeCalendarIcs(request, env, ctx);
+      if (nativeCalendar) return nativeCalendar;
+    }
+
+    if (
+      url.pathname === "/api/public/timetables" ||
+      url.pathname.startsWith("/api/public/timetables/")
+    ) {
+      const nativePublicApi = await handleNativePublicTimetableApi(
+        request,
+        env,
+      );
+      if (nativePublicApi) return nativePublicApi;
+    }
+
+    // Browser HTML is NEVER proxied to Railway. Unported APIs fail explicitly;
+    // a dead backend is not a recovery fallback.
     if (isDynamicPath(url.pathname)) {
-      return proxyLegacyBackend(request, env);
+      return unavailable();
     }
 
     // P0 guardrail: /assets/* is Worker-first in Wrangler so the Worker can
@@ -394,14 +1110,58 @@ export default {
     return notFound();
   },
 
-  async queue(batch) {
+  async queue(batch, env = {}) {
     for (const message of batch.messages) {
-      const body = message.body ?? {};
-      if (body.kind === "source_document_uploaded" && body.r2Key) {
-        message.ack();
-        continue;
-      }
-      message.retry();
+      if (await consumeGoogleDeliveryMessage(message, env)) continue;
+      // No durable processor exists yet. Retry to the configured DLQ; never
+      // acknowledge source_document_uploaded or push messages without work.
+      message.retry({ delaySeconds: 300 });
     }
   },
+  async scheduled(_controller, env) {
+    await scheduleGoogleDelivery(env);
+  },
+};
+
+export default {
+  async fetch(request, env, ctx) {
+    const started = Date.now();
+    const requestId = crypto.randomUUID();
+    let response;
+    try {
+      response = await application.fetch(request, env, ctx);
+    } catch {
+      response = publicApiError(new Error("REQUEST_FAILED"));
+    }
+    const headers = new Headers(response.headers);
+    headers.set("x-request-id", requestId);
+    headers.set("x-calenderzw-source-sha", env.SOURCE_SHA ?? "unknown");
+    // Private feed tokens live in URL paths. Never log a raw URL, query, headers
+    // or provider payload; platform invocation logs/traces are disabled too.
+    const path = new URL(request.url).pathname;
+    const routeClass = path.startsWith("/calendar/")
+      ? "calendar"
+      : path.startsWith("/api/admin/")
+        ? "admin"
+        : path.startsWith("/api/")
+          ? "api"
+          : "asset";
+    console.info(
+      JSON.stringify({
+        event: "edge.request",
+        requestId,
+        release: env.SOURCE_SHA ?? null,
+        routeClass,
+        status: response.status,
+        durationMs: Date.now() - started,
+      }),
+    );
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  },
+  queue: application.queue,
+  scheduled: application.scheduled,
 };

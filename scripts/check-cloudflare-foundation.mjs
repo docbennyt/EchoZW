@@ -59,17 +59,70 @@ assert(
   "the split-release SPA ownership invariant must be explicit in Worker code.",
 );
 assert(
-  worker.includes("LEGACY_BACKEND_ORIGIN"),
-  "staging backend bridge must be explicit and removable.",
+  !worker.includes("LEGACY_BACKEND_ORIGIN") &&
+    !JSON.stringify(wrangler).includes("railway.app"),
+  "Worker runtime/config must not depend on retired Railway.",
+);
+assert(
+  worker.includes("handleNativePublicTimetableApi") &&
+    worker.includes("cloudflare-native-public-api"),
+  "public timetable reads must have a native Worker transport before the backend bridge.",
+);
+assert(
+  worker.indexOf("handleNativePublicTimetableApi") <
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
+  "native public timetable transport must run before the legacy backend bridge.",
+);
+assert(
+  worker.includes('url.pathname === "/runtime-config.js"') &&
+    worker.includes('url.pathname === "/api/health/live"') &&
+    worker.includes('url.pathname === "/api/health/release"') &&
+    worker.includes('url.pathname === "/api/health/ready"'),
+  "health, release identity, and runtime config must be native Worker routes.",
+);
+assert(
+  worker.indexOf('url.pathname === "/api/health/live"') <
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
+  "native health routes must run before the legacy backend bridge.",
+);
+assert(
+  worker.includes("handleNativeAdminSession") &&
+    worker.includes('url.pathname === "/api/admin/session"') &&
+    worker.includes("requireStaffUser") &&
+    worker.includes("createSupabaseUserClient(accessToken, env)") &&
+    worker.includes("createSupabaseAdminClient(env)"),
+  "admin session reads must have a native Worker auth adapter.",
+);
+assert(
+  worker.indexOf("handleNativeAdminSession") <
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
+  "native admin session route must run before the legacy backend bridge.",
+);
+assert(
+  worker.includes("handleNativeCalendarIcs") &&
+    worker.includes('url.pathname.startsWith("/calendar/feed/")') &&
+    worker.includes('url.pathname.startsWith("/calendar/download/")'),
+  "calendar feed and download routes must have native Worker transport before cutover.",
+);
+assert(
+  worker.indexOf("handleNativeCalendarIcs") <
+    worker.indexOf("if (isDynamicPath(url.pathname))"),
+  "native calendar transport must run before the legacy backend bridge.",
 );
 assert(
   worker.includes('url.pathname === "/api/edge/source-documents"') &&
-    worker.includes("SOURCE_BUCKET.put") &&
-    worker.includes("SOURCE_PROCESSING_QUEUE.send"),
-  "source document uploads must write private R2 and enqueue processing.",
+    worker.includes("assertSourceUploadAuth") &&
+    worker.includes("EDGE_SOURCE_UPLOAD_SECRET") &&
+    worker.includes("SOURCE_UPLOAD_AUTH_REQUIRED") &&
+    worker.includes("SOURCE_PROCESSOR_UNAVAILABLE"),
+  "incomplete source intake must authenticate and fail closed before accepting bytes.",
 );
 assert(
-  worker.includes("async queue(batch)") &&
+  !worker.includes("message.ack()") && worker.includes("message.retry("),
+  "unprocessed source jobs must never be acknowledged.",
+);
+assert(
+  /async queue\(batch(?:,\s*env\s*=\s*\{\})?\)/.test(worker) &&
     worker.includes("source_document_uploaded"),
   "source processing queue consumer must be wired in the Worker.",
 );

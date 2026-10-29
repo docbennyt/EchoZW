@@ -27,11 +27,15 @@ const runtimePublicConfig = readFileSync(
 );
 const healthApi = readFileSync("server/healthApi.ts", "utf8");
 const cloudflareSmoke = readFileSync(
-  "scripts/smoke-cloudflare-staging.mjs",
+  "scripts/smoke-native-recovery.mjs",
   "utf8",
 );
 const cloudflarePreviewWorkflow = readFileSync(
   ".github/workflows/cloudflare-pr-preview.yml",
+  "utf8",
+);
+const cloudflareStagingWorkflow = readFileSync(
+  ".github/workflows/cloudflare-staging.yml",
   "utf8",
 );
 const deploymentDocs = readFileSync(
@@ -165,11 +169,22 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(productionServer).toContain('server.listen(port, "0.0.0.0"');
   });
 
-  it("keeps historical Railway smoke separate from secretless Cloudflare PR checks", () => {
+  it("requires native proof separately from secretless Cloudflare PR checks", () => {
     expect(cloudflareSmoke).toContain("/api/health/release");
-    expect(cloudflareSmoke).toContain("EXPECTED_BACKEND_SHA");
+    expect(cloudflareSmoke).toContain("EXPECTED_RELEASE_SHA");
+    expect(cloudflareSmoke).toContain("legacyBackendBridge === false");
     expect(cloudflareSmoke).toContain(
-      "Backend integration compatibility not asserted",
+      "BLOCKED: CALENDERZW_STAGING_ADMIN_ACCESS_TOKEN",
+    );
+    expect(cloudflarePreviewWorkflow).not.toContain("secrets.");
+    expect(cloudflarePreviewWorkflow).not.toContain("environment:");
+    expect(cloudflareStagingWorkflow).toContain(
+      "authorize-staging-candidate.mjs",
+    );
+    expect(cloudflareStagingWorkflow).toContain("verify-staging-identity.mjs");
+    expect(cloudflareStagingWorkflow).toContain("npm run worker:smoke:staging");
+    expect(cloudflareStagingWorkflow).toContain(
+      "npm run browser:smoke:release",
     );
     expect(cloudflarePreviewWorkflow).toContain(
       "name: Cloudflare PR Verification",

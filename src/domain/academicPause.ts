@@ -3,12 +3,14 @@ import type {
   AcademicPauseScope,
   PublicTimetable,
 } from "../api/pilotTypes.js";
+import { academicEventCategory } from "./academicEventCategory.js";
 
 export type PauseCandidateOccurrence = {
   start: Date;
   end: Date;
   dateKey: string;
   stableSessionKey: string | null;
+  sessionType?: string | null;
 };
 
 const scopeSpecificity: Record<AcademicPauseScope, number> = {
@@ -37,6 +39,9 @@ export function pauseAppliesToOccurrence(
   occurrence: PauseCandidateOccurrence,
 ) {
   if (!pause.active) return false;
+  // Academic pauses govern regular teaching. Dated exam cancellations use
+  // their own scoped exception/publication history, never a lecture pause.
+  if (academicEventCategory(occurrence.sessionType) === "exam") return false;
   if (
     occurrence.dateKey < pause.startsOn ||
     occurrence.dateKey > pause.endsOn

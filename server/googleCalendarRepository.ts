@@ -15,17 +15,26 @@ export async function createGoogleOAuthState(input: {
   stateHash: string;
   subscriptionId: string;
   expiresAt: string;
+  anonymousSessionId: string | null;
   env?: NodeJS.ProcessEnv;
 }) {
-  const { error } = await client(input.env)
-    .from("google_calendar_oauth_states")
-    .insert({
-      state_hash: input.stateHash,
-      subscription_id: input.subscriptionId,
-      expires_at: input.expiresAt,
-    });
+  const { data, error } = await client(input.env).rpc(
+    "start_google_calendar_connection",
+    {
+      p_state_hash: input.stateHash,
+      p_subscription_id: input.subscriptionId,
+      p_expires_at: input.expiresAt,
+      p_owner: input.anonymousSessionId,
+    },
+  );
   if (error)
     throw databaseError("Could not start Google Calendar connection.", error);
+  if (data !== true)
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
 }
 
 export async function consumeGoogleOAuthState(input: {
@@ -35,25 +44,15 @@ export async function consumeGoogleOAuthState(input: {
   const db = client(input.env);
   const { data, error } = await db
     .from("google_calendar_oauth_states")
-    .select("state_hash, subscription_id, expires_at")
+    .delete()
     .eq("state_hash", input.stateHash)
+    .select(
+      "state_hash, subscription_id, expires_at, connection_generation, anonymous_session_id",
+    )
     .maybeSingle();
   if (error)
     throw databaseError("Could not verify Google Calendar connection.", error);
-  if (!data) return null;
-
-  const { error: deleteError } = await db
-    .from("google_calendar_oauth_states")
-    .delete()
-    .eq("state_hash", input.stateHash);
-  if (deleteError) {
-    throw databaseError(
-      "Could not complete Google Calendar connection.",
-      deleteError,
-    );
-  }
-
-  return data as JsonRecord;
+  return (data ?? null) as JsonRecord | null;
 }
 
 export async function saveGoogleCredential(input: {
@@ -81,6 +80,60 @@ export async function saveGoogleCredential(input: {
     );
 }
 
+export async function persistGoogleCalendarConnection(input: {
+  subscriptionId: string;
+  connectionGeneration: number;
+  encryptedRefreshToken: string;
+  grantedScope: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "complete_google_calendar_connection",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_generation: input.connectionGeneration,
+      p_encrypted_refresh_token: input.encryptedRefreshToken,
+      p_granted_scope: input.grantedScope,
+    },
+  );
+  if (error)
+    throw databaseError(
+      "Could not securely save Google Calendar access.",
+      error,
+    );
+  if (data !== true)
+    throw new PilotApiError(
+      "SUBSCRIPTION_DISCONNECTED",
+      "This Google Calendar connection changed. Please start again.",
+      409,
+    );
+}
+
+export async function disconnectGoogleCalendarConnection(input: {
+  subscriptionId: string;
+  anonymousSessionId: string | null;
+  deleteCreatedCalendar: boolean;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "disconnect_google_calendar_connection",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_owner: input.anonymousSessionId,
+      p_delete_calendar: input.deleteCreatedCalendar,
+    },
+  );
+  if (error)
+    throw databaseError("Could not disconnect Google Calendar.", error);
+  if (!data)
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
+  return data as JsonRecord;
+}
+
 export async function getGoogleCredential(
   subscriptionId: string,
   env: NodeJS.ProcessEnv = process.env,
@@ -93,6 +146,80 @@ export async function getGoogleCredential(
   if (error)
     throw databaseError("Could not load Google Calendar access.", error);
   return (data ?? null) as JsonRecord | null;
+}
+
+export async function listGoogleCredentials(
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  const { data, error } = await client(env)
+    .from("google_calendar_credentials")
+    .select(
+      "subscription_id, encrypted_refresh_token, created_at, updated_at, encryption_migration_id",
+    )
+    .order("created_at", { ascending: true })
+    .order("subscription_id", { ascending: true });
+  if (error)
+    throw databaseError("Could not load Google Calendar access.", error);
+  return (data ?? []) as JsonRecord[];
+}
+
+export async function beginGoogleCredentialKeyMigration(input: {
+  subscriptionId: string;
+  expectedCiphertext: string;
+  newCiphertext: string;
+  migrationId: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "begin_google_credential_key_migration",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_expected_ciphertext: input.expectedCiphertext,
+      p_new_ciphertext: input.newCiphertext,
+      p_migration_id: input.migrationId,
+    },
+  );
+  if (error)
+    throw databaseError("Could not migrate Google Calendar access.", error);
+  return data === true;
+}
+
+export async function verifyGoogleCredentialKeyMigration(input: {
+  subscriptionId: string;
+  expectedCiphertext: string;
+  migrationId: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "verify_google_credential_key_migration",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_expected_ciphertext: input.expectedCiphertext,
+      p_migration_id: input.migrationId,
+    },
+  );
+  if (error)
+    throw databaseError("Could not verify Google Calendar access.", error);
+  return data === true;
+}
+
+export async function revertGoogleCredentialKeyMigration(input: {
+  subscriptionId: string;
+  expectedCiphertext: string;
+  migrationId: string;
+  env?: NodeJS.ProcessEnv;
+}) {
+  const { data, error } = await client(input.env).rpc(
+    "revert_google_credential_key_migration",
+    {
+      p_subscription_id: input.subscriptionId,
+      p_expected_ciphertext: input.expectedCiphertext,
+      p_migration_id: input.migrationId,
+    },
+  );
+  if (error)
+    throw databaseError("Could not restore Google Calendar access.", error);
+  return data === true;
 }
 
 export async function deleteGoogleCredential(
@@ -130,6 +257,7 @@ export async function updateGoogleSubscription(input: {
   syncedTimetableVersionId?: string | null;
   lastSyncedAt?: string | null;
   lastErrorCode?: string | null;
+  connectionGeneration?: number;
   env?: NodeJS.ProcessEnv;
 }) {
   const patch: JsonRecord = { updated_at: new Date().toISOString() };
@@ -145,15 +273,23 @@ export async function updateGoogleSubscription(input: {
   if (input.lastErrorCode !== undefined)
     patch.last_error_code = input.lastErrorCode;
 
-  const { error } = await client(input.env)
+  let query = client(input.env)
     .from("calendar_subscriptions")
     .update(patch)
     .eq("id", input.subscriptionId);
+  if (input.connectionGeneration !== undefined) {
+    query = query
+      .eq("google_connection_generation", input.connectionGeneration)
+      .is("revoked_at", null);
+    query = query.neq("status", "disconnected");
+  }
+  const { data, error } = await query.select("id").maybeSingle();
   if (error)
     throw databaseError(
       "Could not update Google Calendar subscription.",
       error,
     );
+  return Boolean(data);
 }
 
 export async function getCurrentPublishedVersionId(
@@ -195,8 +331,36 @@ export async function upsertGoogleEventSyncRecord(input: {
   syncStatus: "active" | "failed";
   lastErrorCode?: string | null;
   env?: NodeJS.ProcessEnv;
+  connectionGeneration?: number;
 }) {
   const now = new Date().toISOString();
+  if (input.connectionGeneration !== undefined) {
+    const { data, error } = await client(input.env).rpc(
+      "write_google_calendar_sync_record",
+      {
+        p_subscription_id: input.subscriptionId,
+        p_generation: input.connectionGeneration,
+        p_internal_event_id: input.internalEventId,
+        p_record: {
+          timetable_version_id: input.timetableVersionId,
+          external_calendar_id: input.externalCalendarId,
+          external_event_id: input.externalEventId,
+          content_hash: input.contentHash,
+          sync_status: input.syncStatus,
+          last_error_code: input.lastErrorCode ?? null,
+        },
+      },
+    );
+    if (error)
+      throw databaseError("Could not save Google Calendar event state.", error);
+    if (data !== true)
+      throw new PilotApiError(
+        "GOOGLE_CONNECTION_CHANGED",
+        "Google Calendar connection changed during synchronization.",
+        409,
+      );
+    return;
+  }
   const { error } = await client(input.env)
     .from("calendar_event_sync_records")
     .upsert(
@@ -223,7 +387,31 @@ export async function deleteGoogleEventSyncRecord(input: {
   subscriptionId: string;
   internalEventId: string;
   env?: NodeJS.ProcessEnv;
+  connectionGeneration?: number;
 }) {
+  if (input.connectionGeneration !== undefined) {
+    const { data, error } = await client(input.env).rpc(
+      "write_google_calendar_sync_record",
+      {
+        p_subscription_id: input.subscriptionId,
+        p_generation: input.connectionGeneration,
+        p_internal_event_id: input.internalEventId,
+        p_record: null,
+      },
+    );
+    if (error)
+      throw databaseError(
+        "Could not remove Google Calendar event state.",
+        error,
+      );
+    if (data !== true)
+      throw new PilotApiError(
+        "GOOGLE_CONNECTION_CHANGED",
+        "Google Calendar connection changed during synchronization.",
+        409,
+      );
+    return;
+  }
   const { error } = await client(input.env)
     .from("calendar_event_sync_records")
     .delete()

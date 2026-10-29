@@ -1,0 +1,15 @@
+<h2>You've been invited</h2>
+
+<p>
+  You've been invited to create an account. Follow the link below to accept.
+</p>
+{{ if eq .RedirectTo "https://next.calender.aido.co.zw/account/update-password"
+}}
+<p>
+  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&amp;type=invite">
+    Accept invitation
+  </a>
+</p>
+{{ else }}
+<p><a href="{{ .ConfirmationURL }}">Accept invitation</a></p>
+{{ end }}

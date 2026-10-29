@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthSetupPage } from "../src/AuthSetupPage";
 import type { AdminSessionResponse } from "../src/api/adminSession";
@@ -29,10 +30,15 @@ function workingAuth() {
     setSession: vi.fn(async () => ({ data: {}, error: null })),
     exchangeCodeForSession: vi.fn(async () => ({ data: {}, error: null })),
     verifyOtp: vi.fn(async () => ({ data: {}, error: null })),
-    getSession: vi.fn(async () => ({
-      data: { session: { access_token: "session-only" } },
-      error: null,
-    })),
+    getSession: vi.fn(
+      async (): Promise<{
+        data: { session: { access_token: string } | null };
+        error: null;
+      }> => ({
+        data: { session: { access_token: "session-only" } },
+        error: null,
+      }),
+    ),
     updateUser: vi.fn(async () => ({ data: {}, error: null })),
   };
 }
@@ -88,6 +94,102 @@ beforeEach(() => {
 });
 
 describe("AuthSetupPage", () => {
+  it.each(["invite", "recovery"] as const)(
+    "does not consume a %s token hash until explicit confirmation",
+    async (type) => {
+      const auth = workingAuth();
+      createSupabaseClient.mockReturnValue({ auth });
+      window.history.replaceState(
+        {},
+        "",
+        `/account/update-password?token_hash=test-hash&type=${type}`,
+      );
+      render(
+        <StrictMode>
+          <AuthSetupPage />
+        </StrictMode>,
+      );
+      const continueButton = await screen.findByRole("button", {
+        name: /^Continue$/,
+      });
+      expect(auth.verifyOtp).not.toHaveBeenCalled();
+      expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
+      expect(auth.getSession).not.toHaveBeenCalled();
+      expect(window.location.search).toBe("");
+      expect(screen.queryByLabelText(/^New password$/i)).toBeNull();
+
+      fireEvent.click(continueButton);
+      fireEvent.click(continueButton);
+      expect(await screen.findByLabelText(/^New password$/i)).toBeVisible();
+      expect(auth.verifyOtp).toHaveBeenCalledExactlyOnceWith({
+        token_hash: "test-hash",
+        type,
+      });
+    },
+  );
+
+  it.each(["invite", "recovery"] as const)(
+    "also gates a token hash when %s type is in the fragment",
+    async (type) => {
+      const auth = workingAuth();
+      createSupabaseClient.mockReturnValue({ auth });
+      window.history.replaceState(
+        {},
+        "",
+        `/account/update-password?token_hash=test-hash#type=${type}`,
+      );
+      render(<AuthSetupPage />);
+      const continueButton = await screen.findByRole("button", {
+        name: /^Continue$/,
+      });
+      expect(auth.verifyOtp).not.toHaveBeenCalled();
+      expect(window.location.search).toBe("");
+      expect(window.location.hash).toBe("");
+      fireEvent.click(continueButton);
+      expect(await screen.findByLabelText(/^New password$/i)).toBeVisible();
+      expect(auth.verifyOtp).toHaveBeenCalledExactlyOnceWith({
+        token_hash: "test-hash",
+        type,
+      });
+    },
+  );
+
+  it("waits for one recovery exchange across StrictMode effect replay", async () => {
+    const auth = workingAuth();
+    let finish!: () => void;
+    let established = false;
+    const exchange = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    auth.exchangeCodeForSession.mockImplementation(async () => {
+      await exchange;
+      established = true;
+      return { data: {}, error: null };
+    });
+    auth.getSession.mockImplementation(async () => ({
+      data: { session: established ? { access_token: "session-only" } : null },
+      error: null,
+    }));
+    createSupabaseClient.mockReturnValue({ auth });
+    window.history.replaceState(
+      {},
+      "",
+      "/account/update-password?code=single-use-fixture",
+    );
+    render(
+      <StrictMode>
+        <AuthSetupPage />
+      </StrictMode>,
+    );
+    finish();
+    expect(await screen.findByLabelText(/^New password$/i)).toBeInTheDocument();
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledExactlyOnceWith(
+      "single-use-fixture",
+    );
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(window.location.search).toBe("");
+    expect(track).not.toHaveBeenCalled();
+  });
   it("turns an invite into signup, sanitizes secrets, then resolves the server-authorized role", async () => {
     const auth = workingAuth();
     createSupabaseClient.mockReturnValue({ auth });

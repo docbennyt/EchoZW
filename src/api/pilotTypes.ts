@@ -197,8 +197,16 @@ export type AdminAcademicSchedulePause = AcademicSchedulePause & {
 };
 
 export type AcademicPauseImpact = {
+  /** Meaningful only when affectedTimetableCountKnown is not false. */
   affectedTimetableCount: number;
+  /** A lower bound for partial previews; unavailable for unknown previews. */
   newlySuppressedLectureCount: number;
+  previewStatus?: "exact" | "partial" | "unknown";
+  previewReason?: "bounds" | "read_failed" | "scope_incomplete";
+  affectedTimetableCountKnown?: boolean;
+  evaluatedTimetableCount?: number;
+  /** Aggregate timetable-days, not distinct calendar dates. */
+  evaluatedDayCount?: number;
 };
 
 export type TimetableMutationOutcome =
@@ -242,6 +250,8 @@ export type TimetableCorrectionDirective = {
 
 export type TimetableSessionException = {
   id: string;
+  /** Root of immutable exam amendment history, resolved before public serialization. */
+  identityRootId?: string;
   stableSessionKey: string | null;
   exceptionDate: string;
   exceptionType: "cancelled" | "moved" | "extra";

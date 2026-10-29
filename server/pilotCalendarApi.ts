@@ -9,11 +9,9 @@ import {
   createCalendarSubscriptionRecord,
   getCalendarSubscriptionById,
   getCalendarSubscriptionByTokenHash,
-  getPublishedTimetableById,
   PilotApiError,
 } from "./pilotRepository.js";
-import { getCalendarRevision } from "./calendarRevisionRepository.js";
-import { generatePublishedTimetableIcs } from "./publishedCalendar.js";
+import { buildRevisionAwareCalendar } from "./pilotCalendarCore.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 import {
   getReminderOffsets,
@@ -172,34 +170,6 @@ function writeIcsResponse(
   }
   res.end(ics);
   return 200;
-}
-
-async function buildRevisionAwareCalendar(input: {
-  timetableId: string;
-  reminders: number[];
-  publicOrigin: string;
-  env: NodeJS.ProcessEnv;
-}) {
-  const timetable = await getPublishedTimetableById(input.timetableId);
-  if (!timetable.publishedAt) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable does not have a published calendar yet.",
-      404,
-    );
-  }
-  const revision = await getCalendarRevision(input.timetableId, input.env);
-  const resolvedTimetable = {
-    ...timetable,
-    publishedAt: revision.updatedAt,
-    versionNumber: revision.sequence,
-  };
-  const ics = generatePublishedTimetableIcs({
-    timetable: resolvedTimetable,
-    reminderOffsetsMinutes: input.reminders,
-    publicOrigin: input.publicOrigin,
-  });
-  return { ics, revision };
 }
 
 function redirect(res: ServerResponse, location: string) {
@@ -459,6 +429,13 @@ export async function handlePilotCalendarRequest(
         .reminder_offsets_minutes ?? []) as number[];
       const { ics, revision } = await buildRevisionAwareCalendar({
         timetableId,
+        examReminders: Array.isArray(
+          (subscription as Record<string, unknown>)
+            .exam_reminder_offsets_minutes,
+        )
+          ? ((subscription as Record<string, unknown>)
+              .exam_reminder_offsets_minutes as number[])
+          : [],
         reminders,
         publicOrigin,
         env,
@@ -497,6 +474,13 @@ export async function handlePilotCalendarRequest(
         .reminder_offsets_minutes ?? []) as number[];
       const { ics, revision } = await buildRevisionAwareCalendar({
         timetableId,
+        examReminders: Array.isArray(
+          (subscription as Record<string, unknown>)
+            .exam_reminder_offsets_minutes,
+        )
+          ? ((subscription as Record<string, unknown>)
+              .exam_reminder_offsets_minutes as number[])
+          : [],
         reminders,
         publicOrigin,
         env,

@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { createSupabaseAdminClient } from "./supabase/adminClient.js";
 import type {
   StaffAuthContext,
@@ -67,13 +68,26 @@ export type StaffAssignmentSummary = {
 };
 
 let repositoryEnv: NodeJS.ProcessEnv | undefined;
+const requestContext = new AsyncLocalStorage<{
+  env: NodeJS.ProcessEnv;
+  invitationOrigin?: string;
+}>();
+
+export function withStaffRepositoryContext<T>(
+  context: { env: NodeJS.ProcessEnv; invitationOrigin?: string },
+  operation: () => T,
+): T {
+  return requestContext.run(context, operation);
+}
 
 export function setStaffRepositoryEnv(env: NodeJS.ProcessEnv) {
   repositoryEnv = env;
 }
 
 function client() {
-  return createSupabaseAdminClient(repositoryEnv ?? process.env);
+  return createSupabaseAdminClient(
+    requestContext.getStore()?.env ?? repositoryEnv ?? process.env,
+  );
 }
 
 export function staffMutationActor(
@@ -98,21 +112,22 @@ function safeEmail(value: string) {
 }
 
 function publicOrigin() {
+  const env = requestContext.getStore()?.env ?? repositoryEnv;
   return (
-    repositoryEnv?.PUBLIC_APP_URL ??
+    env?.PUBLIC_APP_URL ??
     process.env.PUBLIC_APP_URL ??
-    repositoryEnv?.VITE_PUBLIC_APP_URL ??
+    env?.VITE_PUBLIC_APP_URL ??
     process.env.VITE_PUBLIC_APP_URL ??
-    repositoryEnv?.PUBLIC_SITE_URL ??
+    env?.PUBLIC_SITE_URL ??
     process.env.PUBLIC_SITE_URL ??
-    repositoryEnv?.VITE_PUBLIC_SITE_URL ??
+    env?.VITE_PUBLIC_SITE_URL ??
     process.env.VITE_PUBLIC_SITE_URL ??
     "https://calender.aido.co.zw"
   ).replace(/\/$/, "");
 }
 
 function staffSetupRedirect() {
-  return `${publicOrigin()}/account/update-password`;
+  return `${requestContext.getStore()?.invitationOrigin ?? publicOrigin()}/account/update-password`;
 }
 
 function mapAssignment(row: JsonRecord): StaffAssignmentSummary {
@@ -273,7 +288,11 @@ async function findAuthUserByEmail(email: string) {
     if (user) return user;
     if (data.users.length < 1000) return null;
   }
-  return null;
+  throw new StaffApiError(
+    "AUTH_LOOKUP_INCOMPLETE",
+    "Could not safely complete the staff account lookup.",
+    503,
+  );
 }
 
 function authUserIsConfirmed(user: {
@@ -283,7 +302,107 @@ function authUserIsConfirmed(user: {
   return Boolean(user.email_confirmed_at ?? user.confirmed_at);
 }
 
-async function sendStaffInvitation(email: string, displayName: string) {
+async function staffLifecycle<T>(
+  actor: StaffMutationActor,
+  operation: string,
+  input: JsonRecord,
+): Promise<T> {
+  const { data, error } = await client().rpc("czw_staff_lifecycle", {
+    p_actor_user_id: actor.userId,
+    p_operation: operation,
+    p_input: input,
+  });
+  if (error || !data || typeof data !== "object") {
+    throw new StaffApiError(
+      "DATABASE_UNAVAILABLE",
+      "Could not complete the staff lifecycle transaction.",
+      503,
+    );
+  }
+  const failure = (data as JsonRecord).error as { code?: string } | undefined;
+  if (failure) {
+    const errors: Record<string, [number, string]> = {
+      STAFF_MANAGER_REQUIRED: [403, "Staff management access is required."],
+      FOUNDER_REQUIRED: [
+        403,
+        "Founder superadmin access is required for this staff change.",
+      ],
+      FOUNDER_PROTECTED: [
+        operation === "set_role" || operation === "set_active" ? 403 : 409,
+        "Founder authority cannot be changed through staff controls.",
+      ],
+      ROLE_CHANGE_REQUIRED: [
+        409,
+        "Use the founder role controls before assigning privileged staff as a Class Rep.",
+      ],
+      SELF_PRIVILEGE_CHANGE_FORBIDDEN: [
+        403,
+        "You cannot change your own privileged role.",
+      ],
+      NOT_FOUND: [404, "Staff member or assignment not found."],
+      TIMETABLE_NOT_FOUND: [404, "Timetable not found."],
+      AUTH_IDENTITY_MISMATCH: [
+        409,
+        "The staff identity changed. Review the account before retrying.",
+      ],
+      INVITE_RATE_LIMITED: [
+        429,
+        "Wait at least 60 seconds before sending another staff invitation to this recipient.",
+      ],
+      INVITE_ACTOR_RATE_LIMITED: [
+        429,
+        "Staff invitation limit reached. Wait for the 10-minute sending window to reset.",
+      ],
+      VALIDATION_FAILED: [422, "Invalid staff lifecycle request."],
+    };
+    const code = failure.code ?? "";
+    const [status, message] = errors[code] ?? [
+      503,
+      "Could not complete the staff lifecycle transaction.",
+    ];
+    throw new StaffApiError(
+      errors[code] ? code : "DATABASE_UNAVAILABLE",
+      message,
+      status,
+    );
+  }
+  return data as T;
+}
+
+async function validateTimetable(timetableId: string) {
+  const timetable = await expectData<JsonRecord>(
+    client()
+      .from("timetables")
+      .select("id")
+      .eq("id", timetableId)
+      .maybeSingle(),
+    "Could not validate the Class Rep timetable.",
+  );
+  if (!timetable) {
+    throw new StaffApiError("TIMETABLE_NOT_FOUND", "Timetable not found.", 404);
+  }
+}
+
+async function sendStaffInvitation(
+  email: string,
+  displayName: string,
+  actor: StaffMutationActor,
+  role: "admin" | "class_rep",
+  target: { userId?: string; staffUserId?: string; timetableId?: string } = {},
+) {
+  // The reservation commits before the provider call and is never refunded on failure.
+  const reservation = await staffLifecycle<{ reserved: boolean }>(
+    actor,
+    "reserve_invite",
+    { email, role, ...target },
+  );
+  if (reservation.reserved !== true) {
+    throw new StaffApiError(
+      "DATABASE_UNAVAILABLE",
+      "Could not reserve the staff invitation.",
+      503,
+    );
+  }
   const { data, error } = await client().auth.admin.inviteUserByEmail(email, {
     data: { display_name: displayName, product: "CalenderZW" },
     redirectTo: staffSetupRedirect(),
@@ -308,10 +427,36 @@ async function sendStaffInvitation(email: string, displayName: string) {
 async function resolveStaffAuthEnrollment(
   email: string,
   displayName: string,
+  actor: StaffMutationActor,
+  role: "admin" | "class_rep",
+  timetableId?: string,
 ): Promise<StaffAuthEnrollment> {
   const existing = await findAuthUserByEmail(email);
+  if (existing) {
+    const staff = await getStaffRecordByUserId(existing.id);
+    if (
+      staff?.is_founder ||
+      (staff && role === "class_rep" && staff.role !== "class_rep")
+    ) {
+      if (!staff.is_founder) {
+        await auditRejected({
+          actor,
+          action: "staff.role_change_rejected",
+          targetId: String(staff.id),
+          reason: "class_rep_invite_cannot_demote_privileged_staff",
+        });
+      }
+      throw new StaffApiError(
+        staff.is_founder ? "FOUNDER_PROTECTED" : "ROLE_CHANGE_REQUIRED",
+        "Use the founder role controls before changing privileged staff.",
+        409,
+      );
+    }
+  }
   if (!existing) {
-    const invited = await sendStaffInvitation(email, displayName);
+    const invited = await sendStaffInvitation(email, displayName, actor, role, {
+      timetableId,
+    });
     return {
       userId: invited.id,
       enrollment: "invited_new_user",
@@ -330,7 +475,13 @@ async function resolveStaffAuthEnrollment(
   }
 
   if (existing.invited_at) {
-    const reinvited = await sendStaffInvitation(email, displayName);
+    const reinvited = await sendStaffInvitation(
+      email,
+      displayName,
+      actor,
+      role,
+      { userId: existing.id, timetableId },
+    );
     if (reinvited.id !== existing.id) {
       throw new StaffApiError(
         "AUTH_IDENTITY_MISMATCH",
@@ -351,17 +502,6 @@ async function resolveStaffAuthEnrollment(
     "This email already has an unconfirmed CalenderZW account that was not created by a staff invitation. Ask the user to finish confirming that account, then grant staff access again.",
     409,
   );
-}
-
-function enrollmentAuditAction(
-  role: "admin" | "class_rep",
-  enrollment: StaffEnrollmentOutcome,
-) {
-  if (enrollment === "invited_new_user") return `${role}.invited`;
-  if (enrollment === "invite_resent_pending_user") {
-    return `${role}.invite_resent`;
-  }
-  return `${role}.access_granted_existing_user`;
 }
 
 async function getStaffRecord(staffUserId: string) {
@@ -386,25 +526,6 @@ async function getStaffRecordByUserId(userId: string) {
       .maybeSingle(),
     "Could not load existing staff authorization.",
   );
-}
-
-async function revokeActiveAssignments(actorId: string, staffUserId: string) {
-  const now = new Date().toISOString();
-  await expectData(
-    client()
-      .from("class_rep_assignments")
-      .update({ active: false, revoked_at: now })
-      .eq("staff_user_id", staffUserId)
-      .eq("active", true)
-      .select("id"),
-    "Could not revoke previous Class Rep assignments.",
-  );
-  await audit({
-    actorId,
-    action: "class_rep.assignments_revoked_for_role_change",
-    entityType: "staff_user",
-    entityId: staffUserId,
-  });
 }
 
 export async function listStaffMembers() {
@@ -460,98 +581,24 @@ export async function inviteClassRep(input: {
   if (!displayName) {
     throw new StaffApiError("VALIDATION_FAILED", "Name is required.", 422);
   }
-
-  const authEnrollment = await resolveStaffAuthEnrollment(email, displayName);
-  const now = new Date().toISOString();
-  const admin = client();
-  const existing = await getStaffRecordByUserId(authEnrollment.userId);
-
-  if (existing && existing.role !== "class_rep") {
-    await auditRejected({
-      actor: input.actor,
-      action: "staff.role_change_rejected",
-      targetId: String(existing.id),
-      reason: "class_rep_invite_cannot_demote_privileged_staff",
-    });
-    throw new StaffApiError(
-      existing.is_founder ? "FOUNDER_PROTECTED" : "ROLE_CHANGE_REQUIRED",
-      existing.is_founder
-        ? "Founder authority cannot be changed through a Class Rep invitation."
-        : "Use the founder role controls before assigning this staff member as a Class Rep.",
-      409,
-    );
-  }
-
-  const invitationTimestamps = authEnrollment.invitationSent
-    ? { last_invited_at: now }
-    : {};
-  const staff = existing
-    ? await expectData<JsonRecord>(
-        admin
-          .from("staff_users")
-          .update({
-            email,
-            display_name: displayName,
-            active: true,
-            disabled_at: null,
-            updated_at: now,
-            ...invitationTimestamps,
-          })
-          .eq("id", String(existing.id))
-          .select("id, user_id")
-          .single(),
-        "Could not update the Class Rep staff record.",
-      )
-    : await expectData<JsonRecord>(
-        admin
-          .from("staff_users")
-          .insert({
-            user_id: authEnrollment.userId,
-            email,
-            display_name: displayName,
-            role: "class_rep",
-            is_founder: false,
-            active: true,
-            invited_at: authEnrollment.invitationSent ? now : null,
-            last_invited_at: authEnrollment.invitationSent ? now : null,
-            disabled_at: null,
-            created_by: input.actor.userId,
-            updated_at: now,
-          })
-          .select("id, user_id")
-          .single(),
-        "Could not save the Class Rep staff record.",
-      );
-
-  const auditAction = enrollmentAuditAction(
+  await validateTimetable(input.timetableId);
+  const enrollment = await resolveStaffAuthEnrollment(
+    email,
+    displayName,
+    input.actor,
     "class_rep",
-    authEnrollment.enrollment,
+    input.timetableId,
   );
-  const assignment = await assignClassRep({
-    actor: input.actor,
-    staffUserId: String(staff?.id),
+  return staffLifecycle<{
+    staffUserId: string;
+    assignmentId: string;
+    enrollment: StaffEnrollmentOutcome;
+  }>(input.actor, "enroll_class_rep", {
+    email,
+    displayName,
     timetableId: input.timetableId,
-    auditAction,
+    ...enrollment,
   });
-
-  await audit({
-    actorId: input.actor.userId,
-    action: auditAction,
-    entityType: "staff_user",
-    entityId: String(staff?.id),
-    metadata: {
-      enrollment: authEnrollment.enrollment,
-      existingAuthUser: authEnrollment.existingAuthUser,
-      invitationSent: authEnrollment.invitationSent,
-      assignmentId: assignment.id,
-    },
-  });
-
-  return {
-    staffUserId: String(staff?.id),
-    assignmentId: assignment.id,
-    enrollment: authEnrollment.enrollment,
-  };
 }
 
 export async function inviteAdmin(input: {
@@ -568,85 +615,16 @@ export async function inviteAdmin(input: {
   if (!displayName) {
     throw new StaffApiError("VALIDATION_FAILED", "Name is required.", 422);
   }
-
-  const authEnrollment = await resolveStaffAuthEnrollment(email, displayName);
-  const existing = await getStaffRecordByUserId(authEnrollment.userId);
-  if (existing?.is_founder) {
-    throw new StaffApiError(
-      "FOUNDER_PROTECTED",
-      "Founder authority cannot be changed through an Admin invitation.",
-      409,
-    );
-  }
-
-  const now = new Date().toISOString();
-  const admin = client();
-  let staff: JsonRecord | null;
-  const invitationTimestamps = authEnrollment.invitationSent
-    ? { last_invited_at: now }
-    : {};
-  if (existing) {
-    if (existing.role === "class_rep") {
-      await revokeActiveAssignments(input.actor.userId, String(existing.id));
-    }
-    staff = await expectData<JsonRecord>(
-      admin
-        .from("staff_users")
-        .update({
-          email,
-          display_name: displayName,
-          role: "admin",
-          active: true,
-          disabled_at: null,
-          updated_at: now,
-          ...invitationTimestamps,
-        })
-        .eq("id", String(existing.id))
-        .select("id, user_id")
-        .single(),
-      "Could not grant Admin access.",
-    );
-  } else {
-    staff = await expectData<JsonRecord>(
-      admin
-        .from("staff_users")
-        .insert({
-          user_id: authEnrollment.userId,
-          email,
-          display_name: displayName,
-          role: "admin",
-          is_founder: false,
-          active: true,
-          invited_at: authEnrollment.invitationSent ? now : null,
-          last_invited_at: authEnrollment.invitationSent ? now : null,
-          disabled_at: null,
-          created_by: input.actor.userId,
-          updated_at: now,
-        })
-        .select("id, user_id")
-        .single(),
-      "Could not save the Admin staff record.",
-    );
-  }
-
-  const auditAction = enrollmentAuditAction("admin", authEnrollment.enrollment);
-  await audit({
-    actorId: input.actor.userId,
-    action: auditAction,
-    entityType: "staff_user",
-    entityId: String(staff?.id),
-    metadata: {
-      enrollment: authEnrollment.enrollment,
-      existingAuthUser: authEnrollment.existingAuthUser,
-      invitationSent: authEnrollment.invitationSent,
-      previousRole: existing?.role ?? null,
-    },
-  });
-
-  return {
-    staffUserId: String(staff?.id),
-    enrollment: authEnrollment.enrollment,
-  };
+  const enrollment = await resolveStaffAuthEnrollment(
+    email,
+    displayName,
+    input.actor,
+    "admin",
+  );
+  return staffLifecycle<{
+    staffUserId: string;
+    enrollment: StaffEnrollmentOutcome;
+  }>(input.actor, "enroll_admin", { email, displayName, ...enrollment });
 }
 
 export async function resendStaffInvite(input: {
@@ -669,7 +647,6 @@ export async function resendStaffInvite(input: {
   } else {
     assertCanManageClassReps(input.actor);
   }
-
   const email = safeEmail(String(staff.email));
   const authUser = await findAuthUserByEmail(email);
   if (!authUser || authUser.id !== String(staff.user_id)) {
@@ -679,24 +656,19 @@ export async function resendStaffInvite(input: {
       409,
     );
   }
-
-  const role = staff.role === "admin" ? "admin" : "class_rep";
+  const target = { userId: authUser.id, staffUserId: input.staffUserId };
   if (authUserIsConfirmed(authUser)) {
-    const enrollment = "access_granted_existing_user" as const;
-    await audit({
-      actorId: input.actor.userId,
-      action: `${role}.access_confirmed_existing_user`,
-      entityType: "staff_user",
-      entityId: input.staffUserId,
-      metadata: {
-        enrollment,
-        existingAuthUser: true,
+    return staffLifecycle<{ enrollment: StaffEnrollmentOutcome }>(
+      input.actor,
+      "record_resend",
+      {
+        ...target,
+        email,
+        enrollment: "access_granted_existing_user",
         invitationSent: false,
       },
-    });
-    return { enrollment };
+    );
   }
-
   if (!authUser.invited_at) {
     throw new StaffApiError(
       "ACCOUNT_CONFIRMATION_REQUIRED",
@@ -704,10 +676,12 @@ export async function resendStaffInvite(input: {
       409,
     );
   }
-
   const reinvited = await sendStaffInvitation(
     email,
     staff.display_name ? String(staff.display_name) : "CalenderZW staff",
+    input.actor,
+    staff.role === "admin" ? "admin" : "class_rep",
+    target,
   );
   if (reinvited.id !== authUser.id) {
     throw new StaffApiError(
@@ -716,29 +690,16 @@ export async function resendStaffInvite(input: {
       409,
     );
   }
-
-  const enrollment = "invite_resent_pending_user" as const;
-  await expectData(
-    client()
-      .from("staff_users")
-      .update({ last_invited_at: new Date().toISOString() })
-      .eq("id", input.staffUserId)
-      .select("id")
-      .single(),
-    "Could not update invitation timestamp.",
-  );
-  await audit({
-    actorId: input.actor.userId,
-    action: `${role}.invite_resent`,
-    entityType: "staff_user",
-    entityId: input.staffUserId,
-    metadata: {
-      enrollment,
-      existingAuthUser: true,
+  return staffLifecycle<{ enrollment: StaffEnrollmentOutcome }>(
+    input.actor,
+    "record_resend",
+    {
+      ...target,
+      email,
+      enrollment: "invite_resent_pending_user",
       invitationSent: true,
     },
-  });
-  return { enrollment };
+  );
 }
 
 export async function assignClassRep(input: {
@@ -748,47 +709,10 @@ export async function assignClassRep(input: {
   auditAction?: string;
 }) {
   assertCanManageClassReps(input.actor);
-  const staff = await getStaffRecord(input.staffUserId);
-  if (!staff || staff.role !== "class_rep" || staff.is_founder) {
-    throw new StaffApiError("NOT_FOUND", "Class Rep not found.", 404);
-  }
-
-  const now = new Date().toISOString();
-  const admin = client();
-  await expectData(
-    admin
-      .from("class_rep_assignments")
-      .update({ active: false, revoked_at: now })
-      .eq("staff_user_id", input.staffUserId)
-      .eq("active", true)
-      .select("id"),
-    "Could not revoke previous Class Rep assignments.",
-  );
-  const row = await expectData<JsonRecord>(
-    admin
-      .from("class_rep_assignments")
-      .insert({
-        staff_user_id: input.staffUserId,
-        timetable_id: input.timetableId,
-        active: true,
-        created_by: input.actor.userId,
-      })
-      .select("id")
-      .single(),
-    "Could not assign the Class Rep.",
-  );
-  await audit({
-    actorId: input.actor.userId,
-    action: input.auditAction ?? "class_rep.assigned",
-    entityType: "class_rep_assignment",
-    entityId: String(row?.id),
-    metadata: {
-      staffUserId: input.staffUserId,
-      timetableId: input.timetableId,
-      actorRole: input.actor.role,
-    },
+  return staffLifecycle<{ id: string }>(input.actor, "assign", {
+    staffUserId: input.staffUserId,
+    timetableId: input.timetableId,
   });
-  return { id: String(row?.id) };
 }
 
 export async function revokeClassRepAssignment(input: {
@@ -796,24 +720,8 @@ export async function revokeClassRepAssignment(input: {
   assignmentId: string;
 }) {
   assertCanManageClassReps(input.actor);
-  await expectData(
-    client()
-      .from("class_rep_assignments")
-      .update({
-        active: false,
-        revoked_at: new Date().toISOString(),
-      })
-      .eq("id", input.assignmentId)
-      .select("id")
-      .single(),
-    "Could not revoke the Class Rep assignment.",
-  );
-  await audit({
-    actorId: input.actor.userId,
-    action: "class_rep.assignment_revoked",
-    entityType: "class_rep_assignment",
-    entityId: input.assignmentId,
-    metadata: { actorRole: input.actor.role },
+  await staffLifecycle(input.actor, "revoke", {
+    assignmentId: input.assignmentId,
   });
 }
 
@@ -822,10 +730,10 @@ export async function setStaffActive(input: {
   staffUserId: string;
   active: boolean;
 }) {
+  // Preserve context guards and rejection audits before the transaction rechecks roles.
   const staff = await getStaffRecord(input.staffUserId);
   if (!staff)
     throw new StaffApiError("NOT_FOUND", "Staff member not found.", 404);
-
   if (staff.is_founder) {
     await auditRejected({
       actor: input.actor,
@@ -839,7 +747,6 @@ export async function setStaffActive(input: {
       403,
     );
   }
-
   if (staff.role === "admin") {
     await assertFounder(
       input.actor,
@@ -849,32 +756,9 @@ export async function setStaffActive(input: {
   } else {
     assertCanManageClassReps(input.actor);
   }
-
-  await expectData(
-    client()
-      .from("staff_users")
-      .update({
-        active: input.active,
-        disabled_at: input.active ? null : new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", input.staffUserId)
-      .select("id")
-      .single(),
-    "Could not update staff access.",
-  );
-  await audit({
-    actorId: input.actor.userId,
-    action:
-      staff.role === "admin"
-        ? input.active
-          ? "admin.reactivated"
-          : "admin.deactivated"
-        : input.active
-          ? "class_rep.reactivated"
-          : "class_rep.deactivated",
-    entityType: "staff_user",
-    entityId: input.staffUserId,
+  await staffLifecycle(input.actor, "set_active", {
+    staffUserId: input.staffUserId,
+    active: input.active,
   });
 }
 
@@ -884,56 +768,8 @@ export async function setStaffRole(input: {
   role: "admin" | "class_rep";
 }) {
   await assertFounder(input.actor, "change_staff_role", input.staffUserId);
-  const staff = await getStaffRecord(input.staffUserId);
-  if (!staff) {
-    throw new StaffApiError("NOT_FOUND", "Staff member not found.", 404);
-  }
-  if (staff.is_founder || staff.role === "superadmin") {
-    throw new StaffApiError(
-      "FOUNDER_PROTECTED",
-      "Founder authority cannot be demoted, replaced, or transferred.",
-      403,
-    );
-  }
-  if (staff.user_id === input.actor.userId) {
-    throw new StaffApiError(
-      "SELF_PRIVILEGE_CHANGE_FORBIDDEN",
-      "You cannot change your own privileged role.",
-      403,
-    );
-  }
-  if (staff.role === input.role) return;
-
-  if (input.role === "admin") {
-    await revokeActiveAssignments(input.actor.userId, input.staffUserId);
-  }
-
-  const now = new Date().toISOString();
-  await expectData(
-    client()
-      .from("staff_users")
-      .update({
-        role: input.role,
-        active: input.role === "admin",
-        disabled_at: input.role === "admin" ? null : now,
-        updated_at: now,
-      })
-      .eq("id", input.staffUserId)
-      .select("id")
-      .single(),
-    "Could not update staff role.",
-  );
-
-  await audit({
-    actorId: input.actor.userId,
-    action:
-      input.role === "admin" ? "admin.role_granted" : "admin.role_revoked",
-    entityType: "staff_user",
-    entityId: input.staffUserId,
-    metadata: {
-      previousRole: String(staff.role),
-      newRole: input.role,
-      classRepRequiresAssignmentAfterDemotion: input.role === "class_rep",
-    },
+  await staffLifecycle(input.actor, "set_role", {
+    staffUserId: input.staffUserId,
+    role: input.role,
   });
 }

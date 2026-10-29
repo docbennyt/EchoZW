@@ -36,6 +36,7 @@ import {
 } from "./domain/publishedCalendarProjection";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
+import { pauseLifecycle } from "./domain/academicPauseLifecycle";
 import {
   GOOGLE_CALENDAR_HOME_URL,
   rememberGoogleCalendarReturnSlug,
@@ -108,6 +109,15 @@ const reminderChoices: Array<{
     detail: "Choose your own reminder",
   },
 ];
+
+function formatPauseDate(dateKey: string) {
+  return new Intl.DateTimeFormat("en-ZW", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${dateKey}T12:00:00Z`));
+}
 
 function providerDestination(
   provider: PublicCalendarProvider,
@@ -264,6 +274,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 820);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [scheduleNow, setScheduleNow] = useState(() => new Date());
   const primaryCtaRef = useRef<HTMLButtonElement | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -278,6 +289,16 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   const googleSuccess = googleSearch.get("calendar") === "google-success";
   const googleFailed = googleSearch.get("calendar") === "google-failed";
   const googleSubscriptionId = googleSearch.get("subscriptionId");
+
+  useEffect(() => {
+    const refreshClock = () => setScheduleNow(new Date());
+    const timer = window.setTimeout(refreshClock, 60_000);
+    window.addEventListener("focus", refreshClock);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", refreshClock);
+    };
+  }, [scheduleNow]);
 
   useEffect(() => {
     let active = true;
@@ -358,13 +379,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   );
 
   const upcoming = useMemo(
-    () => (timetable ? getUpcomingOccurrences(timetable, new Date(), 3) : []),
-    [timetable],
+    () => (timetable ? getUpcomingOccurrences(timetable, scheduleNow, 3) : []),
+    [timetable, scheduleNow],
   );
   const nextClass = upcoming[0] ?? null;
   const tomorrow = useMemo(
-    () => (timetable ? getTomorrowSchedule(timetable, new Date()) : null),
-    [timetable],
+    () => (timetable ? getTomorrowSchedule(timetable, scheduleNow) : null),
+    [timetable, scheduleNow],
   );
   const calendarPlatform = useMemo(
     () =>
@@ -1157,6 +1178,18 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   }
 
   const stickyVisible = isMobile && !isPrimaryVisible && !dialogOpen;
+  const currentPauses = (timetable.pauses ?? []).filter(
+    (pause) =>
+      pauseLifecycle(pause, tomorrow.institutionDateToday) === "current" &&
+      (pause.allDay ||
+        (pause.startsAt &&
+          pause.endsAt &&
+          Date.parse(pause.startsAt) <= scheduleNow.getTime() &&
+          scheduleNow.getTime() < Date.parse(pause.endsAt))),
+  );
+  const wholeClassPaused = currentPauses.some(
+    (pause) => pause.allDay && pause.scopeType !== "session",
+  );
   const dialogTitle =
     onboardingStep === "reminders"
       ? "Choose your reminders"
@@ -1190,6 +1223,42 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
               </p>
             </header>
 
+            {currentPauses.length > 0 ? (
+              <section
+                className="pt-pause-notice"
+                role="status"
+                aria-label="Current class pauses"
+              >
+                <h2>
+                  {wholeClassPaused ? "Classes paused" : "Some classes paused"}
+                </h2>
+                <ul>
+                  {currentPauses.map((pause) => (
+                    <li key={pause.id}>
+                      <strong>{pause.label}</strong>
+                      <span>
+                        <time dateTime={pause.startsOn}>
+                          {formatPauseDate(pause.startsOn)}
+                        </time>
+                        {" to "}
+                        <time dateTime={pause.endsOn}>
+                          {formatPauseDate(pause.endsOn)}
+                        </time>
+                        {!pause.allDay && pause.startsAt && pause.endsAt
+                          ? ` · ${formatOccurrenceTime(new Date(pause.startsAt), timetable.institutionTimezone)}–${formatOccurrenceTime(new Date(pause.endsAt), timetable.institutionTimezone)}`
+                          : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p>
+                  Pause dates are excluded from upcoming classes. The regular
+                  weekly pattern is kept below. Check this page if your calendar
+                  shows a different schedule.
+                </p>
+              </section>
+            ) : null}
+
             <div className="pt-conversion-grid">
               <div className="pt-conversion-main">
                 <article className="pt-next-card">
@@ -1217,8 +1286,8 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     <>
                       <strong>No upcoming classes</strong>
                       <p>
-                        No more published sessions fall inside this academic
-                        period.
+                        No upcoming classes are currently scheduled in this
+                        academic period.
                       </p>
                     </>
                   )}
@@ -1341,11 +1410,17 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
         <section className="pt-schedule" aria-labelledby="pt-week-title">
           <div className="pt-section-heading">
             <div>
-              <span className="pt-kicker">Current published week</span>
+              <span className="pt-kicker">Regular weekly schedule</span>
               <h2 id="pt-week-title">Weekly timetable</h2>
             </div>
             <p>{projection.events.length} published weekly sessions</p>
           </div>
+
+          {currentPauses.length > 0 ? (
+            <p className="pt-pause-grid-note">
+              Pause periods above override these regular class times.
+            </p>
+          ) : null}
 
           <div className="pt-desktop-week">
             <div

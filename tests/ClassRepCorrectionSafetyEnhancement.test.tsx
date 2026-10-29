@@ -119,6 +119,48 @@ beforeEach(() => {
 });
 
 describe("DR-57 Class Rep cockpit with DR-53 mutation safety", () => {
+  it("uses a readable label rather than an internal key for unnamed removals", async () => {
+    const item = {
+      ...correction("11111111-1111-4111-8111-111100000001"),
+      action: "remove" as const,
+      stableSessionKey: "correction-internal-reference",
+      courseCode: null,
+      courseName: null,
+      weekday: null,
+      startTime: null,
+    };
+    vi.mocked(listClassUpdates).mockResolvedValue({
+      corrections: {
+        corrections: [
+          item,
+          {
+            ...item,
+            id: "22222222-2222-4222-8222-222200000002",
+            stableSessionKey: "another-internal-reference",
+          },
+        ],
+        exceptions: [],
+      },
+    });
+    render(
+      <ClassRepCorrectionWorkspace
+        accessToken="token"
+        assignment={assignment}
+        reloadAfterMutation={false}
+      />,
+    );
+    expect(
+      await screen.findByText("Recurring class #00000001", {
+        selector: "summary strong",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Recurring class #00000002", {
+        selector: "summary strong",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/correction-internal-reference/)).toBeNull();
+  });
   it("keeps mutation forms behind focused quick actions instead of rendering a CRUD wall", async () => {
     render(
       <ClassRepCorrectionWorkspace

@@ -159,6 +159,7 @@ describe("private published calendar feed reliability", () => {
     revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-08-09T08:00:00.000Z",
       sequence: 1,
+      publishedVersionId: "version-1",
     });
   });
 
@@ -241,6 +242,7 @@ describe("private published calendar feed reliability", () => {
     revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-09-02T07:51:46.472Z",
       sequence: 2,
+      publishedVersionId: "version-1",
     });
 
     const byOldEtag = await runFeed({
@@ -283,6 +285,7 @@ describe("private published calendar feed reliability", () => {
     revisionMocks.getCalendarRevision.mockResolvedValue({
       updatedAt: "2026-08-10T08:00:00.000Z",
       sequence: 2,
+      publishedVersionId: "version-2",
     });
     const republished = await runFeed({
       headers: { "if-none-match": first.headers.etag },

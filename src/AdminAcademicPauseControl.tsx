@@ -19,6 +19,8 @@ import type {
   AdminTimetableSummary,
 } from "./api/pilotTypes";
 import "./classRepAcademicPauseControl.css";
+import { pauseLifecycle } from "./domain/academicPauseLifecycle";
+import { academicPauseDeliveryNotice } from "./domain/academicPauseDeliveryNotice";
 
 const reasons: Array<{ value: AcademicPauseReason; label: string }> = [
   { value: "sim_break", label: "Sim Break" },
@@ -30,6 +32,18 @@ const reasons: Array<{ value: AcademicPauseReason; label: string }> = [
 ];
 
 type BroadScope = Exclude<AcademicPauseScope, "session">;
+
+function impactText(impact: AcademicPauseImpact) {
+  const scope =
+    impact.affectedTimetableCountKnown === false
+      ? "Timetable count unavailable."
+      : `${impact.affectedTimetableCount} timetable${impact.affectedTimetableCount === 1 ? "" : "s"} in scope.`;
+  const lectures =
+    impact.previewStatus === "unknown"
+      ? "Lecture impact unavailable."
+      : `${impact.previewStatus === "partial" ? "Partial preview: at least " : ""}${impact.newlySuppressedLectureCount} lectures suppressed.`;
+  return `${lectures} ${scope}`;
+}
 
 type Props = {
   accessToken: string;
@@ -134,7 +148,43 @@ export function AdminAcademicPauseControl({
     };
   }
 
-  const active = pauses.filter((pause) => pause.active);
+  const today = todayKey();
+  const ongoing = pauses.filter(
+    (pause) => pauseLifecycle(pause, today) === "current",
+  );
+  const scheduled = pauses.filter(
+    (pause) => pauseLifecycle(pause, today) === "scheduled",
+  );
+  const ended = pauses
+    .filter((pause) => pauseLifecycle(pause, today) === "ended")
+    .sort((a, b) => b.endsOn.localeCompare(a.endsOn));
+
+  function pauseScopeLabel(pause: AdminAcademicSchedulePause) {
+    switch (pause.scopeType) {
+      case "institution":
+        return (
+          institutions.find((item) => item.id === pause.institutionId)?.name ??
+          "Institution"
+        );
+      case "programme":
+        return (
+          programmes.find((item) => item.id === pause.programmeId)?.name ??
+          "Programme"
+        );
+      case "cohort":
+        return (
+          classGroups.find((item) => item.id === pause.cohortId)?.label ??
+          "Class group"
+        );
+      case "timetable":
+        return (
+          timetables.find((item) => item.id === pause.timetableId)
+            ?.classGroupLabel ?? "Timetable"
+        );
+      default:
+        return pause.scopeType.replaceAll("_", " ");
+    }
+  }
 
   return (
     <section className="dr58-admin-panel" aria-labelledby="dr58-admin-title">
@@ -156,51 +206,77 @@ export function AdminAcademicPauseControl({
         </button>
       </div>
 
-      {message ? (
+      {message && !open ? (
         <div className="dr58-impact" role="status">
           {message}
         </div>
       ) : null}
 
-      {active.length ? (
-        <div className="dr58-admin-list">
-          {active.slice(0, 8).map((pause) => (
-            <article key={pause.id}>
-              <div>
-                <strong>{pause.label}</strong>
-                <span>
-                  {pause.scopeType.replaceAll("_", " ")} · {pause.startsOn} →{" "}
-                  {pause.endsOn}
-                </span>
-              </div>
-              <button
-                type="button"
-                disabled={busy === pause.id}
-                onClick={() => {
-                  setBusy(pause.id);
-                  void deactivateBroadPause(accessToken, pause.id)
-                    .then(async () => {
-                      setMessage(`Classes resumed — ${pause.label}.`);
-                      await refresh();
-                    })
-                    .catch((error) =>
-                      setMessage(
-                        error instanceof Error
-                          ? error.message
-                          : "Could not resume classes.",
-                      ),
-                    )
-                    .finally(() => setBusy(""));
-                }}
-              >
-                <Play size={14} />
-                {busy === pause.id ? "Resuming…" : "Resume"}
-              </button>
-            </article>
-          ))}
+      {ongoing.length || scheduled.length || ended.length ? (
+        <div className="dr58-pause-groups">
+          {[
+            { title: "Current pauses", items: ongoing, status: "current" },
+            { title: "Upcoming pauses", items: scheduled, status: "scheduled" },
+            { title: "Completed periods", items: ended, status: "ended" },
+          ].map((group) =>
+            group.items.length ? (
+              <section key={group.status} aria-label={group.title}>
+                <h3>{group.title}</h3>
+                <div className="dr58-admin-list">
+                  {group.items.map((pause) => (
+                    <article key={pause.id}>
+                      <div>
+                        <strong>{pause.label}</strong>
+                        <span>
+                          {pauseScopeLabel(pause)} · {pause.startsOn} →{" "}
+                          {pause.endsOn}
+                        </span>
+                        {group.status === "ended" ? (
+                          <span>Ended automatically · no action required</span>
+                        ) : null}
+                      </div>
+                      {group.status !== "ended" ? (
+                        <button
+                          type="button"
+                          disabled={busy === pause.id}
+                          onClick={() => {
+                            setBusy(pause.id);
+                            void deactivateBroadPause(accessToken, pause.id)
+                              .then(async (result) => {
+                                setMessage(
+                                  `${group.status === "scheduled" ? `Cancelled scheduled pause — ${pause.label}.` : `Resumed early — ${pause.label}.`} ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
+                                );
+                                await refresh();
+                              })
+                              .catch((error) =>
+                                setMessage(
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Could not update pause.",
+                                ),
+                              )
+                              .finally(() => setBusy(""));
+                          }}
+                        >
+                          <Play size={14} />
+                          {busy === pause.id
+                            ? "Updating…"
+                            : group.status === "scheduled"
+                              ? "Cancel pause"
+                              : "Resume early"}
+                        </button>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null,
+          )}
         </div>
       ) : (
-        <p className="dr58-admin-empty">No active academic pauses.</p>
+        <p className="dr58-admin-empty">
+          No current, upcoming or completed pauses.
+        </p>
       )}
 
       <Dialog.Root open={open} onOpenChange={(next) => !busy && setOpen(next)}>
@@ -328,15 +404,17 @@ export function AdminAcademicPauseControl({
                   />
                 </label>
 
+                {message ? (
+                  <div className="dr58-error" role="alert">
+                    {message}
+                  </div>
+                ) : null}
+
                 {preview ? (
                   <div className="dr58-impact" role="status">
                     <CheckCircle2 size={18} />
                     <div>
-                      <strong>
-                        {preview.newlySuppressedLectureCount} lectures across{" "}
-                        {preview.affectedTimetableCount} timetable
-                        {preview.affectedTimetableCount === 1 ? "" : "s"}
-                      </strong>
+                      <strong>{impactText(preview)}</strong>
                       <span>
                         Recurring timetable records stay intact and restore
                         automatically after {endsOn}.
@@ -355,13 +433,20 @@ export function AdminAcademicPauseControl({
                       setMessage("");
                       void previewBroadPause(accessToken, input())
                         .then((result) => setPreview(result.impact))
-                        .catch((error) =>
+                        .catch((error) => {
+                          setPreview({
+                            affectedTimetableCount: 0,
+                            affectedTimetableCountKnown: false,
+                            newlySuppressedLectureCount: 0,
+                            previewStatus: "unknown",
+                            previewReason: "read_failed",
+                          });
                           setMessage(
                             error instanceof Error
                               ? error.message
                               : "Could not preview pause.",
-                          ),
-                        )
+                          );
+                        })
                         .finally(() => setBusy(""));
                     }}
                   >
@@ -369,13 +454,21 @@ export function AdminAcademicPauseControl({
                   </button>
                   <button
                     type="button"
-                    disabled={!preview || Boolean(busy)}
+                    disabled={
+                      !preview ||
+                      Boolean(busy) ||
+                      !targetId ||
+                      !label.trim() ||
+                      !startsOn ||
+                      !endsOn ||
+                      endsOn < startsOn
+                    }
                     onClick={() => {
                       setBusy("save");
                       void createBroadPause(accessToken, input())
                         .then(async (result) => {
                           setMessage(
-                            `Paused — ${result.impact.newlySuppressedLectureCount} lectures suppressed across ${result.impact.affectedTimetableCount} timetable${result.impact.affectedTimetableCount === 1 ? "" : "s"}.`,
+                            `Paused — ${impactText(result.impact)} ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
                           );
                           setOpen(false);
                           setPreview(null);

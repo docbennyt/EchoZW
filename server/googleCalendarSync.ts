@@ -6,23 +6,32 @@ import {
 } from "node:crypto";
 import type { PublicTimetable } from "../src/api/pilotTypes.js";
 import {
+  googleRecoveryScope,
+  googleSubscriptionAllowed,
+} from "./googleDeliveryPolicy.js";
+import { getCalendarRevision } from "./calendarRevisionRepository.js";
+import {
   buildGoogleAuthorizationUrl,
   buildGoogleTokenExchangeBody,
   resolveGoogleOAuthConfig,
 } from "../src/domain/googleOAuthConfig.js";
 import { googleCalendarScope } from "../src/domain/googleScopes.js";
 import { projectPublishedTimetable } from "../src/domain/publishedCalendarProjection.js";
-import { getCalendarRevision } from "./calendarRevisionRepository.js";
+import { loadPublishedTimetableSnapshot } from "./publishedTimetableSnapshot.js";
+import {
+  budgetedFetch,
+  markExternalWorkProgress,
+  withExternalRequestBudget,
+} from "./externalRequestBudget.js";
 import {
   consumeGoogleOAuthState,
   createGoogleOAuthState,
-  deleteGoogleCredential,
+  disconnectGoogleCalendarConnection,
   deleteGoogleEventSyncRecord,
-  getCurrentPublishedVersionId,
   getGoogleCredential,
   listGoogleEventSyncRecords,
   listSyncableGoogleSubscriptions,
-  saveGoogleCredential,
+  persistGoogleCalendarConnection,
   updateGoogleSubscription,
   upsertGoogleEventSyncRecord,
 } from "./googleCalendarRepository.js";
@@ -64,6 +73,7 @@ type GoogleEventPayload = {
 type GoogleManagedRemoteEvent = {
   id: string;
   stableSessionKey: string;
+  content: JsonRecord;
 };
 
 const googleCalendarApi = "https://www.googleapis.com/calendar/v3";
@@ -72,6 +82,22 @@ const googleRevokeEndpoint = "https://oauth2.googleapis.com/revoke";
 
 function asRecord(value: unknown) {
   return value as JsonRecord;
+}
+
+function assertCloudflareDeliveryScope(
+  env: NodeJS.ProcessEnv,
+  subscription: JsonRecord,
+) {
+  if (
+    env.APP_ENV?.startsWith("cloudflare-") &&
+    !googleSubscriptionAllowed(env, subscription)
+  ) {
+    throw new PilotApiError(
+      "GOOGLE_DELIVERY_UNAVAILABLE",
+      "Google Calendar delivery is temporarily unavailable.",
+      503,
+    );
+  }
 }
 
 function requireGoogleConfig(env: NodeJS.ProcessEnv) {
@@ -165,11 +191,69 @@ function stateHash(state: string) {
   return createHash("sha256").update(state, "utf8").digest("hex");
 }
 
+// Runtime-only diagnostic: never exchange, return, or persist the plaintext.
+export async function checkGoogleCredentialCompatibility(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv,
+) {
+  const credential = await getGoogleCredential(subscriptionId, env);
+  if (!credential?.encrypted_refresh_token) {
+    throw new PilotApiError(
+      "GOOGLE_CREDENTIAL_INVALID",
+      "Stored Google Calendar access is unavailable. Please reconnect.",
+      409,
+    );
+  }
+  // Check configuration separately so a missing key is not labelled revocation.
+  encryptionKey(env);
+  const plaintext = decryptGoogleRefreshToken(
+    String(credential.encrypted_refresh_token),
+    env,
+  );
+  if (!plaintext.trim()) {
+    throw new PilotApiError(
+      "GOOGLE_CREDENTIAL_INVALID",
+      "Stored Google Calendar access is invalid. Please reconnect.",
+      409,
+    );
+  }
+  return {
+    readOnly: true,
+    credentialPresent: true,
+    decryptionCompatible: true,
+    formatVersion: "v1",
+    providerAuthorizationVerified: false,
+  };
+}
+
 async function parseGoogleJson(response: Response) {
   try {
     return (await response.json()) as JsonRecord;
   } catch {
     return {};
+  }
+}
+
+async function googleFetch(url: string, init: RequestInit) {
+  const timeout = AbortSignal.timeout(15_000);
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeout])
+    : timeout;
+  signal.throwIfAborted();
+  try {
+    const response = await budgetedFetch(url, {
+      ...init,
+      redirect: "error",
+      signal,
+    });
+    signal.throwIfAborted();
+    return response;
+  } catch {
+    throw new PilotApiError(
+      "GOOGLE_REQUEST_FAILED",
+      "Google Calendar could not be reached. Please try again.",
+      502,
+    );
   }
 }
 
@@ -179,8 +263,10 @@ async function googleApiRequest(input: {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   allowMissing?: boolean;
+  signal?: AbortSignal;
 }) {
-  const response = await fetch(`${googleCalendarApi}${input.path}`, {
+  const response = await googleFetch(`${googleCalendarApi}${input.path}`, {
+    signal: input.signal,
     method: input.method ?? "GET",
     headers: {
       Authorization: `Bearer ${input.accessToken}`,
@@ -229,13 +315,14 @@ function googleManagedEventFromItem(
   if (!id || itemTimetableId !== timetableId || !stableSessionKey) {
     return null;
   }
-  return { id, stableSessionKey };
+  return { id, stableSessionKey, content: record as JsonRecord };
 }
 
 async function listRemoteManagedEvents(input: {
   accessToken: string;
   calendarId: string;
   timetableId: string;
+  signal?: AbortSignal;
 }) {
   const events: GoogleManagedRemoteEvent[] = [];
   let pageToken: string | null = null;
@@ -245,10 +332,12 @@ async function listRemoteManagedEvents(input: {
       showDeleted: "false",
       singleEvents: "false",
       maxResults: "2500",
-      fields: "items(id,extendedProperties/private),nextPageToken",
+      fields:
+        "items(id,summary,description,location,start,end,recurrence,reminders,extendedProperties/private),nextPageToken",
     });
     if (pageToken) params.set("pageToken", pageToken);
     const data = await googleApiRequest({
+      signal: input.signal,
       accessToken: input.accessToken,
       path: `/calendars/${encodeURIComponent(input.calendarId)}/events?${params.toString()}`,
       method: "GET",
@@ -263,12 +352,104 @@ async function listRemoteManagedEvents(input: {
   return events;
 }
 
+async function readRemoteManagedEvent(input: {
+  accessToken: string;
+  calendarId: string;
+  timetableId: string;
+  eventId: string;
+  signal?: AbortSignal;
+  includeCancelled?: boolean;
+}) {
+  const item = await googleApiRequest({
+    accessToken: input.accessToken,
+    path: `/calendars/${encodeURIComponent(input.calendarId)}/events/${encodeURIComponent(input.eventId)}`,
+    allowMissing: true,
+    signal: input.signal,
+  });
+  if (!item || (item.status === "cancelled" && !input.includeCancelled))
+    return { missing: true, event: null };
+  const event = googleManagedEventFromItem(item, input.timetableId);
+  return { missing: false, event: event?.id === input.eventId ? event : null };
+}
+
+async function verifyRemoteManagedEvents(input: {
+  accessToken: string;
+  calendarId: string;
+  timetableId: string;
+  previousRecords: JsonRecord[];
+  listedEvents: GoogleManagedRemoteEvent[];
+  signal?: AbortSignal;
+  deferMissingMappings?: boolean;
+}) {
+  const expectedKeys = new Map<string, Set<string>>();
+  for (const event of input.listedEvents) {
+    expectedKeys.set(event.id, new Set([event.stableSessionKey]));
+  }
+  for (const row of input.previousRecords) {
+    if (!row.external_event_id) continue;
+    const id = String(row.external_event_id);
+    const keys = expectedKeys.get(id) ?? new Set<string>();
+    keys.add(String(row.internal_event_id));
+    expectedKeys.set(id, keys);
+  }
+  const events: GoogleManagedRemoteEvent[] = [];
+  const ownershipReviewIds = new Set<string>();
+  const listedById = new Map(
+    input.listedEvents.map((event) => [event.id, event]),
+  );
+  for (const [eventId, keys] of expectedKeys) {
+    if (keys.size !== 1) {
+      ownershipReviewIds.add(eventId);
+      continue;
+    }
+    if (input.deferMissingMappings) {
+      const listed = listedById.get(eventId);
+      if (!listed) continue;
+      if (keys.size !== 1 || !keys.has(listed.stableSessionKey))
+        ownershipReviewIds.add(eventId);
+      else events.push(listed);
+      continue;
+    }
+    const result = await readRemoteManagedEvent({ ...input, eventId });
+    if (result.missing) continue;
+    if (
+      !result.event ||
+      keys.size !== 1 ||
+      !keys.has(result.event.stableSessionKey)
+    ) {
+      ownershipReviewIds.add(eventId);
+      continue;
+    }
+    events.push(result.event);
+  }
+  return { events, ownershipReviewIds };
+}
+
+function newGoogleEventId(input: {
+  subscriptionId: string;
+  timetableId: string;
+  calendarId: string;
+  stableSessionKey: string;
+}) {
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        input.subscriptionId,
+        input.timetableId,
+        input.calendarId,
+        input.stableSessionKey,
+      ]),
+      "utf8",
+    )
+    .digest("hex");
+}
+
 async function exchangeAuthorizationCode(input: {
   code: string;
   env: NodeJS.ProcessEnv;
 }) {
   const config = requireGoogleConfig(input.env);
-  const response = await fetch(googleTokenEndpoint, {
+  const response = await googleFetch(googleTokenEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: buildGoogleTokenExchangeBody({
@@ -292,9 +473,11 @@ async function exchangeAuthorizationCode(input: {
 async function refreshAccessToken(input: {
   refreshToken: string;
   env: NodeJS.ProcessEnv;
+  signal?: AbortSignal;
 }) {
   const config = requireGoogleConfig(input.env);
-  const response = await fetch(googleTokenEndpoint, {
+  const response = await googleFetch(googleTokenEndpoint, {
+    signal: input.signal,
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -304,7 +487,16 @@ async function refreshAccessToken(input: {
       grant_type: "refresh_token",
     }),
   });
-  const body = (await parseGoogleJson(response)) as GoogleTokenResponse;
+  const body = (await parseGoogleJson(response)) as GoogleTokenResponse & {
+    error?: string;
+  };
+  if (response.status === 400 && body.error === "invalid_grant") {
+    throw new PilotApiError(
+      "GOOGLE_CREDENTIAL_INVALID",
+      "Google Calendar access is no longer valid. Please reconnect.",
+      409,
+    );
+  }
   if (!response.ok || !body.access_token) {
     throw new PilotApiError(
       "GOOGLE_REFRESH_FAILED",
@@ -364,7 +556,13 @@ function googleEventPayload(input: {
     recurrence: recurrence.length ? recurrence : undefined,
     reminders: {
       useDefault: false,
-      overrides: [...new Set(input.reminders)]
+      overrides: [
+        ...new Set(
+          event.eventCategory === "exam"
+            ? event.alarms.map((alarm) => alarm.minutesBefore)
+            : input.reminders,
+        ),
+      ]
         .filter((minutes) => Number.isInteger(minutes) && minutes > 0)
         .slice(0, 5)
         .map((minutes) => ({ method: "popup" as const, minutes })),
@@ -384,12 +582,59 @@ function contentHash(payload: GoogleEventPayload) {
     .digest("base64url");
 }
 
+function remotePayloadMatches(
+  remote: JsonRecord,
+  expected: GoogleEventPayload,
+) {
+  const normalize = (value: JsonRecord) => {
+    const start = getNestedRecord(value, "start");
+    const end = getNestedRecord(value, "end");
+    const reminders = getNestedRecord(value, "reminders");
+    const overrides = Array.isArray(reminders?.overrides)
+      ? reminders.overrides
+      : [];
+    return JSON.stringify({
+      summary: value.summary ?? "",
+      description: value.description ?? "",
+      location: value.location ?? "",
+      start: Date.parse(String(start?.dateTime)),
+      end: Date.parse(String(end?.dateTime)),
+      startZone: start?.timeZone,
+      endZone: end?.timeZone,
+      recurrence: [
+        ...(Array.isArray(value.recurrence) ? value.recurrence : []),
+      ].sort(),
+      useDefault: reminders?.useDefault === true,
+      overrides: overrides
+        .map((item) => {
+          const row = asRecord(item);
+          return `${row.method}:${row.minutes}`;
+        })
+        .sort(),
+    });
+  };
+  return normalize(remote) === normalize(expected as unknown as JsonRecord);
+}
+
+function hasRemoteContent(event: GoogleManagedRemoteEvent) {
+  return Boolean(
+    Number.isFinite(
+      Date.parse(String(getNestedRecord(event.content, "start")?.dateTime)),
+    ) &&
+    Number.isFinite(
+      Date.parse(String(getNestedRecord(event.content, "end")?.dateTime)),
+    ),
+  );
+}
+
 async function createSecondaryCalendar(input: {
   accessToken: string;
   calendarName: string;
   timezone: string;
+  signal?: AbortSignal;
 }) {
   const data = await googleApiRequest({
+    signal: input.signal,
     accessToken: input.accessToken,
     path: "/calendars",
     method: "POST",
@@ -411,7 +656,11 @@ async function createSecondaryCalendar(input: {
   return id;
 }
 
-async function loadAccessToken(subscriptionId: string, env: NodeJS.ProcessEnv) {
+async function loadAccessToken(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv,
+  signal?: AbortSignal,
+) {
   const credential = await getGoogleCredential(subscriptionId, env);
   if (!credential?.encrypted_refresh_token) {
     throw new PilotApiError(
@@ -425,7 +674,7 @@ async function loadAccessToken(subscriptionId: string, env: NodeJS.ProcessEnv) {
     env,
   );
   return {
-    accessToken: await refreshAccessToken({ refreshToken, env }),
+    accessToken: await refreshAccessToken({ refreshToken, env, signal }),
     refreshToken,
   };
 }
@@ -448,7 +697,7 @@ export async function beginGoogleCalendarConnection(input: {
   const env = input.env ?? process.env;
   const config = requireGoogleConfig(env);
   const subscription = asRecord(
-    await getCalendarSubscriptionById(input.subscriptionId),
+    await getCalendarSubscriptionById(input.subscriptionId, env),
   );
   if (!subscription?.id || subscription.provider !== "google_api") {
     throw new PilotApiError(
@@ -458,6 +707,7 @@ export async function beginGoogleCalendarConnection(input: {
     );
   }
   assertSubscriptionOwner(subscription, input.anonymousSessionId);
+  assertCloudflareDeliveryScope(env, subscription);
   if (subscription.revoked_at) {
     throw new PilotApiError(
       "SUBSCRIPTION_REVOKED",
@@ -471,6 +721,7 @@ export async function beginGoogleCalendarConnection(input: {
   await createGoogleOAuthState({
     stateHash: stateHash(state),
     subscriptionId: input.subscriptionId,
+    anonymousSessionId: input.anonymousSessionId,
     expiresAt,
     env,
   });
@@ -485,10 +736,24 @@ export async function beginGoogleCalendarConnection(input: {
 export async function syncGoogleSubscription(
   subscriptionId: string,
   env: NodeJS.ProcessEnv = process.env,
+  options: { signal?: AbortSignal; maxExternalRequests?: number } = {},
 ) {
+  const work = () => reconcileGoogleSubscription(subscriptionId, env, options);
+  return options.maxExternalRequests === undefined
+    ? work()
+    : withExternalRequestBudget(options.maxExternalRequests, work);
+}
+
+async function reconcileGoogleSubscription(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv = process.env,
+  options: { signal?: AbortSignal; maxExternalRequests?: number } = {},
+) {
+  const { signal } = options;
+  signal?.throwIfAborted();
   requireGoogleConfig(env);
   const subscription = asRecord(
-    await getCalendarSubscriptionById(subscriptionId),
+    await getCalendarSubscriptionById(subscriptionId, env),
   );
   if (!subscription?.id || subscription.provider !== "google_api") {
     throw new PilotApiError(
@@ -500,17 +765,80 @@ export async function syncGoogleSubscription(
   if (subscription.revoked_at || subscription.status === "disconnected") {
     return { created: 0, updated: 0, deleted: 0, unchanged: 0 };
   }
+  assertCloudflareDeliveryScope(env, subscription);
+  const recovery = googleRecoveryScope(env);
+  const recoveryScope =
+    recovery?.subscription === subscriptionId ? recovery : null;
+  if (recoveryScope && !subscription.external_calendar_id)
+    throw new PilotApiError(
+      "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+      "Recovery requires an existing calendar.",
+      409,
+    );
+
+  const connectionGeneration = Number(
+    subscription.google_connection_generation ?? 0,
+  );
+  const assertConnection = async () => {
+    assertCloudflareDeliveryScope(env, subscription);
+    if (recoveryScope) {
+      const current = await getCalendarRevision(
+        String(subscription.timetable_id),
+        env,
+      );
+      if (current.sequence !== recoveryScope.revision)
+        throw new PilotApiError(
+          "GOOGLE_RECOVERY_REVISION_CHANGED",
+          "The published schedule changed. Preview recovery again.",
+          409,
+        );
+    }
+    const accepted = await updateGoogleSubscription({
+      subscriptionId,
+      connectionGeneration,
+      env,
+    });
+    if (!accepted)
+      throw new PilotApiError(
+        "GOOGLE_CONNECTION_CHANGED",
+        "Google Calendar connection changed during synchronization.",
+        409,
+      );
+  };
+  const writeGoogleEvent = async (
+    input: Parameters<typeof googleApiRequest>[0],
+  ) => {
+    if (recoveryScope && (input.method === "POST" || input.method === "DELETE"))
+      throw new PilotApiError(
+        "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+        "This recovery permits existing event updates only.",
+        409,
+      );
+    await assertConnection();
+    const result = await googleApiRequest(input);
+    if (recoveryScope)
+      console.log(
+        JSON.stringify({
+          event: "google.delivery.provider_mutation_accepted",
+          operation: "update",
+          sourceSha: env.SOURCE_SHA,
+          revision: recoveryScope.revision,
+        }),
+      );
+    return result;
+  };
 
   const timetableId = String(subscription.timetable_id);
-  const timetable = await getPublishedTimetableById(timetableId);
-  if (!timetable.publishedAt) {
+  const { timetable, revision } = await loadPublishedTimetableSnapshot(
+    timetableId,
+    env,
+  );
+  if (recoveryScope && revision.sequence !== recoveryScope.revision)
     throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable is not currently published.",
-      404,
+      "GOOGLE_RECOVERY_REVISION_CHANGED",
+      "The published schedule changed. Preview recovery again.",
+      409,
     );
-  }
-  const revision = await getCalendarRevision(timetableId, env);
   const resolvedTimetable: PublicTimetable = {
     ...timetable,
     publishedAt: revision.updatedAt,
@@ -522,46 +850,62 @@ export async function syncGoogleSubscription(
   const projection = projectPublishedTimetable({
     timetable: resolvedTimetable,
     reminderOffsetsMinutes: reminders,
+    examReminderOffsetsMinutes: Array.isArray(
+      subscription.exam_reminder_offsets_minutes,
+    )
+      ? (subscription.exam_reminder_offsets_minutes as number[])
+      : [],
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
-  const publishedVersionId = await getCurrentPublishedVersionId(
-    timetableId,
-    env,
-  );
-  if (!publishedVersionId) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable is not currently published.",
-      404,
-    );
-  }
+  const publishedVersionId = revision.publishedVersionId;
 
-  const { accessToken } = await loadAccessToken(subscriptionId, env);
+  const { accessToken } = await loadAccessToken(subscriptionId, env, signal);
   let calendarId = subscription.external_calendar_id
     ? String(subscription.external_calendar_id)
     : null;
   if (!calendarId) {
+    await assertConnection();
     calendarId = await createSecondaryCalendar({
+      signal,
       accessToken,
       calendarName: String(subscription.calendar_name),
       timezone: String(subscription.timezone || timetable.institutionTimezone),
     });
-    await updateGoogleSubscription({
+    signal?.throwIfAborted();
+    const accepted = await updateGoogleSubscription({
       subscriptionId,
       externalCalendarId: calendarId,
+      connectionGeneration,
       env,
     });
+    if (!accepted)
+      throw new PilotApiError(
+        "GOOGLE_CONNECTION_CHANGED",
+        "Google Calendar connection changed during synchronization.",
+        409,
+      );
   }
 
   const previousRecords = await listGoogleEventSyncRecords(subscriptionId, env);
   const previousById = new Map(
     previousRecords.map((row) => [String(row.internal_event_id), row]),
   );
-  const remoteManagedEvents = await listRemoteManagedEvents({
+  const listedEvents = await listRemoteManagedEvents({
+    signal,
     accessToken,
     calendarId,
     timetableId,
   });
+  const { events: remoteManagedEvents, ownershipReviewIds } =
+    await verifyRemoteManagedEvents({
+      signal,
+      accessToken,
+      calendarId,
+      timetableId,
+      previousRecords,
+      listedEvents,
+      deferMissingMappings: options.maxExternalRequests !== undefined,
+    });
   const remoteManagedByStableKey = new Map<
     string,
     GoogleManagedRemoteEvent[]
@@ -572,9 +916,45 @@ export async function syncGoogleSubscription(
       event,
     ]);
   }
-  const remoteManagedEventIds = new Set(
-    remoteManagedEvents.map((event) => event.id),
+  const remoteManagedEventKeysById = new Map(
+    remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
+  // Fresh list results already prove ownership. Resolve absent/stale mapped IDs
+  // lazily so bounded retries can advance instead of repeating an unbounded read phase.
+  const verifyMissingMapping = async (previous: JsonRecord | undefined) => {
+    const id = previous?.external_event_id
+      ? String(previous.external_event_id)
+      : null;
+    if (
+      options.maxExternalRequests === undefined ||
+      !id ||
+      remoteManagedEventKeysById.has(id) ||
+      ownershipReviewIds.has(id)
+    )
+      return;
+    const result = await readRemoteManagedEvent({
+      signal,
+      accessToken,
+      calendarId,
+      timetableId,
+      eventId: id,
+    });
+    if (result.missing) return;
+    if (
+      !result.event ||
+      result.event.stableSessionKey !== String(previous?.internal_event_id)
+    ) {
+      ownershipReviewIds.add(id);
+      return;
+    }
+    const event = result.event;
+    remoteManagedEvents.push(event);
+    remoteManagedEventKeysById.set(event.id, event.stableSessionKey);
+    remoteManagedByStableKey.set(event.stableSessionKey, [
+      ...(remoteManagedByStableKey.get(event.stableSessionKey) ?? []),
+      event,
+    ]);
+  };
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
   const deletedRemoteEventIds = new Set<string>();
@@ -584,6 +964,7 @@ export async function syncGoogleSubscription(
   let unchanged = 0;
 
   for (const event of projection.events) {
+    signal?.throwIfAborted();
     nextIds.add(event.stableSessionKey);
     const payload = googleEventPayload({
       timetable: resolvedTimetable,
@@ -592,12 +973,22 @@ export async function syncGoogleSubscription(
     });
     const hash = contentHash(payload);
     const previous = previousById.get(event.stableSessionKey);
+    await verifyMissingMapping(previous);
     const remoteMatches = remoteManagedByStableKey.get(event.stableSessionKey);
     const previousExternalEventId = previous?.external_event_id
       ? String(previous.external_event_id)
       : null;
+    if (
+      previousExternalEventId &&
+      ownershipReviewIds.has(previousExternalEventId)
+    ) {
+      for (const match of remoteMatches ?? [])
+        retainedRemoteEventIds.add(match.id);
+      continue;
+    }
     const previousRemoteStillManaged = previousExternalEventId
-      ? remoteManagedEventIds.has(previousExternalEventId)
+      ? remoteManagedEventKeysById.get(previousExternalEventId) ===
+        event.stableSessionKey
       : false;
     const externalEventId = previousRemoteStillManaged
       ? previousExternalEventId
@@ -607,7 +998,13 @@ export async function syncGoogleSubscription(
       externalEventId &&
       externalEventId === previousExternalEventId &&
       previousRemoteStillManaged &&
-      previous?.content_hash === hash
+      previous?.content_hash === hash &&
+      (!recoveryScope ||
+        remotePayloadMatches(
+          remoteManagedEvents.find((item) => item.id === externalEventId)
+            ?.content ?? {},
+          payload,
+        ))
     ) {
       retainedRemoteEventIds.add(externalEventId);
       unchanged += 1;
@@ -616,7 +1013,8 @@ export async function syncGoogleSubscription(
 
     let remoteEventId: string;
     if (externalEventId) {
-      const result = await googleApiRequest({
+      const result = await writeGoogleEvent({
+        signal,
         accessToken,
         path: `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(externalEventId)}?sendUpdates=none`,
         method: "PUT",
@@ -625,12 +1023,55 @@ export async function syncGoogleSubscription(
       remoteEventId = result?.id ? String(result.id) : externalEventId;
       updated += 1;
     } else {
-      const result = await googleApiRequest({
-        accessToken,
-        path: `/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=none`,
-        method: "POST",
-        body: payload,
+      const id = newGoogleEventId({
+        subscriptionId,
+        timetableId,
+        calendarId,
+        stableSessionKey: event.stableSessionKey,
       });
+      let result: JsonRecord | null;
+      try {
+        result = await writeGoogleEvent({
+          signal,
+          accessToken,
+          path: `/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=none`,
+          method: "POST",
+          body: { ...payload, id },
+        });
+        created += 1;
+      } catch (error) {
+        if (
+          !(error instanceof PilotApiError) ||
+          asRecord(error.details)?.status !== 409
+        )
+          throw error;
+        const existing = await readRemoteManagedEvent({
+          signal,
+          accessToken,
+          calendarId,
+          timetableId,
+          eventId: id,
+          includeCancelled: true,
+        });
+        if (
+          !existing.event ||
+          existing.event.stableSessionKey !== event.stableSessionKey
+        ) {
+          throw new PilotApiError(
+            "GOOGLE_EVENT_OWNERSHIP_CONFLICT",
+            "A Google Calendar event requires ownership review.",
+            409,
+          );
+        }
+        result = await writeGoogleEvent({
+          signal,
+          accessToken,
+          path: `/calendars/${encodeURIComponent(calendarId)}/events/${id}?sendUpdates=none`,
+          method: "PUT",
+          body: { ...payload, status: "confirmed" },
+        });
+        updated += 1;
+      }
       const createdEventId = result?.id ? String(result.id) : null;
       if (!createdEventId) {
         throw new PilotApiError(
@@ -640,12 +1081,13 @@ export async function syncGoogleSubscription(
         );
       }
       remoteEventId = createdEventId;
-      created += 1;
     }
     retainedRemoteEventIds.add(remoteEventId);
 
+    signal?.throwIfAborted();
     await upsertGoogleEventSyncRecord({
       subscriptionId,
+      connectionGeneration,
       internalEventId: event.stableSessionKey,
       timetableVersionId: publishedVersionId,
       externalCalendarId: calendarId,
@@ -654,35 +1096,47 @@ export async function syncGoogleSubscription(
       syncStatus: "active",
       env,
     });
+    markExternalWorkProgress();
   }
 
   for (const previous of previousRecords) {
+    signal?.throwIfAborted();
     const internalEventId = String(previous.internal_event_id);
     if (nextIds.has(internalEventId)) continue;
+    await verifyMissingMapping(previous);
     const externalEventId = previous.external_event_id
       ? String(previous.external_event_id)
       : null;
-    if (externalEventId) {
-      await googleApiRequest({
+    if (externalEventId && ownershipReviewIds.has(externalEventId)) continue;
+    if (
+      externalEventId &&
+      remoteManagedEventKeysById.get(externalEventId) === internalEventId
+    ) {
+      await writeGoogleEvent({
+        signal,
         accessToken,
         path: `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(externalEventId)}?sendUpdates=none`,
         method: "DELETE",
         allowMissing: true,
       });
       deletedRemoteEventIds.add(externalEventId);
+      deleted += 1;
     }
     await deleteGoogleEventSyncRecord({
       subscriptionId,
+      connectionGeneration,
       internalEventId,
       env,
     });
-    deleted += 1;
+    markExternalWorkProgress();
   }
 
   for (const event of remoteManagedEvents) {
+    signal?.throwIfAborted();
     if (retainedRemoteEventIds.has(event.id)) continue;
     if (deletedRemoteEventIds.has(event.id)) continue;
-    await googleApiRequest({
+    await writeGoogleEvent({
+      signal,
       accessToken,
       path: `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(event.id)}?sendUpdates=none`,
       method: "DELETE",
@@ -690,19 +1144,37 @@ export async function syncGoogleSubscription(
     });
     deletedRemoteEventIds.add(event.id);
     deleted += 1;
+    markExternalWorkProgress();
   }
 
+  signal?.throwIfAborted();
   const lastSyncedAt = new Date().toISOString();
-  await updateGoogleSubscription({
+  const accepted = await updateGoogleSubscription({
     subscriptionId,
-    status: "active",
+    connectionGeneration,
+    status: ownershipReviewIds.size ? "failed" : "active",
     externalCalendarId: calendarId,
     syncedTimetableVersionId: publishedVersionId,
     lastSyncedAt,
-    lastErrorCode: null,
+    lastErrorCode: ownershipReviewIds.size
+      ? "GOOGLE_EVENT_OWNERSHIP_REVIEW"
+      : null,
     env,
   });
-  return { created, updated, deleted, unchanged, lastSyncedAt };
+  if (!accepted)
+    throw new PilotApiError(
+      "GOOGLE_CONNECTION_CHANGED",
+      "Google Calendar connection changed during synchronization.",
+      409,
+    );
+  return {
+    created,
+    updated,
+    deleted,
+    unchanged,
+    ownershipReviewCount: ownershipReviewIds.size,
+    lastSyncedAt,
+  };
 }
 
 export async function previewGoogleSubscriptionSync(
@@ -711,7 +1183,7 @@ export async function previewGoogleSubscriptionSync(
 ) {
   requireGoogleConfig(env);
   const subscription = asRecord(
-    await getCalendarSubscriptionById(subscriptionId),
+    await getCalendarSubscriptionById(subscriptionId, env),
   );
   if (!subscription?.id || subscription.provider !== "google_api") {
     throw new PilotApiError(
@@ -737,14 +1209,10 @@ export async function previewGoogleSubscriptionSync(
   }
 
   const timetableId = String(subscription.timetable_id);
-  const timetable = await getPublishedTimetableById(timetableId);
-  if (!timetable.publishedAt) {
-    throw new PilotApiError(
-      "TIMETABLE_NOT_PUBLISHED",
-      "This timetable is not currently published.",
-      404,
-    );
-  }
+  const { timetable, revision } = await loadPublishedTimetableSnapshot(
+    timetableId,
+    env,
+  );
   const calendarId = subscription.external_calendar_id
     ? String(subscription.external_calendar_id)
     : null;
@@ -764,7 +1232,6 @@ export async function previewGoogleSubscriptionSync(
     };
   }
 
-  const revision = await getCalendarRevision(timetableId, env);
   const resolvedTimetable: PublicTimetable = {
     ...timetable,
     publishedAt: revision.updatedAt,
@@ -776,6 +1243,11 @@ export async function previewGoogleSubscriptionSync(
   const projection = projectPublishedTimetable({
     timetable: resolvedTimetable,
     reminderOffsetsMinutes: reminders,
+    examReminderOffsetsMinutes: Array.isArray(
+      subscription.exam_reminder_offsets_minutes,
+    )
+      ? (subscription.exam_reminder_offsets_minutes as number[])
+      : [],
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
   const { accessToken } = await loadAccessToken(subscriptionId, env);
@@ -783,11 +1255,19 @@ export async function previewGoogleSubscriptionSync(
   const previousById = new Map(
     previousRecords.map((row) => [String(row.internal_event_id), row]),
   );
-  const remoteManagedEvents = await listRemoteManagedEvents({
+  const listedEvents = await listRemoteManagedEvents({
     accessToken,
     calendarId,
     timetableId,
   });
+  const { events: remoteManagedEvents, ownershipReviewIds } =
+    await verifyRemoteManagedEvents({
+      accessToken,
+      calendarId,
+      timetableId,
+      previousRecords,
+      listedEvents,
+    });
   const remoteManagedByStableKey = new Map<
     string,
     GoogleManagedRemoteEvent[]
@@ -798,8 +1278,8 @@ export async function previewGoogleSubscriptionSync(
       event,
     ]);
   }
-  const remoteManagedEventIds = new Set(
-    remoteManagedEvents.map((event) => event.id),
+  const remoteManagedEventKeysById = new Map(
+    remoteManagedEvents.map((event) => [event.id, event.stableSessionKey]),
   );
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
@@ -808,6 +1288,11 @@ export async function previewGoogleSubscriptionSync(
   let wouldUpdate = 0;
   let wouldDelete = 0;
   let unchanged = 0;
+  let remoteContentMismatchCount = 0;
+  const remoteReadComplete = remoteManagedEvents.every(hasRemoteContent);
+  const remoteById = new Map(
+    remoteManagedEvents.map((item) => [item.id, item]),
+  );
 
   for (const event of projection.events) {
     nextIds.add(event.stableSessionKey);
@@ -822,18 +1307,37 @@ export async function previewGoogleSubscriptionSync(
       ? String(previous.external_event_id)
       : null;
     const remoteMatches = remoteManagedByStableKey.get(event.stableSessionKey);
+    if (
+      previousExternalEventId &&
+      ownershipReviewIds.has(previousExternalEventId)
+    ) {
+      for (const match of remoteMatches ?? [])
+        retainedRemoteEventIds.add(match.id);
+      continue;
+    }
     const previousRemoteStillManaged = previousExternalEventId
-      ? remoteManagedEventIds.has(previousExternalEventId)
+      ? remoteManagedEventKeysById.get(previousExternalEventId) ===
+        event.stableSessionKey
       : false;
     const externalEventId = previousRemoteStillManaged
       ? previousExternalEventId
       : (remoteMatches?.[0]?.id ?? null);
 
+    const remote = externalEventId
+      ? remoteById.get(externalEventId)
+      : undefined;
+    const contentMatches = Boolean(
+      remote &&
+      hasRemoteContent(remote) &&
+      remotePayloadMatches(remote.content, payload),
+    );
+    if (!contentMatches) remoteContentMismatchCount += 1;
     if (
       externalEventId &&
       externalEventId === previousExternalEventId &&
       previousRemoteStillManaged &&
-      previous?.content_hash === hash
+      previous?.content_hash === hash &&
+      (!remote || !hasRemoteContent(remote) || contentMatches)
     ) {
       retainedRemoteEventIds.add(externalEventId);
       unchanged += 1;
@@ -851,7 +1355,10 @@ export async function previewGoogleSubscriptionSync(
     const externalEventId = previous.external_event_id
       ? String(previous.external_event_id)
       : null;
-    if (externalEventId) {
+    if (
+      externalEventId &&
+      remoteManagedEventKeysById.get(externalEventId) === internalEventId
+    ) {
       wouldDeleteRemoteEventIds.add(externalEventId);
       wouldDelete += 1;
     }
@@ -864,10 +1371,50 @@ export async function previewGoogleSubscriptionSync(
     wouldDelete += 1;
   }
 
+  // These deletion candidates were actually found in Google with matching
+  // timetable ownership tags. A local mapping alone does not prove that a
+  // remote calendar event is safe to delete.
+  const remoteManagedDeletionCandidates = remoteManagedEvents
+    .filter((event) => !retainedRemoteEventIds.has(event.id))
+    .map((event) => ({
+      stableSessionKey: event.stableSessionKey,
+      externalEventId: event.id,
+    }))
+    .sort(
+      (a, b) =>
+        a.stableSessionKey.localeCompare(b.stableSessionKey) ||
+        a.externalEventId.localeCompare(b.externalEventId),
+    );
+
   return {
     subscriptionId,
     timetableId,
     readOnly: true,
+    ownershipReviewCount: ownershipReviewIds.size,
+    publishedRevision: revision.sequence,
+    connectionGeneration: Number(
+      subscription.google_connection_generation ?? 0,
+    ),
+    remoteReadComplete,
+    remoteContentMismatchCount,
+    remoteContentsVerified:
+      remoteReadComplete &&
+      remoteContentMismatchCount === 0 &&
+      remoteManagedEvents.length === projection.events.length &&
+      ownershipReviewIds.size === 0 &&
+      wouldCreate === 0 &&
+      wouldDelete === 0,
+    executionGuard: remoteReadComplete
+      ? {
+          revision: revision.sequence,
+          connectionGeneration: Number(
+            subscription.google_connection_generation ?? 0,
+          ),
+          maxCreates: 0,
+          maxDeletes: 0,
+        }
+      : undefined,
+    remoteManagedDeletionCandidates,
     expectedEvents: projection.events.length,
     remoteManagedEvents: remoteManagedEvents.length,
     localMappings: previousRecords.length,
@@ -882,6 +1429,10 @@ export async function completeGoogleCalendarConnection(input: {
   code: string;
   state: string;
   env?: NodeJS.ProcessEnv;
+  enqueueInitialSync?: (
+    target: { subscriptionId: string; timetableId: string },
+    env: NodeJS.ProcessEnv,
+  ) => Promise<void>;
 }) {
   const env = input.env ?? process.env;
   requireGoogleConfig(env);
@@ -896,7 +1447,8 @@ export async function completeGoogleCalendarConnection(input: {
       400,
     );
   }
-  if (Date.parse(String(stateRow.expires_at)) <= Date.now()) {
+  const expiresAt = Date.parse(String(stateRow.expires_at));
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
     throw new PilotApiError(
       "GOOGLE_STATE_EXPIRED",
       "Google Calendar authorization expired. Please start again.",
@@ -906,7 +1458,7 @@ export async function completeGoogleCalendarConnection(input: {
 
   const subscriptionId = String(stateRow.subscription_id);
   const subscription = asRecord(
-    await getCalendarSubscriptionById(subscriptionId),
+    await getCalendarSubscriptionById(subscriptionId, env),
   );
   if (!subscription?.id || subscription.provider !== "google_api") {
     throw new PilotApiError(
@@ -916,6 +1468,33 @@ export async function completeGoogleCalendarConnection(input: {
     );
   }
 
+  if (subscription.revoked_at) {
+    throw new PilotApiError(
+      "SUBSCRIPTION_REVOKED",
+      "This calendar connection has been revoked.",
+      410,
+    );
+  }
+  if (subscription.status === "disconnected") {
+    throw new PilotApiError(
+      "SUBSCRIPTION_DISCONNECTED",
+      "This calendar connection is disconnected. Please start again.",
+      409,
+    );
+  }
+
+  assertCloudflareDeliveryScope(env, subscription);
+  if (
+    env.APP_ENV === "cloudflare-staging" &&
+    env.ENABLE_GOOGLE_DELIVERY !== "true" &&
+    stateRow.anonymous_session_id !== subscription.anonymous_session_id
+  ) {
+    throw new PilotApiError(
+      "GOOGLE_STATE_INVALID",
+      "Google Calendar authorization expired. Please start again.",
+      400,
+    );
+  }
   const token = await exchangeAuthorizationCode({ code: input.code, env });
   const scope = token.scope || googleCalendarScope;
   if (!scope.split(/\s+/).includes(googleCalendarScope)) {
@@ -944,19 +1523,29 @@ export async function completeGoogleCalendarConnection(input: {
     );
   }
 
-  await saveGoogleCredential({
+  const connectionGeneration = Number(stateRow.connection_generation ?? 0);
+  await persistGoogleCalendarConnection({
     subscriptionId,
+    connectionGeneration,
     encryptedRefreshToken: encryptGoogleRefreshToken(refreshToken, env),
     grantedScope: scope,
     env,
   });
 
   try {
-    await syncGoogleSubscription(subscriptionId, env);
+    if (input.enqueueInitialSync) {
+      await input.enqueueInitialSync(
+        { subscriptionId, timetableId: String(subscription.timetable_id) },
+        env,
+      );
+    } else {
+      await syncGoogleSubscription(subscriptionId, env);
+    }
   } catch (error) {
     await updateGoogleSubscription({
       subscriptionId,
       status: "failed",
+      connectionGeneration,
       lastErrorCode:
         error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
       env,
@@ -966,6 +1555,7 @@ export async function completeGoogleCalendarConnection(input: {
 
   const timetable = await getPublishedTimetableById(
     String(subscription.timetable_id),
+    env,
   );
   return { subscriptionId, publicSlug: timetable.publicSlug };
 }
@@ -977,7 +1567,13 @@ export async function syncGoogleSubscriptionsForTimetable(
   if (!getPublicGoogleCalendarStatus(env).enabled) {
     return { attempted: 0, succeeded: 0, failed: 0 };
   }
-  const subscriptions = await listSyncableGoogleSubscriptions(timetableId, env);
+  const subscriptions = (
+    await listSyncableGoogleSubscriptions(timetableId, env)
+  ).filter(
+    (row) =>
+      !env.APP_ENV?.startsWith("cloudflare-") ||
+      googleSubscriptionAllowed(env, row),
+  );
   let succeeded = 0;
   let failed = 0;
   for (const subscription of subscriptions) {
@@ -989,6 +1585,9 @@ export async function syncGoogleSubscriptionsForTimetable(
       failed += 1;
       await updateGoogleSubscription({
         subscriptionId,
+        connectionGeneration: Number(
+          subscription.google_connection_generation ?? 0,
+        ),
         status: "failed",
         lastErrorCode:
           error instanceof PilotApiError ? error.code : "GOOGLE_SYNC_FAILED",
@@ -1050,7 +1649,7 @@ export async function disconnectGoogleCalendar(input: {
   const env = input.env ?? process.env;
   requireGoogleConfig(env);
   const subscription = asRecord(
-    await getCalendarSubscriptionById(input.subscriptionId),
+    await getCalendarSubscriptionById(input.subscriptionId, env),
   );
   if (!subscription?.id || subscription.provider !== "google_api") {
     throw new PilotApiError(
@@ -1061,45 +1660,39 @@ export async function disconnectGoogleCalendar(input: {
   }
   assertSubscriptionOwner(subscription, input.anonymousSessionId);
 
-  const credential = await getGoogleCredential(input.subscriptionId, env);
-  if (credential?.encrypted_refresh_token) {
-    const refreshToken = decryptGoogleRefreshToken(
-      String(credential.encrypted_refresh_token),
-      env,
+  if (input.deleteCreatedCalendar) {
+    throw new PilotApiError(
+      "GOOGLE_CALENDAR_CLEANUP_UNAVAILABLE",
+      "Calendar removal is temporarily unavailable. Disconnect while retaining the calendar, then remove it manually.",
+      503,
     );
-    if (input.deleteCreatedCalendar && subscription.external_calendar_id) {
-      try {
-        const accessToken = await refreshAccessToken({ refreshToken, env });
-        await googleApiRequest({
-          accessToken,
-          path: `/calendars/${encodeURIComponent(String(subscription.external_calendar_id))}`,
-          method: "DELETE",
-          allowMissing: true,
-        });
-      } catch {
-        // Token revocation still proceeds; the user can remove the retained calendar manually.
-      }
-    }
-    await fetch(
-      `${googleRevokeEndpoint}?token=${encodeURIComponent(refreshToken)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      },
-    ).catch(() => undefined);
   }
-
-  await deleteGoogleCredential(input.subscriptionId, env);
-  await updateGoogleSubscription({
-    subscriptionId: input.subscriptionId,
-    status: "disconnected",
-    externalCalendarId: input.deleteCreatedCalendar
-      ? null
-      : subscription.external_calendar_id
-        ? String(subscription.external_calendar_id)
-        : null,
-    lastErrorCode: null,
+  const credential = await disconnectGoogleCalendarConnection({
+    ...input,
     env,
   });
-  return { ok: true, deletedCreatedCalendar: input.deleteCreatedCalendar };
+  let providerRevocation: "confirmed" | "unverified" = "unverified";
+  if (credential?.encrypted_refresh_token) {
+    let refreshToken: string;
+    try {
+      refreshToken = decryptGoogleRefreshToken(
+        String(credential.encrypted_refresh_token),
+        env,
+      );
+    } catch {
+      return { ok: true, deletedCreatedCalendar: false, providerRevocation };
+    }
+    const revoked = await googleFetch(googleRevokeEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: refreshToken }),
+    }).catch(() => null);
+    if (revoked?.ok) providerRevocation = "confirmed";
+  }
+
+  return {
+    ok: true,
+    deletedCreatedCalendar: false,
+    providerRevocation,
+  };
 }

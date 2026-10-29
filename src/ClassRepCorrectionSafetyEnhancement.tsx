@@ -187,11 +187,14 @@ function updateLabel(entry: UpdateEntry) {
   if (entry.kind === "correction") {
     const item = entry.item;
     const course =
-      item.courseCode || item.stableSessionKey || "Recurring class";
+      item.courseCode ||
+      item.courseName ||
+      `Recurring class #${item.id.slice(-8)}`;
+    if (!item.weekday && !item.startTime) return course;
     const when = item.weekday ? weekdayLabels[item.weekday] : "Recurring";
     return `${course} · ${when}${item.startTime ? ` ${item.startTime.slice(0, 5)}` : ""}`;
   }
-  return `${entry.item.courseCode || entry.item.stableSessionKey || "Class update"} · ${entry.item.exceptionDate}${entry.item.startTime ? ` ${entry.item.startTime.slice(0, 5)}` : ""}`;
+  return `${entry.item.courseCode || entry.item.courseName || `Class update #${entry.item.id.slice(-8)}`} · ${entry.item.exceptionDate}${entry.item.startTime ? ` ${entry.item.startTime.slice(0, 5)}` : ""}`;
 }
 
 function messageTone(message: string) {

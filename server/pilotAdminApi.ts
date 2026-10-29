@@ -1,7 +1,9 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 import {
+  previewGoogleSubscriptionSync,
   previewGoogleSubscriptionsForTimetable,
+  syncGoogleSubscription,
   syncGoogleSubscriptionsForTimetable,
 } from "./googleCalendarSync.js";
 import {
@@ -12,6 +14,7 @@ import {
   createTimetable,
   createTimetableSession,
   deleteTimetableSession,
+  getCalendarSubscriptionById,
   getTimetableEditor,
   listAcademicPeriods,
   listClassGroups,
@@ -38,6 +41,7 @@ const institutionSchema = z.object({
 const googleCalendarSyncSchema = z
   .object({
     dryRun: z.boolean().optional(),
+    subscriptionId: z.string().uuid().optional(),
   })
   .optional();
 
@@ -135,6 +139,43 @@ function getUserId(user: { id: string }) {
   return user.id;
 }
 
+async function assertTargetedGoogleSubscription(
+  timetableId: string,
+  subscriptionId: string,
+) {
+  const subscription = (await getCalendarSubscriptionById(
+    subscriptionId,
+  )) as Record<string, unknown> | null;
+  if (!subscription?.id) {
+    throw new PilotApiError(
+      "SUBSCRIPTION_NOT_FOUND",
+      "Google Calendar setup not found.",
+      404,
+    );
+  }
+  if (subscription.provider !== "google_api") {
+    throw new PilotApiError(
+      "SUBSCRIPTION_PROVIDER_INVALID",
+      "This subscription is not a Google Calendar connection.",
+      400,
+    );
+  }
+  if (String(subscription.timetable_id) !== timetableId) {
+    throw new PilotApiError(
+      "SUBSCRIPTION_TIMETABLE_MISMATCH",
+      "This Google Calendar connection does not belong to the requested timetable.",
+      403,
+    );
+  }
+  if (subscription.revoked_at || subscription.status === "disconnected") {
+    throw new PilotApiError(
+      "SUBSCRIPTION_DISCONNECTED",
+      "This Google Calendar connection is disconnected and must be reconnected.",
+      409,
+    );
+  }
+}
+
 function parseUrl(req: IncomingMessage) {
   return new URL(req.url ?? "/", "http://localhost");
 }
@@ -168,6 +209,7 @@ export async function handlePilotAdminApi(
   req: IncomingMessage,
   res: ServerResponse,
   user: { id: string },
+  env?: NodeJS.ProcessEnv,
 ) {
   const requestUrl = parseUrl(req);
 
@@ -185,7 +227,7 @@ export async function handlePilotAdminApi(
       requestUrl.pathname === "/api/admin/institutions"
     ) {
       const parsed = institutionSchema.parse(await readJson(req));
-      sendJson(res, 201, { institution: await createInstitution(parsed) });
+      sendJson(res, 201, { institution: await createInstitution(parsed, env) });
       return true;
     }
 
@@ -198,6 +240,7 @@ export async function handlePilotAdminApi(
         institution: await updateInstitution(
           decodeURIComponent(institutionMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -218,7 +261,7 @@ export async function handlePilotAdminApi(
       requestUrl.pathname === "/api/admin/programmes"
     ) {
       const parsed = programmeSchema.parse(await readJson(req));
-      sendJson(res, 201, { programme: await createProgramme(parsed) });
+      sendJson(res, 201, { programme: await createProgramme(parsed, env) });
       return true;
     }
 
@@ -231,6 +274,7 @@ export async function handlePilotAdminApi(
         programme: await updateProgramme(
           decodeURIComponent(programmeMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -251,7 +295,7 @@ export async function handlePilotAdminApi(
       requestUrl.pathname === "/api/admin/class-groups"
     ) {
       const parsed = classGroupSchema.parse(await readJson(req));
-      sendJson(res, 201, { classGroup: await createClassGroup(parsed) });
+      sendJson(res, 201, { classGroup: await createClassGroup(parsed, env) });
       return true;
     }
 
@@ -264,6 +308,7 @@ export async function handlePilotAdminApi(
         classGroup: await updateClassGroup(
           decodeURIComponent(classGroupMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -287,7 +332,7 @@ export async function handlePilotAdminApi(
     ) {
       const parsed = academicPeriodSchema.parse(await readJson(req));
       sendJson(res, 201, {
-        academicPeriod: await createAcademicPeriod(parsed),
+        academicPeriod: await createAcademicPeriod(parsed, env),
       });
       return true;
     }
@@ -301,6 +346,7 @@ export async function handlePilotAdminApi(
         academicPeriod: await updateAcademicPeriod(
           decodeURIComponent(academicPeriodMatch[1]),
           parsed,
+          env,
         ),
       });
       return true;
@@ -412,9 +458,27 @@ export async function handlePilotAdminApi(
     if (req.method === "POST" && googleSyncMatch) {
       const timetableId = decodeURIComponent(googleSyncMatch[1]);
       const parsed = googleCalendarSyncSchema.parse(await readJson(req));
-      const googleCalendarSync = parsed?.dryRun
-        ? await previewGoogleSubscriptionsForTimetable(timetableId)
-        : await syncGoogleCalendars(timetableId);
+      let googleCalendarSync;
+      if (parsed?.subscriptionId) {
+        await assertTargetedGoogleSubscription(
+          timetableId,
+          parsed.subscriptionId,
+        );
+        if (parsed.dryRun === undefined) {
+          throw new PilotApiError(
+            "GOOGLE_RECONCILIATION_MODE_REQUIRED",
+            "Choose dryRun true for preview or false for a targeted write.",
+            400,
+          );
+        }
+        googleCalendarSync = parsed.dryRun
+          ? await previewGoogleSubscriptionSync(parsed.subscriptionId)
+          : await syncGoogleSubscription(parsed.subscriptionId);
+      } else {
+        googleCalendarSync = parsed?.dryRun
+          ? await previewGoogleSubscriptionsForTimetable(timetableId)
+          : await syncGoogleCalendars(timetableId);
+      }
       sendJson(res, 200, { googleCalendarSync });
       return true;
     }

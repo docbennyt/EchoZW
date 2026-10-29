@@ -30,6 +30,7 @@ const currentPath = () => window.location.pathname;
 
 type SetupStatus =
   | "checking"
+  | "confirmation"
   | "ready"
   | "updating"
   | "success"
@@ -78,6 +79,8 @@ function setupCopy(intent: AuthSetupIntent) {
 
 export function AuthSetupPage() {
   const initialUrl = new URL(window.location.href);
+  const callbackUrlRef = useRef(initialUrl);
+  const [verificationRequested, setVerificationRequested] = useState(false);
   const [intent, setIntent] = useState<AuthSetupIntent>(() =>
     authSetupIntentFromUrl(
       initialUrl,
@@ -93,6 +96,12 @@ export function AuthSetupPage() {
     useState<ResolvedStaffOnboarding | null>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
+  const redirectCompletionRef = useRef<ReturnType<
+    typeof restoreAuthSessionFromRedirect
+  > | null>(null);
+  const nextPathRef = useRef(
+    safeAuthNextPath(initialUrl.searchParams.get("next")),
+  );
   const supabaseRef = useRef<ReturnType<
     typeof createSupabaseBrowserClient
   > | null>(null);
@@ -109,7 +118,7 @@ export function AuthSetupPage() {
     let active = true;
 
     async function completeSetupRedirect() {
-      const url = new URL(window.location.href);
+      const url = callbackUrlRef.current;
       const fallbackIntent =
         currentPath() === PASSWORD_RESET_PATH ? "recovery" : "unknown";
       let supabase;
@@ -130,10 +139,31 @@ export function AuthSetupPage() {
         return;
       }
 
-      const result = await restoreAuthSessionFromRedirect(supabase.auth, url, {
-        fallbackIntent,
-        sanitize: () => window.history.replaceState({}, "", currentPath()),
-      });
+      const type =
+        url.searchParams.get("type") ??
+        new URLSearchParams(url.hash.slice(1)).get("type");
+      if (
+        url.searchParams.get("token_hash") &&
+        (type === "invite" || type === "recovery") &&
+        !verificationRequested
+      ) {
+        // Opening or prefetching an email URL must not consume its one-time token.
+        window.history.replaceState({}, "", currentPath());
+        setStatus("confirmation");
+        return;
+      }
+
+      setStatus("checking");
+      // Effect replay must join the first exchange, not consume its code or race its session.
+      redirectCompletionRef.current ??= restoreAuthSessionFromRedirect(
+        supabase.auth,
+        url,
+        {
+          fallbackIntent,
+          sanitize: () => window.history.replaceState({}, "", currentPath()),
+        },
+      );
+      const result = await redirectCompletionRef.current;
       if (!active) return;
 
       if (!result.ok) {
@@ -147,7 +177,7 @@ export function AuthSetupPage() {
       setIntent(result.intent);
 
       if (currentPath() === AUTH_CONFIRM_PATH) {
-        const next = safeAuthNextPath(url.searchParams.get("next"));
+        const next = nextPathRef.current;
         const target =
           next === PASSWORD_RESET_PATH
             ? `${PASSWORD_RESET_PATH}?intent=${result.intent}`
@@ -165,7 +195,7 @@ export function AuthSetupPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [verificationRequested]);
 
   async function resolveInvitedStaffAccess() {
     const supabase = supabaseRef.current;
@@ -285,6 +315,18 @@ export function AuthSetupPage() {
                     </a>
                   ) : null}
                 </>
+              ) : null}
+
+              {status === "confirmation" ? (
+                <BaseButton
+                  className="czw-button czw-button-primary"
+                  disabled={verificationRequested}
+                  onClick={() => setVerificationRequested(true)}
+                  type="button"
+                >
+                  <Lock size={17} />
+                  Continue
+                </BaseButton>
               ) : null}
 
               {showForm ? (

@@ -150,6 +150,47 @@
   padding: clamp(20px, 4vw, 38px);
 }
 
+.pt-pause-notice {
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid var(--pt-line);
+  border-left: 4px solid var(--pt-forest);
+  border-radius: 12px;
+  background: var(--pt-sage-soft);
+  overflow-wrap: anywhere;
+}
+
+.pt-pause-notice h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.pt-pause-notice ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.pt-pause-notice li + li {
+  margin-top: 10px;
+}
+
+.pt-pause-notice li span {
+  display: block;
+  margin-top: 4px;
+}
+
+.pt-pause-notice p {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pt-pause-grid-note {
+  margin: 0 0 16px;
+  color: var(--pt-ink);
+  font-size: 14px;
+}
+
 .pt-kicker-row,
 .pt-identity-row,
 .pt-trust-row,

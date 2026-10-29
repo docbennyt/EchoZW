@@ -134,6 +134,8 @@ describe("staff repository founder and Admin safety", () => {
     );
   });
 
+  // RPC stubs only return boundary responses; they never simulate table writes.
+  // The independent PostgreSQL suite verifies mutation/audit contents and rollback.
   it("allows the founder to disable a non-founder Admin", async () => {
     const staffLookup = queryBuilder({
       single: {
@@ -144,19 +146,9 @@ describe("staff repository founder and Admin safety", () => {
         active: true,
       },
     });
-    const updateBuilder = queryBuilder({ single: { id: "staff-admin" } });
-    const auditBuilder = queryBuilder({ list: [] });
-    let staffCalls = 0;
-    const from = vi.fn((table: string) => {
-      if (table === "staff_users") {
-        staffCalls += 1;
-        return staffCalls === 1 ? staffLookup : updateBuilder;
-      }
-      if (table === "audit_logs") return auditBuilder;
-      throw new Error(`Unexpected table ${table}`);
-    });
-    adminClientMocks.createSupabaseAdminClient.mockReturnValue({ from });
-
+    const from = vi.fn(() => staffLookup);
+    const rpc = vi.fn().mockResolvedValue({ data: {}, error: null });
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({ from, rpc });
     await expect(
       setStaffActive({
         actor: founderActor,
@@ -164,43 +156,21 @@ describe("staff repository founder and Admin safety", () => {
         active: false,
       }),
     ).resolves.toBeUndefined();
-
-    expect(updateBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        active: false,
-        disabled_at: expect.any(String),
-      }),
-    );
-    expect(auditBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "admin.deactivated" }),
-    );
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("czw_staff_lifecycle", {
+      p_actor_user_id: "founder-user",
+      p_operation: "set_active",
+      p_input: { staffUserId: "staff-admin", active: false },
+    });
+    expect(staffLookup.update).not.toHaveBeenCalled();
+    expect(staffLookup.insert).not.toHaveBeenCalled();
   });
 
   it("lets an operational Admin reassign a Class Rep without a nonexistent revoked_by column", async () => {
-    const staffLookup = queryBuilder({
-      single: {
-        id: "staff-rep",
-        user_id: "rep-user",
-        role: "class_rep",
-        is_founder: false,
-        active: true,
-      },
-    });
-    const revokeBuilder = queryBuilder({ list: [{ id: "old-assignment" }] });
-    const insertBuilder = queryBuilder({ single: { id: "new-assignment" } });
-    const auditBuilder = queryBuilder({ list: [] });
-    let assignmentCalls = 0;
-    const from = vi.fn((table: string) => {
-      if (table === "staff_users") return staffLookup;
-      if (table === "class_rep_assignments") {
-        assignmentCalls += 1;
-        return assignmentCalls === 1 ? revokeBuilder : insertBuilder;
-      }
-      if (table === "audit_logs") return auditBuilder;
-      throw new Error(`Unexpected table ${table}`);
-    });
-    adminClientMocks.createSupabaseAdminClient.mockReturnValue({ from });
-
+    const from = vi.fn();
+    const rpc = vi
+      .fn()
+      .mockResolvedValue({ data: { id: "new-assignment" }, error: null });
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({ from, rpc });
     await expect(
       assignClassRep({
         actor: adminActor,
@@ -208,66 +178,42 @@ describe("staff repository founder and Admin safety", () => {
         timetableId: "timetable-1",
       }),
     ).resolves.toEqual({ id: "new-assignment" });
-
-    expect(revokeBuilder.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        active: false,
-        revoked_at: expect.any(String),
-      }),
-    );
-    expect(revokeBuilder.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ revoked_by: expect.anything() }),
-    );
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("czw_staff_lifecycle", {
+      p_actor_user_id: "admin-user",
+      p_operation: "assign",
+      p_input: { staffUserId: "staff-rep", timetableId: "timetable-1" },
+    });
+    expect(rpc.mock.calls[0][1].p_input).not.toHaveProperty("revoked_by");
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("sends a genuine Supabase invitation for a brand-new Class Rep", async () => {
-    const staffMissing = queryBuilder({ single: null });
-    const staffInsert = queryBuilder({
-      single: { id: "staff-new", user_id: "auth-new" },
-    });
-    const staffForAssignment = queryBuilder({
-      single: {
-        id: "staff-new",
-        user_id: "auth-new",
-        email: "rep@example.test",
-        display_name: "Rep",
-        role: "class_rep",
-        is_founder: false,
-        active: true,
-      },
-    });
-    const revokeBuilder = queryBuilder({ list: [] });
-    const assignmentInsert = queryBuilder({ single: { id: "assignment-new" } });
-    const auditBuilder = queryBuilder({ list: [] });
-    let staffCalls = 0;
-    let assignmentCalls = 0;
+    const timetable = queryBuilder({ single: { id: "timetable-1" } });
     const from = vi.fn((table: string) => {
-      if (table === "staff_users") {
-        staffCalls += 1;
-        if (staffCalls === 1) return staffMissing;
-        if (staffCalls === 2) return staffInsert;
-        return staffForAssignment;
-      }
-      if (table === "class_rep_assignments") {
-        assignmentCalls += 1;
-        return assignmentCalls === 1 ? revokeBuilder : assignmentInsert;
-      }
-      if (table === "audit_logs") return auditBuilder;
+      if (table === "timetables") return timetable;
       throw new Error(`Unexpected table ${table}`);
     });
-    const listUsers = vi.fn(async () => ({
-      data: { users: [] },
-      error: null,
-    }));
+    const listUsers = vi.fn(async () => ({ data: { users: [] }, error: null }));
     const inviteUserByEmail = vi.fn(async () => ({
       data: { user: { id: "auth-new", email: "rep@example.test" } },
       error: null,
     }));
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { reserved: true }, error: null })
+      .mockResolvedValueOnce({
+        data: {
+          staffUserId: "staff-new",
+          assignmentId: "assignment-new",
+          enrollment: "invited_new_user",
+        },
+        error: null,
+      });
     adminClientMocks.createSupabaseAdminClient.mockReturnValue({
       from,
+      rpc,
       auth: { admin: { listUsers, inviteUserByEmail } },
     });
-
     await expect(
       inviteClassRep({
         actor: adminActor,
@@ -280,18 +226,41 @@ describe("staff repository founder and Admin safety", () => {
       assignmentId: "assignment-new",
       enrollment: "invited_new_user",
     });
-
     expect(inviteUserByEmail).toHaveBeenCalledWith("rep@example.test", {
       data: { display_name: "Rep", product: "CalenderZW" },
       redirectTo: "https://calender.aido.co.zw/account/update-password",
     });
-    expect(staffInsert.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user_id: "auth-new",
+    expect(rpc).toHaveBeenNthCalledWith(1, "czw_staff_lifecycle", {
+      p_actor_user_id: "admin-user",
+      p_operation: "reserve_invite",
+      p_input: {
+        email: "rep@example.test",
         role: "class_rep",
-        invited_at: expect.any(String),
-        last_invited_at: expect.any(String),
-      }),
+        timetableId: "timetable-1",
+      },
+    });
+    expect(rpc).toHaveBeenNthCalledWith(2, "czw_staff_lifecycle", {
+      p_actor_user_id: "admin-user",
+      p_operation: "enroll_class_rep",
+      p_input: {
+        userId: "auth-new",
+        email: "rep@example.test",
+        displayName: "Rep",
+        timetableId: "timetable-1",
+        enrollment: "invited_new_user",
+        invitationSent: true,
+        existingAuthUser: false,
+      },
+    });
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(timetable.maybeSingle.mock.invocationCallOrder[0]).toBeLessThan(
+      listUsers.mock.invocationCallOrder[0],
+    );
+    expect(rpc.mock.invocationCallOrder[0]).toBeLessThan(
+      inviteUserByEmail.mock.invocationCallOrder[0],
+    );
+    expect(inviteUserByEmail.mock.invocationCallOrder[0]).toBeLessThan(
+      rpc.mock.invocationCallOrder[1],
     );
   });
 
@@ -307,12 +276,7 @@ describe("staff repository founder and Admin safety", () => {
         active: true,
       },
     });
-    const auditBuilder = queryBuilder({ list: [] });
-    const from = vi.fn((table: string) => {
-      if (table === "staff_users") return staffLookup;
-      if (table === "audit_logs") return auditBuilder;
-      throw new Error(`Unexpected table ${table}`);
-    });
+    const from = vi.fn(() => staffLookup);
     const listUsers = vi.fn(async () => ({
       data: {
         users: [
@@ -326,25 +290,34 @@ describe("staff repository founder and Admin safety", () => {
       error: null,
     }));
     const inviteUserByEmail = vi.fn();
+    const rpc = vi.fn().mockResolvedValue({
+      data: { enrollment: "access_granted_existing_user" },
+      error: null,
+    });
     adminClientMocks.createSupabaseAdminClient.mockReturnValue({
       from,
+      rpc,
       auth: { admin: { listUsers, inviteUserByEmail } },
     });
-
     await expect(
       resendStaffInvite({
         actor: adminActor,
         staffUserId: "staff-rep",
       }),
     ).resolves.toEqual({ enrollment: "access_granted_existing_user" });
-
     expect(inviteUserByEmail).not.toHaveBeenCalled();
     expect(staffLookup.update).not.toHaveBeenCalled();
-    expect(auditBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "class_rep.access_confirmed_existing_user",
-      }),
-    );
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("czw_staff_lifecycle", {
+      p_actor_user_id: "admin-user",
+      p_operation: "record_resend",
+      p_input: {
+        staffUserId: "staff-rep",
+        userId: "auth-rep",
+        email: "rep@example.test",
+        enrollment: "access_granted_existing_user",
+        invitationSent: false,
+      },
+    });
   });
 
   it("resends a real invite for an existing pending Class Rep", async () => {
@@ -359,17 +332,7 @@ describe("staff repository founder and Admin safety", () => {
         active: true,
       },
     });
-    const timestampUpdate = queryBuilder({ single: { id: "staff-rep" } });
-    const auditBuilder = queryBuilder({ list: [] });
-    let staffCalls = 0;
-    const from = vi.fn((table: string) => {
-      if (table === "staff_users") {
-        staffCalls += 1;
-        return staffCalls === 1 ? staffLookup : timestampUpdate;
-      }
-      if (table === "audit_logs") return auditBuilder;
-      throw new Error(`Unexpected table ${table}`);
-    });
+    const from = vi.fn(() => staffLookup);
     const listUsers = vi.fn(async () => ({
       data: {
         users: [
@@ -387,42 +350,56 @@ describe("staff repository founder and Admin safety", () => {
       data: { user: { id: "auth-rep", email: "rep@example.test" } },
       error: null,
     }));
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: { reserved: true }, error: null })
+      .mockResolvedValueOnce({
+        data: { enrollment: "invite_resent_pending_user" },
+        error: null,
+      });
     adminClientMocks.createSupabaseAdminClient.mockReturnValue({
       from,
+      rpc,
       auth: { admin: { listUsers, inviteUserByEmail } },
     });
-
     await expect(
       resendStaffInvite({
         actor: adminActor,
         staffUserId: "staff-rep",
       }),
     ).resolves.toEqual({ enrollment: "invite_resent_pending_user" });
-
     expect(inviteUserByEmail).toHaveBeenCalledWith("rep@example.test", {
       data: { display_name: "Rep", product: "CalenderZW" },
       redirectTo: "https://calender.aido.co.zw/account/update-password",
     });
-    expect(timestampUpdate.update).toHaveBeenCalledWith({
-      last_invited_at: expect.any(String),
+    expect(rpc).toHaveBeenNthCalledWith(1, "czw_staff_lifecycle", {
+      p_actor_user_id: "admin-user",
+      p_operation: "reserve_invite",
+      p_input: {
+        email: "rep@example.test",
+        role: "class_rep",
+        userId: "auth-rep",
+        staffUserId: "staff-rep",
+      },
     });
+    expect(rpc).toHaveBeenNthCalledWith(2, "czw_staff_lifecycle", {
+      p_actor_user_id: "admin-user",
+      p_operation: "record_resend",
+      p_input: {
+        userId: "auth-rep",
+        staffUserId: "staff-rep",
+        email: "rep@example.test",
+        enrollment: "invite_resent_pending_user",
+        invitationSent: true,
+      },
+    });
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(staffLookup.update).not.toHaveBeenCalled();
   });
 
   it("reuses a confirmed Supabase Auth identity without forcing recovery when the founder grants Admin access", async () => {
     const staffLookup = queryBuilder({ single: null });
-    const staffInsert = queryBuilder({
-      single: { id: "staff-new-admin", user_id: "auth-existing" },
-    });
-    const auditBuilder = queryBuilder({ list: [] });
-    let staffCalls = 0;
-    const from = vi.fn((table: string) => {
-      if (table === "staff_users") {
-        staffCalls += 1;
-        return staffCalls === 1 ? staffLookup : staffInsert;
-      }
-      if (table === "audit_logs") return auditBuilder;
-      throw new Error(`Unexpected table ${table}`);
-    });
+    const from = vi.fn(() => staffLookup);
     const listUsers = vi.fn(async () => ({
       data: {
         users: [
@@ -436,11 +413,18 @@ describe("staff repository founder and Admin safety", () => {
       error: null,
     }));
     const inviteUserByEmail = vi.fn();
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        staffUserId: "staff-new-admin",
+        enrollment: "access_granted_existing_user",
+      },
+      error: null,
+    });
     adminClientMocks.createSupabaseAdminClient.mockReturnValue({
       from,
+      rpc,
       auth: { admin: { listUsers, inviteUserByEmail } },
     });
-
     await expect(
       inviteAdmin({
         actor: founderActor,
@@ -451,19 +435,135 @@ describe("staff repository founder and Admin safety", () => {
       staffUserId: "staff-new-admin",
       enrollment: "access_granted_existing_user",
     });
-
     expect(inviteUserByEmail).not.toHaveBeenCalled();
-    expect(staffInsert.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        user_id: "auth-existing",
-        role: "admin",
-        is_founder: false,
-        invited_at: null,
-        last_invited_at: null,
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("czw_staff_lifecycle", {
+      p_actor_user_id: "founder-user",
+      p_operation: "enroll_admin",
+      p_input: {
+        userId: "auth-existing",
+        email: "ops@example.test",
+        displayName: "Operations Admin",
+        enrollment: "access_granted_existing_user",
+        invitationSent: false,
+        existingAuthUser: true,
+      },
+    });
+    expect(staffLookup.insert).not.toHaveBeenCalled();
+    expect(rpc.mock.calls[0][1].p_input).not.toHaveProperty("is_founder");
+  });
+
+  it("rejects a missing timetable before Auth lookup, email or enrollment", async () => {
+    const timetable = queryBuilder({ single: null });
+    const from = vi.fn(() => timetable);
+    const listUsers = vi.fn(),
+      inviteUserByEmail = vi.fn(),
+      rpc = vi.fn();
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({
+      from,
+      rpc,
+      auth: { admin: { listUsers, inviteUserByEmail } },
+    });
+    await expect(
+      inviteClassRep({
+        actor: adminActor,
+        email: "rep@example.test",
+        displayName: "Rep",
+        timetableId: "missing",
       }),
-    );
-    expect(auditBuilder.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "admin.access_granted_existing_user" }),
-    );
+    ).rejects.toMatchObject({ code: "TIMETABLE_NOT_FOUND", status: 404 });
+    expect(listUsers).not.toHaveBeenCalled();
+    expect(inviteUserByEmail).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when Auth pagination reaches its safety bound", async () => {
+    const from = vi.fn(() => queryBuilder({ single: { id: "timetable-1" } }));
+    const listUsers = vi.fn(async () => ({
+      data: {
+        users: Array.from({ length: 1000 }, (_, index) => ({
+          id: `fixture-${index}`,
+          email: `unrelated-${index}@example.test`,
+        })),
+      },
+      error: null,
+    }));
+    const inviteUserByEmail = vi.fn(),
+      rpc = vi.fn();
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({
+      from,
+      rpc,
+      auth: { admin: { listUsers, inviteUserByEmail } },
+    });
+    await expect(
+      inviteClassRep({
+        actor: adminActor,
+        email: "rep@example.test",
+        displayName: "Rep",
+        timetableId: "timetable-1",
+      }),
+    ).rejects.toMatchObject({ code: "AUTH_LOOKUP_INCOMPLETE", status: 503 });
+    expect(listUsers).toHaveBeenCalledTimes(20);
+    expect(listUsers).toHaveBeenLastCalledWith({ page: 20, perPage: 1000 });
+    expect(inviteUserByEmail).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it.each(["INVITE_RATE_LIMITED", "INVITE_ACTOR_RATE_LIMITED"])(
+    "does not call Auth invitation or enrollment after %s",
+    async (code) => {
+      const from = vi.fn(() => queryBuilder({ single: { id: "timetable-1" } }));
+      const listUsers = vi.fn(async () => ({
+        data: { users: [] },
+        error: null,
+      }));
+      const inviteUserByEmail = vi.fn();
+      const rpc = vi
+        .fn()
+        .mockResolvedValue({ data: { error: { code } }, error: null });
+      adminClientMocks.createSupabaseAdminClient.mockReturnValue({
+        from,
+        rpc,
+        auth: { admin: { listUsers, inviteUserByEmail } },
+      });
+      await expect(
+        inviteClassRep({
+          actor: adminActor,
+          email: "rep@example.test",
+          displayName: "Rep",
+          timetableId: "timetable-1",
+        }),
+      ).rejects.toMatchObject({ code, status: 429 });
+      expect(rpc).toHaveBeenCalledTimes(1);
+      expect(rpc.mock.calls[0][1].p_operation).toBe("reserve_invite");
+      expect(inviteUserByEmail).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not release a committed reservation or create membership after provider failure", async () => {
+    const from = vi.fn(() => queryBuilder({ single: { id: "timetable-1" } }));
+    const listUsers = vi.fn(async () => ({ data: { users: [] }, error: null }));
+    const inviteUserByEmail = vi.fn(async () => ({
+      data: { user: null },
+      error: { message: "synthetic-provider-failure" },
+    }));
+    const rpc = vi
+      .fn()
+      .mockResolvedValue({ data: { reserved: true }, error: null });
+    adminClientMocks.createSupabaseAdminClient.mockReturnValue({
+      from,
+      rpc,
+      auth: { admin: { listUsers, inviteUserByEmail } },
+    });
+    await expect(
+      inviteClassRep({
+        actor: adminActor,
+        email: "rep@example.test",
+        displayName: "Rep",
+        timetableId: "timetable-1",
+      }),
+    ).rejects.toMatchObject({ code: "INVITE_FAILED", status: 502 });
+    expect(inviteUserByEmail).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc.mock.calls[0][1].p_operation).toBe("reserve_invite");
   });
 });

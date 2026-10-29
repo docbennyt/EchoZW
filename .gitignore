@@ -8,6 +8,7 @@ coverage/
 playwright-report/
 test-results/
 .wrangler-dry-run/
+.wrangler/
 tsconfig.tsbuildinfo
 .data/
 *smoke*.log

@@ -14,6 +14,7 @@ import type {
   PublicTimetable,
 } from "./api/pilotTypes";
 import { selectEffectiveRecurringSessions } from "./domain/resolvedSchedule";
+import { academicPauseDeliveryNotice } from "./domain/academicPauseDeliveryNotice";
 import "./classRepAcademicPauseControl.css";
 
 const reasonOptions: Array<{ value: AcademicPauseReason; label: string }> = [
@@ -29,6 +30,11 @@ function todayKey() {
   const now = new Date();
   const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 10);
+}
+
+function impactText(impact: AcademicPauseImpact) {
+  if (impact.previewStatus === "unknown") return "Lecture impact unavailable.";
+  return `${impact.previewStatus === "partial" ? "Partial preview: at least " : ""}${impact.newlySuppressedLectureCount} lecture${impact.newlySuppressedLectureCount === 1 ? "" : "s"} will be suppressed.`;
 }
 
 type PauseForm = {
@@ -131,9 +137,9 @@ export function ActiveAcademicPauseNotice({
                       assignment.timetableId,
                       pause.id,
                     )
-                      .then(async () => {
+                      .then(async (result) => {
                         onMessage(
-                          `Classes resumed — ${pause.label}. Calendar subscribers will receive the restored schedule.`,
+                          `Classes resumed — ${pause.label}. ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
                         );
                         await onRefresh();
                       })
@@ -197,6 +203,13 @@ export function ClassRepAcademicPauseAction({
       );
       setPreview(result.impact);
     } catch (caught) {
+      setPreview({
+        affectedTimetableCount: 0,
+        affectedTimetableCountKnown: false,
+        newlySuppressedLectureCount: 0,
+        previewStatus: "unknown",
+        previewReason: "read_failed",
+      });
       setError(
         caught instanceof Error
           ? caught.message
@@ -217,7 +230,7 @@ export function ClassRepAcademicPauseAction({
         toInput(form),
       );
       onMessage(
-        `Paused — ${result.pause.label}. ${result.impact.newlySuppressedLectureCount} lecture${result.impact.newlySuppressedLectureCount === 1 ? "" : "s"} suppressed without deleting the weekly timetable.`,
+        `Paused — ${result.pause.label}. ${impactText(result.impact)} ${academicPauseDeliveryNotice(result.googleCalendarSync)}`,
       );
       setOpen(false);
       setForm(initialForm());
@@ -422,13 +435,7 @@ export function ClassRepAcademicPauseAction({
                   <div className="dr58-impact" role="status">
                     <CheckCircle2 size={18} aria-hidden="true" />
                     <div>
-                      <strong>
-                        {preview.newlySuppressedLectureCount} lecture
-                        {preview.newlySuppressedLectureCount === 1
-                          ? ""
-                          : "s"}{" "}
-                        will be suppressed
-                      </strong>
+                      <strong>{impactText(preview)}</strong>
                       <span>
                         No recurring class is deleted. The schedule restores
                         automatically after {form.endsOn} or when you resume
@@ -457,7 +464,15 @@ export function ClassRepAcademicPauseAction({
                   </button>
                   <button
                     type="button"
-                    disabled={!preview || Boolean(busy)}
+                    disabled={
+                      !preview ||
+                      Boolean(busy) ||
+                      !form.label.trim() ||
+                      !form.startsOn ||
+                      !form.endsOn ||
+                      form.endsOn < form.startsOn ||
+                      (scopeSession && !form.stableSessionKey)
+                    }
                     onClick={() => void savePause()}
                   >
                     <CalendarOff size={16} aria-hidden="true" />

@@ -43,6 +43,7 @@ const sensitiveAuthKeys = [
   "token",
   "token_hash",
   "code",
+  "sb_flow_id",
   "error",
   "error_code",
   "error_description",
@@ -127,6 +128,7 @@ export async function restoreAuthSessionFromRedirect(
   const hash = new URLSearchParams(url.hash.slice(1));
   const tokenHash = url.searchParams.get("token_hash");
   const code = url.searchParams.get("code");
+  const flowId = url.searchParams.get("sb_flow_id");
   const accessToken = hash.get("access_token");
   const refreshToken = hash.get("refresh_token");
   const explicitType =
@@ -159,7 +161,10 @@ export async function restoreAuthSessionFromRedirect(
     }
   } else if (code) {
     sanitize();
-    const { error } = await auth.exchangeCodeForSession(code);
+    const { error } =
+      flowId === null
+        ? await auth.exchangeCodeForSession(code)
+        : await auth.exchangeCodeForSession(code, { flowId });
     if (error) {
       return {
         ok: false,
@@ -172,14 +177,22 @@ export async function restoreAuthSessionFromRedirect(
     }
   } else if (accessToken || refreshToken) {
     sanitize();
-    if (explicitType !== "invite" || !accessToken || !refreshToken) {
+    if (
+      (explicitType !== "invite" && explicitType !== "recovery") ||
+      !accessToken ||
+      !refreshToken
+    ) {
       return {
         ok: false,
         intent,
         code:
-          explicitType && explicitType !== "invite"
+          explicitType &&
+          explicitType !== "invite" &&
+          explicitType !== "recovery"
             ? "AUTH_CALLBACK_TYPE_UNSUPPORTED"
-            : "AUTH_INVITE_CALLBACK_INVALID",
+            : intent === "recovery"
+              ? "AUTH_RECOVERY_CALLBACK_INVALID"
+              : "AUTH_INVITE_CALLBACK_INVALID",
       };
     }
     const { error } = await auth.setSession({
@@ -187,11 +200,11 @@ export async function restoreAuthSessionFromRedirect(
       refresh_token: refreshToken,
     });
     if (error) {
-      return {
-        ok: false,
-        intent: "invite",
-        code: "AUTH_INVITE_SESSION_FAILED",
-      };
+      return failureForIntent(
+        explicitType,
+        "AUTH_INVITE_SESSION_FAILED",
+        "AUTH_SESSION_ESTABLISHMENT_FAILED",
+      );
     }
   } else if (hasAuthRedirectParameters(url)) {
     sanitize();

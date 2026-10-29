@@ -6,7 +6,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicTimetable } from "../src/api/pilotTypes";
 
 const mocks = vi.hoisted(() => ({
@@ -165,6 +165,151 @@ beforeEach(() => {
 });
 
 describe("DR-64 student Add-to-Calendar conversion", () => {
+  afterEach(() => vi.useRealTimers());
+  it("explains the current SWOT pause without presenting the regular grid as this week's classes", async () => {
+    vi.setSystemTime(new Date("2026-10-27T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      endsOn: "2026-11-01",
+      pauses: [
+        {
+          id: "pause-1",
+          scopeType: "institution",
+          stableSessionKey: null,
+          startsOn: "2026-10-26",
+          endsOn: "2026-11-30",
+          allDay: true,
+          startsAt: null,
+          endsAt: null,
+          reason: "swot_week",
+          label: "SWOT week",
+          active: true,
+          createdAt: "2026-10-26T00:00:00Z",
+        },
+      ],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const notice = await screen.findByRole("status", {
+      name: "Current class pauses",
+    });
+    expect(
+      within(notice).getByRole("heading", { name: "Classes paused" }),
+    ).toBeInTheDocument();
+    expect(within(notice).getByText("SWOT week")).toBeInTheDocument();
+    expect(within(notice).getByText("26 October 2026")).toBeInTheDocument();
+    expect(within(notice).getByText("30 November 2026")).toBeInTheDocument();
+    expect(screen.getByText("Regular weekly schedule")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Pause periods above override these regular class times.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Current published week")).toBeNull();
+    expect(screen.queryByText(/No more published sessions/)).toBeNull();
+  });
+  it("does not describe a session-only pause as a whole-class closure", async () => {
+    vi.setSystemTime(new Date("2026-10-27T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      pauses: [
+        {
+          id: "pause-1",
+          scopeType: "session",
+          stableSessionKey: "hit1101-mon-0800",
+          startsOn: "2026-10-26",
+          endsOn: "2026-11-30",
+          allDay: true,
+          startsAt: null,
+          endsAt: null,
+          reason: "other",
+          label: "HIT1101 teaching pause",
+          active: true,
+          createdAt: "2026-10-26T00:00:00Z",
+        },
+      ],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    const notice = await screen.findByRole("status", {
+      name: "Current class pauses",
+    });
+    expect(
+      within(notice).getByRole("heading", { name: "Some classes paused" }),
+    ).toBeInTheDocument();
+    expect(
+      within(notice).queryByRole("heading", {
+        name: "Classes paused",
+      }),
+    ).toBeNull();
+  });
+  it("does not show disabled or ended pauses as current closures", async () => {
+    vi.setSystemTime(new Date("2026-12-01T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      pauses: [
+        {
+          id: "ended",
+          scopeType: "institution",
+          startsOn: "2026-10-26",
+          endsOn: "2026-11-30",
+          allDay: true,
+          active: true,
+        },
+        {
+          id: "disabled",
+          scopeType: "institution",
+          startsOn: "2026-10-26",
+          endsOn: "2026-12-10",
+          allDay: true,
+          active: false,
+        },
+      ],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    await screen.findByRole("heading", {
+      level: 1,
+      name: "BTech Computer Science",
+    });
+    expect(
+      screen.queryByRole("status", { name: "Current class pauses" }),
+    ).toBeNull();
+  });
+  it.each([
+    ["08:00:00", "09:00:00", false],
+    ["09:00:00", "11:00:00", true],
+    ["11:00:00", "12:00:00", false],
+  ] as const)(
+    "shows timed pauses only within their active window (%s–%s)",
+    async (start, end, visible) => {
+      vi.setSystemTime(new Date("2026-10-27T10:00:00Z"));
+      mocks.fetchPublicTimetable.mockResolvedValue({
+        ...timetable,
+        pauses: [
+          {
+            id: "timed",
+            scopeType: "institution",
+            stableSessionKey: null,
+            startsOn: "2026-10-27",
+            endsOn: "2026-10-27",
+            allDay: false,
+            startsAt: `2026-10-27T${start}Z`,
+            endsAt: `2026-10-27T${end}Z`,
+            reason: "other",
+            label: "Campus closure",
+            active: true,
+            createdAt: "2026-10-26T00:00:00Z",
+          },
+        ],
+      });
+      render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "BTech Computer Science",
+      });
+      expect(
+        Boolean(screen.queryByRole("status", { name: "Current class pauses" })),
+      ).toBe(visible);
+    },
+  );
   it("keeps the mobile conversion hierarchy direct and removes standalone publication/timezone clutter", async () => {
     const { container } = render(
       <PublicTimetableReliability slug={timetable.publicSlug} />,
@@ -184,6 +329,37 @@ describe("DR-64 student Add-to-Calendar conversion", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(/Published by CalenderZW/i)).toBeNull();
     expect(container.querySelector(".pt-timezone-note")).toBeNull();
+  });
+  it("clears an ended pause when a student returns to an open timetable tab", async () => {
+    vi.setSystemTime(new Date("2026-10-27T10:00:00Z"));
+    mocks.fetchPublicTimetable.mockResolvedValue({
+      ...timetable,
+      pauses: [
+        {
+          id: "pause-1",
+          scopeType: "institution",
+          stableSessionKey: null,
+          startsOn: "2026-10-26",
+          endsOn: "2026-11-30",
+          allDay: true,
+          startsAt: null,
+          endsAt: null,
+          reason: "swot_week",
+          label: "SWOT week",
+          active: true,
+          createdAt: "2026-10-26T00:00:00Z",
+        },
+      ],
+    });
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    await screen.findByRole("status", { name: "Current class pauses" });
+    vi.setSystemTime(new Date("2026-12-01T10:00:00Z"));
+    fireEvent.focus(window);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("status", { name: "Current class pauses" }),
+      ).toBeNull(),
+    );
   });
 
   it("fails closed on optional public surfaces unless durable settings enable them", async () => {
