@@ -99,12 +99,11 @@ export async function runLegacyGoogleCredentialRecovery(
     );
     return version;
   };
-  const verifyCleanupVersion = async () => {
+  const verifyConvergedVersion = async () => {
     let lastError;
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
-        await verifyTemporaryVersion();
-        return;
+        return await verifyTemporaryVersion();
       } catch (error) {
         lastError = error;
         if (attempt < 4) await pause((attempt + 1) * 1000);
@@ -143,7 +142,9 @@ export async function runLegacyGoogleCredentialRecovery(
         mode,
       }),
     });
-    const workerVersion = await verifyTemporaryVersion();
+    // Secret provisioning creates new Worker versions. Wait for the active
+    // deployment and public version metadata to converge before credential access.
+    const workerVersion = await verifyConvergedVersion();
     const response = await request(
       `${origin}/api/admin/google-credential-recovery`,
       {
@@ -204,7 +205,7 @@ export async function runLegacyGoogleCredentialRecovery(
           fail("RECOVERY_DISABLE_NOT_CONFIRMED");
         // Secret deletion creates new Worker versions. Allow Cloudflare's active
         // deployment and public version metadata to converge before failing closed.
-        await verifyCleanupVersion();
+        await verifyConvergedVersion();
       } catch (error) {
         cleanupError = error;
       }
