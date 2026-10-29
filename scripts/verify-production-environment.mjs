@@ -1,10 +1,12 @@
 export function assertProductionEnvironment(environment) {
-  const reviewers = environment?.protection_rules?.find(
+  const reviewerRule = environment?.protection_rules?.find(
     (rule) => rule.type === "required_reviewers",
-  )?.reviewers;
+  );
+  const reviewers = reviewerRule?.reviewers;
   if (
     environment?.name !== "cloudflare-production" ||
     environment?.can_admins_bypass !== false ||
+    reviewerRule?.prevent_self_review !== true ||
     !Array.isArray(reviewers) ||
     reviewers.length === 0
   )

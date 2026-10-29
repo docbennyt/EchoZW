@@ -82,6 +82,15 @@ describe("protected production backend prerequisites", () => {
     expect(workflow).toContain("--env production");
     expect(workflow).toContain("ENABLE_GOOGLE_DELIVERY:false");
     expect(workflow).toContain("verify-production-origin.mjs");
+    expect(workflow.indexOf("record-production-rollback.mjs")).toBeGreaterThan(
+      0,
+    );
+    expect(workflow.indexOf("record-production-rollback.mjs")).toBeLessThan(
+      workflow.indexOf("npx wrangler@4.147.0 deploy --config"),
+    );
+    expect(workflow).not.toContain(
+      "rerun this workflow with the previously approved PR head",
+    );
     expect(workflow).not.toContain("Production deploy intentionally disabled");
   });
 
@@ -90,10 +99,26 @@ describe("protected production backend prerequisites", () => {
       name: "cloudflare-production",
       can_admins_bypass: false,
       protection_rules: [
-        { type: "required_reviewers", reviewers: [{ id: 1 }] },
+        {
+          type: "required_reviewers",
+          prevent_self_review: true,
+          reviewers: [{ id: 1 }],
+        },
       ],
     };
     expect(assertProductionEnvironment(protectedEnvironment)).toBe(true);
+    expect(() =>
+      assertProductionEnvironment({
+        ...protectedEnvironment,
+        protection_rules: [
+          {
+            type: "required_reviewers",
+            prevent_self_review: false,
+            reviewers: [{ id: 1 }],
+          },
+        ],
+      }),
+    ).toThrow("PRODUCTION_ENVIRONMENT_APPROVAL_REQUIRED");
     expect(() =>
       assertProductionEnvironment({
         ...protectedEnvironment,
