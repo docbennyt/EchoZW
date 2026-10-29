@@ -123,6 +123,70 @@ describe("protected legacy-key operation", () => {
     );
   });
 
+
+  it("still deletes both bindings when one DELETE fails temporarily", async () => {
+    const base = provider();
+    let firstDelete = true;
+    const request = vi.fn(async (...args: Parameters<typeof fetch>) => {
+      const [url, init] = args;
+      if (
+        init?.method === "DELETE" &&
+        String(url).endsWith("/GOOGLE_CREDENTIAL_RECOVERY_SCOPE") &&
+        firstDelete
+      ) {
+        firstDelete = false;
+        return Response.json({ success: false }, { status: 503 });
+      }
+      return base(...args);
+    });
+    const report = await runLegacyGoogleCredentialRecovery(env(), { request });
+    expect(report.temporaryRecoveryBindingsAbsent).toBe(true);
+    const deletes = request.mock.calls
+      .filter(([, init]) => init?.method === "DELETE")
+      .map(([url]) => String(url));
+    expect(deletes).toHaveLength(3);
+    expect(
+      deletes.some((url) => url.endsWith("/LEGACY_TOKEN_ENCRYPTION_KEY")),
+    ).toBe(true);
+  });
+
+  it("preserves original failure and attempts all cleanups after repeated errors", async () => {
+    const base = provider();
+    const request = vi.fn(async (...args: Parameters<typeof fetch>) => {
+      const [url, init] = args;
+      if (
+        init?.method === "PUT" &&
+        JSON.parse(String(init.body)).name === "GOOGLE_CREDENTIAL_RECOVERY_SCOPE"
+      )
+        return Response.json({ success: false }, { status: 403 });
+      if (
+        init?.method === "DELETE" &&
+        String(url).endsWith("/GOOGLE_CREDENTIAL_RECOVERY_SCOPE")
+      )
+        return Response.json({ success: false }, { status: 503 });
+      return base(...args);
+    });
+    try {
+      await runLegacyGoogleCredentialRecovery(env(), { request });
+      throw new Error("expected failure");
+    } catch (error) {
+      expect(error).toBeInstanceOf(AggregateError);
+      expect((error as AggregateError).message).toBe(
+        "RECOVERY_DISABLE_NOT_CONFIRMED",
+      );
+      expect(
+        (error as AggregateError).errors.map((part) => part.message),
+      ).toContain("RECOVERY_CONFIGURATION_OPERATION_FAILED");
+    }
+    const deletes = request.mock.calls
+      .filter(([, init]) => init?.method === "DELETE")
+      .map(([url]) => String(url));
+    expect(deletes).toHaveLength(4);
+    expect(
+      deletes.some((url) => url.endsWith("/LEGACY_TOKEN_ENCRYPTION_KEY")),
+    ).toBe(true);
+  });
+
   it("fails before configuration writes when the legacy key is unavailable", async () => {
     const request = provider();
     await expect(
