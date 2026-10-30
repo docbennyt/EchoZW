@@ -46,7 +46,9 @@ describe("Vercel SPA asset-origin contract", () => {
       (rewrite) => rewrite.source === "/t/:slug/google",
     );
     for (const route of [classPage, googlePage]) {
-      expect(route?.destination).toContain("railway.app");
+      expect(route?.destination).toBe(
+        `https://backend.calender.aido.co.zw${route?.source}`,
+      );
       expect(route?.has).toEqual([
         expect.objectContaining({
           type: "header",
@@ -59,33 +61,38 @@ describe("Vercel SPA asset-origin contract", () => {
     }
   });
 
-  it("keeps backend-only routes on Railway and the SPA shell on Vercel", () => {
+  it("routes backend-only resources to the verified production Worker and keeps the SPA shell on Vercel", () => {
     const rewrites = loadVercelRewrites();
 
     expect(rewrites).toContainEqual({
       source: "/api/:path*",
-      destination: "https://calender.up.railway.app/api/:path*",
+      destination: "https://backend.calender.aido.co.zw/api/:path*",
     });
     expect(rewrites).toContainEqual({
       source: "/calendar/feed/:path*",
-      destination: "https://calender.up.railway.app/calendar/feed/:path*",
+      destination: "https://backend.calender.aido.co.zw/calendar/feed/:path*",
     });
     expect(rewrites).toContainEqual({
       source: "/calendar/download/:path*",
-      destination: "https://calender.up.railway.app/calendar/download/:path*",
+      destination:
+        "https://backend.calender.aido.co.zw/calendar/download/:path*",
     });
     expect(rewrites).toContainEqual({
       source: "/runtime-config.js",
-      destination: "https://calender.up.railway.app/runtime-config.js",
+      destination: "https://backend.calender.aido.co.zw/runtime-config.js",
     });
     expect(rewrites).toContainEqual({
       source: "/sitemap.xml",
-      destination: "https://calender.up.railway.app/sitemap.xml",
+      destination: "https://backend.calender.aido.co.zw/sitemap.xml",
     });
     expect(rewrites.at(-1)).toEqual({
       source: "/:path((?!assets/).*)",
       destination: "/index.html",
     });
+    expect(
+      rewrites.filter((route) => route.destination.startsWith("https://")),
+    ).toHaveLength(7);
+    expect(JSON.stringify(rewrites)).not.toContain("railway.app");
   });
 
   it("prevents Vercel rewrite caching for private calendar feed material", () => {
