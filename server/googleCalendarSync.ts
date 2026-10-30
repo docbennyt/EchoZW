@@ -585,6 +585,7 @@ function contentHash(payload: GoogleEventPayload) {
 function remotePayloadMatches(
   remote: JsonRecord,
   expected: GoogleEventPayload,
+  onMismatch?: (field: string) => void,
 ) {
   const normalize = (value: JsonRecord) => {
     const start = getNestedRecord(value, "start");
@@ -593,7 +594,7 @@ function remotePayloadMatches(
     const overrides = Array.isArray(reminders?.overrides)
       ? reminders.overrides
       : [];
-    return JSON.stringify({
+    return {
       summary: value.summary ?? "",
       description: value.description ?? "",
       location: value.location ?? "",
@@ -611,9 +612,15 @@ function remotePayloadMatches(
           return `${row.method}:${row.minutes}`;
         })
         .sort(),
-    });
+    };
   };
-  return normalize(remote) === normalize(expected as unknown as JsonRecord);
+  const actual = normalize(remote);
+  const desired = normalize(expected as unknown as JsonRecord);
+  const fields = (Object.keys(actual) as Array<keyof typeof actual>).filter(
+    (field) => JSON.stringify(actual[field]) !== JSON.stringify(desired[field]),
+  );
+  for (const field of fields) onMismatch?.(field);
+  return fields.length === 0;
 }
 
 function hasRemoteContent(event: GoogleManagedRemoteEvent) {
@@ -1289,6 +1296,8 @@ export async function previewGoogleSubscriptionSync(
   let wouldDelete = 0;
   let unchanged = 0;
   let remoteContentMismatchCount = 0;
+  // Fixed field names and aggregate counters only, never provider event values.
+  const remoteContentMismatchFields: Record<string, number> = {};
   const remoteReadComplete = remoteManagedEvents.every(hasRemoteContent);
   const remoteById = new Map(
     remoteManagedEvents.map((item) => [item.id, item]),
@@ -1329,7 +1338,10 @@ export async function previewGoogleSubscriptionSync(
     const contentMatches = Boolean(
       remote &&
       hasRemoteContent(remote) &&
-      remotePayloadMatches(remote.content, payload),
+      remotePayloadMatches(remote.content, payload, (field) => {
+        remoteContentMismatchFields[field] =
+          (remoteContentMismatchFields[field] ?? 0) + 1;
+      }),
     );
     if (!contentMatches) remoteContentMismatchCount += 1;
     if (
@@ -1397,6 +1409,7 @@ export async function previewGoogleSubscriptionSync(
     ),
     remoteReadComplete,
     remoteContentMismatchCount,
+    remoteContentMismatchFields,
     remoteContentsVerified:
       remoteReadComplete &&
       remoteContentMismatchCount === 0 &&

@@ -910,6 +910,20 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
         remoteContentMismatchCount: 1,
         remoteReadComplete: remoteContent,
       });
+      expect(preview.remoteContentMismatchFields).toEqual(
+        remoteContent
+          ? expect.objectContaining({
+              summary: 1,
+              start: 1,
+              end: 1,
+              recurrence: 1,
+              useDefault: 1,
+            })
+          : {},
+      );
+      expect(JSON.stringify(preview.remoteContentMismatchFields)).not.toContain(
+        "stale lecture",
+      );
       expect(preview.executionGuard).toEqual(
         remoteContent
           ? {

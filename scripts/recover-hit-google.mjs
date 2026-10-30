@@ -93,6 +93,28 @@ function redactedPreview(value) {
     result[key] = integer(value?.[key]) ? value[key] : null;
   return {
     ...result,
+    remoteContentMismatchFields: Object.fromEntries(
+      [
+        "summary",
+        "description",
+        "location",
+        "start",
+        "end",
+        "startZone",
+        "endZone",
+        "recurrence",
+        "useDefault",
+        "overrides",
+      ]
+        .map((field) => [field, value?.remoteContentMismatchFields?.[field]])
+        .filter(
+          ([, count]) =>
+            integer(count) &&
+            count > 0 &&
+            integer(value?.expectedEvents) &&
+            count <= value.expectedEvents,
+        ),
+    ),
     readOnly: value?.readOnly === true,
     remoteReadComplete: value?.remoteReadComplete === true,
     remoteContentsVerified: value?.remoteContentsVerified === true,
