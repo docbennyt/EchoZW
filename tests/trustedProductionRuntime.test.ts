@@ -13,6 +13,16 @@ function sourceConfig() {
 }
 
 describe("protected production backend prerequisites", () => {
+  it("provisions the PostgreSQL role and port required by mandatory delivery contracts", () => {
+    const workflow = readFileSync(
+      ".github/workflows/cloudflare-production-gate.yml",
+      "utf8",
+    );
+    expect(workflow).toContain("POSTGRES_USER: dr178");
+    expect(workflow).toContain("pg_isready -U dr178 -d postgres");
+    expect(workflow).toContain("15478:5432");
+    expect(workflow).toContain('DR178_REQUIRE_POSTGRES: "true"');
+  });
   it("keeps production isolated, Google delivery off, and a dedicated backend origin", () => {
     const original = sourceConfig();
     const prepared = prepareProductionConfiguration(original);
