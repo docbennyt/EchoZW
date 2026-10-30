@@ -18,6 +18,7 @@ import {
 import { googleCalendarScope } from "../src/domain/googleScopes.js";
 import { projectPublishedTimetable } from "../src/domain/publishedCalendarProjection.js";
 import { loadPublishedTimetableSnapshot } from "./publishedTimetableSnapshot.js";
+import { formatIcsUtc, zonedDateTimeToUtc } from "../src/domain/timezone.js";
 import {
   budgetedFetch,
   markExternalWorkProgress,
@@ -582,6 +583,132 @@ function contentHash(payload: GoogleEventPayload) {
     .digest("base64url");
 }
 
+function comparableGoogleZone(value: unknown, instant: number) {
+  // IANA backward links Harare to Maputo; backzone differences are pre-1970.
+  // https://data.iana.org/time-zones/tzdb/backward
+  if (value === "Africa/Harare" && instant >= 0) return "Africa/Maputo";
+  return value;
+}
+
+function comparableGoogleRecurrence(value: unknown) {
+  const result: string[] = [];
+  for (const line of Array.isArray(value) ? value : []) {
+    if (typeof line !== "string") {
+      result.push(JSON.stringify(line));
+      continue;
+    }
+    const separator = line.indexOf(":");
+    const header = line.slice(0, separator);
+    const body = line.slice(separator + 1);
+    if (header === "RRULE") {
+      const parts = body.split(";");
+      const keys = parts.map((part) => part.split("=")[0]);
+      if (
+        !parts.some((part) =>
+          /^FREQ=(SECONDLY|MINUTELY|HOURLY|DAILY|WEEKLY|MONTHLY|YEARLY)$/.test(
+            part,
+          ),
+        ) ||
+        keys.some(
+          (key) =>
+            ![
+              "FREQ",
+              "UNTIL",
+              "COUNT",
+              "INTERVAL",
+              "BYSECOND",
+              "BYMINUTE",
+              "BYHOUR",
+              "BYDAY",
+              "BYMONTHDAY",
+              "BYYEARDAY",
+              "BYWEEKNO",
+              "BYMONTH",
+              "BYSETPOS",
+              "WKST",
+            ].includes(key),
+        ) ||
+        new Set(keys).size !== keys.length ||
+        parts.some((part) => !/^[A-Z]+=[A-Z0-9,+-]+$/.test(part))
+      ) {
+        result.push(line);
+        continue;
+      }
+      result.push(
+        `RRULE:${parts
+          .filter((part) => part !== "INTERVAL=1" && part !== "WKST=MO")
+          .map((part) => {
+            const [key, entries] = part.split("=");
+            return `${key}=${entries.split(",").sort().join(",")}`;
+          })
+          .sort()
+          .join(";")}`,
+      );
+      continue;
+    }
+    const [property, ...parameters] = header.split(";");
+    if (
+      !["EXDATE", "RDATE"].includes(property) ||
+      parameters.some((part) => !/^(TZID|VALUE)=/.test(part))
+    ) {
+      result.push(line);
+      continue;
+    }
+    const parsed = parameters.map((part) => part.split("="));
+    if (
+      parsed.some((part) => part.length !== 2) ||
+      new Set(parsed.map(([key]) => key)).size !== parsed.length
+    ) {
+      result.push(line);
+      continue;
+    }
+    const params = Object.fromEntries(parsed);
+    const zone = params.TZID?.replace(/^"(.*)"$/, "$1");
+    // RFC 5545 recurrence dates form sets: grouping/order is not semantic.
+    // Only interpret UTC and the proven post-1970 HIT zone pair. Preserve
+    // unsupported or malformed representations exactly rather than guessing.
+    for (const entry of body.split(",")) {
+      const match = entry.match(
+        /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z?)$/,
+      );
+      if (
+        !match ||
+        (params.VALUE && params.VALUE !== "DATE-TIME") ||
+        (zone && match[7])
+      ) {
+        result.push(`${header}:${entry}`);
+        continue;
+      }
+      const [, year, month, day, hour, minute, second, utc] = match;
+      const wall = new Date(
+        Date.UTC(+year, +month - 1, +day, +hour, +minute, +second),
+      );
+      if (
+        +year < 1970 ||
+        formatIcsUtc(wall).slice(0, -1) !== entry.replace(/Z$/, "")
+      ) {
+        result.push(`${header}:${entry}`);
+        continue;
+      }
+      if (utc) {
+        result.push(`${property}:${formatIcsUtc(wall)}`);
+        continue;
+      }
+      if (zone === "Africa/Harare" || zone === "Africa/Maputo") {
+        const instant = zonedDateTimeToUtc(
+          `${year}-${month}-${day}`,
+          `${hour}:${minute}:${second}`,
+          zone,
+        );
+        result.push(`${property}:${formatIcsUtc(instant)}`);
+      } else {
+        result.push(`${header}:${entry}`);
+      }
+    }
+  }
+  return [...new Set(result)].sort();
+}
+
 function remotePayloadMatches(
   remote: JsonRecord,
   expected: GoogleEventPayload,
@@ -600,11 +727,15 @@ function remotePayloadMatches(
       location: value.location ?? "",
       start: Date.parse(String(start?.dateTime)),
       end: Date.parse(String(end?.dateTime)),
-      startZone: start?.timeZone,
-      endZone: end?.timeZone,
-      recurrence: [
-        ...(Array.isArray(value.recurrence) ? value.recurrence : []),
-      ].sort(),
+      startZone: comparableGoogleZone(
+        start?.timeZone,
+        Date.parse(String(start?.dateTime)),
+      ),
+      endZone: comparableGoogleZone(
+        end?.timeZone,
+        Date.parse(String(end?.dateTime)),
+      ),
+      recurrence: comparableGoogleRecurrence(value.recurrence),
       useDefault: reminders?.useDefault === true,
       overrides: overrides
         .map((item) => {
