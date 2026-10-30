@@ -312,7 +312,7 @@ describe("bounded canary authorization and revocation", () => {
         expect(init.redirect).toBe("error");
         if (target.origin === "https://api.cloudflare.com") {
           expect(target.pathname).toMatch(
-            /^\/client\/v4\/accounts\/f{32}\/workers\/scripts\/calenderzw-edge-staging\/(settings|deployments|secrets(?:\/GOOGLE_RECOVERY_CANARY)?)$/,
+            /^\/client\/v4\/accounts\/f{32}\/workers\/scripts\/calenderzw-edge-staging\/(settings|deployments|versions\/new-version|secrets(?:\/GOOGLE_RECOVERY_CANARY)?)$/,
           );
           if (init.method === "PUT") {
             if (scenario === "rejected-put")
@@ -352,27 +352,30 @@ describe("bounded canary authorization and revocation", () => {
               );
             scopePresent = false;
           }
-          const result = target.pathname.endsWith("/settings")
-            ? {
-                bindings: [
-                  { name: "SOURCE_SHA", text: sha },
-                  { name: "ENABLE_GOOGLE_DELIVERY", text: "false" },
-                  ...(scopePresent
-                    ? [{ name: "GOOGLE_RECOVERY_CANARY", type: "secret_text" }]
-                    : []),
-                ],
-              }
-            : target.pathname.endsWith("/deployments")
+          const bindings = [
+            { name: "SOURCE_SHA", text: sha },
+            { name: "ENABLE_GOOGLE_DELIVERY", text: "false" },
+            ...(scopePresent
+              ? [{ name: "GOOGLE_RECOVERY_CANARY", type: "secret_text" }]
+              : []),
+          ];
+          const result = target.pathname.endsWith("/versions/new-version")
+            ? { resources: { bindings } }
+            : target.pathname.endsWith("/settings")
               ? {
-                  deployments: [
-                    {
-                      versions: [
-                        { version_id: "new-version", percentage: 100 },
-                      ],
-                    },
-                  ],
+                  bindings,
                 }
-              : {};
+              : target.pathname.endsWith("/deployments")
+                ? {
+                    deployments: [
+                      {
+                        versions: [
+                          { version_id: "new-version", percentage: 100 },
+                        ],
+                      },
+                    ],
+                  }
+                : {};
           return Response.json({ success: true, result });
         }
         expect(target.origin).toBe("https://next.calender.aido.co.zw");
@@ -429,6 +432,87 @@ describe("bounded canary authorization and revocation", () => {
         new URL(String(url)).origin === "https://next.calender.aido.co.zw" &&
         JSON.parse(String(init?.body)).dryRun === false,
     );
+
+  it("waits for public identity propagation after provisioning and revocation without repeating writes", async () => {
+    let calls = 0;
+    vi.mocked(verifyStagingIdentity).mockImplementation(async () => {
+      calls++;
+      if (calls === 3 || calls === 5)
+        throw new Error("STAGING_IDENTITY_MISMATCH_AUTHENTICATION_BLOCKED");
+      return {
+        sourceSha: sha,
+        runtime: "cloudflare-workers",
+        legacyBackendBridge: false,
+        workerVersion: "new-version",
+      };
+    });
+    const request = provider("success");
+    const report = await runGoogleRecovery(operationalEnv(), {
+      request,
+      delay: async () => {},
+    });
+    expect(queues(request)).toHaveLength(1);
+    expect(writes(request, "PUT")).toHaveLength(1);
+    expect(writes(request, "DELETE")).toHaveLength(1);
+    expect(report.results[0]).toMatchObject({ remoteContentsVerified: true });
+    expect(report.recoveryAuthorizationAbsent).toBe(true);
+  });
+
+  it("fails closed after bounded identity retries and still removes the scope", async () => {
+    let calls = 0;
+    vi.mocked(verifyStagingIdentity).mockImplementation(async () => {
+      if (++calls > 2)
+        throw new Error("STAGING_IDENTITY_MISMATCH_AUTHENTICATION_BLOCKED");
+      return {
+        sourceSha: sha,
+        runtime: "cloudflare-workers",
+        legacyBackendBridge: false,
+        workerVersion: "test-version",
+      };
+    });
+    const request = provider("success");
+    await expect(
+      runGoogleRecovery(operationalEnv(), { request, delay: async () => {} }),
+    ).rejects.toThrow("STAGING_IDENTITY_MISMATCH_AUTHENTICATION_BLOCKED");
+    expect(calls).toBe(12);
+    expect(queues(request)).toHaveLength(0);
+    expect(writes(request, "PUT")).toHaveLength(1);
+    expect(writes(request, "DELETE")).toHaveLength(1);
+  });
+
+  it("waits for active version binding propagation before queueing and confirming removal", async () => {
+    const upstream = provider("success");
+    let reads = 0;
+    const request = vi.fn(async (...args: Parameters<typeof fetch>) => {
+      const response = await upstream(...args);
+      if (
+        String(args[0]).endsWith("/versions/new-version") &&
+        ++reads % 2 === 1
+      ) {
+        const body = await response.json();
+        const bindings = body.result.resources.bindings;
+        body.result.resources.bindings = bindings.some(
+          (b: { name: string }) => b.name === "GOOGLE_RECOVERY_CANARY",
+        )
+          ? bindings.filter(
+              (b: { name: string }) => b.name !== "GOOGLE_RECOVERY_CANARY",
+            )
+          : [
+              ...bindings,
+              { name: "GOOGLE_RECOVERY_CANARY", type: "secret_text" },
+            ];
+        return Response.json(body);
+      }
+      return response;
+    });
+    const report = await runGoogleRecovery(operationalEnv(), {
+      request,
+      delay: async () => {},
+    });
+    expect(reads).toBe(4);
+    expect(queues(upstream)).toHaveLength(1);
+    expect(report.recoveryAuthorizationAbsent).toBe(true);
+  });
 
   it.each(["unsafe", "missing-guard", "stale-guard", "stale-generation"])(
     "never provisions authority or queues delivery for %s",

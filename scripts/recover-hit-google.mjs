@@ -153,7 +153,7 @@ export async function runGoogleRecovery(env, dependencies = {}) {
       fail("RECOVERY_CONFIGURATION_MISMATCH");
     return value;
   };
-  const verifyEffectiveDeployment = async () => {
+  const verifyEffectiveDeployment = async (scopePresent) => {
     const active = await cf("GET", "/deployments");
     const deployment = (active.deployments ?? active)?.[0];
     if (
@@ -162,11 +162,38 @@ export async function runGoogleRecovery(env, dependencies = {}) {
     )
       fail("RECOVERY_DEPLOYMENT_UNVERIFIED");
     const version = deployment.versions[0].version_id;
+    const resources = await cf("GET", `/versions/${version}`);
+    const bindings = resources.resources?.bindings;
+    if (
+      !Array.isArray(bindings) ||
+      !bindings.some(
+        (b) => b.name === "SOURCE_SHA" && b.text === env.EXPECTED_RELEASE_SHA,
+      ) ||
+      !bindings.some(
+        (b) => b.name === "ENABLE_GOOGLE_DELIVERY" && b.text === "false",
+      ) ||
+      bindings.some((b) => b.name === "GOOGLE_RECOVERY_CANARY") !== scopePresent
+    )
+      fail("RECOVERY_ACTIVE_BINDINGS_NOT_CONVERGED");
     await verifyStagingIdentity(
       { ...env, EXPECTED_WORKER_VERSION: version },
       request,
     );
     return version;
+  };
+  // Secret writes create Worker versions before every control/data-plane read
+  // agrees. Retry only verification, never provisioning or event delivery.
+  const verifyConvergedDeployment = async (scopePresent) => {
+    let lastError;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        return await verifyEffectiveDeployment(scopePresent);
+      } catch (error) {
+        lastError = error;
+        if (attempt < 4) await delay((attempt + 1) * 1000);
+      }
+    }
+    throw lastError;
   };
   if (mode === "disable") {
     const value = await settings();
@@ -178,7 +205,7 @@ export async function runGoogleRecovery(env, dependencies = {}) {
     return {
       ...report,
       recoveryAuthorizationAbsent: true,
-      workerVersion: await verifyEffectiveDeployment(),
+      workerVersion: await verifyConvergedDeployment(false),
     };
   }
   const token = await obtainAcceptanceToken(env, request);
@@ -286,7 +313,7 @@ export async function runGoogleRecovery(env, dependencies = {}) {
         type: "secret_text",
         text: JSON.stringify(scope),
       });
-      result.workerVersion = await verifyEffectiveDeployment();
+      result.workerVersion = await verifyConvergedDeployment(true);
       const queued = await diagnostic(row, { dryRun: false });
       if (queued?.queued !== true) fail("GOOGLE_RECONCILIATION_NOT_QUEUED");
       result.queued = true;
@@ -330,7 +357,7 @@ export async function runGoogleRecovery(env, dependencies = {}) {
         if (value.bindings.some((b) => b.name === "GOOGLE_RECOVERY_CANARY"))
           fail("RECOVERY_DISABLE_NOT_CONFIRMED");
         report.recoveryAuthorizationAbsent = true;
-        report.workerVersion = await verifyEffectiveDeployment();
+        report.workerVersion = await verifyConvergedDeployment(false);
       }
     }
   }
