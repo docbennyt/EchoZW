@@ -23,23 +23,23 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://calender.up.railway.app/api/:path*"
+      "destination": "https://backend.calender.aido.co.zw/api/:path*"
     },
     {
       "source": "/calendar/feed/:path*",
-      "destination": "https://calender.up.railway.app/calendar/feed/:path*"
+      "destination": "https://backend.calender.aido.co.zw/calendar/feed/:path*"
     },
     {
       "source": "/calendar/download/:path*",
-      "destination": "https://calender.up.railway.app/calendar/download/:path*"
+      "destination": "https://backend.calender.aido.co.zw/calendar/download/:path*"
     },
     {
       "source": "/runtime-config.js",
-      "destination": "https://calender.up.railway.app/runtime-config.js"
+      "destination": "https://backend.calender.aido.co.zw/runtime-config.js"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://calender.up.railway.app/sitemap.xml"
+      "destination": "https://backend.calender.aido.co.zw/sitemap.xml"
     },
     {
       "source": "/t/:slug",
@@ -52,7 +52,7 @@
           }
         }
       ],
-      "destination": "https://calender.up.railway.app/t/:slug"
+      "destination": "https://backend.calender.aido.co.zw/t/:slug"
     },
     {
       "source": "/t/:slug/google",
@@ -65,7 +65,7 @@
           }
         }
       ],
-      "destination": "https://calender.up.railway.app/t/:slug/google"
+      "destination": "https://backend.calender.aido.co.zw/t/:slug/google"
     },
     {
       "source": "/:path((?!assets/).*)",

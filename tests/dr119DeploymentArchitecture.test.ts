@@ -43,7 +43,7 @@ const deploymentDocs = readFileSync(
   "utf8",
 );
 
-const railwayOrigin = "https://calender.up.railway.app";
+const backendOrigin = "https://backend.calender.aido.co.zw";
 
 describe("DR-119 Vercel + Railway deployment contract", () => {
   it("defines one canonical compiled Node production start command", () => {
@@ -55,33 +55,33 @@ describe("DR-119 Vercel + Railway deployment contract", () => {
     expect(dockerfile).not.toContain("npm run dev");
   });
 
-  it("routes backend traffic to the live Railway origin before the Vercel SPA fallback", () => {
+  it("routes backend traffic to the verified production Worker before the Vercel SPA fallback", () => {
     expect(vercel.buildCommand).toBe("npm run build");
     expect(vercel.outputDirectory).toBe("dist");
 
     const rewrites = new Map(
       vercel.rewrites.map((rewrite) => [rewrite.source, rewrite.destination]),
     );
-    expect(rewrites.get("/api/:path*")).toBe(`${railwayOrigin}/api/:path*`);
+    expect(rewrites.get("/api/:path*")).toBe(`${backendOrigin}/api/:path*`);
     expect(rewrites.get("/calendar/feed/:path*")).toBe(
-      `${railwayOrigin}/calendar/feed/:path*`,
+      `${backendOrigin}/calendar/feed/:path*`,
     );
     expect(rewrites.get("/calendar/download/:path*")).toBe(
-      `${railwayOrigin}/calendar/download/:path*`,
+      `${backendOrigin}/calendar/download/:path*`,
     );
     expect(rewrites.get("/runtime-config.js")).toBe(
-      `${railwayOrigin}/runtime-config.js`,
+      `${backendOrigin}/runtime-config.js`,
     );
-    expect(rewrites.get("/sitemap.xml")).toBe(`${railwayOrigin}/sitemap.xml`);
+    expect(rewrites.get("/sitemap.xml")).toBe(`${backendOrigin}/sitemap.xml`);
     const classPageRewrite = vercel.rewrites.find(
       (rewrite) => rewrite.source === "/t/:slug",
     );
     const classGoogleRewrite = vercel.rewrites.find(
       (rewrite) => rewrite.source === "/t/:slug/google",
     );
-    expect(classPageRewrite?.destination).toBe(`${railwayOrigin}/t/:slug`);
+    expect(classPageRewrite?.destination).toBe(`${backendOrigin}/t/:slug`);
     expect(classGoogleRewrite?.destination).toBe(
-      `${railwayOrigin}/t/:slug/google`,
+      `${backendOrigin}/t/:slug/google`,
     );
     for (const rewrite of [classPageRewrite, classGoogleRewrite]) {
       expect(rewrite?.has).toEqual([
