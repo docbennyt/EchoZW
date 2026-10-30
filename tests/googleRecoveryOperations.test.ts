@@ -222,6 +222,14 @@ describe("private provider diagnostics", () => {
       ...subscription,
       calendarId: "private-calendar",
       eventId: "private-event",
+      remoteContentMismatchFields: {
+        summary: 2,
+        recurrence: 1,
+        unknown: "private-field-value",
+        location: "2",
+        description: -1,
+        end: 6,
+      },
     };
     const request = vi
       .fn()
@@ -265,6 +273,11 @@ describe("private provider diagnostics", () => {
     ])
       expect(output).not.toContain(value);
     expect(output).toContain('"safeToProceed":true');
+    expect(
+      (report.results[0].preview as Record<string, unknown>)
+        .remoteContentMismatchFields,
+    ).toEqual({ summary: 2, recurrence: 1 });
+    expect(output).not.toContain("private-field-value");
   });
   it("retains only a sanitized provider error code", async () => {
     const request = vi.fn().mockResolvedValue(

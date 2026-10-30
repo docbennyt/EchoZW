@@ -765,7 +765,7 @@
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
     "server/googleCalendarDelivery.ts": "1561ba3ad64595bf679141cc02efa8b65e7294d02893828e282d4cefd2821235",
     "server/googleCalendarRepository.ts": "9efa0b99cd2701df5a56fa462c514c6e993429f82c3cf33a2dd40b83a994d227",
-    "server/googleCalendarSync.ts": "d32b3496f891d1b9b140dcb663e69a3781a0115db07bb082b6ef4106862d885c",
+    "server/googleCalendarSync.ts": "17b8456f8564ab9496966da0d7bb49fa0d921d038c85228d3f261947dcacecb4",
     "server/googleCredentialRecovery.ts": "a54a3c4924c2c3bb41843ff171d57b96c673fcc4b502214bfb2d7249a554702b",
     "server/googleDeliveryPolicy.ts": "d88508fec225773dcd0349f2e01265ec3afe63e2c92ba66129899da2f163f437",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
@@ -1232,7 +1232,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1397,7 +1397,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5173,7 +5173,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5347,7 +5347,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5528,7 +5528,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5702,7 +5702,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5877,7 +5877,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6052,7 +6052,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6226,7 +6226,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6402,7 +6402,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6576,7 +6576,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6751,7 +6751,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6908,7 +6908,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1607,
+          "line": 1620,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7173,7 +7173,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7347,7 +7347,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7802,7 +7802,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1563,
+          "line": 1576,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8306,7 +8306,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1428,
+          "line": 1441,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8545,7 +8545,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 692,
+          "line": 699,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8697,7 +8697,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1643,
+          "line": 1656,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8809,7 +8809,7 @@
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 682,
+          "line": 689,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8916,7 +8916,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 682,
+          "line": 689,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
