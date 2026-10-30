@@ -944,6 +944,140 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     },
   );
 
+  it("converges across IANA aliases and equivalent RFC recurrence serialization without dropping pause exclusions", async () => {
+    const { id, bindings } = guardedRecoveryFixture();
+    const timetableId = "22222222-2222-4222-8222-222222222222";
+    repositoryMocks.getPublishedTimetableById.mockResolvedValue(
+      timetable({
+        timetableId,
+        pauses: [
+          {
+            id: "pause",
+            scopeType: "institution",
+            stableSessionKey: null,
+            startsOn: "2026-10-26",
+            endsOn: "2026-11-30",
+            allDay: true,
+            startsAt: null,
+            endsAt: null,
+            reason: "swot_week",
+            label: "SWOT",
+            active: true,
+            createdAt: "2026-10-01T00:00:00Z",
+          },
+        ],
+      }),
+    );
+    let remote: Record<string, unknown> | undefined;
+    googleRepositoryMocks.upsertGoogleEventSyncRecord.mockImplementation(
+      async (input) => {
+        googleRepositoryMocks.listGoogleEventSyncRecords.mockResolvedValue([
+          {
+            internal_event_id: input.internalEventId,
+            external_event_id: input.externalEventId,
+            content_hash: input.contentHash,
+          },
+        ]);
+      },
+    );
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (String(url) === "https://oauth2.googleapis.com/token")
+        return okJson({ access_token: "access-token" });
+      if (init?.method === "GET") {
+        const item = remote ?? {
+          id: "event-ise4105",
+          extendedProperties: {
+            private: {
+              calenderzwTimetableId: timetableId,
+              calenderzwStableSessionKey: "ise4105-tue-corrected",
+            },
+          },
+        };
+        return okJson(
+          String(url).includes("/events?") ? { items: [item] } : item,
+        );
+      }
+      if (init?.method === "PUT") {
+        const payload = JSON.parse(String(init.body));
+        const exclusions = payload.recurrence
+          .filter((line: string) => line.startsWith("EXDATE"))
+          .map(
+            (line: string) => `${line.split(":").at(-1)!.slice(0, 8)}T101500Z`,
+          );
+        expect(exclusions.length).toBeGreaterThan(0);
+        remote = {
+          ...payload,
+          id: "event-ise4105",
+          start: { ...payload.start, timeZone: "Africa/Maputo" },
+          end: { ...payload.end, timeZone: "Africa/Maputo" },
+          recurrence: [
+            payload.recurrence[0]
+              .replace("RRULE:", "")
+              .split(";")
+              .reverse()
+              .join(";")
+              .replace(/^/, "RRULE:"),
+            `EXDATE:${exclusions.join(",")}`,
+          ],
+        };
+        return okJson(remote);
+      }
+      throw new Error("Unexpected mutation");
+    });
+    await syncGoogleSubscription(id, bindings, { maxExternalRequests: 32 });
+    expect(await previewGoogleSubscriptionSync(id, bindings)).toMatchObject({
+      remoteContentsVerified: true,
+      unchanged: 1,
+      wouldUpdate: 0,
+    });
+    expect(
+      await syncGoogleSubscription(id, bindings, { maxExternalRequests: 32 }),
+    ).toMatchObject({ unchanged: 1, updated: 0 });
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "PUT"),
+    ).toHaveLength(1);
+    const recurrence = remote!.recurrence as string[];
+    remote!.recurrence = [
+      recurrence[0],
+      recurrence[1].split(",").slice(0, -1).join(","),
+    ];
+    expect(await previewGoogleSubscriptionSync(id, bindings)).toMatchObject({
+      remoteContentsVerified: false,
+      wouldUpdate: 1,
+      remoteContentMismatchFields: { recurrence: 1 },
+    });
+    remote!.recurrence = recurrence;
+    remote!.start = {
+      ...(remote!.start as Record<string, unknown>),
+      timeZone: "Africa/Johannesburg",
+    };
+    expect(await previewGoogleSubscriptionSync(id, bindings)).toMatchObject({
+      remoteContentsVerified: false,
+      wouldUpdate: 1,
+      remoteContentMismatchFields: { startZone: 1 },
+    });
+    remote!.start = {
+      ...(remote!.start as Record<string, unknown>),
+      timeZone: "Africa/Maputo",
+    };
+    remote!.recurrence = recurrence.map((line) =>
+      line.replace("BYDAY=TU", "BYDAY=WE"),
+    );
+    expect(await previewGoogleSubscriptionSync(id, bindings)).toMatchObject({
+      remoteContentsVerified: false,
+      wouldUpdate: 1,
+      remoteContentMismatchFields: { recurrence: 1 },
+    });
+    remote!.recurrence = recurrence.map((line) =>
+      line.replaceAll("T101500Z", "T111500Z"),
+    );
+    expect(await previewGoogleSubscriptionSync(id, bindings)).toMatchObject({
+      remoteContentsVerified: false,
+      wouldUpdate: 1,
+      remoteContentMismatchFields: { recurrence: 1 },
+    });
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     googleRepositoryMocks.updateGoogleSubscription
