@@ -25,6 +25,7 @@ import {
 import { fetchAnalyticsOverview } from "./api/adminAnalytics";
 import { FounderOperationsCockpit } from "./FounderOperationsCockpit";
 import { TimetablePublicSettingsControl } from "./TimetablePublicSettingsControl";
+import { AdminDatedExamEntry } from "./AdminDatedExamEntry";
 import type { AnalyticsOverview } from "./domain/adminAnalytics";
 import {
   fetchSourceGatewayState,
@@ -2921,6 +2922,15 @@ export function TimetableEditorPage({
           timetableId={editor.timetable.id}
         />
       ) : null}
+
+      <AdminDatedExamEntry
+        accessToken={accessToken}
+        timetableId={editor.timetable.id}
+        publicSlug={editor.timetable.publicSlug}
+        periodStartsOn={editor.timetable.academicPeriodStartsOn}
+        periodEndsOn={editor.timetable.academicPeriodEndsOn}
+        hasPublishedVersion={Boolean(editor.timetable.currentPublishedVersionId)}
+      />
 
       <Surface
         title="Weekly classes"
