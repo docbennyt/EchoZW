@@ -789,7 +789,7 @@
     "src/AdminAcademicPauseControl.tsx": "62983103e12329049e9eb00a8ff304d76a1d0e4541f75f47fb441334afe7c721",
     "src/AdminDatedExamEntry.tsx": "d87affbaa56b3dc155517c310cf1225fb3164f6680b06954847e855a8ea41bec",
     "src/App.tsx": "b83744299b8201694f8bdeec54a4513a6f0a6a64b472f0792d3635fc77799fe8",
-    "src/AppV2.tsx": "5f278a96215edbde79952a3c593ef6444ec6a1dd5ca8693dafc5b2483430b4ca",
+    "src/AppV2.tsx": "ae790751266ca2bf318186bec1fd68d07be5c42de7349f76ff68534112770c35",
     "src/AuthSetupPage.tsx": "12571894ddfe3d9a48214735b6b313b0c5ca84a918f1ecedb8dc8ac319ac8c33",
     "src/ClassRepAcademicPauseControl.tsx": "c7df145986da0d11fd61ba504abe2d04a2b2d66fae8375e573b5494c80b355e0",
     "src/ClassRepCorrectionSafetyEnhancement.tsx": "47c452e9d13180c81add5950dd820a4a4ec7d4c6fc3ddb2f6aa90f93b11a8693",

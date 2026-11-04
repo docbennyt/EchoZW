@@ -602,6 +602,69 @@ body {
   gap: 6px;
 }
 
+/* Homepage exam discovery — exam-only promotion, never a recurring lecture feed. */
+.czw-exam-spotlight {
+  padding: 0 0 clamp(20px, 4vw, 42px);
+}
+
+.czw-exam-spotlight-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: clamp(24px, 4vw, 40px);
+  border: 1px solid rgba(21, 61, 50, 0.15);
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at 96% 0%,
+      rgba(216, 168, 48, 0.18),
+      transparent 30%
+    ),
+    linear-gradient(120deg, #e9f0e6, #f5f7f1);
+}
+
+.czw-exam-spotlight h2 {
+  max-width: 620px;
+  margin: 0 0 10px;
+  color: var(--czw-forest);
+  font-size: clamp(27px, 3.1vw, 40px);
+  font-weight: 760;
+  letter-spacing: -0.05em;
+  line-height: 1.13;
+  text-wrap: balance;
+}
+
+.czw-exam-spotlight p {
+  max-width: 690px;
+  margin: 0;
+  color: var(--czw-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.czw-exam-spotlight .czw-kicker {
+  margin-bottom: 10px;
+}
+
+.czw-exam-spotlight .czw-button {
+  min-width: 226px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .czw-exam-spotlight-inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 24px;
+  }
+
+  .czw-exam-spotlight .czw-button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .czw-trust-strip {
   border-block: 1px solid rgba(21, 61, 50, 0.12);
   background: rgba(255, 254, 250, 0.62);
