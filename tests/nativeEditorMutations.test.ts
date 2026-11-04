@@ -123,6 +123,7 @@ import { handleEditorMutations } from "../worker/editorMutations.mjs";
 const env = {
   SUPABASE_URL: "https://fixture.supabase.co",
   SUPABASE_SECRET_KEY: "fixture-only",
+  PUBLIC_APP_URL: "https://calender.aido.co.zw",
 };
 const correction = {
   action: "remove",
@@ -301,6 +302,35 @@ describe("native editor mutation transport with shared repositories", () => {
       });
       expect(response.status).toBe(409);
       expect(state.calls.some((c) => c.name === "audit_logs")).toBe(false);
+    },
+  );
+  it("allows the configured public editor through the backend rewrite", async () => {
+    const publicOrigin = "https://public.example";
+    const response = await request(
+      "exceptions",
+      "POST",
+      exception,
+      {
+        origin: publicOrigin,
+        "sec-fetch-site": "same-origin",
+      },
+      { ...env, PUBLIC_APP_URL: publicOrigin },
+    );
+    expect(response.status).toBe(201);
+  });
+  it.each(["cross-site", "same-site", ""])(
+    "rejects the configured public origin without same-origin fetch metadata (%s)",
+    async (fetchSite) => {
+      const publicOrigin = "https://public.example";
+      const response = await request(
+        "exceptions",
+        "POST",
+        exception,
+        { origin: publicOrigin, "sec-fetch-site": fetchSite },
+        { ...env, PUBLIC_APP_URL: publicOrigin },
+      );
+      expect(response.status).toBe(403);
+      expect(state.calls).toEqual([]);
     },
   );
   it.each([
