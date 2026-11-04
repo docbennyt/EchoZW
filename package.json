@@ -19,7 +19,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "node scripts/generate-cloudflare-route-inventory.mjs && git --no-pager diff -- docs/DR-153_ROUTE_INVENTORY.json docs/DR-153_ROUTE_INVENTORY.md && exit 1",
+    "format:check": "prettier --check .",
     "verify": "npm run lint && npm run format:check && npm test && npm run build && npm run worker:check && npm run worker:automation:check",
     "worker:check": "node scripts/check-cloudflare-foundation.mjs && node scripts/check-cloudflare-route-inventory.mjs && node scripts/check-no-retired-runtime.mjs",
     "worker:automation:check": "node scripts/check-cloudflare-automation.mjs",
