@@ -67,23 +67,33 @@ export function AdminDatedExamEntry({
     try {
       const code = normalizedCode(fields.courseCode);
       if (!code || fields.startTime >= fields.endTime) {
-        throw new Error("Check the examination course code and start/end times.");
+        throw new Error(
+          "Check the examination course code and start/end times.",
+        );
       }
       if (
         (periodStartsOn && fields.exceptionDate < periodStartsOn) ||
         (periodEndsOn && fields.exceptionDate > periodEndsOn)
       ) {
-        throw new Error("The examination date is outside this class's academic period.");
+        throw new Error(
+          "The examination date is outside this class's academic period.",
+        );
       }
 
       // Fail closed: an admin must not silently attach an exam to the wrong class.
       const published = await fetchPublicTimetable(publicSlug);
       if (published.timetableId !== timetableId) {
-        throw new Error("The published timetable identity has changed. Reload the editor.");
+        throw new Error(
+          "The published timetable identity has changed. Reload the editor.",
+        );
       }
       const courses = published.effectiveSessions ?? published.sessions;
-      if (!courses.some((course) => normalizedCode(course.courseCode) === code)) {
-        throw new Error("That course code is not in this published class. Check its cohort mapping.");
+      if (
+        !courses.some((course) => normalizedCode(course.courseCode) === code)
+      ) {
+        throw new Error(
+          "That course code is not in this published class. Check its cohort mapping.",
+        );
       }
       if (
         (published.exceptions ?? []).some(
@@ -97,7 +107,9 @@ export function AdminDatedExamEntry({
             item.exceptionDate === fields.exceptionDate,
         )
       ) {
-        throw new Error("An exam already exists for this course and date. Review it before editing.");
+        throw new Error(
+          "An exam already exists for this course and date. Review it before editing.",
+        );
       }
 
       if (!mutationKey.current) {
@@ -129,7 +141,9 @@ export function AdminDatedExamEntry({
       // A successful write is not proof that an original subscriber feed refreshed.
       mutationKey.current = null;
       setFields(blankExam);
-      const refreshed = await fetchPublicTimetable(publicSlug).catch(() => null);
+      const refreshed = await fetchPublicTimetable(publicSlug).catch(
+        () => null,
+      );
       const visible = refreshed?.exceptions?.some(
         (item) => item.active && item.id === saved.exception.id,
       );
@@ -140,7 +154,11 @@ export function AdminDatedExamEntry({
       );
     } catch (error) {
       setIsError(true);
-      setMessage(error instanceof Error ? error.message : "Could not save the examination.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not save the examination.",
+      );
     } finally {
       pending.current = false;
       setSaving(false);
@@ -152,48 +170,100 @@ export function AdminDatedExamEntry({
       <div className="pilot-surface-header">
         <div>
           <h2>Dated examinations</h2>
-          <p>One-off exams use the published class calendar, not recurring lectures.</p>
+          <p>
+            One-off exams use the published class calendar, not recurring
+            lectures.
+          </p>
         </div>
       </div>
       {!hasPublishedVersion ? (
-        <p className="pilot-muted">Publish the class timetable before adding examinations.</p>
+        <p className="pilot-muted">
+          Publish the class timetable before adding examinations.
+        </p>
       ) : (
         <form className="pilot-form" onSubmit={(event) => void submit(event)}>
           <label className="pilot-field">
             <span>Exam date</span>
-            <input type="date" required min={periodStartsOn ?? undefined} max={periodEndsOn ?? undefined} value={fields.exceptionDate} onChange={(event) => setField("exceptionDate", event.target.value)} />
+            <input
+              type="date"
+              required
+              min={periodStartsOn ?? undefined}
+              max={periodEndsOn ?? undefined}
+              value={fields.exceptionDate}
+              onChange={(event) =>
+                setField("exceptionDate", event.target.value)
+              }
+            />
           </label>
           <label className="pilot-field">
             <span>Course code</span>
-            <input required maxLength={50} value={fields.courseCode} onChange={(event) => setField("courseCode", event.target.value)} />
+            <input
+              required
+              maxLength={50}
+              value={fields.courseCode}
+              onChange={(event) => setField("courseCode", event.target.value)}
+            />
           </label>
           <label className="pilot-field">
             <span>Course name</span>
-            <input required maxLength={250} value={fields.courseName} onChange={(event) => setField("courseName", event.target.value)} />
+            <input
+              required
+              maxLength={250}
+              value={fields.courseName}
+              onChange={(event) => setField("courseName", event.target.value)}
+            />
           </label>
           <label className="pilot-field">
             <span>Start time</span>
-            <input type="time" required value={fields.startTime} onChange={(event) => setField("startTime", event.target.value)} />
+            <input
+              type="time"
+              required
+              value={fields.startTime}
+              onChange={(event) => setField("startTime", event.target.value)}
+            />
           </label>
           <label className="pilot-field">
             <span>End time</span>
-            <input type="time" required value={fields.endTime} onChange={(event) => setField("endTime", event.target.value)} />
+            <input
+              type="time"
+              required
+              value={fields.endTime}
+              onChange={(event) => setField("endTime", event.target.value)}
+            />
           </label>
           <label className="pilot-field">
             <span>Exam venue</span>
-            <input required maxLength={250} value={fields.venue} onChange={(event) => setField("venue", event.target.value)} />
+            <input
+              required
+              maxLength={250}
+              value={fields.venue}
+              onChange={(event) => setField("venue", event.target.value)}
+            />
           </label>
           <label className="pilot-field">
             <span>Verified source and page</span>
-            <input required maxLength={1000} placeholder="Issuer, revision/date, PDF page" value={fields.provenance} onChange={(event) => setField("provenance", event.target.value)} />
+            <input
+              required
+              maxLength={1000}
+              placeholder="Issuer, revision/date, PDF page"
+              value={fields.provenance}
+              onChange={(event) => setField("provenance", event.target.value)}
+            />
           </label>
-          <p className="pilot-muted">Use only source-verified exams matching this published class. Lecture pauses do not suppress explicit examinations.</p>
+          <p className="pilot-muted">
+            Use only source-verified exams matching this published class.
+            Lecture pauses do not suppress explicit examinations.
+          </p>
           <button className="primary" type="submit" disabled={saving}>
             {saving ? "Saving examination..." : "Save dated examination"}
           </button>
         </form>
       )}
-      {message ? <p role={isError ? "alert" : "status"} className="content-notice">{message}</p> : null}
+      {message ? (
+        <p role={isError ? "alert" : "status"} className="content-notice">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }
