@@ -58,9 +58,14 @@ describe("DR-179 admin dated examination entry", () => {
   beforeEach(() => {
     api.createExtraClassUpdate.mockReset();
     api.fetchPublicTimetable.mockReset();
-    vi.stubGlobal("crypto", { randomUUID: () => "c68cfccd-3289-455b-8ae3-e54fa423889b" });
+    vi.stubGlobal("crypto", {
+      randomUUID: () => "c68cfccd-3289-455b-8ae3-e54fa423889b",
+    });
     api.fetchPublicTimetable.mockResolvedValue(published);
-    api.createExtraClassUpdate.mockResolvedValue({ exception: { id: "exam-1" }, mutationOutcome: "created" });
+    api.createExtraClassUpdate.mockResolvedValue({
+      exception: { id: "exam-1" },
+      mutationOutcome: "created",
+    });
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -74,9 +79,13 @@ describe("DR-179 admin dated examination entry", () => {
       });
     render(<AdminDatedExamEntry {...props} />);
     fillExam();
-    fireEvent.click(screen.getByRole("button", { name: "Save dated examination" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dated examination" }),
+    );
 
-    await waitFor(() => expect(api.createExtraClassUpdate).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(api.createExtraClassUpdate).toHaveBeenCalledTimes(1),
+    );
     expect(api.createExtraClassUpdate).toHaveBeenCalledWith(
       props.accessToken,
       props.timetableId,
@@ -95,7 +104,9 @@ describe("DR-179 admin dated examination entry", () => {
         provenance: "HIT Examinations Office final memo, page 5",
       }),
     );
-    expect(await screen.findByRole("status")).toHaveTextContent("Verify the original ICS feed");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Verify the original ICS feed",
+    );
   });
 
   it("rejects an exam for a course absent from the published class", async () => {
@@ -104,36 +115,48 @@ describe("DR-179 admin dated examination entry", () => {
     fireEvent.change(screen.getByLabelText("Course code"), {
       target: { value: "ANOTHER101" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save dated examination" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("not in this published class");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dated examination" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "not in this published class",
+    );
     expect(api.createExtraClassUpdate).not.toHaveBeenCalled();
   });
 
   it("does not duplicate an existing dated exam in the same published class", async () => {
     api.fetchPublicTimetable.mockResolvedValue({
       ...published,
-      exceptions: [{
-        id: "already-published",
-        active: true,
-        revokedAt: null,
-        supersededAt: null,
-        exceptionType: "extra",
-        sessionType: "Examination",
-        exceptionDate: "2026-11-04",
-        courseCode: "ISE1101",
-      }],
+      exceptions: [
+        {
+          id: "already-published",
+          active: true,
+          revokedAt: null,
+          supersededAt: null,
+          exceptionType: "extra",
+          sessionType: "Examination",
+          exceptionDate: "2026-11-04",
+          courseCode: "ISE1101",
+        },
+      ],
     });
     render(<AdminDatedExamEntry {...props} />);
     fillExam();
-    fireEvent.click(screen.getByRole("button", { name: "Save dated examination" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("already exists");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dated examination" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "already exists",
+    );
     expect(api.createExtraClassUpdate).not.toHaveBeenCalled();
   });
 
   it("does not expose writes before the class timetable is published", () => {
     render(<AdminDatedExamEntry {...props} hasPublishedVersion={false} />);
     expect(screen.getByText(/Publish the class timetable/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Save dated examination" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Save dated examination" }),
+    ).toBeNull();
   });
 
   it("rejects an invalid time order and does not issue an API request", async () => {
@@ -142,8 +165,12 @@ describe("DR-179 admin dated examination entry", () => {
     fireEvent.change(screen.getByLabelText("End time"), {
       target: { value: "08:00" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save dated examination" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("start/end times");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Save dated examination" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "start/end times",
+    );
     expect(api.fetchPublicTimetable).not.toHaveBeenCalled();
     expect(api.createExtraClassUpdate).not.toHaveBeenCalled();
   });
