@@ -405,7 +405,14 @@ async function handleNativeCalendarIcs(request, env, ctx) {
         requestHeaderValue(request, "user-agent"),
       );
       ctx.waitUntil(
-        recordCalendarFeedActivity({ subscriptionId, statusCode, client }, env),
+        recordCalendarFeedActivity(
+          { subscriptionId, statusCode, client },
+          env,
+        ).catch(() => {
+          console.warn(
+            JSON.stringify({ event: "calendar.feed.activity_failed" }),
+          );
+        }),
       );
     }
 

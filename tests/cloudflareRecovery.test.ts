@@ -279,6 +279,7 @@ vi.mock("../server/analyticsRepository.js", () => ({
 // Exercise the actual Worker router, canonical resolver, nested repositories and
 // ICS serializer. Only external Supabase I/O is replaced.
 import worker from "../worker/index.mjs";
+import { recordCalendarFeedActivity } from "../server/analyticsRepository.js";
 
 const env = {
   SUPABASE_URL: "https://fixture.supabase.co",
@@ -374,6 +375,31 @@ describe("native recovery with Railway unreachable and no process credentials", 
         })
       ).status,
     ).toBe(200);
+  });
+
+  it("records 200 and 304 for authenticated private feeds only when enabled", async () => {
+    const path = "/calendar/feed/existing-fixture-token.ics";
+    const config = { ...env, ENABLE_FEED_ACTIVITY: "true" };
+    const fresh = await request(path, undefined, config);
+    expect(fresh.status).toBe(200);
+    const etag = fresh.headers.get("etag")!;
+    expect(
+      (await request(path, { headers: { "if-none-match": etag } }, config))
+        .status,
+    ).toBe(304);
+    expect(
+      (await request("/calendar/feed/wrong-token.ics", undefined, config))
+        .status,
+    ).toBe(404);
+    expect((await request(path)).status).toBe(200);
+    expect(
+      vi
+        .mocked(recordCalendarFeedActivity)
+        .mock.calls.map(([input]) => [input.subscriptionId, input.statusCode]),
+    ).toEqual([
+      ["subscription-1", 200],
+      ["subscription-1", 304],
+    ]);
   });
 
   it("authenticates staff reads and rejects anonymous and Class Rep institution administration", async () => {
