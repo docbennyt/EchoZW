@@ -19,7 +19,7 @@
     "calendar:diagnose": "node scripts/diagnose-calendar-feed.mjs",
     "test": "vitest run",
     "lint": "eslint .",
-    "format:check": "prettier --check .",
+    "format:check": "prettier --write src/appV2.css src/publicTimetableMatrix.css && git --no-pager diff -- src/appV2.css src/publicTimetableMatrix.css && exit 1",
     "verify": "npm run lint && npm run format:check && npm test && npm run build && npm run worker:check && npm run worker:automation:check",
     "worker:check": "node scripts/check-cloudflare-foundation.mjs && node scripts/check-cloudflare-route-inventory.mjs && node scripts/check-no-retired-runtime.mjs",
     "worker:automation:check": "node scripts/check-cloudflare-automation.mjs",
