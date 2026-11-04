@@ -123,6 +123,7 @@ import { handleEditorMutations } from "../worker/editorMutations.mjs";
 const env = {
   SUPABASE_URL: "https://fixture.supabase.co",
   SUPABASE_SECRET_KEY: "fixture-only",
+  PUBLIC_APP_URL: "https://calender.aido.co.zw",
 };
 const correction = {
   action: "remove",
