@@ -894,7 +894,7 @@
     "worker/adminAnalytics.mjs": "1f963b00f579430c74dc2a8fdec661cd2e4e020f00270ac00fc4af222eabeef0",
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
-    "worker/editorMutations.mjs": "bba1ecd818a82ef999d29aefc8c7954a49b048697e227b7d304ea0ef3ce9f2ae",
+    "worker/editorMutations.mjs": "4878b10ba3fa7497cfd501215e47b94efe9aba55a8488129e98ccfcdf5532b6e",
     "worker/googleCalendarApi.mjs": "4ea2cd714a57272a1dbcc3a52722b9a0de59de8adcfb23567fcccf1ba3bc510f",
     "worker/googleCredentialRecoveryApi.mjs": "a0c755d5e57918ed56110b30f716350b9318276dd2f4671255140bc6e5200db1",
     "worker/googleDelivery.mjs": "8d4a0de35ad931dc4232f5597736c76687f2260f0bca5421240ce94717f70105",

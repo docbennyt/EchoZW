@@ -106,9 +106,13 @@ export async function handleEditorMutations(request, env) {
     );
   }
   const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  // Vercel preserves the browser's Origin while rewriting to the Worker host.
+  const publicEditorRewrite =
+    origin === env.PUBLIC_APP_URL && fetchSite === "same-origin";
   if (
-    (origin !== null && origin !== url.origin) ||
-    request.headers.get("sec-fetch-site") === "cross-site"
+    (origin !== null && origin !== url.origin && !publicEditorRewrite) ||
+    fetchSite === "cross-site"
   ) {
     return json(
       {

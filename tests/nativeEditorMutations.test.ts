@@ -303,6 +303,35 @@ describe("native editor mutation transport with shared repositories", () => {
       expect(state.calls.some((c) => c.name === "audit_logs")).toBe(false);
     },
   );
+  it("allows the configured public editor through the backend rewrite", async () => {
+    const publicOrigin = "https://public.example";
+    const response = await request(
+      "exceptions",
+      "POST",
+      exception,
+      {
+        origin: publicOrigin,
+        "sec-fetch-site": "same-origin",
+      },
+      { ...env, PUBLIC_APP_URL: publicOrigin },
+    );
+    expect(response.status).toBe(201);
+  });
+  it.each(["cross-site", "same-site", ""])(
+    "rejects the configured public origin without same-origin fetch metadata (%s)",
+    async (fetchSite) => {
+      const publicOrigin = "https://public.example";
+      const response = await request(
+        "exceptions",
+        "POST",
+        exception,
+        { origin: publicOrigin, "sec-fetch-site": fetchSite },
+        { ...env, PUBLIC_APP_URL: publicOrigin },
+      );
+      expect(response.status).toBe(403);
+      expect(state.calls).toEqual([]);
+    },
+  );
   it.each([
     ["foreign origin", { origin: "https://evil.example" }, 403],
     ["null origin", { origin: "null" }, 403],
