@@ -2929,7 +2929,9 @@ export function TimetableEditorPage({
         publicSlug={editor.timetable.publicSlug}
         periodStartsOn={editor.timetable.academicPeriodStartsOn}
         periodEndsOn={editor.timetable.academicPeriodEndsOn}
-        hasPublishedVersion={Boolean(editor.timetable.currentPublishedVersionId)}
+        hasPublishedVersion={Boolean(
+          editor.timetable.currentPublishedVersionId,
+        )}
       />
 
       <Surface
