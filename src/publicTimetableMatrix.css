@@ -425,7 +425,8 @@
     gap: 8px 14px;
     padding: 0 0 12px;
     border-right: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--course-accent) 19%, #ffffff);
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--course-accent) 19%, #ffffff);
   }
 
   .pt-exam-copy h3 {
