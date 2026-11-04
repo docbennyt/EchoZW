@@ -274,7 +274,7 @@ function HomePage() {
   usePageMetadata({
     title: "CalenderZW | Your university timetable, already in your calendar",
     description:
-      "Find a published class timetable, choose useful reminders, and add lectures to the calendar you already use.",
+      "Find published examination dates, times and venues for your class, then add your timetable to the calendar you already use.",
     canonicalPath: "/",
   });
 
@@ -296,9 +296,9 @@ function HomePage() {
                 <span>already in your calendar.</span>
               </h1>
               <p>
-                CalenderZW helps students find a published class timetable,
-                choose useful reminders, and add lectures to the calendar they
-                already use.
+                Find published examination dates, times and venues for your
+                class, then add your timetable to the calendar you already use.
+                No new app required.
               </p>
               <div className="czw-hero-actions">
                 <a className="czw-button czw-button-primary" href="/find">
@@ -315,6 +315,29 @@ function HomePage() {
               </div>
             </div>
             <ProductScene />
+          </div>
+        </section>
+
+        <section
+          className="czw-exam-spotlight"
+          aria-labelledby="czw-exam-spotlight-title"
+        >
+          <div className="czw-shell czw-exam-spotlight-inner">
+            <div>
+              <span className="czw-kicker">Exam season</span>
+              <h2 id="czw-exam-spotlight-title">
+                Your exams, without the PDF hunt.
+              </h2>
+              <p>
+                See your class&apos;s published exam dates, start times and
+                venues. The exam view shows examinations only, never recurring
+                lectures.
+              </p>
+            </div>
+            <a className="czw-button czw-button-primary" href="/find">
+              Find my exam timetable
+              <ArrowRight size={17} aria-hidden="true" />
+            </a>
           </div>
         </section>
 
@@ -556,7 +579,7 @@ function ProductScene() {
   return (
     <div
       className="czw-product-scene"
-      aria-label="CalenderZW timetable being added to a calendar"
+      aria-label="Illustrative CalenderZW exam-only calendar preview"
     >
       <div className="czw-scene-halo" />
       <div className="czw-floating-card czw-reminder-card">
@@ -573,33 +596,33 @@ function ProductScene() {
         </div>
         <div className="czw-phone-head">
           <span>
-            <small>CS 1.1 · WEEK 4</small>
-            <strong>Monday</strong>
+            <small>EXAM TIMETABLE · EXAMPLE</small>
+            <strong>November exams</strong>
           </span>
           <span>
-            <Check size={12} /> Published
+            <Check size={12} /> Preview
           </span>
         </div>
         <div className="czw-phone-schedule">
           <div>
-            <time>08:00</time>
-            <span>
-              <strong>Operating Systems</strong>
-              <small>N110 · 1h 30m</small>
-            </span>
-          </div>
-          <div>
-            <time>10:15</time>
+            <time>03 NOV</time>
             <span>
               <strong>Discrete Mathematics</strong>
-              <small>E/HALL · 1h 30m</small>
+              <small>09:00–12:00 · Examination</small>
             </span>
           </div>
           <div>
-            <time>14:00</time>
+            <time>05 NOV</time>
             <span>
-              <strong>Technopreneurship I</strong>
-              <small>N109 · 1h</small>
+              <strong>Programming Languages</strong>
+              <small>09:00–12:00 · Examination</small>
+            </span>
+          </div>
+          <div>
+            <time>09 NOV</time>
+            <span>
+              <strong>Software Engineering Fundamentals</strong>
+              <small>14:00–17:00 · Examination</small>
             </span>
           </div>
         </div>
@@ -611,7 +634,7 @@ function ProductScene() {
         <strong>
           <Check size={14} /> Added to calendar
         </strong>
-        <small>3 lectures · reminders ready</small>
+        <small>Exam-only preview · reminders optional</small>
       </div>
     </div>
   );
