@@ -616,7 +616,11 @@ body {
   border: 1px solid rgba(21, 61, 50, 0.15);
   border-radius: 24px;
   background:
-    radial-gradient(circle at 96% 0%, rgba(216, 168, 48, 0.18), transparent 30%),
+    radial-gradient(
+      circle at 96% 0%,
+      rgba(216, 168, 48, 0.18),
+      transparent 30%
+    ),
     linear-gradient(120deg, #e9f0e6, #f5f7f1);
 }
 
