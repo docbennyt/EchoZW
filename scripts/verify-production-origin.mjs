@@ -39,6 +39,7 @@ await check("release identity", "/__release", (response, text) => {
     value?.sourceSha === expectedSha &&
     value?.workerVersion === expectedVersion &&
     value?.legacyBackendBridge === false &&
+    value?.feedActivityRecording === true &&
     value?.publicOrigin === "https://calender.aido.co.zw"
   );
 });

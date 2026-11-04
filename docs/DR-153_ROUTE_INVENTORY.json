@@ -898,10 +898,10 @@
     "worker/googleCalendarApi.mjs": "4ea2cd714a57272a1dbcc3a52722b9a0de59de8adcfb23567fcccf1ba3bc510f",
     "worker/googleCredentialRecoveryApi.mjs": "a0c755d5e57918ed56110b30f716350b9318276dd2f4671255140bc6e5200db1",
     "worker/googleDelivery.mjs": "8d4a0de35ad931dc4232f5597736c76687f2260f0bca5421240ce94717f70105",
-    "worker/index.mjs": "7f515cd76ae982f7a94a0ba25206629fa1dc770d2700dc079825c095c7fa565f",
+    "worker/index.mjs": "c832f4644559ce553c5b887399875d9a232781e924fb7dbe7d2575e0fa8e7d7c",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "53962b786e6be2354ffc1f133fe5e8befabc551b7f74246b0f5764cd51fc8380",
-    "wrangler.jsonc": "d135abc48c715409c77b66446cf307dbf9b3e8774cd746a0de5837f05e32cb2e"
+    "wrangler.jsonc": "86d90e9b5ff9316d2abd2bf10fcd405689196995c3c07c0445c77400dcf21566"
   },
   "counts": {
     "httpRoutes": 104,
@@ -1029,7 +1029,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1054,7 +1054,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -1124,7 +1124,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1149,7 +1149,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -1289,7 +1289,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1314,7 +1314,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -1441,7 +1441,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -1465,7 +1465,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -1545,7 +1545,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1562,7 +1562,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 317, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -1943,7 +1943,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -1960,7 +1960,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 283, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -2402,7 +2402,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2422,7 +2422,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 217, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -2618,7 +2618,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2637,7 +2637,7 @@
         { "file": "server/adminApi.ts", "line": 82, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -2715,7 +2715,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2732,7 +2732,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 249, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -2932,7 +2932,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -2958,7 +2958,7 @@
         { "file": "server/adminApi.ts", "line": 64, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -4696,7 +4696,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 465,
+        "line": 472,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -4723,7 +4723,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 355, "role": "dispatch" },
         {
           "file": "worker/index.mjs",
-          "line": 465,
+          "line": 472,
           "role": "worker implementation"
         }
       ],
@@ -6952,7 +6952,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -6986,7 +6986,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -7056,7 +7056,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7090,7 +7090,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -7230,7 +7230,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7264,7 +7264,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -7391,7 +7391,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 589,
+        "line": 596,
         "role": "worker implementation"
       },
       "workerApplicationService": "academicPauseCore scopedInput/previewImpact/createPauseWithImpact/deactivatePauseWithTimetables -> existing academicPauseRepository",
@@ -7425,7 +7425,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 589,
+          "line": 596,
           "role": "worker implementation"
         }
       ],
@@ -7507,7 +7507,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 726,
+        "line": 733,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7538,7 +7538,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 726,
+          "line": 733,
           "role": "worker implementation"
         }
       ],
@@ -7595,7 +7595,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 726,
+        "line": 733,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -7626,7 +7626,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 726,
+          "line": 733,
           "role": "worker implementation"
         }
       ],
@@ -8817,7 +8817,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 777,
+        "line": 784,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8848,7 +8848,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 777,
+          "line": 784,
           "role": "worker implementation"
         }
       ],
@@ -9062,7 +9062,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 880,
+        "line": 887,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9078,7 +9078,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 880,
+          "line": 887,
           "role": "worker implementation"
         }
       ],
@@ -9115,7 +9115,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 935,
+        "line": 942,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9131,7 +9131,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 935, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 942, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9174,7 +9174,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 943,
+        "line": 950,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9191,7 +9191,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 943, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 950, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -10313,7 +10313,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 426,
+        "line": 433,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10339,7 +10339,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 426,
+          "line": 433,
           "role": "worker implementation"
         }
       ],
@@ -10424,7 +10424,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 426,
+        "line": 433,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -10450,7 +10450,7 @@
         },
         {
           "file": "worker/index.mjs",
-          "line": 426,
+          "line": 433,
           "role": "worker implementation"
         }
       ],
@@ -11306,7 +11306,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 935,
+        "line": 942,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -11322,7 +11322,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 935, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 942, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {

@@ -105,6 +105,7 @@
       },
       "vars": {
         "APP_ENV": "cloudflare-production",
+        "ENABLE_FEED_ACTIVITY": "true",
         "PUBLIC_APP_URL": "https://calender.aido.co.zw",
         "ENABLE_GOOGLE_DELIVERY": "false",
       },
