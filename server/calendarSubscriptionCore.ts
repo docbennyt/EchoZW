@@ -1,3 +1,8 @@
+import {
+  googleOnboardingScope,
+  googleOnboardingEnrollmentAllowed,
+} from "./googleOnboardingPolicy.js";
+import { getCalendarRevision } from "./calendarRevisionRepository.js";
 import { buildFeedUrl } from "../src/domain/calendar.js";
 import { generateFeedToken, sha256Base64Url } from "../src/domain/token.js";
 import {
@@ -36,17 +41,35 @@ export async function createNativeFeedSubscription(
   }
   if (
     input.provider === "google_api" &&
-    (!googleEnrollmentAllowed(
+    ((!googleOnboardingEnrollmentAllowed(
       context.env,
       context.anonymousSessionId,
       input.timetableId,
-    ) ||
+    ) &&
+      !googleEnrollmentAllowed(
+        context.env,
+        context.anonymousSessionId,
+        input.timetableId,
+      )) ||
       !getPublicGoogleCalendarStatus(context.env).enabled)
   ) {
     throw new PilotApiError(
       "GOOGLE_NOT_CONFIGURED",
       "Direct Google Calendar connection is temporarily unavailable.",
       503,
+    );
+  }
+  const onboarding =
+    input.provider === "google_api" ? googleOnboardingScope(context.env) : null;
+  if (
+    onboarding &&
+    (await getCalendarRevision(input.timetableId, context.env)).sequence !==
+      onboarding.revision
+  ) {
+    throw new PilotApiError(
+      "GOOGLE_ONBOARDING_REVISION_CHANGED",
+      "The timetable changed. Calendar setup needs to be checked again.",
+      409,
     );
   }
   const rawToken =
@@ -79,6 +102,7 @@ export async function createNativeFeedSubscription(
       anonymousSessionId: context.anonymousSessionId,
       tokenHash,
       subscriberContact: input.subscriberContact,
+      ...(onboarding ? { googleOnboardingIssuedAt: onboarding.issuedAt } : {}),
     },
     context.env,
   );

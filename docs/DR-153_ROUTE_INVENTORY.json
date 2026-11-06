@@ -709,18 +709,20 @@
     "server/analyticsApi.ts": "d05111ee74360a6157ad03f89eaeaa0b6d45e16a1dc0e16c09262f2583e97e07",
     "server/analyticsRepository.ts": "6607366efa0ef75ee576925c82e51bc9f11d76b9d06e2b3714a2a36f8b12db1b",
     "server/calendarRevisionRepository.ts": "a6388a6727d114e4e79a055e18daf562c9ee8dff796bbdd4e9b0f9be5f77ddff",
-    "server/calendarSubscriptionCore.ts": "570c0287407a83bb95a363d0aaa37313227ed409b4588ea6f98d42fb60400000",
+    "server/calendarSubscriptionCore.ts": "2c0ecdc0f9bcf9be2211624ecc369fa50562ec1c4abdfdbe7ffb1c7b7062123f",
     "server/calendarSubscriptionLifecycle.ts": "bc5e5e8f2258349d422f9ba82884f7e1e1bf47abceab883eb7d8b9a9ddf558e6",
     "server/correctionsAdminApi.ts": "351b8a8a584e9156506a4481f778cc5486889a0e07be420dc1ebf3f5356058b0",
     "server/correctionsCore.ts": "4b4feedbd677616f4861e365cf1af1a10a9a78c25625e0ac272f6c373880f660",
     "server/correctionsRepository.ts": "8440e438a897d943ce858bd4da8bba0c9e4aad94303eeb4841d513290af55c1e",
     "server/docxStructuredReader.ts": "34a63f0540c008768cc716e37ff7c604e9b4d2bff24140e81b64e5ecabb0ae02",
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
+    "server/googleCalendarCreation.ts": "e1e975ea8ee3da99003f0a47f94ec02b38b3057ae6ee87086ac319449fe12fc8",
     "server/googleCalendarDelivery.ts": "1561ba3ad64595bf679141cc02efa8b65e7294d02893828e282d4cefd2821235",
-    "server/googleCalendarRepository.ts": "527ffd5a631bcf97957b9dc6ffea092f0685b3f88085204e76f0ae68e5117c56",
-    "server/googleCalendarSync.ts": "c89e7b0d4c0ed04e5ae60f9c45ff315a9e83723919397d6025a67c16bb8aa88a",
+    "server/googleCalendarRepository.ts": "bc9d26168c298ed970ad017d60d6a1ac8feeaad4c1ca834309b0d0c40d389ef0",
+    "server/googleCalendarSync.ts": "99f5c1dc24412304ab372e0515cdfcdf22b8a5cd1a2442bf44a756a9a4426f80",
     "server/googleCredentialRecovery.ts": "a54a3c4924c2c3bb41843ff171d57b96c673fcc4b502214bfb2d7249a554702b",
-    "server/googleDeliveryPolicy.ts": "f8c8820a25a279be95dbe5b624db3c6624841cb62f32ede7c776ed61e3164112",
+    "server/googleDeliveryPolicy.ts": "7f37c4fe0a4a029ba66ca1de600b650b45410d2966157da72aafa12e697ea335",
+    "server/googleOnboardingPolicy.ts": "0a3fb297d81926fff5f6567d3736185716ee686d52c8ddc4459e7134884dfdeb",
     "server/googleProductionRecoveryPolicy.ts": "6acc3e7b884cdd22ac5141d50601fba22f3d3f00e0f5f5d2fa311a294b31da76",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
     "server/growthCaptureRepository.ts": "49b4f42e3f1dbf74032a13cd932d44275a99d691ac4fe0f00116803cb0b87b46",
@@ -736,7 +738,7 @@
     "server/pilotAdminApi.ts": "0f50c6bde4e1b2491163729f0c58f2c159035957bde5ade541385e2978c2c5e6",
     "server/pilotCalendarApi.ts": "cbdc6bc4de2e49ecb850f824a3f13a0f98a178281fae57e7fb507a3d78826781",
     "server/pilotCalendarCore.ts": "dbf4027d345624e4409bfc6eef4b1e6a49fb203ae5b3fbce9c0f1495b9833517",
-    "server/pilotRepository.ts": "e295befa2a2dc65da7fd6c33ac4ecff69173b8673b04cbcce722e79d6462c3fa",
+    "server/pilotRepository.ts": "ed644431ed6ec583de472c0e7e456eec966c92d3617c66b79a850dcf8f81d346",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
     "server/publicTimetableApi.ts": "84901a5a825c5b0b0549221f7f2cfdbe3191db33eaf221f418135e284f91bf73",
     "server/publicTimetableCore.ts": "2e4c1d1a7596e5178cccd1a9124c2d1df47aa1822aa4a202d9b406beea6b7c69",
@@ -797,7 +799,7 @@
     "src/FinderDemandPrompt.tsx": "3a2f62d36791dfc12157c2d710c96d1ec3bd966ae9c900df75453bb33d644a25",
     "src/FinderDiscovery.tsx": "9d5fa617a29918901ca583acd11c838b69b45f4ef8a32dfa4b7572031dabd617",
     "src/FounderOperationsCockpit.tsx": "a24a28b26d91521f10c606c5aaa5eca115019182ab874d53e389e4ecad0ab7f0",
-    "src/GoogleCalendarDirectConnect.tsx": "85f078a2aaea0f155fb373ee2faf8290704dab65c6078a92a6f9f7c33826de21",
+    "src/GoogleCalendarDirectConnect.tsx": "98bcccd88ce65a75b793777882909b7e6f5e6cec9cc6b0aec8de862c740f93e9",
     "src/GoogleCalendarDisconnectEntry.tsx": "579bdf0da5712b746088e72c1e1b100e2fe07c8da71804da74ea58bbb91e043c",
     "src/GrowthCapturePages.tsx": "8116ee2007f35d4359a0016970801e8b4973e6bc82aadcac60759383d3e8da3d",
     "src/GrowthInboxPage.tsx": "578509b479d99d65ae7bbd50e7dca3495c1223785fe2510dc4a0fbcfd3503253",
@@ -805,7 +807,7 @@
     "src/PersonalTimetablePreview.tsx": "b66d9869727c995222b7e73dde3ed987f6d26d04dfbcbdcb46425fcf77697544",
     "src/PilotOfferEnhancement.tsx": "afb27354554b1dd6a50d81356448c40d56031902fce043ec302eb253019bb612",
     "src/ProductionUxEnhancements.tsx": "1adf16f1ac5f75c95602b6dd1c71b4e5294393c9f2094f66a108e31d172b1964",
-    "src/PublicTimetableReliability.tsx": "aae43e2a7e0bfb3e571bac466a1c6cf8e716e3d8bf9aa410f46a3aa72e198ce6",
+    "src/PublicTimetableReliability.tsx": "b77747f324b57a500c5158d5846c73e08c7a0c898785351a69a264ac707446dc",
     "src/StaffOnboardingFlow.tsx": "fa08f2603aba81e405ebc9d59dcb767ada37dcad5d89dd9c86e1fe53c7e3f48a",
     "src/StaticTimetableImportPage.tsx": "b4bbf2f7f4e2d2cefb15c20dc7e5accbded3c008e5c9cb882c3c3f277b915f6d",
     "src/StudentOnboardingAcceleration.tsx": "5e2c825abc2bab09b9bd28376eb9e425b1abc9046c130942af48634d12114ca5",
@@ -896,9 +898,9 @@
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "4878b10ba3fa7497cfd501215e47b94efe9aba55a8488129e98ccfcdf5532b6e",
-    "worker/googleCalendarApi.mjs": "4ea2cd714a57272a1dbcc3a52722b9a0de59de8adcfb23567fcccf1ba3bc510f",
+    "worker/googleCalendarApi.mjs": "5c729d4c812d1acd2c469a71609e61c2a06599ee6ce5381ff32f7a7260366ed2",
     "worker/googleCredentialRecoveryApi.mjs": "a0c755d5e57918ed56110b30f716350b9318276dd2f4671255140bc6e5200db1",
-    "worker/googleDelivery.mjs": "8d4a0de35ad931dc4232f5597736c76687f2260f0bca5421240ce94717f70105",
+    "worker/googleDelivery.mjs": "3e6ff9d4ca526d9f811307c3b6b1970b43cec66096f02483fc8130abe2e4a465",
     "worker/index.mjs": "c832f4644559ce553c5b887399875d9a232781e924fb7dbe7d2575e0fa8e7d7c",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "vercel.json": "53962b786e6be2354ffc1f133fe5e8befabc551b7f74246b0f5764cd51fc8380",
@@ -933,7 +935,10 @@
         "line": 189,
         "role": "worker implementation"
       },
-      "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/productionGoogleOnboardingCleanup.test.ts"
+      ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
       "lastLiveRuntime": null,
@@ -1105,6 +1110,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -1182,18 +1188,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1203,7 +1219,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1276,6 +1292,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -1353,18 +1370,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1374,7 +1401,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5044,6 +5071,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: timetable_correction_semantic_fingerprint",
         "RPC: write_google_calendar_sync_record"
       ],
@@ -5135,18 +5163,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5156,7 +5194,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5230,6 +5268,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -5315,18 +5354,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5336,7 +5385,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5410,6 +5459,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: replace_timetable_correction_update",
         "RPC: timetable_correction_semantic_fingerprint",
         "RPC: write_google_calendar_sync_record"
@@ -5502,18 +5552,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5523,7 +5583,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5597,6 +5657,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -5682,18 +5743,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5703,7 +5774,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5777,6 +5848,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: dedupe_timetable_correction_group",
         "RPC: write_google_calendar_sync_record"
       ],
@@ -5863,18 +5935,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5884,7 +5966,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5958,6 +6040,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: timetable_exception_semantic_fingerprint",
         "RPC: write_google_calendar_sync_record"
       ],
@@ -6044,18 +6127,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6065,7 +6158,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6139,6 +6232,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -6224,18 +6318,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6245,7 +6349,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6319,6 +6423,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: replace_timetable_exception_update",
         "RPC: timetable_exception_semantic_fingerprint",
         "RPC: write_google_calendar_sync_record"
@@ -6406,18 +6511,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6427,7 +6542,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6501,6 +6616,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -6586,18 +6702,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6607,7 +6733,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6681,6 +6807,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: dedupe_timetable_exception_group",
         "RPC: write_google_calendar_sync_record"
       ],
@@ -6767,18 +6894,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6788,7 +6925,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6861,6 +6998,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -6882,7 +7020,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 234,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -6909,7 +7047,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 458, "role": "dispatch" },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 234,
           "role": "worker implementation"
         }
       ],
@@ -6930,18 +7068,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1936,
+          "line": 2155,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6956,7 +7104,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7115,6 +7263,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -7201,18 +7350,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7222,7 +7381,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7295,6 +7454,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: write_google_calendar_sync_record"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
@@ -7381,18 +7541,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7402,7 +7572,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7772,6 +7942,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: publish_timetable_version",
         "RPC: write_google_calendar_sync_record"
       ],
@@ -7842,18 +8013,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1892,
+          "line": 2111,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7868,7 +8049,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8273,6 +8454,7 @@
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
         "table/storage reference: timetables",
+        "RPC: begin_google_calendar_creation",
         "RPC: complete_google_calendar_connection",
         "RPC: write_google_calendar_sync_record"
       ],
@@ -8299,7 +8481,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 234,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8331,7 +8513,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 234,
           "role": "worker implementation"
         }
       ],
@@ -8352,18 +8534,28 @@
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
+          "file": "server/googleCalendarCreation.ts",
+          "line": 4,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
           "file": "server/googleCalendarRepository.ts",
-          "line": 425,
+          "line": 427,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1757,
+          "line": 1976,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 159,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8378,7 +8570,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8558,7 +8750,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 234,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8585,7 +8777,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 234,
           "role": "worker implementation"
         }
       ],
@@ -8602,12 +8794,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 840,
+          "line": 860,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 116,
+          "line": 122,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleOnboardingPolicy.ts",
+          "line": 146,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8622,7 +8819,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8716,7 +8913,7 @@
       "currentFunctionality": "Native local disconnect; optional remote calendar deletion explicitly unavailable.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 234,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8742,7 +8939,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 234,
           "role": "worker implementation"
         }
       ],
@@ -8759,7 +8956,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1972,
+          "line": 2191,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8769,7 +8966,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8842,7 +9039,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 234,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8864,14 +9061,14 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 234,
           "role": "worker implementation"
         }
       ],
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 830,
+          "line": 850,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8904,8 +9101,7 @@
         "table/storage reference: timetable_session_exceptions",
         "table/storage reference: timetable_sessions",
         "table/storage reference: timetable_versions",
-        "table/storage reference: timetables",
-        "RPC: create_calendar_subscription_with_profile"
+        "table/storage reference: timetables"
       ],
       "databaseOperations": "Mutation/processing path; conservative transitive tables/RPCs, consult source for transaction boundaries.",
       "externalDependencies": [
@@ -8973,12 +9169,12 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 253,
+          "line": 255,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 830,
+          "line": 850,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10730,7 +10926,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10905,7 +11101,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2216,
+          "line": 2225,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11099,7 +11295,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2232,
+          "line": 2241,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11304,7 +11500,7 @@
         },
         {
           "file": "server/pilotRepository.ts",
-          "line": 2232,
+          "line": 2241,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
