@@ -1,0 +1,81 @@
+name: Cloudflare Production Google Recovery
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Approved and deployed immutable Worker source SHA
+        required: true
+        type: string
+      pull_request:
+        description: Reviewed candidate PR
+        required: true
+        type: string
+      mode:
+        description: Preview before authorizing the exact manifest for delivery
+        required: true
+        type: choice
+        options: [preview, deliver]
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+jobs:
+  authorize:
+    if: github.ref == 'refs/heads/Calender'
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.authorize.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: node scripts/verify-production-environment.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - id: authorize
+        run: node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+  recovery:
+    needs: authorize
+    environment: cloudflare-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.authorize.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install tsc -p tsconfig.server.json
+      - name: Recheck candidate approval after production environment review
+        run: |
+          node scripts/verify-production-environment.mjs
+          node scripts/authorize-staging-candidate.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.authorize.outputs.sha }}
+          CANDIDATE_PR: ${{ inputs.pull_request }}
+      - name: Scoped existing-calendar preview or delivery
+        run: node scripts/recover-production-google.mjs
+        env:
+          APP_ENV: cloudflare-production
+          ENABLE_GOOGLE_DELIVERY: "false"
+          SOURCE_SHA: ${{ needs.authorize.outputs.sha }}
+          RECOVERY_MODE: ${{ inputs.mode }}
+          GOOGLE_PRODUCTION_RECOVERY: ${{ secrets.CALENDERZW_PRODUCTION_GOOGLE_RECOVERY }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          TOKEN_ENCRYPTION_KEY: ${{ secrets.TOKEN_ENCRYPTION_KEY }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}

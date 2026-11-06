@@ -1,3 +1,4 @@
+import { googleProductionRecoveryScope } from "./googleProductionRecoveryPolicy.js";
 import {
   createCipheriv,
   createDecipheriv,
@@ -30,6 +31,7 @@ import {
   disconnectGoogleCalendarConnection,
   deleteGoogleEventSyncRecord,
   getGoogleCredential,
+  getGoogleCalendarRecoveryFence,
   listGoogleEventSyncRecords,
   listSyncableGoogleSubscriptions,
   persistGoogleCalendarConnection,
@@ -381,6 +383,7 @@ async function verifyRemoteManagedEvents(input: {
   listedEvents: GoogleManagedRemoteEvent[];
   signal?: AbortSignal;
   deferMissingMappings?: boolean;
+  reuseListed?: boolean;
 }) {
   const expectedKeys = new Map<string, Set<string>>();
   for (const event of input.listedEvents) {
@@ -401,6 +404,12 @@ async function verifyRemoteManagedEvents(input: {
   for (const [eventId, keys] of expectedKeys) {
     if (keys.size !== 1) {
       ownershipReviewIds.add(eventId);
+      continue;
+    }
+    if (input.reuseListed && listedById.has(eventId)) {
+      const listed = listedById.get(eventId)!;
+      if (!keys.has(listed.stableSessionKey)) ownershipReviewIds.add(eventId);
+      else events.push(listed);
       continue;
     }
     if (input.deferMissingMappings) {
@@ -496,6 +505,7 @@ async function refreshAccessToken(input: {
       "GOOGLE_CREDENTIAL_INVALID",
       "Google Calendar access is no longer valid. Please reconnect.",
       409,
+      { providerError: "invalid_grant" },
     );
   }
   if (!response.ok || !body.access_token) {
@@ -904,7 +914,8 @@ async function reconcileGoogleSubscription(
     return { created: 0, updated: 0, deleted: 0, unchanged: 0 };
   }
   assertCloudflareDeliveryScope(env, subscription);
-  const recovery = googleRecoveryScope(env);
+  const productionRecovery = googleProductionRecoveryScope(env);
+  const recovery = productionRecovery ?? googleRecoveryScope(env);
   const recoveryScope =
     recovery?.subscription === subscriptionId ? recovery : null;
   if (recoveryScope && !subscription.external_calendar_id)
@@ -919,6 +930,32 @@ async function reconcileGoogleSubscription(
   );
   const assertConnection = async () => {
     assertCloudflareDeliveryScope(env, subscription);
+    if (productionRecovery) {
+      const currentSubscription = asRecord(
+        await getCalendarSubscriptionById(subscriptionId, env),
+      );
+      const fence = await getGoogleCalendarRecoveryFence(subscriptionId, env);
+      const sameReminders = (field: string) =>
+        JSON.stringify(currentSubscription?.[field] ?? []) ===
+        JSON.stringify(subscription[field] ?? []);
+      if (
+        !currentSubscription ||
+        !googleSubscriptionAllowed(env, currentSubscription) ||
+        currentSubscription.external_calendar_id !==
+          subscription.external_calendar_id ||
+        !sameReminders("reminder_offsets_minutes") ||
+        !sameReminders("exam_reminder_offsets_minutes") ||
+        Number(fence?.desired_revision) !==
+          productionRecovery.deliveryRevision ||
+        Number(fence?.requested_generation) !==
+          productionRecovery.deliveryGeneration
+      )
+        throw new PilotApiError(
+          "GOOGLE_RECOVERY_CONNECTION_CHANGED",
+          "Connection or preferences changed. Preview recovery again.",
+          409,
+        );
+    }
     if (recoveryScope) {
       const current = await getCalendarRevision(
         String(subscription.timetable_id),
@@ -943,10 +980,76 @@ async function reconcileGoogleSubscription(
         409,
       );
   };
+  const productionCreatedKeys = new Set<string>();
+  const productionUpdatedKeys = new Set<string>();
+  if (productionRecovery) {
+    const preview = await withExternalRequestBudget(40, () =>
+      previewGoogleSubscriptionSync(subscriptionId, env),
+    );
+    if (
+      preview.manifestHash !== productionRecovery.manifestHash ||
+      preview.publishedRevision !== productionRecovery.revision ||
+      preview.connectionGeneration !==
+        productionRecovery.connectionGeneration ||
+      !preview.remoteReadComplete ||
+      preview.ownershipReviewCount ||
+      preview.wouldDelete ||
+      preview.wouldCreate !== preview.wouldCreateExaminations ||
+      preview.createKeys?.some(
+        (key) => !productionRecovery.createKeys.includes(key),
+      ) ||
+      preview.updateKeys?.some(
+        (key) =>
+          ![
+            ...productionRecovery.updateKeys,
+            ...productionRecovery.createKeys,
+          ].includes(key),
+      ) ||
+      preview.wouldCreate > productionRecovery.maxCreates
+    )
+      throw new PilotApiError(
+        "GOOGLE_RECOVERY_MANIFEST_CHANGED",
+        "Preview recovery again before delivery.",
+        409,
+      );
+  }
   const writeGoogleEvent = async (
     input: Parameters<typeof googleApiRequest>[0],
   ) => {
-    if (recoveryScope && (input.method === "POST" || input.method === "DELETE"))
+    if (productionRecovery) {
+      const key = createHash("sha256")
+        .update(
+          String(
+            getNestedRecord(
+              getNestedRecord(input.body, "extendedProperties"),
+              "private",
+            )?.calenderzwStableSessionKey ?? "",
+          ),
+        )
+        .digest("hex");
+      const creating = productionRecovery.createKeys.includes(key);
+      const updating = productionRecovery.updateKeys.includes(key);
+      if (input.method === "POST") productionCreatedKeys.add(key);
+      if (input.method === "PUT")
+        (creating ? productionCreatedKeys : productionUpdatedKeys).add(key);
+      if (
+        input.method === "DELETE" ||
+        (input.method === "POST" && !creating) ||
+        (input.method === "PUT" && !creating && !updating) ||
+        productionCreatedKeys.size > productionRecovery.maxCreates ||
+        productionUpdatedKeys.size > productionRecovery.maxUpdates
+      )
+        throw new PilotApiError(
+          "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+          "Recovery operation is outside the approved manifest.",
+          409,
+        );
+    }
+    if (
+      !productionRecovery &&
+      recoveryScope &&
+      (input.method === "POST" || input.method === "DELETE")
+    )
       throw new PilotApiError(
         "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
         "This recovery permits existing event updates only.",
@@ -958,7 +1061,7 @@ async function reconcileGoogleSubscription(
       console.log(
         JSON.stringify({
           event: "google.delivery.provider_mutation_accepted",
-          operation: "update",
+          operation: input.method === "POST" ? "create" : "update",
           sourceSha: env.SOURCE_SHA,
           revision: recoveryScope.revision,
         }),
@@ -1161,6 +1264,12 @@ async function reconcileGoogleSubscription(
       remoteEventId = result?.id ? String(result.id) : externalEventId;
       updated += 1;
     } else {
+      if (productionRecovery && event.eventCategory !== "exam")
+        throw new PilotApiError(
+          "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
+          "Recovery only creates missing examinations.",
+          409,
+        );
       const id = newGoogleEventId({
         subscriptionId,
         timetableId,
@@ -1286,6 +1395,23 @@ async function reconcileGoogleSubscription(
   }
 
   signal?.throwIfAborted();
+  if (productionRecovery) {
+    const verified = await withExternalRequestBudget(40, () =>
+      previewGoogleSubscriptionSync(subscriptionId, env),
+    );
+    await assertConnection();
+    if (
+      !verified.remoteContentsVerified ||
+      verified.wouldUpdate ||
+      verified.publishedRevision !== productionRecovery.revision ||
+      verified.connectionGeneration !== productionRecovery.connectionGeneration
+    )
+      throw new PilotApiError(
+        "GOOGLE_RECOVERY_REMOTE_UNVERIFIED",
+        "Remote verification is incomplete.",
+        409,
+      );
+  }
   const lastSyncedAt = new Date().toISOString();
   const accepted = await updateGoogleSubscription({
     subscriptionId,
@@ -1389,6 +1515,18 @@ export async function previewGoogleSubscriptionSync(
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
   const { accessToken } = await loadAccessToken(subscriptionId, env);
+  if (googleProductionRecoveryScope(env)) {
+    const calendar = await googleApiRequest({
+      accessToken,
+      path: "/calendars/" + encodeURIComponent(calendarId),
+    });
+    if (calendar?.id !== calendarId)
+      throw new PilotApiError(
+        "GOOGLE_RECOVERY_CALENDAR_MISMATCH",
+        "Existing calendar identity could not be verified.",
+        409,
+      );
+  }
   const previousRecords = await listGoogleEventSyncRecords(subscriptionId, env);
   const previousById = new Map(
     previousRecords.map((row) => [String(row.internal_event_id), row]),
@@ -1405,6 +1543,7 @@ export async function previewGoogleSubscriptionSync(
       timetableId,
       previousRecords,
       listedEvents,
+      reuseListed: Boolean(googleProductionRecoveryScope(env)),
     });
   const remoteManagedByStableKey = new Map<
     string,
@@ -1423,6 +1562,9 @@ export async function previewGoogleSubscriptionSync(
   const retainedRemoteEventIds = new Set<string>();
   const wouldDeleteRemoteEventIds = new Set<string>();
   let wouldCreate = 0;
+  let wouldCreateExaminations = 0;
+  const createKeys: string[] = [];
+  const updateKeys: string[] = [];
   let wouldUpdate = 0;
   let wouldDelete = 0;
   let unchanged = 0;
@@ -1487,8 +1629,15 @@ export async function previewGoogleSubscriptionSync(
     } else if (externalEventId) {
       retainedRemoteEventIds.add(externalEventId);
       wouldUpdate += 1;
+      updateKeys.push(
+        createHash("sha256").update(event.stableSessionKey).digest("hex"),
+      );
     } else {
       wouldCreate += 1;
+      createKeys.push(
+        createHash("sha256").update(event.stableSessionKey).digest("hex"),
+      );
+      if (event.eventCategory === "exam") wouldCreateExaminations += 1;
     }
   }
 
@@ -1514,6 +1663,38 @@ export async function previewGoogleSubscriptionSync(
     wouldDelete += 1;
   }
 
+  const manifest = {
+    subscriptionId,
+    calendarId,
+    timetableId,
+    revision: revision.sequence,
+    connectionGeneration: Number(
+      subscription.google_connection_generation ?? 0,
+    ),
+    expected: projection.events
+      .map((event) => ({
+        key: event.stableSessionKey,
+        payload: googleEventPayload({
+          timetable: resolvedTimetable,
+          event,
+          reminders,
+        }),
+      }))
+      .sort((a, b) => a.key.localeCompare(b.key)),
+  };
+  const manifestHash = createHash("sha256")
+    .update(
+      JSON.stringify(manifest, (_key, value) => {
+        if (value && typeof value === "object" && !Array.isArray(value))
+          return Object.fromEntries(
+            Object.keys(value)
+              .sort()
+              .map((key) => [key, value[key]]),
+          );
+        return value;
+      }),
+    )
+    .digest("hex");
   // These deletion candidates were actually found in Google with matching
   // timetable ownership tags. A local mapping alone does not prove that a
   // remote calendar event is safe to delete.
@@ -1541,6 +1722,9 @@ export async function previewGoogleSubscriptionSync(
     remoteReadComplete,
     remoteContentMismatchCount,
     remoteContentMismatchFields,
+    manifestHash,
+    createKeys: createKeys.sort(),
+    updateKeys: updateKeys.sort(),
     remoteContentsVerified:
       remoteReadComplete &&
       remoteContentMismatchCount === 0 &&
@@ -1563,6 +1747,7 @@ export async function previewGoogleSubscriptionSync(
     remoteManagedEvents: remoteManagedEvents.length,
     localMappings: previousRecords.length,
     wouldCreate,
+    wouldCreateExaminations,
     wouldUpdate,
     wouldDelete,
     unchanged,
