@@ -464,6 +464,7 @@ export async function buildInventory(
       "handleEditorMutations",
     ],
     ["GET", "/api/calendar/google/status", "handleGoogleCalendarRequest"],
+    ["GET", "/api/calendar/google/connection", "handleGoogleCalendarRequest"],
     ["GET", "/calendar/feed/:token.ics", "handleNativeCalendarIcs"],
     ["HEAD", "/calendar/feed/:token.ics", "handleNativeCalendarIcs"],
     [

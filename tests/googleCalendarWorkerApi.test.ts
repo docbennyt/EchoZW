@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const services = vi.hoisted(() => ({
+  getOwnedGoogleConnection: vi.fn(),
   beginGoogleCalendarConnection: vi.fn(),
   checkGoogleCredentialCompatibility: vi.fn(),
   completeGoogleCalendarConnection: vi.fn(),
@@ -12,6 +13,9 @@ const services = vi.hoisted(() => ({
 const repository = vi.hoisted(() => ({ getCalendarSubscriptionById: vi.fn() }));
 const auth = vi.hoisted(() => ({ requireOperationalAdmin: vi.fn() }));
 vi.mock("../server/googleCalendarSync", () => services);
+vi.mock("../server/googleConnectionStatus", () => ({
+  getOwnedGoogleConnection: services.getOwnedGoogleConnection,
+}));
 vi.mock("../server/pilotRepository", async (original) => ({
   ...(await original<typeof import("../server/pilotRepository")>()),
   ...repository,
@@ -50,6 +54,7 @@ const options = { enqueueInitialSync: vi.fn(), enqueueReconciliation: vi.fn() };
 describe("native Google Web transport", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    services.getOwnedGoogleConnection.mockResolvedValue(null);
     services.getPublicGoogleCalendarStatus.mockReturnValue({
       enabled: false,
       scope: "calendar.app.created",
@@ -91,6 +96,48 @@ describe("native Google Web transport", () => {
     });
     expect(response!.headers.get("cache-control")).toBe("no-store");
     expect(services.getPublicGoogleCalendarStatus).toHaveBeenCalledWith(env);
+  });
+  it("checks owned connection state without enabling delivery or exposing provider identifiers", async () => {
+    services.getOwnedGoogleConnection.mockResolvedValue({
+      subscriptionId,
+      state: "syncing",
+      reconnectAllowed: false,
+      lastSyncedAt: null,
+    });
+    const response = await handleGoogleCalendarRequest(
+      request(
+        `/api/calendar/google/connection?timetableId=${timetableId}`,
+        undefined,
+        { cookie: `calenderzw_anon_session=${owner}` },
+      ),
+      { ...env, ENABLE_GOOGLE_DELIVERY: "false" },
+    );
+    expect(response!.status).toBe(200);
+    expect(response!.headers.get("cache-control")).toBe("no-store");
+    expect(await response!.json()).toEqual({
+      connection: {
+        subscriptionId,
+        state: "syncing",
+        reconnectAllowed: false,
+        lastSyncedAt: null,
+      },
+    });
+    expect(response!.headers.get("set-cookie")).toContain(
+      `calenderzw_anon_session=${owner}; HttpOnly; Secure; SameSite=Lax`,
+    );
+    expect(services.getOwnedGoogleConnection).toHaveBeenCalledWith(
+      timetableId,
+      owner,
+      { ...env, ENABLE_GOOGLE_DELIVERY: "false" },
+    );
+    expect(services.beginGoogleCalendarConnection).not.toHaveBeenCalled();
+    expect(options.enqueueInitialSync).not.toHaveBeenCalled();
+    expect(
+      (await handleGoogleCalendarRequest(
+        request("/api/calendar/google/connection?timetableId=bad"),
+        env,
+      ))!.status,
+    ).toBe(422);
   });
   it("keeps the canary status private to its owner and rejects other subscriptions before OAuth", async () => {
     const bindings = {
