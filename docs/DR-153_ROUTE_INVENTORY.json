@@ -900,7 +900,7 @@
     "worker/googleCalendarApi.mjs": "4ea2cd714a57272a1dbcc3a52722b9a0de59de8adcfb23567fcccf1ba3bc510f",
     "worker/googleCredentialRecoveryApi.mjs": "a0c755d5e57918ed56110b30f716350b9318276dd2f4671255140bc6e5200db1",
     "worker/googleDelivery.mjs": "8d4a0de35ad931dc4232f5597736c76687f2260f0bca5421240ce94717f70105",
-    "worker/index.mjs": "0623e909afe550dbc442c5aaaff4148f5497b7f882aecbec1cc74e802413e8f6",
+    "worker/index.mjs": "4ec111f7c82be8f9ece06031cb078727cd079ce946fb8f780dd7413c7d322ee8",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "worker/subscriptionPreferences.mjs": "aad15bb89266ff8eeee73b85c54ea1f24add6e78544784b9f50ef5eb76c23b43",
     "vercel.json": "53962b786e6be2354ffc1f133fe5e8befabc551b7f74246b0f5764cd51fc8380",

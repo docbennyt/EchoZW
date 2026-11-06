@@ -1042,7 +1042,9 @@ const application = {
       );
 
     if (url.pathname === "/api/calendar/subscriptions/exam-reminders")
-      return handleExamReminderPreferences(request, env);
+      return withSecurityHeaders(
+        await handleExamReminderPreferences(request, env),
+      );
 
     const revokeMatch = url.pathname.match(
       /^\/api\/calendar\/subscriptions\/([0-9a-f-]{36})\/revoke$/i,
