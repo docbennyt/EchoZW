@@ -10,6 +10,16 @@ const services = vi.hoisted(() => ({
   syncGoogleSubscription: vi.fn(),
 }));
 const repository = vi.hoisted(() => ({ getCalendarSubscriptionById: vi.fn() }));
+const onboardingDeps = vi.hoisted(() => ({
+  revision: vi.fn(),
+  enqueue: vi.fn(),
+}));
+vi.mock("../server/calendarRevisionRepository", () => ({
+  getCalendarRevision: onboardingDeps.revision,
+}));
+vi.mock("../server/googleCalendarDelivery", () => ({
+  enqueueSubscriptionReconciliation: onboardingDeps.enqueue,
+}));
 const auth = vi.hoisted(() => ({ requireOperationalAdmin: vi.fn() }));
 vi.mock("../server/googleCalendarSync", () => services);
 vi.mock("../server/pilotRepository", async (original) => ({
@@ -50,6 +60,8 @@ const options = { enqueueInitialSync: vi.fn(), enqueueReconciliation: vi.fn() };
 describe("native Google Web transport", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    onboardingDeps.revision.mockResolvedValue({ sequence: 4 });
+    onboardingDeps.enqueue.mockResolvedValue(true);
     services.getPublicGoogleCalendarStatus.mockReturnValue({
       enabled: false,
       scope: "calendar.app.created",
@@ -91,6 +103,108 @@ describe("native Google Web transport", () => {
     });
     expect(response!.headers.get("cache-control")).toBe("no-store");
     expect(services.getPublicGoogleCalendarStatus).toHaveBeenCalledWith(env);
+  });
+  it("allows only selected fresh production consent and persists durable intent without remote delivery", async () => {
+    const plan = {
+      mode: "new",
+      phase: "connect",
+      candidateSha: "a".repeat(40),
+      ownerId: owner,
+      timetableId,
+      subscriptionId,
+      issuedAt: new Date(Date.now() - 60000).toISOString(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      revision: 4,
+      connectionGeneration: 0,
+      calendarIdHash: null,
+      deliveryRevision: null,
+      deliveryGeneration: null,
+      maxCreates: 32,
+      maxUpdates: 0,
+      maxDeletes: 0,
+    };
+    const bindings = {
+      ...env,
+      APP_ENV: "cloudflare-production",
+      ENABLE_GOOGLE_DELIVERY: "false",
+      SOURCE_SHA: plan.candidateSha,
+      GOOGLE_PRODUCTION_ONBOARDING: JSON.stringify(plan),
+    };
+    const selected = {
+      id: subscriptionId,
+      timetable_id: timetableId,
+      anonymous_session_id: owner,
+      provider: "google_api",
+      status: "pending",
+      revoked_at: null,
+      external_calendar_id: null,
+      created_at: new Date().toISOString(),
+      google_connection_generation: 0,
+    };
+    repository.getCalendarSubscriptionById.mockResolvedValue(selected);
+    const headers = { cookie: `calenderzw_anon_session=${owner}` };
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(
+          `/api/calendar/google/connect?subscriptionId=${subscriptionId}`,
+          undefined,
+          headers,
+        ),
+        bindings,
+        options,
+      ))!.status,
+    ).toBe(302);
+    services.completeGoogleCalendarConnection.mockImplementation(
+      async (input) => {
+        await input.enqueueInitialSync(
+          { subscriptionId, timetableId },
+          bindings,
+        );
+        return { subscriptionId, publicSlug: "class-slug" };
+      },
+    );
+    const callback = await handleGoogleCalendarRequest(
+      request("/api/calendar/google/callback?code=private&state=private"),
+      bindings,
+      options,
+    );
+    expect(callback!.status).toBe(302);
+    expect(onboardingDeps.enqueue).toHaveBeenCalledWith(
+      subscriptionId,
+      bindings,
+    );
+    expect(options.enqueueInitialSync).not.toHaveBeenCalled();
+    expect(options.enqueueReconciliation).not.toHaveBeenCalled();
+    expect(services.syncGoogleSubscription).not.toHaveBeenCalled();
+    onboardingDeps.revision.mockResolvedValue({ sequence: 5 });
+    services.beginGoogleCalendarConnection.mockClear();
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(
+          `/api/calendar/google/connect?subscriptionId=${subscriptionId}`,
+          undefined,
+          headers,
+        ),
+        bindings,
+        options,
+      ))!.status,
+    ).toBe(409);
+    expect(services.beginGoogleCalendarConnection).not.toHaveBeenCalled();
+    repository.getCalendarSubscriptionById.mockResolvedValue({
+      ...selected,
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(
+          `/api/calendar/google/connect?subscriptionId=${subscriptionId}`,
+          undefined,
+          headers,
+        ),
+        bindings,
+        options,
+      ))!.status,
+    ).toBe(503);
   });
   it("keeps the canary status private to its owner and rejects other subscriptions before OAuth", async () => {
     const bindings = {
