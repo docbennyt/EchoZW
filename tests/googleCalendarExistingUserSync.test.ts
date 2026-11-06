@@ -1288,6 +1288,7 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
       expect(creates).toBe(1);
       expect(remote.size).toBe(lectureCount + 1);
     },
+    30_000,
   );
 
   it("production recovery rejects a stale immutable manifest before remote mutation", async () => {

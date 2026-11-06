@@ -1061,7 +1061,7 @@ async function reconcileGoogleSubscription(
       console.log(
         JSON.stringify({
           event: "google.delivery.provider_mutation_accepted",
-          operation: "update",
+          operation: input.method === "POST" ? "create" : "update",
           sourceSha: env.SOURCE_SHA,
           revision: recoveryScope.revision,
         }),
