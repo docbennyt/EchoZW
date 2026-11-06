@@ -92,7 +92,9 @@ export async function runProductionGoogleRecovery(env, mode) {
   const client = createSupabaseAdminClient(env);
   const current = await client
     .from("google_calendar_delivery_jobs")
-    .select("desired_revision,requested_generation,reconnect_required_at")
+    .select(
+      "desired_revision,requested_generation,reconnect_required_at,successful_revision,successful_generation",
+    )
     .eq("subscription_id", scope.subscription)
     .maybeSingle();
   if (
@@ -110,7 +112,12 @@ export async function runProductionGoogleRecovery(env, mode) {
       env,
     );
     if (!job) {
-      if (preview.remoteContentsVerified && preview.wouldUpdate === 0)
+      if (
+        preview.remoteContentsVerified &&
+        preview.wouldUpdate === 0 &&
+        Number(current.data.successful_revision) >= scope.deliveryRevision &&
+        Number(current.data.successful_generation) >= scope.deliveryGeneration
+      )
         return {
           readOnly: false,
           remotelyVerified: true,
