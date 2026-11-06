@@ -27,6 +27,13 @@ import {
   googleSubscriptionAllowed,
 } from "../server/googleDeliveryPolicy.ts";
 
+import {
+  googleOnboardingScope,
+  googleOnboardingConnectionAllowed,
+} from "../server/googleOnboardingPolicy.ts";
+import { getCalendarRevision } from "../server/calendarRevisionRepository.ts";
+import { enqueueSubscriptionReconciliation } from "../server/googleCalendarDelivery.ts";
+
 const disconnectSchema = z
   .object({
     subscriptionId: z.string().uuid(),
@@ -225,6 +232,7 @@ async function targetedSync(request, env, timetableId, options) {
 // The parent supplies a durable enqueue hook; importing delivery here would
 // couple the provider service back to its job dispatcher.
 export async function handleGoogleCalendarRequest(request, env, options = {}) {
+  const onboarding = googleOnboardingScope(env);
   const hasRecoveryScope = Boolean(googleRecoveryScope(env)?.subscription);
   options = {
     ...options,
@@ -232,7 +240,8 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
       options.deliveryEnabled ??
       (env.ENABLE_GOOGLE_DELIVERY === "true" ||
         Boolean(googleCanaryScope(env)?.subscription) ||
-        hasRecoveryScope),
+        hasRecoveryScope ||
+        onboarding?.phase === "connect"),
   };
   const url = new URL(request.url);
   const route = url.pathname.match(
@@ -272,7 +281,9 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
       );
     if (route === "status") {
       const status = getPublicGoogleCalendarStatus(env);
-      const scope = googleCanaryScope(env);
+      const scope =
+        googleCanaryScope(env) ??
+        (onboarding?.phase !== "deliver" ? onboarding : null);
       return respond({
         ...status,
         enabled:
@@ -293,17 +304,28 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
         z.string().uuid(),
         url.searchParams.get("subscriptionId"),
       );
+      const subscription =
+        (await getCalendarSubscriptionById(subscriptionId, env)) ?? {};
       if (
         env.ENABLE_GOOGLE_DELIVERY !== "true" &&
-        !googleSubscriptionAllowed(
-          env,
-          (await getCalendarSubscriptionById(subscriptionId, env)) ?? {},
-        )
+        !googleSubscriptionAllowed(env, subscription) &&
+        !googleOnboardingConnectionAllowed(env, subscription)
       ) {
         throw new PilotApiError(
           "GOOGLE_INITIAL_SYNC_UNAVAILABLE",
           "Google Calendar connection is temporarily unavailable.",
           503,
+        );
+      }
+      if (
+        onboarding?.phase === "connect" &&
+        (await getCalendarRevision(onboarding.timetable, env)).sequence !==
+          onboarding.revision
+      ) {
+        throw new PilotApiError(
+          "GOOGLE_ONBOARDING_REVISION_CHANGED",
+          "The timetable changed. Calendar setup needs to be checked again.",
+          409,
         );
       }
       const location = await beginGoogleCalendarConnection({
@@ -352,11 +374,45 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
       );
     }
     try {
+      if (
+        onboarding?.phase === "connect" &&
+        (await getCalendarRevision(onboarding.timetable, env)).sequence !==
+          onboarding.revision
+      ) {
+        throw new PilotApiError(
+          "GOOGLE_ONBOARDING_REVISION_CHANGED",
+          "The timetable changed. Calendar setup needs to be checked again.",
+          409,
+        );
+      }
       const result = await completeGoogleCalendarConnection({
         code,
         state,
         env,
-        enqueueInitialSync: options.enqueueInitialSync,
+        enqueueInitialSync:
+          onboarding?.phase === "connect"
+            ? async (target) => {
+                const row =
+                  (await getCalendarSubscriptionById(
+                    target.subscriptionId,
+                    env,
+                  )) ?? {};
+                if (
+                  !googleOnboardingConnectionAllowed(env, row) ||
+                  target.timetableId !== onboarding.timetable ||
+                  !(await enqueueSubscriptionReconciliation(
+                    target.subscriptionId,
+                    env,
+                  ))
+                ) {
+                  throw new PilotApiError(
+                    "GOOGLE_ONBOARDING_SCOPE_CHANGED",
+                    "Calendar authorization needs to be checked again.",
+                    409,
+                  );
+                }
+              }
+            : options.enqueueInitialSync,
       });
       return redirect(
         `${publicOrigin}/t/${encodeURIComponent(result.publicSlug)}?calendar=google-success&subscriptionId=${encodeURIComponent(result.subscriptionId)}`,
