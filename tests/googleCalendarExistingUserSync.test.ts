@@ -3,6 +3,11 @@ import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicTimetable } from "../src/api/pilotTypes";
 
+const creationMocks = vi.hoisted(() => ({
+  beginGoogleCalendarCreation: vi.fn(),
+}));
+vi.mock("../server/googleCalendarCreation", () => creationMocks);
+
 const repositoryMocks = vi.hoisted(() => ({
   getCalendarSubscriptionById: vi.fn(),
   getPublishedTimetableById: vi.fn(),
@@ -1086,6 +1091,374 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     });
   });
 
+  function onboardingFixture(
+    mode: "new" | "reconnect" = "new",
+    failCalendarPersistence = false,
+  ) {
+    const { id, bindings } = guardedRecoveryFixture({
+      missingCalendar: mode === "new",
+      create: mode === "new",
+      remoteContent: true,
+    });
+    const original = JSON.parse(bindings.GOOGLE_RECOVERY_CANARY);
+    const now = new Date().toISOString();
+    const leaseToken = "44444444-4444-4444-8444-444444444444";
+    const row = {
+      id,
+      provider: "google_api",
+      status: "pending",
+      anonymous_session_id: original.ownerId,
+      timetable_id: original.timetableId,
+      google_connection_generation: 0,
+      external_calendar_id: mode === "new" ? null : "cal-existing",
+      reminder_offsets_minutes: [30],
+      exam_reminder_offsets_minutes: [60, 30],
+      revoked_at: null,
+      created_at: mode === "new" ? now : "2026-01-01T00:00:00Z",
+      calendar_name: "Test class",
+      timezone: "Africa/Harare",
+    };
+    const scope = {
+      mode,
+      phase: "deliver",
+      candidateSha: original.candidateSha,
+      ownerId: original.ownerId,
+      timetableId: original.timetableId,
+      subscriptionId: id,
+      issuedAt: new Date(Date.now() - 60000).toISOString(),
+      expiresAt: original.expiresAt,
+      revision: 1,
+      connectionGeneration: 0,
+      calendarIdHash:
+        mode === "new"
+          ? null
+          : createHash("sha256").update("cal-existing").digest("hex"),
+      deliveryRevision: 8,
+      deliveryGeneration: 2,
+      maxCreates: mode === "new" ? 32 : 1,
+      maxUpdates: mode === "new" ? 0 : 1,
+      maxDeletes: 0,
+    };
+    const config = {
+      ...bindings,
+      APP_ENV: "cloudflare-production",
+      GOOGLE_PRODUCTION_ONBOARDING: JSON.stringify(scope),
+    };
+    repositoryMocks.getCalendarSubscriptionById.mockImplementation(
+      async () => ({ ...row }),
+    );
+    const credential = {
+      encrypted_refresh_token: encryptGoogleRefreshToken(
+        "refresh-token",
+        config,
+      ),
+      updated_at: now,
+    };
+    googleRepositoryMocks.getGoogleCredential.mockResolvedValue(credential);
+    googleRepositoryMocks.getGoogleCalendarRecoveryFence.mockResolvedValue({
+      desired_revision: 8,
+      requested_generation: 2,
+      lease_token: leaseToken,
+      lease_expires_at: new Date(Date.now() + 120000).toISOString(),
+    });
+    const published = timetable({
+      timetableId: original.timetableId,
+      pauses: [
+        {
+          id: "pause",
+          scopeType: "institution",
+          stableSessionKey: null,
+          startsOn: "2026-10-26",
+          endsOn: "2026-11-30",
+          allDay: true,
+          startsAt: null,
+          endsAt: null,
+          reason: "swot_week",
+          label: "SWOT Week",
+          active: true,
+          createdAt: "2026-10-26T00:00:00Z",
+        },
+      ],
+      exceptions: [
+        {
+          id: "exam-paper",
+          identityRootId: "exam-paper",
+          supersedesId: null,
+          stableSessionKey: null,
+          exceptionDate: "2026-11-12",
+          exceptionType: "extra",
+          replacementStartsAt: null,
+          replacementEndsAt: null,
+          courseCode: "ISE4105",
+          courseName: "Software Project Management",
+          startTime: "09:00:00",
+          endTime: "12:00:00",
+          venue: "Engineering Hall",
+          lecturer: null,
+          sessionType: "Examination",
+          notes: null,
+          reason: "Verified source",
+          provenance: "Official fixture",
+          active: true,
+          createdAt: "2026-11-01T00:00:00Z",
+        },
+      ],
+    });
+    repositoryMocks.getPublishedTimetableById.mockResolvedValue(published);
+    const remote = new Map<string, Record<string, unknown>>();
+    const mappings: Array<{
+      internal_event_id: string;
+      external_event_id: string;
+      content_hash: string;
+    }> = [];
+    if (mode === "reconnect") {
+      remote.set("event-ise4105", {
+        id: "event-ise4105",
+        summary: "stale lecture",
+        start: {
+          dateTime: "2026-08-11T01:00:00+02:00",
+          timeZone: "Africa/Harare",
+        },
+        end: {
+          dateTime: "2026-08-11T02:00:00+02:00",
+          timeZone: "Africa/Harare",
+        },
+        recurrence: ["RRULE:FREQ=WEEKLY"],
+        reminders: { useDefault: true },
+        extendedProperties: {
+          private: {
+            calenderzwTimetableId: original.timetableId,
+            calenderzwStableSessionKey: "ise4105-tue-corrected",
+          },
+        },
+      });
+      mappings.push({
+        internal_event_id: "ise4105-tue-corrected",
+        external_event_id: "event-ise4105",
+        content_hash: "stale-hash",
+      });
+      remote.set("unmanaged", {
+        id: "unmanaged",
+        summary: "Unrelated personal event",
+      });
+    }
+    const operations: string[] = [];
+    let calendarInserts = 0,
+      eventInserts = 0,
+      marker = false;
+    creationMocks.beginGoogleCalendarCreation.mockImplementation(async () => {
+      if (marker) return false;
+      marker = true;
+      return true;
+    });
+    googleRepositoryMocks.listGoogleEventSyncRecords.mockImplementation(
+      async () => [...mappings],
+    );
+    googleRepositoryMocks.upsertGoogleEventSyncRecord.mockImplementation(
+      async (input) => {
+        const next = {
+          internal_event_id: input.internalEventId,
+          external_event_id: input.externalEventId,
+          content_hash: input.contentHash,
+        };
+        const index = mappings.findIndex(
+          (item) => item.internal_event_id === next.internal_event_id,
+        );
+        if (index < 0) mappings.push(next);
+        else mappings[index] = next;
+      },
+    );
+    googleRepositoryMocks.updateGoogleSubscription.mockImplementation(
+      async (input) => {
+        if (input.externalCalendarId) {
+          if (failCalendarPersistence) return false;
+          row.external_calendar_id = input.externalCalendarId;
+        }
+        if (input.status) {
+          row.status = input.status;
+          operations.push("status:" + input.status);
+        }
+        return true;
+      },
+    );
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      const value = String(url),
+        path = new URL(value).pathname;
+      if (value === "https://oauth2.googleapis.com/token")
+        return okJson({ access_token: "access-token" });
+      if (path === "/calendar/v3/calendars" && init?.method === "POST") {
+        calendarInserts++;
+        operations.push("calendar:create");
+        return okJson({ id: "cal-new" });
+      }
+      if (init?.method === "GET" && /\/calendars\/[^/]+$/.test(path))
+        return okJson({ id: row.external_calendar_id });
+      if (init?.method === "GET" && value.includes("/events?")) {
+        operations.push("events:read");
+        return okJson({ items: [...remote.values()] });
+      }
+      const eventId = decodeURIComponent(path.split("/").at(-1)!);
+      if (init?.method === "GET")
+        return remote.has(eventId)
+          ? okJson(remote.get(eventId))
+          : okJson({}, 404);
+      expect(init?.method).not.toBe("DELETE");
+      const payload = JSON.parse(String(init?.body));
+      if (init?.method === "POST") {
+        eventInserts++;
+        if (remote.has(payload.id))
+          return okJson({ error: { code: 409 } }, 409);
+      }
+      const item = {
+        ...payload,
+        id: init?.method === "POST" ? payload.id : eventId,
+      };
+      remote.set(item.id, item);
+      operations.push("event:" + init?.method);
+      return okJson(item);
+    });
+    return {
+      id,
+      config,
+      row,
+      scope,
+      credential,
+      leaseToken,
+      remote,
+      mappings,
+      operations,
+      counts: () => ({ calendarInserts, eventInserts }),
+    };
+  }
+
+  it("scoped onboarding creates one calendar and verifies exact exams, pauses and idempotent retries", async () => {
+    const f = onboardingFixture();
+    expect(
+      await syncGoogleSubscription(f.id, f.config, {
+        leaseToken: f.leaseToken,
+      }),
+    ).toMatchObject({ created: 2, updated: 0, deleted: 0 });
+    expect(f.counts()).toEqual({ calendarInserts: 1, eventInserts: 2 });
+    const exam = [...f.remote.values()].find((item) => !item.recurrence)!;
+    expect(exam).toMatchObject({
+      location: "Engineering Hall",
+      start: {
+        dateTime: expect.stringContaining("2026-11-12T07:00"),
+        timeZone: "Africa/Harare",
+      },
+      end: {
+        dateTime: expect.stringContaining("2026-11-12T10:00"),
+        timeZone: "Africa/Harare",
+      },
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "popup", minutes: 60 },
+          { method: "popup", minutes: 30 },
+        ],
+      },
+    });
+    const lecture = [...f.remote.values()].find((item) => item.recurrence)!;
+    expect(JSON.stringify(lecture.recurrence)).toContain("20261027");
+    expect(f.operations.lastIndexOf("events:read")).toBeGreaterThan(
+      Math.max(
+        f.operations.lastIndexOf("event:POST"),
+        f.operations.lastIndexOf("event:PUT"),
+      ),
+    );
+    expect(f.operations.lastIndexOf("events:read")).toBeLessThan(
+      f.operations.indexOf("status:active"),
+    );
+    expect(
+      await syncGoogleSubscription(f.id, f.config, {
+        leaseToken: f.leaseToken,
+      }),
+    ).toMatchObject({ created: 0, updated: 0, deleted: 0, unchanged: 2 });
+    expect(f.counts()).toEqual({ calendarInserts: 1, eventInserts: 2 });
+    expect(creationMocks.beginGoogleCalendarCreation).toHaveBeenCalledTimes(1);
+    expect(f.remote.size).toBe(2);
+  });
+
+  it("does not report onboarding success when the final Google read has a different exam venue", async () => {
+    const f = onboardingFixture();
+    const provider = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      const response = await provider(url, init);
+      if (
+        init?.method === "GET" &&
+        String(url).includes("/events?") &&
+        f.counts().eventInserts > 0
+      ) {
+        const payload = await response.json();
+        for (const event of payload.items ?? [])
+          if (!event.recurrence) event.location = "Changed remote venue";
+        return okJson(payload);
+      }
+      return response;
+    });
+    await expect(
+      syncGoogleSubscription(f.id, f.config, { leaseToken: f.leaseToken }),
+    ).rejects.toMatchObject({ code: "GOOGLE_RECOVERY_REMOTE_UNVERIFIED" });
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).not.toHaveBeenCalledWith(expect.objectContaining({ status: "active" }));
+  });
+  it("an uncertain new calendar persistence result prevents a second calendar insertion on retry", async () => {
+    const f = onboardingFixture("new", true);
+    await expect(
+      syncGoogleSubscription(f.id, f.config, { leaseToken: f.leaseToken }),
+    ).rejects.toMatchObject({ code: "GOOGLE_CONNECTION_CHANGED" });
+    expect(f.row.external_calendar_id).toBeNull();
+    expect(f.counts()).toEqual({ calendarInserts: 1, eventInserts: 0 });
+    await expect(
+      syncGoogleSubscription(f.id, f.config, { leaseToken: f.leaseToken }),
+    ).rejects.toMatchObject({ code: "GOOGLE_CALENDAR_CREATION_UNCERTAIN" });
+    expect(f.counts()).toEqual({ calendarInserts: 1, eventInserts: 0 });
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).not.toHaveBeenCalledWith(expect.objectContaining({ status: "active" }));
+  });
+
+  it.each(["missing lease", "stale credentials"])(
+    "onboarding rejects %s before provider requests",
+    async (reason) => {
+      const f = onboardingFixture();
+      if (reason === "stale credentials")
+        googleRepositoryMocks.getGoogleCredential.mockResolvedValue({
+          ...f.credential,
+          updated_at: "2026-01-01T00:00:00Z",
+        });
+      await expect(
+        syncGoogleSubscription(
+          f.id,
+          f.config,
+          reason === "missing lease" ? {} : { leaseToken: f.leaseToken },
+        ),
+      ).rejects.toMatchObject({ code: "GOOGLE_ONBOARDING_CONSENT_REQUIRED" });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(creationMocks.beginGoogleCalendarCreation).not.toHaveBeenCalled();
+    },
+  );
+
+  it("reconnection updates the original calendar, installs only the missing exam and retains unmanaged events", async () => {
+    const f = onboardingFixture("reconnect");
+    const original = f.remote.get("unmanaged");
+    expect(
+      await syncGoogleSubscription(f.id, f.config, {
+        leaseToken: f.leaseToken,
+      }),
+    ).toMatchObject({ created: 1, updated: 1, deleted: 0 });
+    expect(f.row.external_calendar_id).toBe("cal-existing");
+    expect(f.counts()).toEqual({ calendarInserts: 0, eventInserts: 1 });
+    expect(f.remote.get("unmanaged")).toEqual(original);
+    expect(creationMocks.beginGoogleCalendarCreation).not.toHaveBeenCalled();
+    expect(
+      await syncGoogleSubscription(f.id, f.config, {
+        leaseToken: f.leaseToken,
+      }),
+    ).toMatchObject({ created: 0, updated: 0, deleted: 0, unchanged: 2 });
+    expect(f.counts()).toEqual({ calendarInserts: 0, eventInserts: 1 });
+  });
   it.each([1, 21])(
     "production recovery resumes and verifies with %i managed lecture events",
     async (lectureCount) => {
@@ -1329,6 +1702,9 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    creationMocks.beginGoogleCalendarCreation
+      .mockReset()
+      .mockResolvedValue(true);
     googleRepositoryMocks.updateGoogleSubscription
       .mockReset()
       .mockResolvedValue(true);
@@ -2340,6 +2716,9 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     expect(currentHash).toEqual(expect.any(String));
 
     vi.clearAllMocks();
+    creationMocks.beginGoogleCalendarCreation
+      .mockReset()
+      .mockResolvedValue(true);
     googleRepositoryMocks.getGoogleCredential.mockResolvedValue({
       encrypted_refresh_token: encryptGoogleRefreshToken("refresh-token", env),
     });
