@@ -415,7 +415,7 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
             : options.enqueueInitialSync,
       });
       return redirect(
-        `${publicOrigin}/t/${encodeURIComponent(result.publicSlug)}?calendar=google-success&subscriptionId=${encodeURIComponent(result.subscriptionId)}`,
+        `${publicOrigin}/t/${encodeURIComponent(result.publicSlug)}?calendar=google-pending&subscriptionId=${encodeURIComponent(result.subscriptionId)}`,
       );
     } catch {
       return redirect(`${publicOrigin}/find?calendar=google-failed`);

@@ -412,7 +412,7 @@ describe("native Google Web transport", () => {
       enqueueInitialSync: options.enqueueInitialSync,
     });
     expect(response!.headers.get("location")).toBe(
-      `https://calendar.example/t/class-slug?calendar=google-success&subscriptionId=${subscriptionId}`,
+      `https://calendar.example/t/class-slug?calendar=google-pending&subscriptionId=${subscriptionId}`,
     );
     expect(response!.headers.get("location")).not.toContain("private-");
     expect(services.syncGoogleSubscription).not.toHaveBeenCalled();

@@ -1,3 +1,9 @@
+import {
+  googleOnboardingScope,
+  googleOnboardingConnectionAllowed,
+  googleOnboardingDeliveryAllowed,
+} from "./googleOnboardingPolicy.js";
+import { beginGoogleCalendarCreation } from "./googleCalendarCreation.js";
 import { googleProductionRecoveryScope } from "./googleProductionRecoveryPolicy.js";
 import {
   createCipheriv,
@@ -90,10 +96,15 @@ function asRecord(value: unknown) {
 function assertCloudflareDeliveryScope(
   env: NodeJS.ProcessEnv,
   subscription: JsonRecord,
+  operation: "connect" | "deliver" = "deliver",
 ) {
   if (
     env.APP_ENV?.startsWith("cloudflare-") &&
-    !googleSubscriptionAllowed(env, subscription)
+    !googleSubscriptionAllowed(env, subscription) &&
+    !(
+      operation === "connect" &&
+      googleOnboardingConnectionAllowed(env, subscription)
+    )
   ) {
     throw new PilotApiError(
       "GOOGLE_DELIVERY_UNAVAILABLE",
@@ -827,6 +838,15 @@ async function loadAccessToken(
   };
 }
 
+/** Provider probe for the protected operator runner. Tokens stay in memory. */
+export async function checkGoogleCredentialProviderAuthorization(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv,
+) {
+  await loadAccessToken(subscriptionId, env);
+  return { providerAuthenticated: true };
+}
+
 export function getPublicGoogleCalendarStatus(
   env: NodeJS.ProcessEnv = process.env,
 ) {
@@ -855,7 +875,7 @@ export async function beginGoogleCalendarConnection(input: {
     );
   }
   assertSubscriptionOwner(subscription, input.anonymousSessionId);
-  assertCloudflareDeliveryScope(env, subscription);
+  assertCloudflareDeliveryScope(env, subscription, "connect");
   if (subscription.revoked_at) {
     throw new PilotApiError(
       "SUBSCRIPTION_REVOKED",
@@ -884,18 +904,27 @@ export async function beginGoogleCalendarConnection(input: {
 export async function syncGoogleSubscription(
   subscriptionId: string,
   env: NodeJS.ProcessEnv = process.env,
-  options: { signal?: AbortSignal; maxExternalRequests?: number } = {},
+  options: {
+    signal?: AbortSignal;
+    maxExternalRequests?: number;
+    leaseToken?: string;
+  } = {},
 ) {
   const work = () => reconcileGoogleSubscription(subscriptionId, env, options);
-  return options.maxExternalRequests === undefined
-    ? work()
-    : withExternalRequestBudget(options.maxExternalRequests, work);
+  const limit =
+    options.maxExternalRequests ??
+    (googleOnboardingScope(env)?.phase === "deliver" ? 40 : undefined);
+  return limit === undefined ? work() : withExternalRequestBudget(limit, work);
 }
 
 async function reconcileGoogleSubscription(
   subscriptionId: string,
   env: NodeJS.ProcessEnv = process.env,
-  options: { signal?: AbortSignal; maxExternalRequests?: number } = {},
+  options: {
+    signal?: AbortSignal;
+    maxExternalRequests?: number;
+    leaseToken?: string;
+  } = {},
 ) {
   const { signal } = options;
   signal?.throwIfAborted();
@@ -914,6 +943,27 @@ async function reconcileGoogleSubscription(
     return { created: 0, updated: 0, deleted: 0, unchanged: 0 };
   }
   assertCloudflareDeliveryScope(env, subscription);
+  const onboardingScope = googleOnboardingScope(env);
+  const onboarding =
+    onboardingScope?.phase === "deliver" ? onboardingScope : null;
+  const onboardingCredential = onboarding
+    ? await getGoogleCredential(subscriptionId, env)
+    : null;
+  if (
+    onboarding &&
+    (!options.leaseToken ||
+      !googleOnboardingDeliveryAllowed(
+        env,
+        subscription,
+        onboardingCredential?.updated_at,
+      ))
+  )
+    throw new PilotApiError(
+      "GOOGLE_ONBOARDING_CONSENT_REQUIRED",
+      "Renewed Google authorization and a delivery lease are required.",
+      409,
+    );
+  let expectedCalendarId = String(subscription.external_calendar_id ?? "");
   const productionRecovery = googleProductionRecoveryScope(env);
   const recovery = productionRecovery ?? googleRecoveryScope(env);
   const recoveryScope =
@@ -953,6 +1003,42 @@ async function reconcileGoogleSubscription(
         throw new PilotApiError(
           "GOOGLE_RECOVERY_CONNECTION_CHANGED",
           "Connection or preferences changed. Preview recovery again.",
+          409,
+        );
+    }
+    if (onboarding) {
+      const current = asRecord(
+        await getCalendarSubscriptionById(subscriptionId, env),
+      );
+      const credential = await getGoogleCredential(subscriptionId, env);
+      const fence = await getGoogleCalendarRecoveryFence(subscriptionId, env);
+      const revision = await getCalendarRevision(
+        String(subscription.timetable_id),
+        env,
+      );
+      if (
+        !current ||
+        !googleOnboardingDeliveryAllowed(
+          env,
+          current,
+          credential?.updated_at,
+        ) ||
+        credential?.updated_at !== onboardingCredential?.updated_at ||
+        String(current.external_calendar_id ?? "") !== expectedCalendarId ||
+        JSON.stringify(current.reminder_offsets_minutes ?? []) !==
+          JSON.stringify(subscription.reminder_offsets_minutes ?? []) ||
+        JSON.stringify(current.exam_reminder_offsets_minutes ?? []) !==
+          JSON.stringify(subscription.exam_reminder_offsets_minutes ?? []) ||
+        revision.sequence !== onboarding.revision ||
+        fence?.lease_token !== options.leaseToken ||
+        Date.parse(String(fence?.lease_expires_at)) <= Date.now() + 5000 ||
+        !Number.isFinite(Date.parse(String(fence?.lease_expires_at))) ||
+        Number(fence?.desired_revision) !== onboarding.deliveryRevision ||
+        Number(fence?.requested_generation) !== onboarding.deliveryGeneration
+      )
+        throw new PilotApiError(
+          "GOOGLE_ONBOARDING_CONNECTION_CHANGED",
+          "Calendar setup changed. Preview again.",
           409,
         );
     }
@@ -1013,9 +1099,57 @@ async function reconcileGoogleSubscription(
         409,
       );
   }
+  const onboardingCreatedKeys = new Set<string>();
+  const onboardingUpdatedKeys = new Set<string>();
+  if (onboarding && subscription.external_calendar_id) {
+    const preview = await withExternalRequestBudget(40, () =>
+      previewGoogleSubscriptionSync(subscriptionId, env),
+    );
+    if (
+      preview.wouldDelete ||
+      preview.ownershipReviewCount ||
+      !preview.remoteReadComplete ||
+      preview.expectedEvents > 32 ||
+      (onboarding.mode === "reconnect" &&
+        preview.wouldCreate !== preview.wouldCreateExaminations) ||
+      preview.wouldCreate > onboarding.maxCreates ||
+      (onboarding.mode === "reconnect" &&
+        preview.wouldUpdate > onboarding.maxUpdates)
+    )
+      throw new PilotApiError(
+        "GOOGLE_ONBOARDING_PREVIEW_REJECTED",
+        "Calendar setup needs operator review.",
+        409,
+      );
+  }
   const writeGoogleEvent = async (
     input: Parameters<typeof googleApiRequest>[0],
   ) => {
+    if (onboarding) {
+      const key = String(
+        getNestedRecord(
+          getNestedRecord(input.body, "extendedProperties"),
+          "private",
+        )?.calenderzwStableSessionKey ?? "",
+      );
+      if (
+        input.method === "POST" ||
+        (input.method === "PUT" && onboarding.mode === "new")
+      )
+        onboardingCreatedKeys.add(key);
+      else if (input.method === "PUT") onboardingUpdatedKeys.add(key);
+      if (
+        input.method === "DELETE" ||
+        !key ||
+        onboardingCreatedKeys.size > onboarding.maxCreates ||
+        onboardingUpdatedKeys.size > onboarding.maxUpdates
+      )
+        throw new PilotApiError(
+          "GOOGLE_ONBOARDING_MUTATION_FORBIDDEN",
+          "Calendar setup mutation limit reached.",
+          409,
+        );
+    }
     if (productionRecovery) {
       const key = createHash("sha256")
         .update(
@@ -1098,6 +1232,18 @@ async function reconcileGoogleSubscription(
       : [],
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
+  if (
+    onboarding &&
+    (revision.sequence !== onboarding.revision ||
+      projection.events.length > 32 ||
+      (onboarding.mode === "new" &&
+        projection.events.length > onboarding.maxCreates))
+  )
+    throw new PilotApiError(
+      "GOOGLE_ONBOARDING_REVISION_CHANGED",
+      "Calendar setup projection changed.",
+      409,
+    );
   const publishedVersionId = revision.publishedVersionId;
 
   const { accessToken } = await loadAccessToken(subscriptionId, env, signal);
@@ -1106,6 +1252,21 @@ async function reconcileGoogleSubscription(
     : null;
   if (!calendarId) {
     await assertConnection();
+    if (
+      onboarding &&
+      (onboarding.mode !== "new" ||
+        !(await beginGoogleCalendarCreation({
+          subscriptionId,
+          connectionGeneration,
+          leaseToken: options.leaseToken!,
+          env,
+        })))
+    )
+      throw new PilotApiError(
+        "GOOGLE_CALENDAR_CREATION_UNCERTAIN",
+        "An earlier calendar creation needs verification before retrying.",
+        409,
+      );
     calendarId = await createSecondaryCalendar({
       signal,
       accessToken,
@@ -1126,6 +1287,8 @@ async function reconcileGoogleSubscription(
         409,
       );
   }
+
+  expectedCalendarId = calendarId;
 
   const previousRecords = await listGoogleEventSyncRecords(subscriptionId, env);
   const previousById = new Map(
@@ -1236,6 +1399,36 @@ async function reconcileGoogleSubscription(
       : (remoteMatches?.[0]?.id ?? null);
 
     if (
+      onboarding &&
+      externalEventId &&
+      (externalEventId !== previousExternalEventId ||
+        !previousRemoteStillManaged ||
+        previous?.content_hash !== hash) &&
+      remotePayloadMatches(
+        remoteManagedEvents.find((item) => item.id === externalEventId)
+          ?.content ?? {},
+        payload,
+      )
+    ) {
+      await assertConnection();
+      await upsertGoogleEventSyncRecord({
+        subscriptionId,
+        connectionGeneration,
+        internalEventId: event.stableSessionKey,
+        timetableVersionId: publishedVersionId,
+        externalCalendarId: calendarId,
+        externalEventId,
+        contentHash: hash,
+        syncStatus: "active",
+        env,
+      });
+      retainedRemoteEventIds.add(externalEventId);
+      unchanged++;
+      markExternalWorkProgress();
+      continue;
+    }
+
+    if (
       externalEventId &&
       externalEventId === previousExternalEventId &&
       previousRemoteStillManaged &&
@@ -1264,7 +1457,10 @@ async function reconcileGoogleSubscription(
       remoteEventId = result?.id ? String(result.id) : externalEventId;
       updated += 1;
     } else {
-      if (productionRecovery && event.eventCategory !== "exam")
+      if (
+        (productionRecovery || onboarding?.mode === "reconnect") &&
+        event.eventCategory !== "exam"
+      )
         throw new PilotApiError(
           "GOOGLE_RECOVERY_MUTATION_FORBIDDEN",
           "Recovery only creates missing examinations.",
@@ -1395,7 +1591,8 @@ async function reconcileGoogleSubscription(
   }
 
   signal?.throwIfAborted();
-  if (productionRecovery) {
+  if (productionRecovery || onboarding) {
+    const boundedScope = productionRecovery ?? onboarding!;
     const verified = await withExternalRequestBudget(40, () =>
       previewGoogleSubscriptionSync(subscriptionId, env),
     );
@@ -1403,8 +1600,8 @@ async function reconcileGoogleSubscription(
     if (
       !verified.remoteContentsVerified ||
       verified.wouldUpdate ||
-      verified.publishedRevision !== productionRecovery.revision ||
-      verified.connectionGeneration !== productionRecovery.connectionGeneration
+      verified.publishedRevision !== boundedScope.revision ||
+      verified.connectionGeneration !== boundedScope.connectionGeneration
     )
       throw new PilotApiError(
         "GOOGLE_RECOVERY_REMOTE_UNVERIFIED",
@@ -1515,7 +1712,10 @@ export async function previewGoogleSubscriptionSync(
     publicOrigin: env.PUBLIC_APP_URL ?? "https://calender.aido.co.zw",
   });
   const { accessToken } = await loadAccessToken(subscriptionId, env);
-  if (googleProductionRecoveryScope(env)) {
+  if (
+    googleProductionRecoveryScope(env) ||
+    googleOnboardingScope(env)?.phase === "deliver"
+  ) {
     const calendar = await googleApiRequest({
       accessToken,
       path: "/calendars/" + encodeURIComponent(calendarId),
@@ -1543,7 +1743,10 @@ export async function previewGoogleSubscriptionSync(
       timetableId,
       previousRecords,
       listedEvents,
-      reuseListed: Boolean(googleProductionRecoveryScope(env)),
+      reuseListed: Boolean(
+        googleProductionRecoveryScope(env) ||
+        googleOnboardingScope(env)?.phase === "deliver",
+      ),
     });
   const remoteManagedByStableKey = new Map<
     string,
@@ -1561,6 +1764,7 @@ export async function previewGoogleSubscriptionSync(
   const nextIds = new Set<string>();
   const retainedRemoteEventIds = new Set<string>();
   const wouldDeleteRemoteEventIds = new Set<string>();
+  let wouldAdopt = 0;
   let wouldCreate = 0;
   let wouldCreateExaminations = 0;
   const createKeys: string[] = [];
@@ -1617,6 +1821,19 @@ export async function previewGoogleSubscriptionSync(
       }),
     );
     if (!contentMatches) remoteContentMismatchCount += 1;
+    if (
+      googleOnboardingScope(env)?.phase === "deliver" &&
+      contentMatches &&
+      externalEventId &&
+      (externalEventId !== previousExternalEventId ||
+        !previousRemoteStillManaged ||
+        previous?.content_hash !== hash)
+    ) {
+      retainedRemoteEventIds.add(externalEventId);
+      wouldAdopt++;
+      unchanged++;
+      continue;
+    }
     if (
       externalEventId &&
       externalEventId === previousExternalEventId &&
@@ -1723,10 +1940,12 @@ export async function previewGoogleSubscriptionSync(
     remoteContentMismatchCount,
     remoteContentMismatchFields,
     manifestHash,
+    wouldAdopt,
     createKeys: createKeys.sort(),
     updateKeys: updateKeys.sort(),
     remoteContentsVerified:
       remoteReadComplete &&
+      wouldAdopt === 0 &&
       remoteContentMismatchCount === 0 &&
       remoteManagedEvents.length === projection.events.length &&
       ownershipReviewIds.size === 0 &&
@@ -1812,9 +2031,9 @@ export async function completeGoogleCalendarConnection(input: {
     );
   }
 
-  assertCloudflareDeliveryScope(env, subscription);
+  assertCloudflareDeliveryScope(env, subscription, "connect");
   if (
-    env.APP_ENV === "cloudflare-staging" &&
+    (env.APP_ENV === "cloudflare-staging" || googleOnboardingScope(env)) &&
     env.ENABLE_GOOGLE_DELIVERY !== "true" &&
     stateRow.anonymous_session_id !== subscription.anonymous_session_id
   ) {

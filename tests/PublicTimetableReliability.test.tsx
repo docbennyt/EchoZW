@@ -21,7 +21,13 @@ vi.mock("../src/api/publicTimetable", () => ({
 vi.mock("../src/api/calendarSubscriptions", () => ({
   createCalendarSubscription: mocks.createCalendarSubscription,
 }));
-vi.mock("../src/analytics", () => ({ track: mocks.track }));
+vi.mock("../src/analytics", () => ({
+  track: mocks.track,
+  getAnalyticsIdentity: () => ({
+    anonymousId: "11111111-1111-4111-8111-111111111111",
+    sessionId: "22222222-2222-4222-8222-222222222222",
+  }),
+}));
 vi.mock("../src/PersonalTimetablePreview", () => ({
   PersonalTimetablePreview: () => (
     <div data-testid="visual-preview">Preview</div>
@@ -166,6 +172,39 @@ beforeEach(() => {
 
 describe("DR-64 student Add-to-Calendar conversion", () => {
   afterEach(() => vi.useRealTimers());
+
+  it("shows saved authorization without claiming completed delivery on OAuth return", async () => {
+    const previous = window.location.href;
+    window.history.replaceState({}, "", "/t/class?calendar=google-pending");
+    try {
+      render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+      expect(
+        await screen.findByText("Google authorization saved."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Check calendar delivery status" }),
+      ).toHaveAttribute("href", `/t/${timetable.publicSlug}/google`);
+      expect(
+        screen.queryByText("Google Calendar connected"),
+      ).not.toBeInTheDocument();
+    } finally {
+      window.history.replaceState({}, "", previous);
+    }
+  });
+
+  it("identifies the original browser before its first Google subscription cookie exists", async () => {
+    render(<PublicTimetableReliability slug={timetable.publicSlug} />);
+    await waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith(
+        "/api/calendar/google/status",
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            "X-CalenderZW-Anonymous-Id": "11111111-1111-4111-8111-111111111111",
+          }),
+        }),
+      ),
+    );
+  });
   it("explains the current SWOT pause without presenting the regular grid as this week's classes", async () => {
     vi.setSystemTime(new Date("2026-10-27T10:00:00Z"));
     mocks.fetchPublicTimetable.mockResolvedValue({

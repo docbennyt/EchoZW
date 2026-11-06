@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { track } from "./analytics";
+import { getAnalyticsIdentity, track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
@@ -41,7 +41,10 @@ const reminderOptions: Array<{
 
 async function fetchGoogleStatus(): Promise<GoogleStatus> {
   const response = await fetch("/api/calendar/google/status", {
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      "X-CalenderZW-Anonymous-Id": getAnalyticsIdentity().anonymousId,
+    },
   });
   if (!response.ok) return { enabled: false, scope: "" };
   return (await response.json()) as GoogleStatus;
