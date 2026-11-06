@@ -203,3 +203,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.pt-google-connected-note.gcal-owned-connection {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gcal-owned-connection a,
+.gcal-owned-connection button {
+  justify-self: start;
+  max-width: 100%;
+}
