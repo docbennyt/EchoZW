@@ -1440,6 +1440,81 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     },
   );
 
+  it("reconnect retry adopts a verified exam after POST succeeds and its mapping save fails, with no update budget", async () => {
+    const f = onboardingFixture("reconnect");
+    const published = await repositoryMocks.getPublishedTimetableById(
+      f.scope.timetableId,
+      f.config,
+    );
+    repositoryMocks.getPublishedTimetableById.mockResolvedValue({
+      ...published,
+      sessions: [],
+    });
+    f.remote.delete("event-ise4105");
+    f.mappings.splice(0);
+    f.scope.maxUpdates = 0;
+    f.config.GOOGLE_PRODUCTION_ONBOARDING = JSON.stringify(f.scope);
+    const authorizedScope = f.config.GOOGLE_PRODUCTION_ONBOARDING;
+    googleRepositoryMocks.upsertGoogleEventSyncRecord.mockRejectedValueOnce(
+      new Error("fixture mapping save interruption"),
+    );
+
+    const initial = await previewGoogleSubscriptionSync(f.id, f.config);
+    expect(initial).toMatchObject({
+      wouldCreate: 1,
+      wouldUpdate: 0,
+      wouldAdopt: 0,
+      wouldDelete: 0,
+    });
+    await expect(
+      syncGoogleSubscription(f.id, f.config, { leaseToken: f.leaseToken }),
+    ).rejects.toThrow("fixture mapping save interruption");
+    expect(f.counts()).toEqual({ calendarInserts: 0, eventInserts: 1 });
+    expect(f.mappings).toHaveLength(0);
+    expect(
+      googleRepositoryMocks.updateGoogleSubscription,
+    ).not.toHaveBeenCalledWith(expect.objectContaining({ status: "active" }));
+
+    const orphaned = await previewGoogleSubscriptionSync(f.id, f.config);
+    expect(orphaned).toMatchObject({
+      wouldCreate: 0,
+      wouldUpdate: 0,
+      wouldAdopt: 1,
+      wouldDelete: 0,
+      remoteContentsVerified: false,
+    });
+    expect(
+      await syncGoogleSubscription(f.id, f.config, {
+        leaseToken: f.leaseToken,
+      }),
+    ).toMatchObject({
+      created: 0,
+      updated: 0,
+      deleted: 0,
+      unchanged: 1,
+      lastSyncedAt: expect.any(String),
+    });
+    expect(f.config.GOOGLE_PRODUCTION_ONBOARDING).toBe(authorizedScope);
+    expect(f.counts()).toEqual({ calendarInserts: 0, eventInserts: 1 });
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ method: "PUT" }),
+    );
+    expect(fetch).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ method: "DELETE" }),
+    );
+    expect(f.mappings).toHaveLength(1);
+    expect(f.remote.has(f.mappings[0].external_event_id)).toBe(true);
+    expect(f.row.external_calendar_id).toBe("cal-existing");
+    expect(await previewGoogleSubscriptionSync(f.id, f.config)).toMatchObject({
+      wouldCreate: 0,
+      wouldUpdate: 0,
+      wouldAdopt: 0,
+      wouldDelete: 0,
+      remoteContentsVerified: true,
+    });
+  });
   it("reconnection updates the original calendar, installs only the missing exam and retains unmanaged events", async () => {
     const f = onboardingFixture("reconnect");
     const original = f.remote.get("unmanaged");
