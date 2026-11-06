@@ -421,3 +421,17 @@ export async function deleteGoogleEventSyncRecord(input: {
   if (error)
     throw databaseError("Could not remove Google Calendar event state.", error);
 }
+
+export async function getGoogleCalendarRecoveryFence(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv,
+) {
+  const { data, error } = await client(env)
+    .from("google_calendar_delivery_jobs")
+    .select("desired_revision,requested_generation")
+    .eq("subscription_id", subscriptionId)
+    .maybeSingle();
+  if (error)
+    throw databaseError("Could not verify Google delivery generation.");
+  return data as JsonRecord | null;
+}

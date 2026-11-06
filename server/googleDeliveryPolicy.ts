@@ -1,3 +1,4 @@
+import { googleProductionRecoveryScope } from "./googleProductionRecoveryPolicy.js";
 type Bindings = Record<string, unknown>;
 type Subscription = Record<string, unknown>;
 const uuid = (value: unknown): value is string =>
@@ -116,6 +117,7 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
   const qa = googleCanaryScope(env);
   const recovery = googleRecoveryScope(env);
+  const production = googleProductionRecoveryScope(env);
   const matches = (scope: ReturnType<typeof googleCanaryScope>) =>
     scope !== null &&
     scope.subscription === row.id &&
@@ -123,6 +125,11 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
     scope.timetable === row.timetable_id;
   return Boolean(
     (matches(qa) ||
+      (matches(production) &&
+        row.status === "active" &&
+        Boolean(row.external_calendar_id) &&
+        Number(row.google_connection_generation ?? 0) ===
+          production?.connectionGeneration) ||
       (matches(recovery) &&
         row.status === "active" &&
         Number(row.google_connection_generation ?? 0) ===
@@ -136,6 +143,7 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
 export function googleDeliveryTargetAllowed(env: Bindings, id: unknown) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
   const target =
+    googleProductionRecoveryScope(env)?.subscription ??
     googleRecoveryScope(env)?.subscription ??
     googleCanaryScope(env)?.subscription;
   return Boolean(target && target === id);

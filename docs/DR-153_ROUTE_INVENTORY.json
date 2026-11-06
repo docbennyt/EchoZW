@@ -717,10 +717,11 @@
     "server/docxStructuredReader.ts": "34a63f0540c008768cc716e37ff7c604e9b4d2bff24140e81b64e5ecabb0ae02",
     "server/externalRequestBudget.ts": "37915c7dda55f9e2633eeaced268a078b6181aa9a5f68cf290984f000f43767f",
     "server/googleCalendarDelivery.ts": "1561ba3ad64595bf679141cc02efa8b65e7294d02893828e282d4cefd2821235",
-    "server/googleCalendarRepository.ts": "9efa0b99cd2701df5a56fa462c514c6e993429f82c3cf33a2dd40b83a994d227",
-    "server/googleCalendarSync.ts": "2e8bf826ea2529052057515a40218be897ec6d4396ce550a385b74b540788635",
+    "server/googleCalendarRepository.ts": "527ffd5a631bcf97957b9dc6ffea092f0685b3f88085204e76f0ae68e5117c56",
+    "server/googleCalendarSync.ts": "ad88260acdf4b4bbd08d055337c54d88a9a42e2d12330303e27a244359cd5f33",
     "server/googleCredentialRecovery.ts": "a54a3c4924c2c3bb41843ff171d57b96c673fcc4b502214bfb2d7249a554702b",
-    "server/googleDeliveryPolicy.ts": "d88508fec225773dcd0349f2e01265ec3afe63e2c92ba66129899da2f163f437",
+    "server/googleDeliveryPolicy.ts": "f8c8820a25a279be95dbe5b624db3c6624841cb62f32ede7c776ed61e3164112",
+    "server/googleProductionRecoveryPolicy.ts": "6acc3e7b884cdd22ac5141d50601fba22f3d3f00e0f5f5d2fa311a294b31da76",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
     "server/growthCaptureRepository.ts": "49b4f42e3f1dbf74032a13cd932d44275a99d691ac4fe0f00116803cb0b87b46",
     "server/growthInboxAdminApi.ts": "a48838602baab4c8eee7bb810364297758021aeee7766d025812d1ccb3a45f73",
@@ -1097,6 +1098,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -1181,17 +1183,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -1262,6 +1269,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -1346,17 +1354,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5024,6 +5037,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -5122,17 +5136,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5204,6 +5223,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -5296,17 +5316,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5378,6 +5403,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -5477,17 +5503,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5559,6 +5590,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -5651,17 +5683,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5733,6 +5770,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -5826,17 +5864,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -5908,6 +5951,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -6001,17 +6045,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6083,6 +6132,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -6175,17 +6225,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6257,6 +6312,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -6351,17 +6407,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6433,6 +6494,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -6525,17 +6587,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6607,6 +6674,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -6700,17 +6768,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -6781,6 +6854,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -6857,17 +6931,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1751,
+          "line": 1936,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7029,6 +7108,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -7122,17 +7202,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7203,6 +7288,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -7296,17 +7382,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -7674,6 +7765,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: timetable_correction_directives",
         "table/storage reference: timetable_session_exceptions",
@@ -7751,17 +7843,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1707,
+          "line": 1892,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8168,6 +8265,7 @@
         "table/storage reference: calendar_event_sync_records",
         "table/storage reference: calendar_subscriptions",
         "table/storage reference: google_calendar_credentials",
+        "table/storage reference: google_calendar_delivery_jobs",
         "table/storage reference: google_calendar_delivery_revisions",
         "table/storage reference: google_calendar_oauth_states",
         "table/storage reference: timetable_correction_directives",
@@ -8255,17 +8353,22 @@
         },
         {
           "file": "server/googleCalendarRepository.ts",
-          "line": 386,
+          "line": 425,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1572,
+          "line": 1757,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8499,12 +8602,17 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 830,
+          "line": 840,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
           "file": "server/googleDeliveryPolicy.ts",
-          "line": 115,
+          "line": 116,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleProductionRecoveryPolicy.ts",
+          "line": 7,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8651,7 +8759,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 1787,
+          "line": 1972,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8763,7 +8871,7 @@
       "dependencyEvidence": [
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 820,
+          "line": 830,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8870,7 +8978,7 @@
         },
         {
           "file": "server/googleCalendarSync.ts",
-          "line": 820,
+          "line": 830,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {

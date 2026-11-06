@@ -19,6 +19,9 @@ const googleRepositoryMocks = vi.hoisted(() => ({
   deleteGoogleEventSyncRecord: vi.fn(),
   getCurrentPublishedVersionId: vi.fn(),
   getGoogleCredential: vi.fn(),
+  getGoogleCalendarRecoveryFence: vi
+    .fn()
+    .mockResolvedValue({ desired_revision: 8, requested_generation: 2 }),
   listGoogleEventSyncRecords: vi.fn(),
   listSyncableGoogleSubscriptions: vi.fn(),
   saveGoogleCredential: vi.fn(),
@@ -810,6 +813,11 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
     vi.mocked(fetch).mockImplementation(async (url, init) => {
       if (String(url) === "https://oauth2.googleapis.com/token")
         return okJson({ access_token: "access-token" });
+      if (
+        init?.method === "GET" &&
+        String(url).endsWith("/calendars/cal-existing")
+      )
+        return okJson({ id: "cal-existing" });
       if (init?.method === "GET" && String(url).includes("/events")) {
         if (options.lateRevision) revision = 2;
         const listed = {
@@ -1076,6 +1084,246 @@ describe("DR-171 existing Google Calendar subscription propagation", () => {
       wouldUpdate: 1,
       remoteContentMismatchFields: { recurrence: 1 },
     });
+  });
+
+  it.each([1, 21])(
+    "production recovery resumes and verifies with %i managed lecture events",
+    async (lectureCount) => {
+      const { id, bindings } = guardedRecoveryFixture({ remoteContent: true });
+      const original = JSON.parse(bindings.GOOGLE_RECOVERY_CANARY);
+      const scope = {
+        deliveryRevision: 8,
+        deliveryGeneration: 2,
+        candidateSha: original.candidateSha,
+        ownerId: original.ownerId,
+        timetableId: original.timetableId,
+        subscriptionId: id,
+        expiresAt: original.expiresAt,
+        revision: 1,
+        connectionGeneration: 0,
+        maxCreates: 1,
+        maxUpdates: 24,
+        maxDeletes: 0,
+        manifestHash: "0".repeat(64),
+        createKeys: [],
+        updateKeys: [],
+      };
+      const config = {
+        ...bindings,
+        APP_ENV: "cloudflare-production",
+        GOOGLE_PRODUCTION_RECOVERY: JSON.stringify(scope),
+      };
+      const published = timetable({
+        timetableId: original.timetableId,
+        sessions: Array.from({ length: lectureCount }, (_, index) => ({
+          ...timetable().sessions[0],
+          stableSessionKey:
+            index === 0 ? "ise4105-tue-corrected" : "lecture-" + index,
+        })),
+        exceptions: [
+          {
+            id: "exam-paper",
+            identityRootId: "exam-paper",
+            supersedesId: null,
+            stableSessionKey: null,
+            exceptionDate: "2026-11-12",
+            exceptionType: "extra",
+            replacementStartsAt: null,
+            replacementEndsAt: null,
+            courseCode: "ISE4105",
+            courseName: "Software Project Management",
+            startTime: "09:00:00",
+            endTime: "12:00:00",
+            venue: "Engineering Hall",
+            lecturer: null,
+            sessionType: "Examination",
+            notes: null,
+            reason: "Verified source",
+            provenance: "Official fixture",
+            active: true,
+            createdAt: "2026-11-01T00:00:00Z",
+          },
+        ],
+      });
+      repositoryMocks.getPublishedTimetableById.mockResolvedValue(published);
+      const remote = new Map<string, Record<string, unknown>>();
+      remote.set("event-ise4105", {
+        id: "event-ise4105",
+        summary: "stale lecture",
+        start: {
+          dateTime: "2026-08-11T01:00:00+02:00",
+          timeZone: "Africa/Harare",
+        },
+        end: {
+          dateTime: "2026-08-11T02:00:00+02:00",
+          timeZone: "Africa/Harare",
+        },
+        recurrence: ["RRULE:FREQ=WEEKLY"],
+        reminders: { useDefault: true },
+        extendedProperties: {
+          private: {
+            calenderzwTimetableId: original.timetableId,
+            calenderzwStableSessionKey: "ise4105-tue-corrected",
+          },
+        },
+      });
+      const mappings = [
+        {
+          internal_event_id: "ise4105-tue-corrected",
+          external_event_id: "event-ise4105",
+          content_hash: "stale-hash",
+        },
+      ];
+      for (let index = 1; index < lectureCount; index++) {
+        const key = "lecture-" + index,
+          eventId = "existing-" + index;
+        const first = remote.get("event-ise4105")!;
+        remote.set(eventId, {
+          ...first,
+          id: eventId,
+          extendedProperties: {
+            private: {
+              calenderzwTimetableId: original.timetableId,
+              calenderzwStableSessionKey: key,
+            },
+          },
+        });
+        mappings.push({
+          internal_event_id: key,
+          external_event_id: eventId,
+          content_hash: "stale-hash",
+        });
+      }
+      let failAfterFirstProviderWrite = true;
+      googleRepositoryMocks.listGoogleEventSyncRecords.mockImplementation(
+        async () => [...mappings],
+      );
+      googleRepositoryMocks.upsertGoogleEventSyncRecord.mockImplementation(
+        async (input) => {
+          if (failAfterFirstProviderWrite) {
+            failAfterFirstProviderWrite = false;
+            throw new Error("fixture DB interruption");
+          }
+          const row = {
+            internal_event_id: input.internalEventId,
+            external_event_id: input.externalEventId,
+            content_hash: input.contentHash,
+          };
+          const index = mappings.findIndex(
+            (item) => item.internal_event_id === row.internal_event_id,
+          );
+          if (index < 0) mappings.push(row);
+          else mappings[index] = row;
+        },
+      );
+      let creates = 0;
+      vi.mocked(fetch).mockImplementation(async (url, init) => {
+        const value = String(url);
+        if (value === "https://oauth2.googleapis.com/token")
+          return okJson({ access_token: "access-token" });
+        if (init?.method === "GET") {
+          if (new URL(value).pathname.endsWith("/calendars/cal-existing"))
+            return okJson({ id: "cal-existing" });
+          return okJson(
+            value.includes("/events?")
+              ? { items: [...remote.values()] }
+              : (remote.get(
+                  decodeURIComponent(
+                    new URL(value).pathname.split("/").at(-1)!,
+                  ),
+                ) ?? {}),
+          );
+        }
+        expect(init?.method).not.toBe("DELETE");
+        const payload = JSON.parse(String(init?.body));
+        const eventId =
+          init?.method === "POST"
+            ? payload.id
+            : decodeURIComponent(new URL(value).pathname.split("/").at(-1)!);
+        if (init?.method === "POST") {
+          creates++;
+          expect(payload.start.dateTime).toContain("2026-11-12T07:00");
+          expect(payload.location).toBe("Engineering Hall");
+          expect(payload.recurrence).toBeUndefined();
+        }
+        const item = { ...payload, id: eventId };
+        remote.set(eventId, item);
+        return okJson(item);
+      });
+      const preview = await previewGoogleSubscriptionSync(id, config);
+      expect(preview).toMatchObject({
+        wouldCreate: 1,
+        wouldCreateExaminations: 1,
+        wouldDelete: 0,
+      });
+      config.GOOGLE_PRODUCTION_RECOVERY = JSON.stringify({
+        ...scope,
+        manifestHash: preview.manifestHash,
+        createKeys: preview.createKeys,
+        updateKeys: preview.updateKeys,
+      });
+      await expect(syncGoogleSubscription(id, config)).rejects.toThrow(
+        "fixture DB interruption",
+      );
+      await expect(
+        syncGoogleSubscription(id, config, { maxExternalRequests: 40 }),
+      ).resolves.toMatchObject({
+        created: 1,
+        updated: lectureCount,
+        deleted: 0,
+      });
+      const verified = await previewGoogleSubscriptionSync(id, config);
+      expect(verified.remoteContentsVerified).toBe(true);
+      config.GOOGLE_PRODUCTION_RECOVERY = JSON.stringify({
+        ...scope,
+        manifestHash: verified.manifestHash,
+        createKeys: preview.createKeys,
+        updateKeys: preview.updateKeys,
+      });
+      await expect(syncGoogleSubscription(id, config)).resolves.toMatchObject({
+        created: 0,
+        updated: 0,
+        unchanged: lectureCount + 1,
+      });
+      expect(creates).toBe(1);
+      expect(remote.size).toBe(lectureCount + 1);
+    },
+  );
+
+  it("production recovery rejects a stale immutable manifest before remote mutation", async () => {
+    const { id, bindings } = guardedRecoveryFixture({ remoteContent: true });
+    const old = JSON.parse(bindings.GOOGLE_RECOVERY_CANARY);
+    const config = {
+      ...bindings,
+      APP_ENV: "cloudflare-production",
+      GOOGLE_PRODUCTION_RECOVERY: JSON.stringify({
+        deliveryRevision: 8,
+        deliveryGeneration: 2,
+        candidateSha: old.candidateSha,
+        ownerId: old.ownerId,
+        timetableId: old.timetableId,
+        subscriptionId: id,
+        expiresAt: old.expiresAt,
+        revision: 1,
+        connectionGeneration: 0,
+        maxCreates: 1,
+        maxUpdates: 4,
+        maxDeletes: 0,
+        manifestHash: "b".repeat(64),
+        createKeys: [],
+        updateKeys: [],
+      }),
+    };
+    await expect(syncGoogleSubscription(id, config)).rejects.toMatchObject({
+      code: "GOOGLE_RECOVERY_MANIFEST_CHANGED",
+    });
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([, init]) =>
+          ["PUT", "DELETE"].includes(init?.method ?? ""),
+        ),
+    ).toBe(false);
   });
 
   beforeEach(() => {
