@@ -179,9 +179,11 @@ export function projectPublishedTimetable(input: {
   timetable: PublicTimetable;
   reminderOffsetsMinutes?: number[];
   examReminderOffsetsMinutes?: number[];
+  now?: Date;
   publicOrigin?: string;
 }): CanonicalPublishedCalendar {
   const timetable = input.timetable;
+  const now = (input.now ?? new Date()).getTime();
   if (!timetable.startsOn || !timetable.endsOn) {
     throw new Error("Published timetable is missing academic period dates.");
   }
@@ -348,7 +350,9 @@ export function projectPublishedTimetable(input: {
         lastModifiedUtc,
         sequence: timetable.versionNumber,
         alarms: (academicEventCategory(session.sessionType) === "exam"
-          ? examReminderOffsets
+          ? examReminderOffsets.filter(
+              (minutes) => occurrence.start.getTime() - minutes * 60_000 > now,
+            )
           : reminderOffsets
         ).map((minutesBefore) => ({
           minutesBefore,
