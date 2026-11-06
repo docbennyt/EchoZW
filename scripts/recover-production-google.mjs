@@ -1,3 +1,4 @@
+import { setTimeout as delay } from "node:timers/promises";
 import { googleProductionRecoveryScope } from "../dist-server/server/googleProductionRecoveryPolicy.js";
 import {
   getCalendarSubscriptionById,
@@ -155,6 +156,10 @@ export async function runProductionGoogleRecovery(env, mode) {
       };
     if (!finished || !continuation)
       throw new Error("PRODUCTION_RECOVERY_NOT_CONVERGED");
+    // The durable continuation contract schedules the next claim 15 seconds later.
+    await delay(16_000);
+    if (!googleProductionRecoveryScope(env))
+      throw new Error("PRODUCTION_RECOVERY_SCOPE_EXPIRED");
   }
   throw new Error("PRODUCTION_RECOVERY_CONTINUATION_REQUIRED");
 }
