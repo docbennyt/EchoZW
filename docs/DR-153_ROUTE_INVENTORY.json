@@ -903,10 +903,10 @@
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "4878b10ba3fa7497cfd501215e47b94efe9aba55a8488129e98ccfcdf5532b6e",
-    "worker/googleCalendarApi.mjs": "d2ed93b6c06e52ec49f89dfa252ed1d607737a3687b5af7ed4123fefde4295de",
+    "worker/googleCalendarApi.mjs": "ecd5296a55d2c4470db780540c4f57e3fbe12341f43a8200db32f50f128c7e11",
     "worker/googleCredentialRecoveryApi.mjs": "a0c755d5e57918ed56110b30f716350b9318276dd2f4671255140bc6e5200db1",
     "worker/googleDelivery.mjs": "3e6ff9d4ca526d9f811307c3b6b1970b43cec66096f02483fc8130abe2e4a465",
-    "worker/index.mjs": "4ec111f7c82be8f9ece06031cb078727cd079ce946fb8f780dd7413c7d322ee8",
+    "worker/index.mjs": "f8c12f7607edb4cdb2173c33996f93c08dd65d9204ffc9914213ee1da676fe09",
     "worker/staffInvitations.mjs": "b56d8fc0f18101b6e2e17e8276b7e5f9aabe7f7ad8d96fc95f9820a7f85686d9",
     "worker/subscriptionPreferences.mjs": "aad15bb89266ff8eeee73b85c54ea1f24add6e78544784b9f50ef5eb76c23b43",
     "vercel.json": "53962b786e6be2354ffc1f133fe5e8befabc551b7f74246b0f5764cd51fc8380",
@@ -9239,7 +9239,8 @@
         "tests/dr40ExistingSubscriptionPropagation.test.ts",
         "tests/examReminderPreferences.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
-        "tests/pilotCalendarApiReliability.test.ts"
+        "tests/pilotCalendarApiReliability.test.ts",
+        "tests/publicSubscriptionOrigin.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -9416,7 +9417,8 @@
         "tests/dr40ExistingSubscriptionPropagation.test.ts",
         "tests/examReminderPreferences.test.ts",
         "tests/googleCalendarWorkerApi.test.ts",
-        "tests/pilotCalendarApiReliability.test.ts"
+        "tests/pilotCalendarApiReliability.test.ts",
+        "tests/publicSubscriptionOrigin.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
       "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
@@ -9631,7 +9633,7 @@
       "currentFunctionality": "Processing incomplete; valid configured upload fails closed503.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 888,
+        "line": 894,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -9647,7 +9649,7 @@
       "sourceEvidence": [
         {
           "file": "worker/index.mjs",
-          "line": 888,
+          "line": 894,
           "role": "worker implementation"
         }
       ],
@@ -9684,7 +9686,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 943,
+        "line": 949,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9700,7 +9702,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 107, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 943, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 949, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -9743,7 +9745,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 951,
+        "line": 957,
         "role": "worker dispatch"
       },
       "contractTests": [
@@ -9760,7 +9762,7 @@
       "productionCriticality": "P0",
       "sourceEvidence": [
         { "file": "server/healthApi.ts", "line": 117, "role": "dispatch" },
-        { "file": "worker/index.mjs", "line": 951, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 957, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {
@@ -11875,7 +11877,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/index.mjs",
-        "line": 943,
+        "line": 949,
         "role": "worker dispatch"
       },
       "contractTests": ["tests/cloudflareRuntimeFoundation.test.ts"],
@@ -11891,7 +11893,7 @@
           "line": 260,
           "role": "dispatch"
         },
-        { "file": "worker/index.mjs", "line": 943, "role": "worker dispatch" }
+        { "file": "worker/index.mjs", "line": 949, "role": "worker dispatch" }
       ],
       "dependencyEvidence": [
         {

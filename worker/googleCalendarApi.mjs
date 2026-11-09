@@ -262,10 +262,13 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
   }
   try {
     const origin = request.headers.get("origin");
+    const fetchSite = request.headers.get("sec-fetch-site");
+    const publicAppRewrite =
+      origin === env.PUBLIC_APP_URL && fetchSite === "same-origin";
     if (
       (method === "POST" || route === "connect") &&
-      origin &&
-      origin !== url.origin
+      ((origin && origin !== url.origin && !publicAppRewrite) ||
+        fetchSite === "cross-site")
     ) {
       throw new PilotApiError(
         "ORIGIN_NOT_ALLOWED",

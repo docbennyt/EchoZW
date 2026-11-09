@@ -514,6 +514,80 @@ describe("native Google Web transport", () => {
     });
   });
 
+  it("accepts only the configured same-origin public rewrite for owned Google disconnect", async () => {
+    const body = { subscriptionId, deleteCreatedCalendar: false };
+    const allowed = await handleGoogleCalendarRequest(
+      request("/api/calendar/google/disconnect", body, {
+        origin: env.PUBLIC_APP_URL,
+        "sec-fetch-site": "same-origin",
+        cookie: `calenderzw_anon_session=${owner}`,
+      }),
+      env,
+    );
+    expect(allowed!.status).toBe(200);
+    expect(services.disconnectGoogleCalendar).toHaveBeenCalledWith({
+      subscriptionId,
+      anonymousSessionId: owner,
+      deleteCreatedCalendar: false,
+      env,
+    });
+    services.disconnectGoogleCalendar.mockClear();
+    for (const headers of [
+      { origin: "https://evil.invalid", "sec-fetch-site": "same-origin" },
+      { origin: env.PUBLIC_APP_URL, "sec-fetch-site": "cross-site" },
+      { origin: "https://worker.example", "sec-fetch-site": "cross-site" },
+      { origin: env.PUBLIC_APP_URL },
+    ]) {
+      expect(
+        (await handleGoogleCalendarRequest(
+          request("/api/calendar/google/disconnect", body, headers),
+          env,
+        ))!.status,
+      ).toBe(403);
+    }
+    expect(
+      (await handleGoogleCalendarRequest(
+        request("/api/calendar/google/disconnect", body, {
+          origin: env.PUBLIC_APP_URL,
+          "sec-fetch-site": "same-origin",
+        }),
+        { ...env, PUBLIC_APP_URL: undefined },
+      ))!.status,
+    ).toBe(403);
+    expect(services.disconnectGoogleCalendar).not.toHaveBeenCalled();
+  });
+
+  it("allows the configured public rewrite to start owned OAuth without accepting cross-site requests", async () => {
+    const path = `/api/calendar/google/connect?subscriptionId=${subscriptionId}`;
+    const headers = {
+      origin: env.PUBLIC_APP_URL,
+      "sec-fetch-site": "same-origin",
+      cookie: `calenderzw_anon_session=${owner}`,
+    };
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(path, undefined, headers),
+        env,
+      ))!.status,
+    ).toBe(302);
+    expect(services.beginGoogleCalendarConnection).toHaveBeenCalledWith({
+      subscriptionId,
+      anonymousSessionId: owner,
+      env,
+    });
+    services.beginGoogleCalendarConnection.mockClear();
+    expect(
+      (await handleGoogleCalendarRequest(
+        request(path, undefined, {
+          ...headers,
+          "sec-fetch-site": "cross-site",
+        }),
+        env,
+      ))!.status,
+    ).toBe(403);
+    expect(services.beginGoogleCalendarConnection).not.toHaveBeenCalled();
+  });
+
   it("rejects wrong methods, cross-origin posts, bad JSON, and oversized bodies", async () => {
     expect(
       (await handleGoogleCalendarRequest(
