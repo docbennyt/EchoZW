@@ -33,6 +33,7 @@ import {
 } from "../server/googleOnboardingPolicy.ts";
 import { getCalendarRevision } from "../server/calendarRevisionRepository.ts";
 import { enqueueSubscriptionReconciliation } from "../server/googleCalendarDelivery.ts";
+import { getOwnedGoogleConnection } from "../server/googleConnectionStatus.ts";
 
 const disconnectSchema = z
   .object({
@@ -245,7 +246,7 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
   };
   const url = new URL(request.url);
   const route = url.pathname.match(
-    /^\/api\/calendar\/google\/(status|connect|callback|disconnect)$/,
+    /^\/api\/calendar\/google\/(status|connection|connect|callback|disconnect)$/,
   )?.[1];
   const syncMatch = url.pathname.match(
     /^\/api\/admin\/timetables\/([^/]+)\/google-calendar-sync$/,
@@ -279,6 +280,27 @@ export async function handleGoogleCalendarRequest(request, env, options = {}) {
         decodeURIComponent(syncMatch[1]),
         options,
       );
+    if (route === "connection") {
+      const timetableId = validate(
+        z.string().uuid(),
+        url.searchParams.get("timetableId"),
+      );
+      const owner = sessionOwner(request);
+      const connection = await getOwnedGoogleConnection(
+        timetableId,
+        owner,
+        env,
+      );
+      return respond(
+        { connection },
+        200,
+        connection && owner
+          ? {
+              "set-cookie": `calenderzw_anon_session=${owner}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=31536000`,
+            }
+          : {},
+      );
+    }
     if (route === "status") {
       const status = getPublicGoogleCalendarStatus(env);
       const scope =

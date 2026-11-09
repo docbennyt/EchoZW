@@ -10,6 +10,10 @@ import { getAnalyticsIdentity, track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
+import {
+  fetchGoogleConnection,
+  type GoogleConnectionStatus,
+} from "./api/googleConnection";
 import { PublicShell } from "./components/site/SiteChrome";
 import { rememberGoogleCalendarReturnSlug } from "./domain/googleCalendarHandoff";
 import { formatClassGroupLabel } from "./domain/publicTimetable";
@@ -152,6 +156,9 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
     "loading",
   );
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [connection, setConnection] = useState<GoogleConnectionStatus | null>(
+    null,
+  );
   const [reminderPreset, setReminderPreset] =
     useState<ReminderPresetId>("on_time");
   const [busy, setBusy] = useState(false);
@@ -160,9 +167,13 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
   useEffect(() => {
     let active = true;
     void Promise.all([fetchPublicTimetable(slug), fetchGoogleStatus()])
-      .then(([nextTimetable, google]) => {
+      .then(async ([nextTimetable, google]) => {
+        const ownedConnection = await fetchGoogleConnection(
+          nextTimetable.timetableId,
+        );
         if (!active) return;
         setTimetable(nextTimetable);
+        setConnection(ownedConnection);
         setGoogleEnabled(google.enabled);
         setStatus("ready");
         track("calendar_success_viewed", {
@@ -189,7 +200,17 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
   }, [title]);
 
   async function connect() {
-    if (!timetable || !googleEnabled || busy) return;
+    if (
+      !timetable ||
+      busy ||
+      (connection
+        ? !connection.reconnectAllowed ||
+          connection.state === "synced" ||
+          connection.state === "syncing" ||
+          connection.state === "failed"
+        : !googleEnabled)
+    )
+      return;
     setBusy(true);
     setError("");
     rememberGoogleCalendarReturnSlug(timetable.publicSlug, window.localStorage);
@@ -199,6 +220,12 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
       reminderPreset,
     });
     try {
+      if (connection) {
+        window.location.assign(
+          `/api/calendar/google/connect?subscriptionId=${encodeURIComponent(connection.subscriptionId)}`,
+        );
+        return;
+      }
       const response = await createCalendarSubscription({
         timetableId: timetable.timetableId,
         provider: "google_api",
@@ -271,7 +298,11 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
         <section className="gcal-card" aria-labelledby="gcal-title">
           <div className="gcal-heading">
             <span>GOOGLE CALENDAR</span>
-            <h1 id="gcal-title">Add this timetable directly</h1>
+            <h1 id="gcal-title">
+              {connection
+                ? "Your Google Calendar connection"
+                : "Add this timetable directly"}
+            </h1>
             <p>
               {timetable.institution} · {timetable.programme} ·{" "}
               {formatClassGroupLabel(timetable.classGroup)} ·{" "}
@@ -279,54 +310,73 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
             </p>
           </div>
 
-          <div className="gcal-disclosure" role="note">
-            <ShieldCheck size={22} aria-hidden="true" />
-            <div>
-              <strong>CalenderZW only manages the calendar it creates.</strong>
-              <p>
-                Google will let CalenderZW create a separate secondary calendar,
-                add this class timetable, apply your chosen reminders, and
-                update or remove only CalenderZW-created timetable events when
-                the published timetable changes. CalenderZW does not read,
-                analyse, edit, or delete events in your existing personal
-                calendars.
-              </p>
+          {!connection ? (
+            <div className="gcal-disclosure" role="note">
+              <ShieldCheck size={22} aria-hidden="true" />
+              <div>
+                <strong>
+                  CalenderZW only manages the calendar it creates.
+                </strong>
+                <p>
+                  Google will let CalenderZW create a separate secondary
+                  calendar, add this class timetable, apply your chosen
+                  reminders, and update or remove only CalenderZW-created
+                  timetable events when the published timetable changes.
+                  CalenderZW does not read, analyse, edit, or delete events in
+                  your existing personal calendars.
+                </p>
+              </div>
             </div>
-          </div>
+          ) : null}
+          {connection ? (
+            <p role="status">
+              {connection.state === "synced"
+                ? "Your existing calendar is synchronized."
+                : connection.state === "syncing"
+                  ? "Your authorization is saved. Delivery is pending."
+                  : connection.state === "failed"
+                    ? "Delivery needs attention. Check your connection status on the timetable."
+                    : "Authorize your existing connection to resume delivery. Its calendar and reminder preferences will be retained."}
+            </p>
+          ) : null}
+          {!connection ? (
+            <fieldset className="gcal-reminders">
+              <legend>Choose reminders</legend>
+              {reminderOptions.map((option) => (
+                <label key={option.id}>
+                  <input
+                    type="radio"
+                    name="gcal-reminder"
+                    value={option.id}
+                    checked={reminderPreset === option.id}
+                    onChange={() => setReminderPreset(option.id)}
+                  />
+                  <span>
+                    <strong>{option.title}</strong>
+                    <small>{option.detail}</small>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          ) : null}
 
-          <fieldset className="gcal-reminders">
-            <legend>Choose reminders</legend>
-            {reminderOptions.map((option) => (
-              <label key={option.id}>
-                <input
-                  type="radio"
-                  name="gcal-reminder"
-                  value={option.id}
-                  checked={reminderPreset === option.id}
-                  onChange={() => setReminderPreset(option.id)}
-                />
-                <span>
-                  <strong>{option.title}</strong>
-                  <small>{option.detail}</small>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-
-          <div className="gcal-permissions">
-            <h2>What happens next</h2>
-            <ol>
-              <li>You continue to Google's consent screen.</li>
-              <li>You approve CalenderZW's limited calendar permission.</li>
-              <li>CalenderZW creates a dedicated secondary calendar.</li>
-              <li>
-                Future approved timetable corrections are pushed to the same
-                calendar without creating a second calendar.
-              </li>
-            </ol>
-          </div>
-
-          {!googleEnabled ? (
+          {!connection ? (
+            <div className="gcal-permissions">
+              <h2>What happens next</h2>
+              <ol>
+                <li>You continue to Google's consent screen.</li>
+                <li>You approve CalenderZW's limited calendar permission.</li>
+                <li>CalenderZW creates a dedicated secondary calendar.</li>
+                <li>
+                  Future approved timetable corrections are pushed to the same
+                  calendar without creating a second calendar.
+                </li>
+              </ol>
+            </div>
+          ) : null}
+          {!(connection ? connection.reconnectAllowed : googleEnabled) &&
+          connection?.state !== "synced" &&
+          connection?.state !== "syncing" ? (
             <p className="gcal-inline-error" role="alert">
               Direct Google Calendar connection is temporarily unavailable. Use
               the subscribed-calendar URL or one-time ICS option from the
@@ -342,11 +392,21 @@ export function GoogleCalendarConnectPage({ slug }: { slug: string }) {
           <button
             type="button"
             className="pt-button pt-button-primary gcal-continue"
-            disabled={!googleEnabled || busy}
+            disabled={
+              !(connection ? connection.reconnectAllowed : googleEnabled) ||
+              busy ||
+              connection?.state === "synced" ||
+              connection?.state === "syncing" ||
+              connection?.state === "failed"
+            }
             onClick={() => void connect()}
           >
             <ExternalLink size={18} aria-hidden="true" />
-            {busy ? "Opening Google…" : "Continue to Google"}
+            {busy
+              ? "Opening Google…"
+              : connection
+                ? "Authorize existing Google calendar"
+                : "Continue to Google"}
           </button>
 
           <p className="gcal-legal-copy">

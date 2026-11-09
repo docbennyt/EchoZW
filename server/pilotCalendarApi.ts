@@ -1,3 +1,4 @@
+import { getOwnedGoogleConnection } from "./googleConnectionStatus.js";
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { buildFeedUrl } from "../src/domain/calendar.js";
@@ -259,6 +260,39 @@ export async function handlePilotCalendarRequest(
     return true;
   }
 
+  if (
+    req.method === "GET" &&
+    requestUrl.pathname === "/api/calendar/google/connection"
+  ) {
+    try {
+      const timetableId = requestUrl.searchParams.get("timetableId");
+      if (!isAnalyticsUuid(timetableId))
+        throw new PilotApiError(
+          "VALIDATION_ERROR",
+          "Select a valid timetable.",
+          422,
+        );
+      const owner = getAnonymousSession(req);
+      const connection = await getOwnedGoogleConnection(
+        timetableId,
+        owner,
+        env,
+      );
+      sendJson(
+        res,
+        200,
+        { connection },
+        connection && owner
+          ? {
+              "Set-Cookie": `calenderzw_anon_session=${owner}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${publicOrigin.startsWith("https:") ? "; Secure" : ""}`,
+            }
+          : {},
+      );
+    } catch (error) {
+      sendError(res, error);
+    }
+    return true;
+  }
   if (
     req.method === "POST" &&
     requestUrl.pathname === "/api/calendar/subscriptions"

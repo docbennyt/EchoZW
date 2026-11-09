@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 const main = readFileSync("src/main.tsx", "utf8");
 const publicRoute = readFileSync("src/PublicTimetableReliability.tsx", "utf8");
 const preview = readFileSync("src/PersonalTimetablePreview.tsx", "utf8");
+const connection = readFileSync(
+  "src/GoogleCalendarConnectionStatus.tsx",
+  "utf8",
+);
 const disconnect = readFileSync(
   "src/GoogleCalendarDisconnectEntry.tsx",
   "utf8",
@@ -35,12 +39,18 @@ describe("DR-63 canonical public student route", () => {
       "window.location.assign(response.googleConnectUrl)",
     );
     expect(publicRoute).toContain("rememberGoogleCalendarReturnSlug");
-    expect(publicRoute).toContain("shouldAutoOpenGoogleCalendar");
+    expect(publicRoute).toContain(
+      "fetchGoogleConnection(timetable.timetableId)",
+    );
+    expect(publicRoute).not.toContain("shouldAutoOpenGoogleCalendar");
   });
 
   it("renders disconnect as a normal child with explicit connection props", () => {
-    expect(publicRoute).toContain("<GoogleCalendarDisconnectEntry");
-    expect(publicRoute).toContain("connected={googleSuccess}");
+    expect(publicRoute).toContain("<GoogleCalendarConnectionStatus");
+    expect(connection).toContain("<GoogleCalendarDisconnectEntry");
+    expect(connection).toContain(
+      'connected={connection.state !== "disconnected"}',
+    );
     expect(disconnect).not.toContain("MutationObserver");
     expect(disconnect).not.toContain("querySelector");
     expect(disconnect).not.toContain("createPortal");

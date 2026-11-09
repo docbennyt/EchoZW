@@ -14,8 +14,9 @@ import { getAnalyticsIdentity, track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
+import { fetchGoogleConnection } from "./api/googleConnection";
 import { PublicShell } from "./components/site/SiteChrome";
-import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
+import { GoogleCalendarConnectionStatus } from "./GoogleCalendarConnectionStatus";
 import { ExamReminderPreferences } from "./ExamReminderPreferences";
 import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { ChangeAlertsControl } from "./pwa/ChangeAlertsControl";
@@ -39,11 +40,7 @@ import { academicEventCategory } from "./domain/academicEventCategory";
 import type { CreateSubscriptionResponse } from "./domain/subscriptions";
 import { getTomorrowSchedule } from "./domain/tomorrowSchedule";
 import { pauseLifecycle } from "./domain/academicPauseLifecycle";
-import {
-  GOOGLE_CALENDAR_HOME_URL,
-  rememberGoogleCalendarReturnSlug,
-  shouldAutoOpenGoogleCalendar,
-} from "./domain/googleCalendarHandoff";
+import { rememberGoogleCalendarReturnSlug } from "./domain/googleCalendarHandoff";
 import {
   buildClassSharePayload,
   readClassShareSource,
@@ -301,9 +298,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     [],
   );
   const googlePending = googleSearch.get("calendar") === "google-pending";
-  const googleSuccess = googleSearch.get("calendar") === "google-success";
   const googleFailed = googleSearch.get("calendar") === "google-failed";
-  const googleSubscriptionId = googleSearch.get("subscriptionId");
 
   useEffect(() => {
     const refreshClock = () => setScheduleNow(new Date());
@@ -554,56 +549,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
   }, [shareSource, timetable]);
 
   useEffect(() => {
-    if (!googleSuccess || !timetable) return;
-
-    track("calendar_success_viewed", {
-      publicSlug: timetable.publicSlug,
-      provider: "google_api",
-      subscriptionId: googleSubscriptionId,
-    });
-
-    if (googleSubscriptionId) {
-      const eventKey = `calenderzw_google_connected_${googleSubscriptionId}`;
-      let alreadyTracked = false;
-      try {
-        alreadyTracked = window.sessionStorage.getItem(eventKey) === "1";
-        if (!alreadyTracked) window.sessionStorage.setItem(eventKey, "1");
-      } catch {
-        // Connection UX must remain functional when storage is unavailable.
-      }
-      if (!alreadyTracked) {
-        track("google_oauth_completed", {
-          publicSlug: timetable.publicSlug,
-          provider: "google_api",
-          subscriptionId: googleSubscriptionId,
-        });
-        track("google_calendar_created", {
-          publicSlug: timetable.publicSlug,
-          provider: "google_api",
-          subscriptionId: googleSubscriptionId,
-        });
-        track("google_calendar_sync_completed", {
-          publicSlug: timetable.publicSlug,
-          provider: "google_api",
-          subscriptionId: googleSubscriptionId,
-        });
-        track("onboarding_completed", {
-          publicSlug: timetable.publicSlug,
-          provider: "google_api",
-          subscriptionId: googleSubscriptionId,
-        });
-      }
-    }
-
-    const storage = window.sessionStorage;
-    if (!shouldAutoOpenGoogleCalendar(googleSubscriptionId, storage)) return;
-    const timer = window.setTimeout(() => {
-      window.location.replace(GOOGLE_CALENDAR_HOME_URL);
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [googleSuccess, googleSubscriptionId, timetable]);
-
-  useEffect(() => {
     if (!googleFailed || !timetable) return;
     track("google_oauth_failed", {
       publicSlug: timetable.publicSlug,
@@ -739,6 +684,15 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     });
     setOnboardingStep("preparing");
     try {
+      if (
+        provider === "google_api" &&
+        (await fetchGoogleConnection(timetable.timetableId))
+      ) {
+        window.location.assign(
+          `/t/${encodeURIComponent(timetable.publicSlug)}/google`,
+        );
+        return;
+      }
       const response = await createCalendarSubscription({
         timetableId: timetable.timetableId,
         provider,
@@ -1374,18 +1328,10 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     </a>
                   </div>
                 ) : null}
-                {googleSuccess ? (
-                  <div className="pt-google-connected-note" role="status">
-                    <div>
-                      <strong>Google Calendar connected</strong>
-                      <small>
-                        Future approved timetable updates can sync to the same
-                        Google calendar.
-                      </small>
-                    </div>
-                    <a href={GOOGLE_CALENDAR_HOME_URL}>Open Google Calendar</a>
-                  </div>
-                ) : null}
+                <GoogleCalendarConnectionStatus
+                  timetableId={timetable.timetableId}
+                  slug={timetable.publicSlug}
+                />
                 {googleFailed ? (
                   <div className="pt-google-failed-note" role="alert">
                     Google Calendar was not connected. Retry through Add to
@@ -1404,10 +1350,6 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                     timetable.timetableId
                   }
                   timetableId={timetable.timetableId}
-                />
-                <GoogleCalendarDisconnectEntry
-                  connected={googleSuccess}
-                  subscriptionId={googleSubscriptionId}
                 />
                 {timetable.publicDisplay?.showChangeAlerts === true ? (
                   <ChangeAlertsControl publicSlug={timetable.publicSlug} />
