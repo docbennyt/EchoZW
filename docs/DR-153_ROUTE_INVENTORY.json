@@ -720,6 +720,7 @@
     "server/googleCalendarDelivery.ts": "1561ba3ad64595bf679141cc02efa8b65e7294d02893828e282d4cefd2821235",
     "server/googleCalendarRepository.ts": "9efa0b99cd2701df5a56fa462c514c6e993429f82c3cf33a2dd40b83a994d227",
     "server/googleCalendarSync.ts": "2e8bf826ea2529052057515a40218be897ec6d4396ce550a385b74b540788635",
+    "server/googleConnectionStatus.ts": "613d6eb22db31a861a2bccfdfd8038249935b89a2f18841f5120944532357e48",
     "server/googleCredentialRecovery.ts": "a54a3c4924c2c3bb41843ff171d57b96c673fcc4b502214bfb2d7249a554702b",
     "server/googleDeliveryPolicy.ts": "d88508fec225773dcd0349f2e01265ec3afe63e2c92ba66129899da2f163f437",
     "server/growthCaptureApi.ts": "9d2e88dc6ff764c03f1529bcb2f99bc1fac62313af3a2730525414fecbd2c8e7",
@@ -734,7 +735,7 @@
     "server/pdfTextReader.ts": "47337bdfb4ebd678a340d09f17c0651dd5375d9565292b5da9c00fb399f29464",
     "server/pesepayGateway.ts": "96c8a8693fcd8a425fbce8ed51609bf44e7e5cd92c25480d4ed84d4438205cb0",
     "server/pilotAdminApi.ts": "0f50c6bde4e1b2491163729f0c58f2c159035957bde5ade541385e2978c2c5e6",
-    "server/pilotCalendarApi.ts": "5c8d6388f1ab0962f057bc6f9c72f5f359f13c729a0c12c1d7767e08dc84f845",
+    "server/pilotCalendarApi.ts": "3516f6cae66b0a3a28d8ba09768ecefa09661b97a53a66939ca1606ebd386e3e",
     "server/pilotCalendarCore.ts": "dbf4027d345624e4409bfc6eef4b1e6a49fb203ae5b3fbce9c0f1495b9833517",
     "server/pilotRepository.ts": "e295befa2a2dc65da7fd6c33ac4ecff69173b8673b04cbcce722e79d6462c3fa",
     "server/productionServer.ts": "98396fd34ab4c662320cf9445d5584de34a00fcf6715885929ced53e98e76aa8",
@@ -798,7 +799,8 @@
     "src/FinderDemandPrompt.tsx": "3a2f62d36791dfc12157c2d710c96d1ec3bd966ae9c900df75453bb33d644a25",
     "src/FinderDiscovery.tsx": "9d5fa617a29918901ca583acd11c838b69b45f4ef8a32dfa4b7572031dabd617",
     "src/FounderOperationsCockpit.tsx": "a24a28b26d91521f10c606c5aaa5eca115019182ab874d53e389e4ecad0ab7f0",
-    "src/GoogleCalendarDirectConnect.tsx": "85f078a2aaea0f155fb373ee2faf8290704dab65c6078a92a6f9f7c33826de21",
+    "src/GoogleCalendarConnectionStatus.tsx": "3334f3394af6f29f6a290b71c2536723d82808818f8053ef737a500d576b4b99",
+    "src/GoogleCalendarDirectConnect.tsx": "21f87248fc8a7e72b3e2b2f057a1a43b5b064283b5653ab17a749530e25c5a73",
     "src/GoogleCalendarDisconnectEntry.tsx": "579bdf0da5712b746088e72c1e1b100e2fe07c8da71804da74ea58bbb91e043c",
     "src/GrowthCapturePages.tsx": "8116ee2007f35d4359a0016970801e8b4973e6bc82aadcac60759383d3e8da3d",
     "src/GrowthInboxPage.tsx": "578509b479d99d65ae7bbd50e7dca3495c1223785fe2510dc4a0fbcfd3503253",
@@ -806,7 +808,7 @@
     "src/PersonalTimetablePreview.tsx": "b66d9869727c995222b7e73dde3ed987f6d26d04dfbcbdcb46425fcf77697544",
     "src/PilotOfferEnhancement.tsx": "afb27354554b1dd6a50d81356448c40d56031902fce043ec302eb253019bb612",
     "src/ProductionUxEnhancements.tsx": "1adf16f1ac5f75c95602b6dd1c71b4e5294393c9f2094f66a108e31d172b1964",
-    "src/PublicTimetableReliability.tsx": "6ae9f1f70a9b8e36a8f292b1ce6362a91b8e6d8ca327e3eda13e731a8199ea70",
+    "src/PublicTimetableReliability.tsx": "0f03e16060f8ac10a94239091549b92c3a604f05db3a5d92498cdcfb041ddb5c",
     "src/StaffOnboardingFlow.tsx": "fa08f2603aba81e405ebc9d59dcb767ada37dcad5d89dd9c86e1fe53c7e3f48a",
     "src/StaticTimetableImportPage.tsx": "b4bbf2f7f4e2d2cefb15c20dc7e5accbded3c008e5c9cb882c3c3f277b915f6d",
     "src/StudentOnboardingAcceleration.tsx": "5e2c825abc2bab09b9bd28376eb9e425b1abc9046c130942af48634d12114ca5",
@@ -817,6 +819,7 @@
     "src/api/adminSession.ts": "d56e0d6e3d2fad61b30643deaffe9e5cec533f54be40922e0ee4fb860bc8cb31",
     "src/api/calendarSubscriptions.ts": "909604ad2ad05e062e0dc1176840c03a8be6cd254479039bffa9c866297c12a5",
     "src/api/correctionMutations.ts": "bf2680f9f27942669e62bce06f109426a8e1ae89ac3993dc8aca46c9f4791c9d",
+    "src/api/googleConnection.ts": "4c2aa45fe8f5f144ae64c0f417bd66867fc6c82c3730b9a1dcdb00f986a32678",
     "src/api/payments.ts": "ffb4336b3fcd1c12e5eff63ab94b3e31f61bba84746a90d5a85fbe9cca0c0a81",
     "src/api/pilotAdmin.ts": "ffbef1b076bd77f9d5c82a5059a31e83b1bb376cf18d962992f676afd93aeb93",
     "src/api/pilotTypes.ts": "aad7e947cb738b3ebb69a271251e0250934403ef38795411524c58baad1b5880",
@@ -897,7 +900,7 @@
     "worker/adminEntities.mjs": "14b8023912c2994435c82fb5650ec48cbc60a46a536d1bb9de63be6a87d0d897",
     "worker/adminTimetable.mjs": "7ceeaafc08dadcb79cd50439c8b8a5276b18ffb539b03b604a561f6e74103f51",
     "worker/editorMutations.mjs": "4878b10ba3fa7497cfd501215e47b94efe9aba55a8488129e98ccfcdf5532b6e",
-    "worker/googleCalendarApi.mjs": "4ea2cd714a57272a1dbcc3a52722b9a0de59de8adcfb23567fcccf1ba3bc510f",
+    "worker/googleCalendarApi.mjs": "c4e7fd2e471cb89d340464e1727273fad858ec3f8fa2e7a154de48f305405462",
     "worker/googleCredentialRecoveryApi.mjs": "a0c755d5e57918ed56110b30f716350b9318276dd2f4671255140bc6e5200db1",
     "worker/googleDelivery.mjs": "8d4a0de35ad931dc4232f5597736c76687f2260f0bca5421240ce94717f70105",
     "worker/index.mjs": "4ec111f7c82be8f9ece06031cb078727cd079ce946fb8f780dd7413c7d322ee8",
@@ -907,9 +910,9 @@
     "wrangler.jsonc": "86d90e9b5ff9316d2abd2bf10fcd405689196995c3c07c0445c77400dcf21566"
   },
   "counts": {
-    "httpRoutes": 106,
-    "nodeDispatchRoutes": 103,
-    "nativeImplementedNotLiveProven": 73,
+    "httpRoutes": 107,
+    "nodeDispatchRoutes": 104,
+    "nativeImplementedNotLiveProven": 74,
     "nativeLiveProven": 0,
     "nativeIncomplete": 2,
     "intentionallyDisabled": 0,
@@ -6811,7 +6814,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 229,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -6838,7 +6841,7 @@
         { "file": "server/pilotAdminApi.ts", "line": 458, "role": "dispatch" },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 229,
           "role": "worker implementation"
         }
       ],
@@ -8204,7 +8207,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 229,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8226,7 +8229,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 402,
+          "line": 436,
           "role": "dispatch"
         },
         {
@@ -8236,7 +8239,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 229,
           "role": "worker implementation"
         }
       ],
@@ -8273,7 +8276,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 405,
+          "line": 439,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8458,7 +8461,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 229,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8475,7 +8478,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 377,
+          "line": 411,
           "role": "dispatch"
         },
         {
@@ -8485,7 +8488,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 229,
           "role": "worker implementation"
         }
       ],
@@ -8512,7 +8515,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 380,
+          "line": 414,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8582,6 +8585,95 @@
       }
     },
     {
+      "method": "GET",
+      "path": "/api/calendar/google/connection",
+      "authPolicy": "existing subscription/session ownership or OAuth state; consult dispatch evidence",
+      "businessOwner": "pilotCalendarApi",
+      "applicationService": "isAnalyticsUuid, getAnonymousSession, getOwnedGoogleConnection",
+      "databaseDependencies": [
+        "table/storage reference: calendar_subscriptions",
+        "table/storage reference: google_calendar_delivery_jobs"
+      ],
+      "databaseOperations": "Read path; transitive dependencies may include analytics/reconciliation writes. Consult source.",
+      "externalDependencies": ["Supabase PostgreSQL/Auth/REST"],
+      "nodeOnlyDependencies": [
+        "Node IncomingMessage/ServerResponse transport",
+        "node:async_hooks"
+      ],
+      "backgroundDependencies": [],
+      "cloudflareStatus": "native-not-live-proven",
+      "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
+      "migrationImplementation": {
+        "file": "worker/googleCalendarApi.mjs",
+        "line": 229,
+        "role": "worker implementation"
+      },
+      "contractTests": [
+        "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/googleCalendarWorkerApi.test.ts"
+      ],
+      "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
+      "lastProvenRuntime": "not-live-proven for current DR-178 candidate",
+      "lastLiveRuntime": null,
+      "lastLiveOutcome": "not-run; no candidate-specific deployed acceptance evidence supplied",
+      "remainingBlocker": "No candidate live proof. Bindings are independently inventoried in DR-178_EVIDENCE.md; trusted reviewed deployment and authorized exact-candidate acceptance remain required.",
+      "productionCriticality": "P0",
+      "sourceEvidence": [
+        {
+          "file": "server/pilotCalendarApi.ts",
+          "line": 263,
+          "role": "dispatch"
+        },
+        {
+          "file": "worker/googleCalendarApi.mjs",
+          "line": 229,
+          "role": "worker implementation"
+        }
+      ],
+      "dependencyEvidence": [
+        {
+          "file": "server/externalRequestBudget.ts",
+          "line": 50,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleConnectionStatus.ts",
+          "line": 19,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/googleDeliveryPolicy.ts",
+          "line": 115,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/pilotCalendarApi.ts",
+          "line": 266,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/pilotRepository.ts",
+          "line": 39,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/supabase/adminClient.ts",
+          "line": 5,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "server/supabase/config.ts",
+          "line": 32,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        },
+        {
+          "file": "src/domain/analytics.ts",
+          "line": 131,
+          "role": "reachable static symbol/branch dependency; conditional execution may vary"
+        }
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/calendar/google/disconnect",
       "authPolicy": "existing subscription/session ownership or OAuth state; consult dispatch evidence",
@@ -8611,7 +8703,7 @@
       "currentFunctionality": "Native local disconnect; optional remote calendar deletion explicitly unavailable.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 229,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8627,7 +8719,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 439,
+          "line": 473,
           "role": "dispatch"
         },
         {
@@ -8637,7 +8729,7 @@
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 229,
           "role": "worker implementation"
         }
       ],
@@ -8659,7 +8751,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 442,
+          "line": 476,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8737,7 +8829,7 @@
       "currentFunctionality": "Native source implementation; not live proven for DR-178 candidate.",
       "migrationImplementation": {
         "file": "worker/googleCalendarApi.mjs",
-        "line": 227,
+        "line": 229,
         "role": "worker implementation"
       },
       "contractTests": [
@@ -8754,12 +8846,12 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 254,
+          "line": 255,
           "role": "dispatch"
         },
         {
           "file": "worker/googleCalendarApi.mjs",
-          "line": 227,
+          "line": 229,
           "role": "worker implementation"
         }
       ],
@@ -8771,7 +8863,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 257,
+          "line": 258,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -8842,7 +8934,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 262,
+          "line": 296,
           "role": "dispatch"
         },
         {
@@ -8879,7 +8971,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 265,
+          "line": 299,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9085,7 +9177,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 205,
+          "line": 206,
           "role": "dispatch"
         },
         {
@@ -9107,7 +9199,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 205,
+          "line": 206,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -9163,7 +9255,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 215,
+          "line": 216,
           "role": "dispatch"
         },
         {
@@ -9185,7 +9277,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 215,
+          "line": 216,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10741,7 +10833,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 471,
+          "line": 505,
           "role": "dispatch"
         },
         {
@@ -10773,7 +10865,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 471,
+          "line": 505,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -10916,7 +11008,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 471,
+          "line": 505,
           "role": "dispatch"
         },
         {
@@ -10948,7 +11040,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 471,
+          "line": 505,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11105,7 +11197,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 520,
+          "line": 554,
           "role": "dispatch"
         },
         {
@@ -11142,7 +11234,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 520,
+          "line": 554,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
@@ -11310,7 +11402,7 @@
       "sourceEvidence": [
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 520,
+          "line": 554,
           "role": "dispatch"
         },
         {
@@ -11347,7 +11439,7 @@
         },
         {
           "file": "server/pilotCalendarApi.ts",
-          "line": 520,
+          "line": 554,
           "role": "reachable static symbol/branch dependency; conditional execution may vary"
         },
         {
