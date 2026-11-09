@@ -9151,6 +9151,7 @@
       "contractTests": [
         "tests/PublicTimetableReliability.test.tsx",
         "tests/cloudflareRuntimeFoundation.test.ts",
+        "tests/googleCalendarSelfService.test.tsx",
         "tests/googleCalendarWorkerApi.test.ts"
       ],
       "contractTestStatus": "Candidate local tests, not execution evidence or proof of route-specific coverage; deployed acceptance pending.",
