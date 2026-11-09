@@ -32,6 +32,11 @@ import {
   getPublicGoogleCalendarStatus,
 } from "./googleCalendarSync.js";
 
+import {
+  listOwnedExamReminderPreferences,
+  updateOwnedExamReminderPreferences,
+} from "./examReminderPreferences.js";
+
 function sendJson(
   res: ServerResponse,
   statusCode: number,
@@ -97,10 +102,15 @@ function getOrCreateAnonymousSession(req: IncomingMessage) {
   return getAnonymousSession(req) ?? crypto.randomUUID();
 }
 
-async function readBody(req: IncomingMessage) {
+async function readBody(req: IncomingMessage, maxBytes = Infinity) {
   const chunks: Buffer[] = [];
+  let bytes = 0;
   for await (const chunk of req) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const bytesChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    bytes += bytesChunk.length;
+    if (bytes > maxBytes)
+      throw new PilotApiError("BODY_TOO_LARGE", "Request is too large.", 413);
+    chunks.push(bytesChunk);
   }
   return Buffer.concat(chunks).toString("utf8");
 }
@@ -190,6 +200,57 @@ export async function handlePilotCalendarRequest(
 ) {
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
   const publicOrigin = getPublicAppUrlFromHeaders(env, req.headers, mode);
+  if (requestUrl.pathname === "/api/calendar/subscriptions/exam-reminders") {
+    try {
+      const owner = getCookie(req, "calenderzw_anon_session") ?? null;
+      if (req.method === "GET") {
+        sendJson(
+          res,
+          200,
+          await listOwnedExamReminderPreferences(
+            requestUrl.searchParams.get("timetableId") ?? "",
+            owner,
+            env,
+          ),
+        );
+      } else if (req.method === "PATCH") {
+        if (
+          headerValue(req.headers.origin) !== publicOrigin ||
+          headerValue(req.headers["sec-fetch-site"]) === "cross-site"
+        ) {
+          sendJson(res, 403, {
+            error: {
+              code: "ORIGIN_NOT_ALLOWED",
+              message: "Use the application where you connected this calendar.",
+            },
+          });
+          return true;
+        }
+        const body = await readBody(req, 1024);
+        let input;
+        try {
+          input = JSON.parse(body);
+        } catch {
+          sendJson(res, 422, {
+            error: { code: "VALIDATION_ERROR", message: "Invalid request." },
+          });
+          return true;
+        }
+        sendJson(
+          res,
+          200,
+          await updateOwnedExamReminderPreferences(input, owner, env),
+        );
+      } else {
+        sendJson(res, 405, {
+          error: { code: "METHOD_NOT_ALLOWED", message: "Method not allowed." },
+        });
+      }
+    } catch (error) {
+      sendError(res, error);
+    }
+    return true;
+  }
 
   if (
     req.method === "GET" &&

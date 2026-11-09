@@ -17,6 +17,7 @@ import { fetchPublicTimetable } from "./api/publicTimetable";
 import { fetchGoogleConnection } from "./api/googleConnection";
 import { PublicShell } from "./components/site/SiteChrome";
 import { GoogleCalendarConnectionStatus } from "./GoogleCalendarConnectionStatus";
+import { ExamReminderPreferences } from "./ExamReminderPreferences";
 import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { ChangeAlertsControl } from "./pwa/ChangeAlertsControl";
 import {
@@ -1332,6 +1333,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 className="pt-conversion-support"
                 aria-label="Calendar setup details"
               >
+                <ExamReminderPreferences
+                  key={
+                    calendarDelivery?.response.subscriptionId ??
+                    timetable.timetableId
+                  }
+                  timetableId={timetable.timetableId}
+                />
                 {timetable.publicDisplay?.showChangeAlerts === true ? (
                   <ChangeAlertsControl publicSlug={timetable.publicSlug} />
                 ) : null}
