@@ -140,7 +140,9 @@ export async function getGoogleCredential(
 ) {
   const { data, error } = await client(env)
     .from("google_calendar_credentials")
-    .select("subscription_id, encrypted_refresh_token, granted_scope")
+    .select(
+      "subscription_id, encrypted_refresh_token, granted_scope, updated_at",
+    )
     .eq("subscription_id", subscriptionId)
     .maybeSingle();
   if (error)
@@ -428,7 +430,9 @@ export async function getGoogleCalendarRecoveryFence(
 ) {
   const { data, error } = await client(env)
     .from("google_calendar_delivery_jobs")
-    .select("desired_revision,requested_generation")
+    .select(
+      "desired_revision,requested_generation,lease_token,lease_expires_at",
+    )
     .eq("subscription_id", subscriptionId)
     .maybeSingle();
   if (error)

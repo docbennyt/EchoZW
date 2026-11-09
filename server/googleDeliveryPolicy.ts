@@ -1,3 +1,8 @@
+import {
+  googleOnboardingEnrollmentAllowed,
+  googleOnboardingDeliveryCandidateAllowed,
+  googleOnboardingScope,
+} from "./googleOnboardingPolicy.js";
 import { googleProductionRecoveryScope } from "./googleProductionRecoveryPolicy.js";
 type Bindings = Record<string, unknown>;
 type Subscription = Record<string, unknown>;
@@ -107,6 +112,7 @@ export function googleEnrollmentAllowed(
   timetable: unknown,
 ) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
+  if (googleOnboardingEnrollmentAllowed(env, owner, timetable)) return true;
   const scope = googleCanaryScope(env);
   return Boolean(
     scope && owner === scope.owner && timetable === scope.timetable,
@@ -124,7 +130,8 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
     scope.owner === row.anonymous_session_id &&
     scope.timetable === row.timetable_id;
   return Boolean(
-    (matches(qa) ||
+    (googleOnboardingDeliveryCandidateAllowed(env, row) ||
+      matches(qa) ||
       (matches(production) &&
         row.status === "active" &&
         Boolean(row.external_calendar_id) &&
@@ -143,6 +150,9 @@ export function googleSubscriptionAllowed(env: Bindings, row: Subscription) {
 export function googleDeliveryTargetAllowed(env: Bindings, id: unknown) {
   if (env.ENABLE_GOOGLE_DELIVERY === "true") return true;
   const target =
+    (googleOnboardingScope(env)?.phase === "deliver"
+      ? googleOnboardingScope(env)?.subscription
+      : undefined) ??
     googleProductionRecoveryScope(env)?.subscription ??
     googleRecoveryScope(env)?.subscription ??
     googleCanaryScope(env)?.subscription;

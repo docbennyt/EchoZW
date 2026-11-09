@@ -20,7 +20,13 @@ vi.mock("../src/api/publicTimetable", () => ({
 vi.mock("../src/api/calendarSubscriptions", () => ({
   createCalendarSubscription: mocks.createCalendarSubscription,
 }));
-vi.mock("../src/analytics", () => ({ track: mocks.track }));
+vi.mock("../src/analytics", () => ({
+  track: mocks.track,
+  getAnalyticsIdentity: () => ({
+    anonymousId: "11111111-1111-4111-8111-111111111111",
+    sessionId: "22222222-2222-4222-8222-222222222222",
+  }),
+}));
 
 import { PublicTimetableReliability } from "../src/PublicTimetableReliability";
 
