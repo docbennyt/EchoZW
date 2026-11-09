@@ -140,7 +140,9 @@ export async function getGoogleCredential(
 ) {
   const { data, error } = await client(env)
     .from("google_calendar_credentials")
-    .select("subscription_id, encrypted_refresh_token, granted_scope")
+    .select(
+      "subscription_id, encrypted_refresh_token, granted_scope, updated_at",
+    )
     .eq("subscription_id", subscriptionId)
     .maybeSingle();
   if (error)
@@ -420,4 +422,20 @@ export async function deleteGoogleEventSyncRecord(input: {
     .eq("internal_event_id", input.internalEventId);
   if (error)
     throw databaseError("Could not remove Google Calendar event state.", error);
+}
+
+export async function getGoogleCalendarRecoveryFence(
+  subscriptionId: string,
+  env: NodeJS.ProcessEnv,
+) {
+  const { data, error } = await client(env)
+    .from("google_calendar_delivery_jobs")
+    .select(
+      "desired_revision,requested_generation,lease_token,lease_expires_at",
+    )
+    .eq("subscription_id", subscriptionId)
+    .maybeSingle();
+  if (error)
+    throw databaseError("Could not verify Google delivery generation.");
+  return data as JsonRecord | null;
 }

@@ -1,3 +1,4 @@
+import { googleOnboardingScope } from "../server/googleOnboardingPolicy.ts";
 /* global console */
 import {
   enqueueSubscriptionReconciliation,
@@ -60,7 +61,11 @@ export async function enqueueNativeGoogleSync(input, env) {
 
 export async function scheduleGoogleDelivery(env) {
   if (!enabled(env)) {
-    const scope = googleRecoveryScope(env) ?? googleCanaryScope(env);
+    const onboarding = googleOnboardingScope(env);
+    const scope =
+      (onboarding?.phase === "deliver" ? onboarding : null) ??
+      googleRecoveryScope(env) ??
+      googleCanaryScope(env);
     if (!scope?.subscription) return;
     if (!env.PUSH_QUEUE) throw new Error("GOOGLE_DELIVERY_QUEUE_MISSING");
     if (
@@ -120,7 +125,7 @@ export async function consumeGoogleDeliveryMessage(message, env) {
           const result = await syncGoogleSubscription(
             claimed.subscriptionId,
             env,
-            { signal, maxExternalRequests: 32 },
+            { signal, maxExternalRequests: 32, leaseToken: claimed.leaseToken },
           );
           const completed =
             Boolean(result.lastSyncedAt) && !(result.ownershipReviewCount > 0);

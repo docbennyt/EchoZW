@@ -100,6 +100,8 @@ describe.skipIf(!modulePath && !pgModulePath)(
       create table public.calendar_subscriptions(
         id uuid primary key, timetable_id uuid references timetables(id),
         provider text, status text, revoked_at timestamptz,
+        anonymous_session_id uuid, external_calendar_id text, created_at timestamptz not null default clock_timestamp(),
+        google_connection_generation bigint not null default 0, calendar_name text, reminder_preset text, timezone text, token_hash text,
         reminder_offsets_minutes jsonb not null default '[]'::jsonb);
       create table public.google_calendar_credentials(
         subscription_id uuid primary key references calendar_subscriptions(id), updated_at timestamptz);
@@ -151,6 +153,33 @@ describe.skipIf(!modulePath && !pgModulePath)(
           "utf8",
         ),
       );
+      await db.exec(`
+        create function public.create_calendar_subscription_with_profile(
+          p_timetable_id uuid, p_anonymous_session_id uuid, p_provider text,
+          p_reminder_preset text, p_reminder_offsets_minutes jsonb, p_calendar_name text,
+          p_timezone text, p_token_hash text default null, p_phone_e164 text default null,
+          p_country_code text default null, p_consent_updates boolean default false,
+          p_consent_source text default null
+        ) returns public.calendar_subscriptions language plpgsql security invoker set search_path=public as $$
+        declare s public.calendar_subscriptions%rowtype;
+        begin
+          insert into public.calendar_subscriptions(id, timetable_id, anonymous_session_id, provider, status,
+            reminder_preset, reminder_offsets_minutes, calendar_name, timezone, token_hash)
+          values(gen_random_uuid(), p_timetable_id, p_anonymous_session_id, p_provider, 'pending',
+            p_reminder_preset, p_reminder_offsets_minutes, p_calendar_name, p_timezone, p_token_hash)
+          returning * into s;
+          return s;
+        end; $$;
+      `);
+      await db.exec(
+        await readFile(
+          new URL(
+            "../supabase/migrations/20261106190719_google_calendar_onboarding_fences.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
     }, 30_000);
 
     beforeEach(async () => {
@@ -167,6 +196,121 @@ describe.skipIf(!modulePath && !pgModulePath)(
       await db?.close();
     });
 
+    it("fences the only allowed calendar insertion with the current connection and lease, retaining uncertainty across reconnects", async () => {
+      await rows(
+        "insert into google_calendar_credentials(subscription_id, updated_at) values($1, now())",
+        [subscription],
+      );
+      await recover();
+      const job = (await claim(1))[0];
+      const create = (generation = 0, token: unknown = job.lease_token) =>
+        rows("select begin_google_calendar_creation($1, $2, $3) as accepted", [
+          subscription,
+          generation,
+          token,
+        ]);
+      expect((await create(0, second))[0].accepted).toBe(false);
+      expect((await create(1))[0].accepted).toBe(false);
+      expect((await create())[0].accepted).toBe(true);
+      expect((await create())[0].accepted).toBe(false);
+      await rows(
+        "update calendar_subscriptions set google_connection_generation = 1 where id = $1",
+        [subscription],
+      );
+      expect((await create(1))[0].accepted).toBe(false);
+      expect(
+        await rows(
+          "select calendar_creation_started_at is not null as started, calendar_creation_generation as generation from google_calendar_delivery_jobs where subscription_id=$1",
+          [subscription],
+        ),
+      ).toEqual([{ started: true, generation: 0 }]);
+    });
+
+    it("rejects calendar creation without credentials, with expired leases or for an existing calendar", async () => {
+      await recover();
+      const job = (await claim(1))[0];
+      const create = () =>
+        rows("select begin_google_calendar_creation($1, 0, $2) as accepted", [
+          subscription,
+          job.lease_token,
+        ]);
+      expect((await create())[0].accepted).toBe(false);
+      await rows(
+        "insert into google_calendar_credentials(subscription_id, updated_at) values($1, now())",
+        [subscription],
+      );
+      await rows(
+        "update google_calendar_delivery_jobs set lease_expires_at=now()-interval '1 second' where subscription_id=$1",
+        [subscription],
+      );
+      expect((await create())[0].accepted).toBe(false);
+      await rows(
+        "update google_calendar_delivery_jobs set lease_expires_at=now()+interval '2 minutes' where subscription_id=$1",
+        [subscription],
+      );
+      await rows(
+        "update calendar_subscriptions set external_calendar_id='existing-calendar' where id=$1",
+        [subscription],
+      );
+      expect((await create())[0].accepted).toBe(false);
+    });
+
+    it("serializes scoped enrollment retries and refuses to replace a historical connection", async () => {
+      const owner = "00000000-0000-0000-0000-000000000099";
+      const issue = new Date(Date.now() - 1000).toISOString();
+      const prepare = (time = issue) =>
+        rows(
+          "select (create_scoped_google_subscription_with_profile($1,$2,$3,'google_api','on_time','[30]'::jsonb,'Test class','Africa/Harare')).id",
+          [time, timetable, owner],
+        );
+      const first = await prepare();
+      expect(await prepare()).toEqual(first);
+      expect(
+        (
+          await rows(
+            "select count(*)::integer as count from calendar_subscriptions where anonymous_session_id=$1",
+            [owner],
+          )
+        )[0].count,
+      ).toBe(1);
+      await rows(
+        "update calendar_subscriptions set created_at=now()-interval '2 days' where anonymous_session_id=$1",
+        [owner],
+      );
+      await expect(prepare()).rejects.toThrow(
+        "GOOGLE_EXISTING_CONNECTION_REQUIRES_REVIEW",
+      );
+      await expect(
+        prepare(new Date(Date.now() + 60000).toISOString()),
+      ).rejects.toThrow("GOOGLE_ONBOARDING_SCOPE_INVALID");
+    });
+
+    it("reserves onboarding and creation functions for the service role", async () => {
+      const signatures = [
+        "begin_google_calendar_creation(uuid,bigint,uuid)",
+        "create_scoped_google_subscription_with_profile(timestamptz,uuid,uuid,text,text,jsonb,text,text,text,text,text,boolean,text)",
+      ];
+      for (const signature of signatures) {
+        for (const role of ["anon", "authenticated"]) {
+          expect(
+            (
+              await rows(
+                "select has_function_privilege($1,$2,'execute') as allowed",
+                [role, signature],
+              )
+            )[0].allowed,
+          ).toBe(false);
+        }
+        expect(
+          (
+            await rows(
+              "select has_function_privilege('service_role',$1,'execute') as allowed",
+              [signature],
+            )
+          )[0].allowed,
+        ).toBe(true);
+      }
+    });
     it("defaults subscriptions to no exam reminders and preserves lecture settings when exam reminders change", async () => {
       expect(
         await rows(

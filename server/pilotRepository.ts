@@ -2173,6 +2173,7 @@ export async function createCalendarSubscriptionRecord(
     rawToken?: string;
     tokenHash?: string;
     subscriberContact?: SubscriberContactInput;
+    googleOnboardingIssuedAt?: string;
   },
   env?: NodeJS.ProcessEnv,
 ) {
@@ -2192,20 +2193,28 @@ export async function createCalendarSubscriptionRecord(
   const client = createPilotAdminClient(env);
   const data = await expectData(
     client
-      .rpc("create_calendar_subscription_with_profile", {
-        p_timetable_id: input.timetableId,
-        p_anonymous_session_id: input.anonymousSessionId ?? null,
-        p_provider: input.provider,
-        p_reminder_preset: input.reminderPreset,
-        p_reminder_offsets_minutes: input.reminderOffsetsMinutes,
-        p_calendar_name: `${timetable.programme} - ${timetable.academicPeriod.replace(",", "")}`,
-        p_timezone: input.timezone,
-        p_token_hash: input.tokenHash ?? null,
-        p_phone_e164: normalizedContact?.phoneE164 ?? null,
-        p_country_code: normalizedContact?.countryCode ?? null,
-        p_consent_updates: normalizedContact?.consentUpdates ?? false,
-        p_consent_source: normalizedContact?.consentSource ?? null,
-      })
+      .rpc(
+        input.googleOnboardingIssuedAt
+          ? "create_scoped_google_subscription_with_profile"
+          : "create_calendar_subscription_with_profile",
+        {
+          ...(input.googleOnboardingIssuedAt
+            ? { p_issued_at: input.googleOnboardingIssuedAt }
+            : {}),
+          p_timetable_id: input.timetableId,
+          p_anonymous_session_id: input.anonymousSessionId ?? null,
+          p_provider: input.provider,
+          p_reminder_preset: input.reminderPreset,
+          p_reminder_offsets_minutes: input.reminderOffsetsMinutes,
+          p_calendar_name: `${timetable.programme} - ${timetable.academicPeriod.replace(",", "")}`,
+          p_timezone: input.timezone,
+          p_token_hash: input.tokenHash ?? null,
+          p_phone_e164: normalizedContact?.phoneE164 ?? null,
+          p_country_code: normalizedContact?.countryCode ?? null,
+          p_consent_updates: normalizedContact?.consentUpdates ?? false,
+          p_consent_source: normalizedContact?.consentSource ?? null,
+        },
+      )
       .single(),
     "DATABASE_UNAVAILABLE",
     "Could not create the calendar subscription.",

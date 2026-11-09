@@ -3,7 +3,11 @@ import { subscriptionRequestSchema } from "../src/domain/subscriptions";
 
 const repo = vi.hoisted(() => ({
   createCalendarSubscriptionRecord: vi.fn(),
+  getCalendarRevision: vi.fn(),
   updateGoogleSubscription: vi.fn(),
+}));
+vi.mock("../server/calendarRevisionRepository", () => ({
+  getCalendarRevision: repo.getCalendarRevision,
 }));
 vi.mock("../server/pilotRepository", async (original) => ({
   ...(await original<typeof import("../server/pilotRepository")>()),
@@ -36,6 +40,7 @@ const input = subscriptionRequestSchema.parse({
 describe("native pending Google subscription creation", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    repo.getCalendarRevision.mockResolvedValue({ sequence: 4 });
     repo.createCalendarSubscriptionRecord.mockResolvedValue({
       id: "sub-1",
       calendar_name: "Class calendar",
@@ -78,6 +83,60 @@ describe("native pending Google subscription creation", () => {
     );
     expect(result.feedUrl).toBeUndefined();
     expect(result.downloadUrl).toBeUndefined();
+  });
+  it("prepares only the named production canary through the serialized enrollment contract", async () => {
+    const owner = "33333333-3333-4333-8333-333333333333";
+    const plan = {
+      mode: "new",
+      phase: "enroll",
+      candidateSha: "a".repeat(40),
+      ownerId: owner,
+      timetableId: input.timetableId,
+      subscriptionId: null,
+      issuedAt: new Date(Date.now() - 60000).toISOString(),
+      expiresAt: new Date(Date.now() + 3600000).toISOString(),
+      revision: 4,
+      connectionGeneration: 0,
+      calendarIdHash: null,
+      deliveryRevision: null,
+      deliveryGeneration: null,
+      maxCreates: 32,
+      maxUpdates: 0,
+      maxDeletes: 0,
+    };
+    const bindings = {
+      ...env,
+      APP_ENV: "cloudflare-production",
+      ENABLE_GOOGLE_DELIVERY: "false",
+      SOURCE_SHA: plan.candidateSha,
+      GOOGLE_PRODUCTION_ONBOARDING: JSON.stringify(plan),
+    };
+    await createNativeFeedSubscription(input, {
+      ...context,
+      anonymousSessionId: owner,
+      env: bindings,
+    });
+    expect(repo.createCalendarSubscriptionRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        googleOnboardingIssuedAt: plan.issuedAt,
+        anonymousSessionId: owner,
+        provider: "google_api",
+      }),
+      bindings,
+    );
+    repo.createCalendarSubscriptionRecord.mockClear();
+    repo.getCalendarRevision.mockResolvedValue({ sequence: 5 });
+    await expect(
+      createNativeFeedSubscription(input, {
+        ...context,
+        anonymousSessionId: owner,
+        env: bindings,
+      }),
+    ).rejects.toMatchObject({ code: "GOOGLE_ONBOARDING_REVISION_CHANGED" });
+    expect(repo.createCalendarSubscriptionRecord).not.toHaveBeenCalled();
+    await expect(
+      createNativeFeedSubscription(input, { ...context, env: bindings }),
+    ).rejects.toMatchObject({ code: "GOOGLE_NOT_CONFIGURED" });
   });
   it("allows only the designated owner/timetable to prepare a pending canary while global delivery stays off", async () => {
     const owner = "33333333-3333-4333-8333-333333333333";

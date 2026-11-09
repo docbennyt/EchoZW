@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { track } from "./analytics";
+import { getAnalyticsIdentity, track } from "./analytics";
 import { createCalendarSubscription } from "./api/calendarSubscriptions";
 import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
@@ -149,7 +149,10 @@ function ProviderMark({ provider }: { provider: "apple" | "google" }) {
 async function fetchGoogleStatus() {
   try {
     const response = await fetch("/api/calendar/google/status", {
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "X-CalenderZW-Anonymous-Id": getAnalyticsIdentity().anonymousId,
+      },
     });
     if (!response.ok) return false;
     const body = (await response.json()) as { enabled?: boolean };
@@ -294,7 +297,7 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
     () => new URLSearchParams(window.location.search),
     [],
   );
-
+  const googlePending = googleSearch.get("calendar") === "google-pending";
   const googleFailed = googleSearch.get("calendar") === "google-failed";
 
   useEffect(() => {
@@ -1317,6 +1320,14 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                   <PersonalTimetablePreview slug={slug} timetable={timetable} />
                 ) : null}
 
+                {googlePending ? (
+                  <div className="pt-google-connected-note" role="status">
+                    <span>Google authorization saved.</span>
+                    <a href={`/t/${encodeURIComponent(slug)}/google`}>
+                      Check calendar delivery status
+                    </a>
+                  </div>
+                ) : null}
                 <GoogleCalendarConnectionStatus
                   timetableId={timetable.timetableId}
                   slug={timetable.publicSlug}

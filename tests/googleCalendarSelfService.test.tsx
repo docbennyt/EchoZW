@@ -14,7 +14,10 @@ vi.mock("../src/api/calendarSubscriptions", () => ({
 vi.mock("../src/api/publicTimetable", () => ({
   fetchPublicTimetable: api.fetchPublicTimetable,
 }));
-vi.mock("../src/analytics", () => ({ track: vi.fn() }));
+vi.mock("../src/analytics", () => ({
+  track: vi.fn(),
+  getAnalyticsIdentity: () => ({ anonymousId: "fixture-owner" }),
+}));
 vi.mock("../src/GoogleCalendarDisconnectEntry", () => ({
   GoogleCalendarDisconnectEntry: () => null,
 }));
@@ -80,6 +83,15 @@ describe("Google calendar self-service", () => {
       name: "Authorize existing Google calendar",
     });
     expect(button).toBeDisabled();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/calendar/google/status",
+      expect.objectContaining({
+        headers: {
+          Accept: "application/json",
+          "X-CalenderZW-Anonymous-Id": "fixture-owner",
+        },
+      }),
+    );
     fireEvent.click(button);
     expect(api.createCalendarSubscription).not.toHaveBeenCalled();
     expect(screen.queryByText("Choose reminders")).not.toBeInTheDocument();
