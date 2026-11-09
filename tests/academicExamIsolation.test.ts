@@ -93,6 +93,7 @@ function project(
     timetable: value,
     reminderOffsetsMinutes: lectureReminders,
     examReminderOffsetsMinutes: examReminders,
+    now: new Date("2026-11-01T00:00:00Z"),
   };
   return projectPublishedTimetable(input);
 }
@@ -143,6 +144,32 @@ describe("DR-178 independently published examinations", () => {
       firstStartUtc: "2026-11-02T07:00:00.000Z",
       exDates: [],
     });
+  });
+
+  it("keeps a past exam visible without scheduling new alarms", () => {
+    const value = projectPublishedTimetable({
+      timetable: timetable(),
+      reminderOffsetsMinutes: [30],
+      examReminderOffsetsMinutes: [60, 30],
+      now: new Date("2026-11-02T07:00:00Z"),
+    });
+    const event = value.events.find((item) => !item.recurring);
+    expect(event?.alarms).toEqual([]);
+    expect(event?.firstStartUtc).toBe("2026-11-02T07:00:00.000Z");
+    expect(event?.uid).toBe(
+      "exam:extra-published-exam-root@calender.aido.co.zw",
+    );
+  });
+
+  it("omits elapsed reminder offsets while keeping a future arrival reminder", () => {
+    const value = projectPublishedTimetable({
+      timetable: timetable(),
+      examReminderOffsetsMinutes: [60, 30],
+      now: new Date("2026-11-02T06:15:00Z"),
+    });
+    expect(value.events.find((item) => !item.recurring)?.alarms).toEqual([
+      { minutesBefore: 30, description: expect.any(String) },
+    ]);
   });
 
   it("does not inherit lecture reminders when exam reminders are unspecified", () => {

@@ -417,6 +417,16 @@ export async function buildInventory(
     ],
     ["POST", "/api/calendar/subscriptions", "handleNativeSubscription"],
     [
+      "GET",
+      "/api/calendar/subscriptions/exam-reminders",
+      "handleExamReminderPreferences",
+    ],
+    [
+      "PATCH",
+      "/api/calendar/subscriptions/exam-reminders",
+      "handleExamReminderPreferences",
+    ],
+    [
       "POST",
       "/api/calendar/subscriptions/:subscriptionId/revoke",
       "revokeOwnedFeedSubscription",
@@ -714,6 +724,9 @@ export async function buildInventory(
             : /\/(session|my\/timetables)$/.test(item.path)
               ? "Supabase bearer; requireStaffUser"
               : "Supabase bearer; requireOperationalAdmin";
+    else if (item.path.endsWith("/subscriptions/exam-reminders"))
+      authPolicy =
+        "owner session cookie; active subscription; trusted origin and explicit consent for updates";
     else if (item.path.includes("/calendar/feed/"))
       authPolicy = "private bearer feed token hashed for subscription lookup";
     else if (item.path.includes("/calendar/download/"))
