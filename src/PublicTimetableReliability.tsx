@@ -16,6 +16,7 @@ import type { PublicTimetable } from "./api/pilotTypes";
 import { fetchPublicTimetable } from "./api/publicTimetable";
 import { PublicShell } from "./components/site/SiteChrome";
 import { GoogleCalendarDisconnectEntry } from "./GoogleCalendarDisconnectEntry";
+import { ExamReminderPreferences } from "./ExamReminderPreferences";
 import { PersonalTimetablePreview } from "./PersonalTimetablePreview";
 import { ChangeAlertsControl } from "./pwa/ChangeAlertsControl";
 import {
@@ -1385,6 +1386,13 @@ export function PublicTimetableReliability({ slug }: { slug: string }) {
                 className="pt-conversion-support"
                 aria-label="Calendar setup details"
               >
+                <ExamReminderPreferences
+                  key={
+                    calendarDelivery?.response.subscriptionId ??
+                    timetable.timetableId
+                  }
+                  timetableId={timetable.timetableId}
+                />
                 <GoogleCalendarDisconnectEntry
                   connected={googleSuccess}
                   subscriptionId={googleSubscriptionId}

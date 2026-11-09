@@ -39,6 +39,7 @@ import { handleNativeAdminEntities } from "./adminEntities.mjs";
 import { handleNativeAdminAnalytics } from "./adminAnalytics.mjs";
 import { handleNativeStaffInvitation } from "./staffInvitations.mjs";
 import { handleGoogleCalendarRequest } from "./googleCalendarApi.mjs";
+import { handleExamReminderPreferences } from "./subscriptionPreferences.mjs";
 import { handleGoogleCredentialRecovery } from "./googleCredentialRecoveryApi.mjs";
 import {
   enqueueNativeGoogleSync,
@@ -1038,6 +1039,11 @@ const application = {
         env,
         undefined,
         broadPauseMatch[1],
+      );
+
+    if (url.pathname === "/api/calendar/subscriptions/exam-reminders")
+      return withSecurityHeaders(
+        await handleExamReminderPreferences(request, env),
       );
 
     const revokeMatch = url.pathname.match(
