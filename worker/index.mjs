@@ -791,7 +791,13 @@ async function handleNativeSubscription(request, env) {
   }
   const url = new URL(request.url);
   const origin = request.headers.get("origin");
-  if (origin && origin !== url.origin) {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  const publicAppRewrite =
+    origin === env.PUBLIC_APP_URL && fetchSite === "same-origin";
+  if (
+    (origin && origin !== url.origin && !publicAppRewrite) ||
+    fetchSite === "cross-site"
+  ) {
     return json(
       {
         error: {
@@ -1052,9 +1058,13 @@ const application = {
     if (revokeMatch) {
       if (request.method !== "POST")
         return json({ error: { code: "METHOD_NOT_ALLOWED" } }, { status: 405 });
+      const origin = request.headers.get("origin");
+      const fetchSite = request.headers.get("sec-fetch-site");
+      const publicAppRewrite =
+        origin === env.PUBLIC_APP_URL && fetchSite === "same-origin";
       if (
-        request.headers.get("origin") !== url.origin ||
-        request.headers.get("sec-fetch-site") === "cross-site"
+        (origin !== url.origin && !publicAppRewrite) ||
+        fetchSite === "cross-site"
       )
         return json({ error: { code: "ORIGIN_NOT_ALLOWED" } }, { status: 403 });
       const cookie =
